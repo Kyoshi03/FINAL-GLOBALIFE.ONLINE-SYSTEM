@@ -873,10 +873,10 @@ select:focus {
 }
 
 .nurse-clean-card {
-    display: grid;
-    grid-template-columns: 64px minmax(0, 1fr);
-    gap: 18px;
+    display: flex;
     align-items: center;
+    justify-content: center;
+    gap: 22px;
     min-height: 118px;
     padding: 22px;
     border: 1px solid #d8e6ed;
@@ -893,6 +893,11 @@ select:focus {
     place-items: center;
     background: #edf6ff;
     color: #0f7cc2;
+    flex: 0 0 64px;
+}
+
+.nurse-clean-card-content {
+    min-width: 170px;
 }
 
 .nurse-clean-icon.pending {
@@ -915,13 +920,13 @@ select:focus {
     stroke-linejoin: round;
 }
 
-.nurse-clean-card span {
+.nurse-clean-card-content span {
     display: block;
     color: #1f343d;
     font-weight: 900;
 }
 
-.nurse-clean-card strong {
+.nurse-clean-card-content strong {
     display: block;
     margin-top: 5px;
     color: #0066cc;
@@ -929,13 +934,13 @@ select:focus {
     line-height: 1;
 }
 
-.nurse-clean-card small {
+.nurse-clean-card-content small {
     display: block;
     margin-top: 8px;
     color: #607784;
 }
 
-.nurse-clean-card a {
+.nurse-clean-card-content a {
     display: inline-flex;
     margin-top: 14px;
     color: #0066cc;
@@ -1158,6 +1163,10 @@ select:focus {
     .nurse-clean-actions {
         justify-content: stretch;
     }
+
+    .nurse-clean-card {
+        justify-content: flex-start;
+    }
 }
 ';
 
@@ -1236,7 +1245,7 @@ include 'includes/header.php';
                 <span class="nurse-clean-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><path d="M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>
                 </span>
-                <div>
+                <div class="nurse-clean-card-content">
                     <span>Appointments Today</span>
                     <strong><?php echo (int) $totalToday; ?></strong>
                     <small>Confirmed appointments</small>
@@ -1247,7 +1256,7 @@ include 'includes/header.php';
                 <span class="nurse-clean-icon pending" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><path d="M6 2h12"/><path d="M6 22h12"/><path d="M8 2c0 4 8 4 8 10s-8 6-8 10"/><path d="M16 2c0 4-8 4-8 10s8 6 8 10"/></svg>
                 </span>
-                <div>
+                <div class="nurse-clean-card-content">
                     <span>Pending Requests</span>
                     <strong><?php echo (int) $statusTotals['pending']; ?></strong>
                     <small>Needs your action</small>
@@ -1258,7 +1267,7 @@ include 'includes/header.php';
                 <span class="nurse-clean-icon done" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><path d="m20 6-11 11-5-5"/></svg>
                 </span>
-                <div>
+                <div class="nurse-clean-card-content">
                     <span>Completed Today</span>
                     <strong><?php echo (int) $completedTodayCount; ?></strong>
                     <small>Appointments completed</small>

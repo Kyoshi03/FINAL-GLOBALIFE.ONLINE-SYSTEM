@@ -50,7 +50,7 @@ try {
         middle_name VARCHAR(10) DEFAULT NULL,
         last_name VARCHAR(40) DEFAULT NULL,
         suffix VARCHAR(10) DEFAULT NULL,
-        full_name VARCHAR(100) GENERATED ALWAYS AS (TRIM(CONCAT_WS(' ', NULLIF(first_name, ''), NULLIF(middle_name, ''), NULLIF(last_name, ''), NULLIF(suffix, '')))) STORED INVISIBLE,
+        full_name VARCHAR(100) GENERATED ALWAYS AS (TRIM(CONCAT_WS(' ', NULLIF(first_name, ''), NULLIF(middle_name, ''), NULLIF(last_name, ''), NULLIF(suffix, '')))) STORED,
         role ENUM('admin', 'patient', 'doctor') NOT NULL,
         email VARCHAR(100),
         phone VARCHAR(20),

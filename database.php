@@ -69,7 +69,7 @@ function clinic_db_backfill_users_name_parts(mysqli $conn): void {
 function clinic_db_ensure_generated_full_name(mysqli $conn): void {
     $columnResult = $conn->query("SHOW COLUMNS FROM users LIKE 'full_name'");
     $columnInfo = $columnResult ? $columnResult->fetch_assoc() : null;
-    $generatedDefinition = "VARCHAR(100) GENERATED ALWAYS AS (" . clinic_db_users_full_name_expression() . ") STORED INVISIBLE";
+    $generatedDefinition = "VARCHAR(100) GENERATED ALWAYS AS (" . clinic_db_users_full_name_expression() . ") STORED";
 
     if (!$columnInfo) {
         $conn->query("ALTER TABLE users ADD COLUMN full_name {$generatedDefinition} AFTER suffix");
@@ -77,16 +77,8 @@ function clinic_db_ensure_generated_full_name(mysqli $conn): void {
     }
 
     $extra = strtolower((string) ($columnInfo['Extra'] ?? ''));
-    $createTable = $conn->query('SHOW CREATE TABLE users');
-    $createInfo = $createTable ? $createTable->fetch_assoc() : [];
-    $createSql = strtolower((string) ($createInfo['Create Table'] ?? ''));
-    $isInvisible = strpos($createSql, '`full_name`') !== false
-        && strpos($createSql, 'invisible') !== false;
-
     if (strpos($extra, 'generated') === false) {
         clinic_db_backfill_users_name_parts($conn);
-        $conn->query("ALTER TABLE users MODIFY COLUMN full_name {$generatedDefinition} AFTER suffix");
-    } elseif (!$isInvisible) {
         $conn->query("ALTER TABLE users MODIFY COLUMN full_name {$generatedDefinition} AFTER suffix");
     }
 }
@@ -108,7 +100,7 @@ function initDatabase() {
         middle_name VARCHAR(10) DEFAULT NULL,
         last_name VARCHAR(40) DEFAULT NULL,
         suffix VARCHAR(10) DEFAULT NULL,
-        full_name VARCHAR(100) GENERATED ALWAYS AS (TRIM(CONCAT_WS(' ', NULLIF(first_name, ''), NULLIF(middle_name, ''), NULLIF(last_name, ''), NULLIF(suffix, '')))) STORED INVISIBLE,
+        full_name VARCHAR(100) GENERATED ALWAYS AS (TRIM(CONCAT_WS(' ', NULLIF(first_name, ''), NULLIF(middle_name, ''), NULLIF(last_name, ''), NULLIF(suffix, '')))) STORED,
         role ENUM('admin', 'patient', 'doctor') NOT NULL,
         email VARCHAR(100),
         phone VARCHAR(20),
