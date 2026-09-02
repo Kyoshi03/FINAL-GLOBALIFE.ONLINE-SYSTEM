@@ -1,0 +1,26 @@
+HOSTINGER CRON JOB FOR GLOBALIFE APPOINTMENT REMINDERS
+=====================================================
+
+Use this in Hostinger > Websites > globalife.online > Advanced > Cron Jobs.
+
+Schedule:
+*/10 * * * *
+
+Command:
+/usr/bin/php /home/u901773288/domains/globalife.online/public_html/cron/send_appointment_reminders.php
+
+What it does:
+- checks confirmed appointments that are near their visit time
+- sends the patient reminder by email
+- sends the patient reminder by SMS
+- does not resend email again if only SMS failed
+- retries failed reminder delivery up to the system limit
+
+Important:
+Do not open cron/send_appointment_reminders.php in the browser. It is made for Cron Jobs only.
+
+If Hostinger says the path is invalid:
+1. Open Hostinger File Manager.
+2. Go to domains/globalife.online/public_html.
+3. Copy the full server path.
+4. Replace /home/u901773288/domains/globalife.online/public_html with that exact path.

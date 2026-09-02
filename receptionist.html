@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Receptionist Dashboard | Globalife Medical Laboratory & Polyclinic</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="main.css">
+    <style>
+    .header-flex {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+    }
+    .logo-img {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        object-fit: cover;
+        box-shadow: 0 2px 8px rgba(0,119,182,0.10);
+        border: 2px solid #48cae4;
+        background: #fff;
+    }
+    nav {
+        display: flex;
+        align-items: center;
+        gap: 0;
+    }
+    .logout-btn {
+        background: #023e8a;
+        color: #fff;
+        padding: 7px 18px;
+        border-radius: 4px;
+        font-weight: bold;
+        text-decoration: none;
+        margin-left: 25px;
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .logout-btn:hover {
+        background: #d90429;
+        color: #fff;
+    }
+    @media (max-width: 900px) {
+        .header-flex {
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        nav {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .logout-btn {
+            margin-left: 0;
+            margin-top: 10px;
+        }
+    }
+    /* Dashboard-specific styles */
+    .dashboard-header {
+        background: #0077b6;
+        color: #fff;
+        padding: 30px 0 20px 0;
+        text-align: center;
+    }
+    .dashboard-header h2 {
+        margin: 0 0 10px 0;
+        font-size: 2rem;
+    }
+    .dashboard-header p {
+        margin: 0;
+        font-size: 1.1rem;
+        color: #caf0f8;
+    }
+    .dashboard-sections {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        margin-top: 40px;
+        margin-bottom: 40px;
+        justify-content: center;
+    }
+    .dashboard-card {
+        background: #fff;
+        border: 1px solid #90e0ef;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        padding: 28px 22px;
+        flex: 1 1 260px;
+        min-width: 260px;
+        max-width: 320px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .dashboard-card h3 {
+        color: #0077b6;
+        margin-top: 0;
+        margin-bottom: 12px;
+    }
+    .dashboard-card p {
+        margin: 0 0 10px 0;
+        color: #333;
+    }
+    .dashboard-btn {
+        background: #0077b6;
+        color: #fff;
+        padding: 10px 24px;
+        border-radius: 25px;
+        text-decoration: none;
+        font-size: 1rem;
+        font-weight: bold;
+        margin-top: 10px;
+        transition: background 0.2s;
+        display: inline-block;
+    }
+    .dashboard-btn:hover {
+        background: #023e8a;
+    }
+    .quick-links {
+        margin-top: 20px;
+        text-align: center;
+    }
+    .quick-links a {
+        background: #caf0f8;
+        color: #023e8a;
+        padding: 8px 18px;
+        border-radius: 16px;
+        text-decoration: none;
+        font-weight: 500;
+        margin: 0 8px;
+        transition: background 0.2s;
+        display: inline-block;
+    }
+    .quick-links a:hover {
+        background: #48cae4;
+        color: #fff;
+    }
+    </style>
+    <script>
+    function logout() {
+        if (confirm('Are you sure you want to log out?')) {
+            window.location.href = "index.html";
+        }
+    }
+    </script>
+</head>
+<body>
+    <header>
+        <div class="container header-flex">
+            <!-- Replace logo.png with your actual logo file -->
+            <img src="globalife.png" alt="Clinic Logo" class="logo-img">
+            <h1>Globalife Medical Laboratory & Polyclinic</h1>
+            <nav style="margin-left:auto;">
+                <a href="#">Dashboard</a>
+                <a href="#">Appointments</a>
+                <a href="#">Patients</a>
+                <a href="#">Doctors</a>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </nav>
+        </div>
+    </header>
+    <div class="dashboard-header">
+        <h2>Welcome, Receptionist</h2>
+        <p>Barangay Sahud Ulan, Tanza, Cavite</p>
+    </div>
+    <div class="container">
+        <div class="dashboard-sections">
+            <div class="dashboard-card">
+                <h3>Today's Appointments</h3>
+                <p>View and manage all scheduled appointments for today.</p>
+                <a href="#" class="dashboard-btn">View Appointments</a>
+            </div>
+            <div class="dashboard-card">
+                <h3>Register New Patient</h3>
+                <p>Add a new patient to the system quickly and easily.</p>
+                <a href="#" class="dashboard-btn">Register Patient</a>
+            </div>
+            <div class="dashboard-card">
+                <h3>Doctor Schedules</h3>
+                <p>Check and update doctors' availability and schedules.</p>
+                <a href="#" class="dashboard-btn">View Schedules</a>
+            </div>
+        </div>
+        <div class="quick-links">
+            <a href="#">Contact Admin</a>
+            <a href="#">Help Center</a>
+            <a href="#">Clinic Info</a>
+        </div>
+    </div>
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Globalife Medical Laboratory & Polyclinic. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

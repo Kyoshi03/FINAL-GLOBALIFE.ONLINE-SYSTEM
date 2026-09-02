@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Patient Dashboard | Globalife Medical Laboratory & Polyclinic</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Link to your main.css for consistent styling -->
+    <link rel="stylesheet" href="main.css">
+    <style>
+    .header-flex {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+    }
+    .logo-img {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        object-fit: cover;
+        box-shadow: 0 2px 8px rgba(0,119,182,0.10);
+        border: 2px solid #48cae4;
+        background: #fff;
+    }
+    nav {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        background: #caf0f8; /* Light blue background */
+        padding: 10px 24px;
+        border-radius: 10px;
+    }
+    .nav-link {
+        display: flex;
+        align-items: center;
+        margin-right: 18px;
+        text-decoration: none;
+        color: #0077b6; /* Blue text for navigation */
+        font-weight: 500;
+        transition: color 0.2s;
+    }
+    .nav-link:last-child {
+        margin-right: 0;
+    }
+    .nav-link:hover {
+        color: #023e8a;
+    }
+    .nav-icon {
+        width: 24px;
+        height: 24px;
+        vertical-align: middle;
+        margin-right: 6px;
+        color: #0077b6;
+        background: #caf0f8;
+        border-radius: 50%;
+        border: 1px solid #90e0ef;
+        padding: 2px;
+        box-sizing: border-box;
+    }
+    .logout-btn {
+        background: #023e8a;
+        color: #fff;
+        padding: 7px 18px;
+        border-radius: 4px;
+        font-weight: bold;
+        text-decoration: none;
+        margin-left: 18px;
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .logout-btn:hover {
+        background: #d90429;
+        color: #fff;
+    }
+    .dashboard-header {
+        background: #0077b6; /* Violet background */
+        color: #fff;
+        padding: 30px 0 20px 0;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        border-radius: 10px;
+    }
+    .dashboard-header .logo-img {
+        width: 52px;
+        height: 52px;
+        margin-right: 10px;
+    }
+    .dashboard-header h2 {
+        margin: 0 0 10px 0;
+        font-size: 2rem;
+    }
+    .dashboard-header p {
+        margin: 0;
+        font-size: 1.1rem;
+        color: #e0c3fc;
+    }
+    .dashboard-sections {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        margin-top: 40px;
+        margin-bottom: 40px;
+        justify-content: center;
+    }
+    .dashboard-card {
+        background: #fff;
+        border: 1px solid #90e0ef;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        padding: 28px 22px;
+        flex: 1 1 260px;
+        min-width: 260px;
+        max-width: 320px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .card-title-flex {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+    .dashboard-card h3 {
+        color: #0077b6;
+        margin: 0;
+        border-bottom: 2px solid #90e0ef;
+        width: fit-content;
+        padding-bottom: 2px;
+        font-size: 1.15rem;
+        font-weight: 600;
+    }
+    .dashboard-card p {
+        margin: 0 0 10px 0;
+        color: #333;
+    }
+    .dashboard-btn {
+        background: #0077b6;
+        color: #fff;
+        padding: 10px 24px;
+        border-radius: 25px;
+        text-decoration: none;
+        font-size: 1rem;
+        font-weight: bold;
+        margin-top: 10px;
+        transition: background 0.2s;
+        display: inline-block;
+    }
+    .dashboard-btn:hover {
+        background: #023e8a;
+    }
+    .quick-links {
+        margin-top: 20px;
+        text-align: center;
+    }
+    .quick-links a {
+        background: #caf0f8;
+        color: #023e8a;
+        padding: 8px 18px;
+        border-radius: 16px;
+        text-decoration: none;
+        font-weight: 500;
+        margin: 0 8px;
+        transition: background 0.2s;
+        display: inline-block;
+    }
+    .quick-links a:hover {
+        background: #48cae4;
+        color: #fff;
+    }
+    @media (max-width: 900px) {
+        .dashboard-sections {
+            flex-direction: column;
+            gap: 18px;
+        }
+        .header-flex {
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        nav {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .logout-btn {
+            margin-left: 0;
+            margin-top: 10px;
+        }
+        .dashboard-header {
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+        }
+    }
+    </style>
+    <script>
+    function logout() {
+        if (confirm('Are you sure you want to log out?')) {
+            window.location.href = "index.html";
+        }
+    }
+    </script>
+</head>
+<body>
+    <header>
+        <div class="container header-flex">
+            <img src="globalife.png" alt="Clinic Logo" class="logo-img">
+            <h1>Globalife Medical Laboratory & Polyclinic</h1>
+            <nav style="margin-left:auto;">
+                <a href="#" class="nav-link">
+                    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#0077b6">
+                        <path d="M11.47 3.841a.75.75 0 0 1 1.06 0l8.69 8.69a.75.75 0 1 0 1.06-1.061l-8.689-8.69a2.25 2.25 0 0 0-3.182 0l-8.69 8.69a.75.75 0 1 0 1.061 1.06l8.69-8.689Z"/>
+                        <path d="m12 5.432 8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-3a.75.75 0 0 0-.75.75V21a.75.75 0 0 1-.75.75H5.625a1.875 1.875 0 0 1-1.875-1.875v-6.198a2.29 2.29 0 0 0 .091-.086L12 5.432Z"/>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="#" class="nav-link">
+                    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#0077b6">
+                        <circle cx="12" cy="12" r="10" stroke="#0077b6" stroke-width="1.5" fill="#caf0f8"/>
+                        <path d="M8 16v-1a4 4 0 0 1 8 0v1" stroke="#0077b6" stroke-width="1.5"/>
+                        <circle cx="12" cy="10" r="2" stroke="#0077b6" stroke-width="1.5"/>
+                    </svg>
+                    My Appointment
+                </a>
+                <a href="#" class="nav-link">
+                    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#0077b6">
+                        <rect x="4" y="4" width="16" height="16" rx="4" stroke="#0077b6" stroke-width="1.5" fill="#caf0f8"/>
+                        <path d="M8 10h8M8 14h5" stroke="#0077b6" stroke-width="1.5"/>
+                    </svg>
+                    Book Appointment
+                </a>
+                <a href="#" class="nav-link">
+                    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#0077b6">
+                        <circle cx="12" cy="8" r="4" stroke="#0077b6" stroke-width="1.5" fill="#caf0f8"/>
+                        <path d="M4 20c0-4 4-6 8-6s8 2 8 6" stroke="#0077b6" stroke-width="1.5"/>
+                    </svg>
+                    Doctor
+                </a>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </nav>
+        </div>
+    </header>
+    <div class="dashboard-header">
+        <img src="globalife.png" alt="Dashboard Logo" class="logo-img">
+        <div>
+            <h2>Welcome, Junnie Abrador</h2>
+            <p>Barangay Sahud Ulan, Tanza, Cavite</p>
+        </div>
+    </div>
+    <div class="container">
+        <div class="dashboard-sections">
+            <div class="dashboard-card">
+                <div class="card-title-flex">
+                    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#0077b6">
+                        <circle cx="12" cy="12" r="10" stroke="#0077b6" stroke-width="1.5" fill="#caf0f8"/>
+                        <path d="M8 16v-1a4 4 0 0 1 8 0v1" stroke="#0077b6" stroke-width="1.5"/>
+                        <circle cx="12" cy="10" r="2" stroke="#0077b6" stroke-width="1.5"/>
+                    </svg>
+                    <h3 class="line-title">My Appointment</h3>
+                </div>
+                <p><strong>Date:</strong> July 5, 2025</p>
+                <p><strong>Time:</strong> 10:00 AM</p>
+                <p><strong>Doctor:</strong> DRA. RODA TEBELIN</p>
+                <a href="#" class="dashboard-btn">View Details</a>
+            </div>
+            <div class="dashboard-card">
+                <div class="card-title-flex">
+                    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#0077b6">
+                        <rect x="4" y="4" width="16" height="16" rx="4" stroke="#0077b6" stroke-width="1.5" fill="#caf0f8"/>
+                        <path d="M8 10h8M8 14h5" stroke="#0077b6" stroke-width="1.5"/>
+                    </svg>
+                    <h3 class="line-title">Book Appointment</h3>
+                </div>
+                <p>Schedule your next visit with us.</p>
+                <a href="#" class="dashboard-btn">Book Now</a>
+            </div>
+            <div class="dashboard-card">
+                <div class="card-title-flex">
+                    <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#0077b6">
+                        <circle cx="12" cy="8" r="4" stroke="#0077b6" stroke-width="1.5" fill="#caf0f8"/>
+                        <path d="M4 20c0-4 4-6 8-6s8 2 8 6" stroke="#0077b6" stroke-width="1.5"/>
+                    </svg>
+                    <h3>Doctor</h3>
+                </div>
+                <p>Access your laboratory results and history.</p>
+                <a href="#" class="dashboard-btn">View Records</a>
+            </div>
+        </div>
+        <div class="quick-links">
+            <a href="#">Update Profile</a>
+        </div>
+    </div>
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Globalife Medical Laboratory & Polyclinic. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>
