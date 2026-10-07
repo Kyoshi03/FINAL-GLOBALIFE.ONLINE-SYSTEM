@@ -1,10 +1,10 @@
 <?php
 require_once 'includes/session.php';
-checkRole('receptionist');
+checkRole('admin');
 require_once 'config/database.php';
 require_once __DIR__ . '/includes/lab_services_seed_data.php';
 
-$pageTitle = 'Receptionist: laboratory services | Globalife';
+$pageTitle = 'Laboratory services | Globalife Administration';
 $conn = getDBConnection();
 initLabBookingSchema($conn);
 
@@ -25,6 +25,41 @@ function receptionist_lab_price($value): string {
         return 'None';
     }
     return '&#8369;' . number_format((float) $value, 2);
+}
+
+function receptionist_lab_category_label(?string $category): string {
+    $category = trim((string) $category);
+    if ($category === '') {
+        return 'Other services';
+    }
+
+    $knownLabels = [
+        'OPD PRE EMPLOYMENT',
+        'SANITARY PERMIT',
+        'CVSU',
+        'HEMATOLOGY',
+        'CLINICAL MICROSCOPY',
+        'BLOOD CHEMISTRY',
+        'CHEMISTRY PACKAGES',
+        'BUNTIS PACKAGE',
+        'THYROID FUNCTION TEST',
+        'HEPATITIS',
+        'HORMONES',
+        'TUMOR MARKERS',
+        'SEROLOGY',
+        'BACTERIOLOGY',
+        'HIV TEST',
+        'OTHERS',
+    ];
+
+    foreach ($knownLabels as $label) {
+        if (stripos($category, $label) !== false) {
+            return $label;
+        }
+    }
+
+    $clean = preg_replace('/^[^A-Za-z0-9]+/', '', $category) ?? $category;
+    return trim($clean) !== '' ? trim($clean) : 'Other services';
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -244,6 +279,7 @@ $additionalStyles = '
     .lab-stat span { display:block; color:#60727d; font-weight:800; font-size:.78rem; text-transform:uppercase; }
     .lab-stat strong { display:block; margin-top:6px; color:#073b4c; font-size:1.55rem; line-height:1; }
     .lab-card { padding:20px; margin-bottom:16px; }
+    .lab-card.service-section-card { padding:18px; }
     .lab-card h2 { margin:0 0 14px; color:#073b4c; font-size:1.32rem; font-weight:900; letter-spacing:0; }
     .lab-toolbar { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; }
     .tool-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:16px; align-items:center; }
@@ -257,10 +293,12 @@ $additionalStyles = '
     .form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
     .field.full { grid-column:1/-1; }
     .checks { display:flex; gap:16px; flex-wrap:wrap; margin:14px 0; color:#435761; font-weight:800; }
-    .btn { border:none; border-radius:8px; padding:10px 14px; min-height:40px; display:inline-flex; align-items:center; justify-content:center; gap:7px; font-weight:800; cursor:pointer; text-decoration:none; background:#0f7cc2; color:#fff; }
+    .btn { box-sizing:border-box; border:none; border-radius:8px; padding:10px 14px; min-height:40px; min-width:116px; display:inline-flex; align-items:center; justify-content:center; gap:7px; font:inherit; font-size:.9rem; line-height:1.15; font-weight:900; text-align:center; white-space:nowrap; cursor:pointer; text-decoration:none; background:#0f7cc2; color:#fff; }
     .btn.secondary { background:#eef7ff; color:#0b4f80; border:1px solid #d4e6f5; }
     .btn.warn { background:#fff0f0; color:#9d1c2c; border:1px solid #ffd0d5; }
-    .btn.small { padding:7px 10px; min-height:32px; font-size:.82rem; }
+    .btn.small { padding:8px 10px; min-height:36px; min-width:94px; font-size:.82rem; }
+    .lab-toolbar .btn { min-width:108px; }
+    .modal-actions .btn, .confirm-actions .btn, .dup-actions .btn { min-height:42px; }
     .btn:disabled { opacity:.48; cursor:not-allowed; }
     .msg-ok, .msg-err { border-radius:8px; padding:12px 14px; margin:14px 0 0; font-weight:800; }
     .msg-ok { background:#e7f7ed; color:#17643a; border:1px solid #bfe6ce; }
@@ -274,17 +312,29 @@ $additionalStyles = '
     .lab-table th { background:#eaf3f8; color:#073b4c; font-size:.83rem; font-weight:900; text-transform:uppercase; }
     .select-col { width:44px; text-align:center !important; }
     .bulk-check, .js-select-visible { width:18px; height:18px; accent-color:#0f7cc2; cursor:pointer; }
-    .bulk-bar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:0 0 14px; padding:10px 12px; border:1px solid #dbe9f1; border-radius:8px; background:#f8fbff; color:#60727d; font-weight:800; line-height:1.4; }
+    .bulk-bar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:0 0 14px; padding:12px 14px; border:1px solid #bddff2; border-radius:8px; background:#f8fbff; color:#60727d; font-weight:800; line-height:1.4; }
+    .bulk-bar-main { display:flex; flex-direction:column; gap:2px; }
+    .bulk-bar-main small { color:#71838c; font-weight:700; }
+    .bulk-bar .btn { flex-shrink:0; }
     .bulk-count { color:#073b4c; font-size:1rem; }
     body:not(.bulk-mode) .select-col, body:not(.bulk-mode) .bulk-bar { display:none; }
     body.bulk-mode .bulk-bar { display:flex; }
+    .service-list-scroll { max-height:520px; overflow:auto; padding-right:8px; scrollbar-width:thin; scrollbar-color:#9fc5d8 #edf5f8; }
+    .service-list-scroll::-webkit-scrollbar { width:9px; height:9px; }
+    .service-list-scroll::-webkit-scrollbar-thumb { background:#9fc5d8; border-radius:999px; }
+    .service-list-scroll::-webkit-scrollbar-track { background:#edf5f8; border-radius:999px; }
+    .service-group { border:1px solid #dce9f1; border-radius:8px; background:#fff; overflow:hidden; margin-bottom:14px; }
+    .service-group:last-child { margin-bottom:0; }
+    .service-group-title { position:sticky; top:0; z-index:5; margin:0; padding:12px 14px; border-bottom:1px solid #e3edf3; background:#f7fbfd; color:#073b4c; font-size:1rem; font-weight:900; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .service-group-title span { flex-shrink:0; }
+    .table-scroll { overflow-x:auto; }
     .service-name strong { color:#073b4c; font-size:1rem; }
     .service-name small { display:block; margin-top:5px; color:#60727d; line-height:1.5; font-size:.84rem; }
     .pill { display:inline-flex; align-items:center; border-radius:999px; padding:6px 11px; font-size:.78rem; font-weight:900; }
     .pill.on { background:#e7f7ed; color:#17643a; }
     .pill.off { background:#fff0f0; color:#9d1c2c; }
     .pill.neutral { background:#eef7ff; color:#0b4f80; }
-    .actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
     .actions form { margin:0; }
     .empty { color:#60727d; padding:12px 0; }
     .modal-overlay { display:none; position:fixed; inset:0; z-index:3000; background:rgba(7,59,76,.58); padding:20px; align-items:center; justify-content:center; }
@@ -330,35 +380,15 @@ $additionalStyles = '
         .print-table th, .print-table td { color:#111; }
         .print-logo { width:52px; height:52px; }
     }
-    @media (max-width:900px) { .lab-hero, .lab-toolbar { flex-direction:column; align-items:stretch; } .tool-row { grid-template-columns:1fr; } .tool-actions { justify-content:flex-start; } .tool-actions .btn { flex:1 1 180px; } .lab-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .form-grid { grid-template-columns:1fr; } .lab-table { min-width:820px; } .table-scroll { overflow-x:auto; } }
+    @media (max-width:900px) { .lab-hero, .lab-toolbar { flex-direction:column; align-items:stretch; } .tool-row { grid-template-columns:1fr; } .tool-actions { justify-content:flex-start; } .tool-actions .btn { flex:1 1 180px; } .lab-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .form-grid { grid-template-columns:1fr; } .lab-table { min-width:820px; } .bulk-bar { align-items:flex-start; flex-direction:column; } .bulk-bar .btn { width:100%; } }
     @media (max-width:560px) { .lab-wrap { padding:0 12px 36px; } .lab-grid { grid-template-columns:1fr; } .lab-hero, .lab-card { padding:16px; } }
 ';
 
 include 'includes/header.php';
 ?>
 <main class="lab-wrap">
-    <section class="lab-hero">
-        <div>
-            <h1>Laboratory services manager</h1>
-            <p>Add packages, update prices, hide unavailable tests, and keep the receptionist catalog aligned with patient booking.</p>
-        </div>
-        <form method="post" data-confirm-form="1" data-confirm-mode="simple" data-confirm-message="Import missing default catalog rows?" data-confirm-title="Import catalog" data-confirm-button="Import">
-            <input type="hidden" name="receptionist_svc_action" value="import_catalog">
-            <button type="submit" class="btn secondary">Import missing catalog</button>
-            <button type="button" class="btn secondary" onclick="window.print()">Print price list</button>
-        </form>
-    </section>
-
     <?php if ($message): ?><div class="msg-ok"><?php echo htmlspecialchars($message); ?></div><?php endif; ?>
     <?php if ($error): ?><div class="msg-err"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
-
-    <section class="lab-grid" aria-label="Lab service summary">
-        <div class="lab-stat"><span>Total services</span><strong><?php echo count($allRows); ?></strong></div>
-        <div class="lab-stat"><span>Active</span><strong><?php echo $activeCount; ?></strong></div>
-        <div class="lab-stat"><span>Inactive</span><strong><?php echo $inactiveCount; ?></strong></div>
-        <div class="lab-stat"><span>Packages</span><strong><?php echo $packageCount; ?></strong></div>
-        <div class="lab-stat"><span>Home priced</span><strong><?php echo $homeCount; ?></strong></div>
-    </section>
 
     <section class="lab-card">
         <h2>Catalog tools</h2>
@@ -371,7 +401,7 @@ include 'includes/header.php';
             </div>
         </div>
         <datalist id="labCategoryList">
-            <?php foreach ($categories as $category): ?><option value="<?php echo htmlspecialchars($category); ?>"></option><?php endforeach; ?>
+            <?php foreach ($categories as $category): ?><option value="<?php echo htmlspecialchars($category); ?>" label="<?php echo htmlspecialchars(receptionist_lab_category_label($category)); ?>"></option><?php endforeach; ?>
         </datalist>
     </section>
 
@@ -385,13 +415,10 @@ include 'includes/header.php';
             <label class="field">Search
                 <input type="search" name="q" value="<?php echo htmlspecialchars($q); ?>" placeholder="Name, category, included tests">
             </label>
-            <label class="field">Search category
-                <input type="search" name="category_q" value="<?php echo htmlspecialchars($categoryQuery); ?>" placeholder="Search category name">
-            </label>
             <label class="field">Category
                 <select name="cat">
                     <option value="">All categories</option>
-                    <?php foreach ($categories as $category): ?><option value="<?php echo htmlspecialchars($category); ?>" <?php echo $cat === $category ? 'selected' : ''; ?>><?php echo htmlspecialchars($category); ?></option><?php endforeach; ?>
+                    <?php foreach ($categories as $category): ?><option value="<?php echo htmlspecialchars($category); ?>" <?php echo $cat === $category ? 'selected' : ''; ?>><?php echo htmlspecialchars(receptionist_lab_category_label($category)); ?></option><?php endforeach; ?>
                 </select>
             </label>
             <label class="field">Type
@@ -413,19 +440,25 @@ include 'includes/header.php';
         </form>
     </section>
 
-    <section class="lab-card">
+    <section class="lab-card service-section-card">
         <div class="section-head">
             <h2 class="section-title">Package deals</h2>
             <button type="button" class="btn warn bulkToggleBtn">Selected delete</button>
         </div>
         <div class="bulk-bar">
-            <span><strong class="bulk-count" id="bulkSelectedCount">0</strong> selected for delete</span>
-            <span>Check services below, then click <strong>Continue delete</strong>.</span>
+            <span class="bulk-bar-main">
+                <span><strong class="bulk-count">0</strong> selected for delete</span>
+                <small>Check services below, then continue only when you are sure.</small>
+            </span>
+            <button type="submit" form="bulkDeleteForm" class="btn warn bulkSubmitBtn" disabled>Continue delete</button>
         </div>
         <?php if (empty($groupedPackages)): ?>
             <p class="empty">No matching package rows.</p>
-        <?php else: foreach ($groupedPackages as $category => $list): ?>
-            <h3 class="section-title"><?php echo htmlspecialchars($category); ?> <span class="pill neutral"><?php echo count($list); ?></span></h3>
+        <?php else: ?>
+        <div class="service-list-scroll package-list-scroll" aria-label="Scrollable package deals list">
+            <?php foreach ($groupedPackages as $category => $list): ?>
+            <div class="service-group">
+            <h3 class="service-group-title"><?php echo htmlspecialchars(receptionist_lab_category_label($category)); ?> <span class="pill neutral"><?php echo count($list); ?></span></h3>
             <div class="table-scroll">
                 <table class="lab-table">
                     <thead><tr><th class="select-col"><input type="checkbox" class="js-select-visible" aria-label="Select all package deals"></th><th>Name</th><th>OPD</th><th>Home</th><th>Status</th><th>Actions</th></tr></thead>
@@ -455,18 +488,31 @@ include 'includes/header.php';
                     </tbody>
                 </table>
             </div>
-        <?php endforeach; endif; ?>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
     </section>
 
-    <section class="lab-card">
+    <section class="lab-card service-section-card">
         <div class="section-head">
             <h2 class="section-title">Individual laboratory tests</h2>
             <button type="button" class="btn warn bulkToggleBtn">Selected delete</button>
         </div>
+        <div class="bulk-bar">
+            <span class="bulk-bar-main">
+                <span><strong class="bulk-count">0</strong> selected for delete</span>
+                <small>Use this only for services that should be removed from the catalog.</small>
+            </span>
+            <button type="submit" form="bulkDeleteForm" class="btn warn bulkSubmitBtn" disabled>Continue delete</button>
+        </div>
         <?php if (empty($groupedIndividuals)): ?>
             <p class="empty">No matching individual test rows.</p>
-        <?php else: foreach ($groupedIndividuals as $category => $list): ?>
-            <h3 class="section-title"><?php echo htmlspecialchars($category); ?> <span class="pill neutral"><?php echo count($list); ?></span></h3>
+        <?php else: ?>
+        <div class="service-list-scroll individual-list-scroll" aria-label="Scrollable individual laboratory tests list">
+            <?php foreach ($groupedIndividuals as $category => $list): ?>
+            <div class="service-group">
+            <h3 class="service-group-title"><?php echo htmlspecialchars(receptionist_lab_category_label($category)); ?> <span class="pill neutral"><?php echo count($list); ?></span></h3>
             <div class="table-scroll">
                 <table class="lab-table">
                     <thead><tr><th class="select-col"><input type="checkbox" class="js-select-visible" aria-label="Select all individual tests"></th><th>Name</th><th>OPD</th><th>Home</th><th>Status</th><th>Actions</th></tr></thead>
@@ -496,7 +542,10 @@ include 'includes/header.php';
                     </tbody>
                 </table>
             </div>
-        <?php endforeach; endif; ?>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
     </section>
 
     <section class="print-price-list" aria-label="Printable laboratory price list">
@@ -505,14 +554,14 @@ include 'includes/header.php';
             <div>
                 <h1>Globalife Medical Laboratory &amp; Polyclinic</h1>
                 <p>Laboratory services price list</p>
-                <p>Printed: <?php echo date('M d, Y'); ?></p>
+                <p>Printed: <?php echo date('F d, Y'); ?></p>
             </div>
         </div>
         <?php if (empty($printGroupedPackages) && empty($printGroupedIndividuals)): ?><p>No active laboratory services available.</p><?php endif; ?>
         <?php if (!empty($printGroupedPackages)): ?>
             <h2 class="print-section-title">Package deals</h2>
             <?php foreach ($printGroupedPackages as $category => $list): ?>
-                <h3 class="print-section-title"><?php echo htmlspecialchars($category); ?></h3>
+                <h3 class="print-section-title"><?php echo htmlspecialchars(receptionist_lab_category_label($category)); ?></h3>
                 <table class="print-table"><thead><tr><th>Service</th><th>Included tests</th><th>OPD price</th><th>Home service</th></tr></thead><tbody>
                 <?php foreach ($list as $row): ?><tr><td><?php echo htmlspecialchars($row['name']); ?></td><td><?php echo htmlspecialchars($row['included_tests'] ?: '-'); ?></td><td><?php echo receptionist_lab_price((string) $row['opd_price']); ?></td><td><?php echo receptionist_lab_price($row['home_service_price']); ?></td></tr><?php endforeach; ?>
                 </tbody></table>
@@ -521,7 +570,7 @@ include 'includes/header.php';
         <?php if (!empty($printGroupedIndividuals)): ?>
             <h2 class="print-section-title">Individual laboratory tests</h2>
             <?php foreach ($printGroupedIndividuals as $category => $list): ?>
-                <h3 class="print-section-title"><?php echo htmlspecialchars($category); ?></h3>
+                <h3 class="print-section-title"><?php echo htmlspecialchars(receptionist_lab_category_label($category)); ?></h3>
                 <table class="print-table"><thead><tr><th>Service</th><th>Included tests</th><th>OPD price</th><th>Home service</th></tr></thead><tbody>
                 <?php foreach ($list as $row): ?><tr><td><?php echo htmlspecialchars($row['name']); ?></td><td><?php echo htmlspecialchars($row['included_tests'] ?: '-'); ?></td><td><?php echo receptionist_lab_price((string) $row['opd_price']); ?></td><td><?php echo receptionist_lab_price($row['home_service_price']); ?></td></tr><?php endforeach; ?>
                 </tbody></table>
@@ -537,12 +586,12 @@ include 'includes/header.php';
                 <?php if ($hasDuplicateGroups): ?>
                     <div class="dup-list">
                         <?php foreach ($duplicateGroups as $dupGroup): ?>
-                            <?php $groupLabel = trim((string) ($dupGroup[0]['category'] ?? '')) . ' - ' . trim((string) ($dupGroup[0]['name'] ?? '')); ?>
+                            <?php $groupLabel = receptionist_lab_category_label($dupGroup[0]['category'] ?? '') . ' - ' . trim((string) ($dupGroup[0]['name'] ?? '')); ?>
                             <div class="dup-group">
                                 <h3><?php echo htmlspecialchars($groupLabel !== ' - ' ? $groupLabel : 'Unnamed service'); ?> <span class="pill neutral"><?php echo count($dupGroup); ?></span></h3>
                                 <?php foreach ($dupGroup as $row): ?>
                                     <div class="dup-item">
-                                        <div class="dup-meta"><strong><?php echo htmlspecialchars($row['name']); ?></strong><small>Category: <?php echo htmlspecialchars($row['category']); ?> | OPD: <?php echo receptionist_lab_price((string) $row['opd_price']); ?> | Status: <?php echo !empty($row['is_active']) ? 'Active' : 'Inactive'; ?></small></div>
+                                        <div class="dup-meta"><strong><?php echo htmlspecialchars($row['name']); ?></strong><small>Category: <?php echo htmlspecialchars(receptionist_lab_category_label($row['category'])); ?> | OPD: <?php echo receptionist_lab_price((string) $row['opd_price']); ?> | Status: <?php echo !empty($row['is_active']) ? 'Active' : 'Inactive'; ?></small></div>
                                         <div class="dup-actions">
                                             <button type="button" class="btn small secondary js-edit-service" data-service-id="<?php echo (int) $row['id']; ?>" data-service-name="<?php echo htmlspecialchars($row['name'], ENT_QUOTES); ?>" data-service-category="<?php echo htmlspecialchars($row['category'], ENT_QUOTES); ?>" data-service-description="<?php echo htmlspecialchars($row['description'] ?? '', ENT_QUOTES); ?>" data-service-included="<?php echo htmlspecialchars($row['included_tests'] ?? '', ENT_QUOTES); ?>" data-service-opd="<?php echo htmlspecialchars((string) ($row['opd_price'] ?? '0'), ENT_QUOTES); ?>" data-service-home="<?php echo htmlspecialchars($row['home_service_price'] !== null ? (string) $row['home_service_price'] : '', ENT_QUOTES); ?>" data-service-package="<?php echo !empty($row['is_package']) ? '1' : '0'; ?>" data-service-active="<?php echo !empty($row['is_active']) ? '1' : '0'; ?>">Edit</button>
                                             <form method="post" data-confirm-form="1" data-confirm-mode="delete" data-confirm-message="Delete this service? Type DELETE to confirm." data-confirm-title="Delete service" data-confirm-button="Delete"><input type="hidden" name="receptionist_svc_action" value="delete_service"><input type="hidden" name="service_id" value="<?php echo (int) $row['id']; ?>"><button type="submit" class="btn small warn">Delete</button></form>
@@ -562,7 +611,7 @@ include 'includes/header.php';
 
     <div class="modal-overlay<?php echo $showAddModal ? ' active' : ''; ?>" id="addServiceModal" role="dialog" aria-modal="true" aria-labelledby="addServiceTitle" aria-hidden="<?php echo $showAddModal ? 'false' : 'true'; ?>">
         <div class="modal-box">
-            <div class="modal-head"><div><h2 id="addServiceTitle">Add laboratory service</h2><p style="margin:6px 0 0;color:#60727d;">Create a new test or package for the receptionist catalog and patient booking.</p></div><button type="button" class="icon-close" data-close-modal="addServiceModal" aria-label="Close add dialog">X</button></div>
+            <div class="modal-head"><div><h2 id="addServiceTitle">Add laboratory service</h2><p style="margin:6px 0 0;color:#60727d;">Create a new test or package for the clinic catalog and patient booking.</p></div><button type="button" class="icon-close" data-close-modal="addServiceModal" aria-label="Close add dialog">X</button></div>
             <form method="post"><input type="hidden" name="receptionist_svc_action" value="add_service">
                 <div class="modal-body">
                     <div class="form-grid">
@@ -619,7 +668,8 @@ include 'includes/header.php';
     const confirmMessage = document.getElementById('confirmActionMessage');
     const confirmButton = document.getElementById('confirmActionButton');
     const confirmDeleteInput = document.getElementById('confirmDeleteInput');
-    const bulkSelectedCount = document.getElementById('bulkSelectedCount');
+    const bulkSelectedCounts = Array.from(document.querySelectorAll('.bulk-count'));
+    const bulkSubmitBtns = Array.from(document.querySelectorAll('.bulkSubmitBtn'));
     const bulkToggleBtns = Array.from(document.querySelectorAll('.bulkToggleBtn'));
     const bulkDeleteForm = document.getElementById('bulkDeleteForm');
     const closeTargets = document.querySelectorAll('[data-close-modal]');
@@ -630,7 +680,8 @@ include 'includes/header.php';
     function updateBulkState() {
         const checks = Array.from(document.querySelectorAll('.bulk-check'));
         const selected = checks.filter(function (check) { return check.checked; }).length;
-        if (bulkSelectedCount) bulkSelectedCount.textContent = selected;
+        bulkSelectedCounts.forEach(function (counter) { counter.textContent = selected; });
+        bulkSubmitBtns.forEach(function (btn) { btn.disabled = selected === 0; });
         bulkToggleBtns.forEach(function (btn) { btn.textContent = bulkMode ? 'Cancel delete' : 'Selected delete'; });
         document.querySelectorAll('.js-select-visible').forEach(function (master) {
             const table = master.closest('table');
@@ -645,6 +696,25 @@ include 'includes/header.php';
         bulkMode = !!nextMode;
         document.body.classList.toggle('bulk-mode', bulkMode);
         updateBulkState();
+    }
+
+    function cancelBulkDelete() {
+        document.querySelectorAll('.bulk-check').forEach(function (check) { check.checked = false; });
+        document.querySelectorAll('.js-select-visible').forEach(function (master) {
+            master.checked = false;
+            master.indeterminate = false;
+        });
+        setBulkMode(false);
+        if (confirmModal && confirmModal.classList.contains('active')) {
+            closeModal(confirmModal);
+            pendingForm = null;
+            pendingMode = 'simple';
+            if (confirmDeleteInput) {
+                confirmDeleteInput.value = '';
+                confirmDeleteInput.classList.remove('active');
+            }
+            if (confirmButton) confirmButton.disabled = false;
+        }
     }
 
     function openModal(modal) {
@@ -669,26 +739,13 @@ include 'includes/header.php';
 
     bulkToggleBtns.forEach(function (bulkToggleBtn) {
         bulkToggleBtn.addEventListener('click', function () {
-            const selected = Array.from(document.querySelectorAll('.bulk-check')).filter(function (check) { return check.checked; }).length;
             if (!bulkMode) {
                 setBulkMode(true);
                 const firstCheck = document.querySelector('.bulk-check:not(:disabled)');
                 if (firstCheck) firstCheck.focus();
                 return;
             }
-            document.querySelectorAll('.bulk-check').forEach(function (check) { check.checked = false; });
-            setBulkMode(false);
-            if (bulkSelectedCount) bulkSelectedCount.textContent = '0';
-            if (selected > 0 && confirmModal && confirmModal.classList.contains('active')) {
-                closeModal(confirmModal);
-                pendingForm = null;
-                pendingMode = 'simple';
-                if (confirmDeleteInput) {
-                    confirmDeleteInput.value = '';
-                    confirmDeleteInput.classList.remove('active');
-                }
-                confirmButton.disabled = false;
-            }
+            cancelBulkDelete();
         });
     });
 
@@ -747,6 +804,11 @@ include 'includes/header.php';
         form.addEventListener('submit', function (e) {
             const message = form.getAttribute('data-confirm-message') || '';
             if (!message) return;
+            if (form === bulkDeleteForm && Array.from(document.querySelectorAll('.bulk-check')).filter(function (check) { return check.checked; }).length === 0) {
+                e.preventDefault();
+                setBulkMode(true);
+                return;
+            }
             e.preventDefault();
             pendingForm = form;
             pendingMode = form.getAttribute('data-confirm-mode') || 'simple';

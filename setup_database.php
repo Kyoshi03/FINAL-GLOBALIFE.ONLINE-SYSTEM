@@ -46,10 +46,15 @@ try {
         id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(50) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
-        full_name VARCHAR(100) NOT NULL,
-        role ENUM('admin', 'nurse', 'receptionist', 'patient') NOT NULL,
+        first_name VARCHAR(40) DEFAULT NULL,
+        middle_name VARCHAR(10) DEFAULT NULL,
+        last_name VARCHAR(40) DEFAULT NULL,
+        suffix VARCHAR(10) DEFAULT NULL,
+        role ENUM('admin', 'patient', 'doctor') NOT NULL,
         email VARCHAR(100),
+        email_verified_at DATETIME DEFAULT NULL,
         phone VARCHAR(20),
+        phone_verified_at DATETIME DEFAULT NULL,
         gender ENUM('Male', 'Female', 'Other') DEFAULT NULL,
         date_of_birth DATE DEFAULT NULL,
         age INT DEFAULT NULL,
@@ -71,6 +76,12 @@ try {
     
     // Add columns if they don't exist (for existing tables)
     $columns_to_add = [
+        ['first_name', "VARCHAR(40) DEFAULT NULL", 'password'],
+        ['middle_name', "VARCHAR(10) DEFAULT NULL", 'first_name'],
+        ['last_name', "VARCHAR(40) DEFAULT NULL", 'middle_name'],
+        ['suffix', "VARCHAR(10) DEFAULT NULL", 'last_name'],
+        ['email_verified_at', 'DATETIME DEFAULT NULL', 'email'],
+        ['phone_verified_at', 'DATETIME DEFAULT NULL', 'phone'],
         ['gender', "ENUM('Male', 'Female', 'Other') DEFAULT NULL", 'phone'],
         ['date_of_birth', 'DATE DEFAULT NULL', 'gender'],
         ['age', 'INT DEFAULT NULL', 'date_of_birth'],
@@ -108,6 +119,10 @@ try {
         appointment_time TIME NOT NULL,
         status ENUM('pending', 'confirmed', 'completed', 'cancelled') DEFAULT 'pending',
         notes TEXT,
+        cancellation_reason TEXT DEFAULT NULL,
+        booking_type ENUM('package','individual','consultation','ultrasound') DEFAULT NULL,
+        total_display_price DECIMAL(10,2) DEFAULT NULL,
+        price_channel ENUM('opd','home') DEFAULT 'opd',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";

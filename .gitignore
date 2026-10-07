@@ -1,4 +1,9 @@
-config/production.php
-config/mail.production.php
-config/mail.local.php
 logs/*.log
+logs/*.lock
+uploads/patient_photos/
+storage/patient_photos/
+config/production.php
+config/mail.local.php
+config/mail.production.php
+config/sms.php
+hostinger_debug.php

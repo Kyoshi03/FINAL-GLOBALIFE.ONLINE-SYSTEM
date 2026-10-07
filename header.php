@@ -1,4 +1,7 @@
 <?php
+if (!function_exists('isLoggedIn')) {
+    require_once __DIR__ . '/session.php';
+}
 if (!isset($pageTitle)) {
     $pageTitle = "Globalife Medical Laboratory & Polyclinic";
 }
@@ -226,7 +229,7 @@ $currentUser = isLoggedIn() ? getCurrentUser() : null;
 <body>
     <header id="mainHeader">
         <div class="header-flex">
-            <a href="<?php echo isLoggedIn() ? ($currentUser['role'] === 'patient' ? 'patients.php' : ($currentUser['role'] === 'admin' ? 'admin.php' : ($currentUser['role'] === 'nurse' ? 'nurse.php' : 'receptionist.php'))) : 'index.php'; ?>" class="logo-section">
+            <a href="<?php echo isLoggedIn() ? dashboardForRole($currentUser['role']) : 'index.php'; ?>" class="logo-section">
                 <img src="globalife.png" alt="Clinic Logo" class="logo-img">
                 <h1>Globalife Medical Laboratory & Polyclinic</h1>
             </a>
@@ -235,17 +238,13 @@ $currentUser = isLoggedIn() ? getCurrentUser() : null;
                 <?php if (isLoggedIn()): ?>
                     <?php if ($currentUser['role'] === 'admin'): ?>
                         <a href="admin.php" class="<?php echo basename($_SERVER['PHP_SELF']) === 'admin.php' ? 'active' : ''; ?>">Dashboard</a>
-                        <a href="#">Users</a>
-                        <a href="#">Appointments</a>
+                        <a href="admin_accounts.php">Accounts</a>
+                        <a href="admin_view_appointments.php">Appointments</a>
                         <a href="#">Settings</a>
-                    <?php elseif ($currentUser['role'] === 'nurse'): ?>
-                        <a href="nurse.php" class="<?php echo basename($_SERVER['PHP_SELF']) === 'nurse.php' ? 'active' : ''; ?>">Dashboard</a>
-                        <a href="#">Patients</a>
-                    <?php elseif ($currentUser['role'] === 'receptionist'): ?>
-                        <a href="receptionist.php" class="<?php echo basename($_SERVER['PHP_SELF']) === 'receptionist.php' ? 'active' : ''; ?>">Dashboard</a>
-                        <a href="#">Appointments</a>
-                        <a href="#">Patients</a>
-                        <a href="#">Doctors</a>
+                    <?php elseif ($currentUser['role'] === 'doctor'): ?>
+                        <a href="doctor.php" class="<?php echo basename($_SERVER['PHP_SELF']) === 'doctor.php' ? 'active' : ''; ?>">Dashboard</a>
+                        <a href="doctor_view_appointments.php" class="<?php echo basename($_SERVER['PHP_SELF']) === 'doctor_view_appointments.php' ? 'active' : ''; ?>">Appointments</a>
+                        <a href="doctor_patients.php" class="<?php echo basename($_SERVER['PHP_SELF']) === 'doctor_patients.php' ? 'active' : ''; ?>">Patient List</a>
                     <?php elseif ($currentUser['role'] === 'patient'): ?>
                         <div class="user-info">
                             <div class="user-avatar"><?php echo strtoupper(substr($currentUser['full_name'], 0, 1)); ?></div>

@@ -1,11 +1,11 @@
 <?php
 require_once 'includes/session.php';
-checkRole('receptionist');
+checkRole('admin');
 
 require_once 'config/database.php';
 require_once __DIR__ . '/includes/doctor_schedule.php';
 
-$pageTitle = 'Doctor schedules | Receptionist';
+$pageTitle = 'Doctor schedules | Globalife Administration';
 $conn = getDBConnection();
 init_doctor_schema_and_accounts($conn);
 
@@ -141,7 +141,8 @@ if ($error !== '' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 $editDoctor = null;
 $editSlots = [];
 if ($editId > 0) {
-    $stmt = $conn->prepare("SELECT id, full_name, specialty, email, phone, COALESCE(is_active, 1) AS is_active FROM users WHERE id = ? AND role = 'doctor'");
+    $doctorNameSql = dbUsersNameExpression();
+    $stmt = $conn->prepare("SELECT id, {$doctorNameSql} AS full_name, specialty, email, phone, COALESCE(is_active, 1) AS is_active FROM users WHERE id = ? AND role = 'doctor'");
     $stmt->bind_param('i', $editId);
     $stmt->execute();
     $editDoctor = $stmt->get_result()->fetch_assoc();
@@ -154,7 +155,8 @@ if ($editId > 0) {
 }
 
 $doctors = [];
-$result = $conn->query("SELECT id, full_name, specialty, email, phone, COALESCE(is_active, 1) AS is_active FROM users WHERE role = 'doctor' ORDER BY full_name ASC");
+$doctorNameSql = dbUsersNameExpression();
+$result = $conn->query("SELECT id, {$doctorNameSql} AS full_name, specialty, email, phone, COALESCE(is_active, 1) AS is_active FROM users WHERE role = 'doctor' ORDER BY {$doctorNameSql} ASC");
 if ($result) {
     while ($doctor = $result->fetch_assoc()) {
         $doctor['slots'] = doctor_fetch_availability_slots($conn, (int) $doctor['id']);
@@ -401,9 +403,6 @@ include 'includes/header.php';
                                     <div class="schedule-line"><?php echo htmlspecialchars(rd_slot_label($slot, $dayNames)); ?></div>
                                 <?php endforeach; ?>
                             <?php endif; ?>
-                        </div>
-                        <div class="doctor-actions">
-                            <a class="rd-btn secondary" href="receptionist_doctors.php?edit=<?php echo (int) $doctor['id']; ?>"><?php echo $hasSchedule ? 'Edit schedule' : 'Add schedule'; ?></a>
                         </div>
                     </article>
                 <?php endforeach; ?>

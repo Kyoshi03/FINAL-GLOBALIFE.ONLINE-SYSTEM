@@ -36,7 +36,7 @@ function pw_reset_issue_code(string $email): array {
     $email = trim(strtolower($email));
     $conn = getDBConnection();
 
-    $stmt = $conn->prepare('SELECT id, email, full_name FROM users WHERE LOWER(email) = ? LIMIT 1');
+    $stmt = $conn->prepare("SELECT id, email, first_name, middle_name, last_name, suffix FROM users WHERE LOWER(email) = ? LIMIT 1");
     $stmt->bind_param('s', $email);
     $stmt->execute();
     $user = $stmt->get_result()->fetch_assoc();
@@ -85,7 +85,7 @@ function pw_reset_issue_code(string $email): array {
 
     $sent = clinic_send_otp_email(
         (string) $user['email'],
-        (string) ($user['full_name'] ?? ''),
+        clinic_name_display_from_row($user, ''),
         $code,
         'password_reset'
     );

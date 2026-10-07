@@ -1,8 +1,336 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/mailer.php';
+require_once __DIR__ . '/sms.php';
+require_once __DIR__ . '/notification_settings.php';
+require_once __DIR__ . '/appointment_capacity.php';
 require_once __DIR__ . '/doctor_schedule.php';
 require_once __DIR__ . '/lab_services_seed_data.php';
+require_once __DIR__ . '/admin_notifications.php';
+require_once __DIR__ . '/patient_notifications.php';
+require_once __DIR__ . '/clinic_notifications.php';
+
+function appointment_doctor_daily_limit(): int {
+    return (int) appointment_capacity_settings()['doctor_limit'];
+}
+
+function appointment_lab_daily_limit(): int {
+    return (int) appointment_capacity_settings()['laboratory_limit'];
+}
+
+function appointment_consultation_daily_limit(): int {
+    return appointment_doctor_daily_limit();
+}
+
+function appointment_ultrasound_daily_limit(): int {
+    return (int) appointment_capacity_settings()['ultrasound_limit'];
+}
+
+function appointment_consultation_daily_count(mysqli $conn, string $date): int {
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        return 0;
+    }
+
+    $stmt = $conn->prepare(
+        "SELECT COUNT(*) AS total
+         FROM appointments
+         WHERE appointment_date = ?
+           AND booking_type = 'consultation'
+           AND status <> 'cancelled'"
+    );
+    $stmt->bind_param('s', $date);
+    $stmt->execute();
+    $count = (int) ($stmt->get_result()->fetch_assoc()['total'] ?? 0);
+    $stmt->close();
+    return $count;
+}
+
+/** @return array<string,int> */
+function appointment_consultation_daily_counts_between(mysqli $conn, string $dateFrom, string $dateTo): array {
+    $counts = [];
+    $stmt = $conn->prepare(
+        "SELECT appointment_date, COUNT(*) AS total
+         FROM appointments
+         WHERE appointment_date >= ?
+           AND appointment_date < ?
+           AND booking_type = 'consultation'
+           AND status <> 'cancelled'
+         GROUP BY appointment_date"
+    );
+    $stmt->bind_param('ss', $dateFrom, $dateTo);
+    $stmt->execute();
+    foreach ($stmt->get_result()->fetch_all(MYSQLI_ASSOC) as $row) {
+        $date = (string) ($row['appointment_date'] ?? '');
+        if ($date !== '') {
+            $counts[$date] = (int) ($row['total'] ?? 0);
+        }
+    }
+    $stmt->close();
+    return $counts;
+}
+
+/** @return array{booked:int,remaining:int,limit:int,is_full:bool} */
+function appointment_consultation_day_capacity(mysqli $conn, string $date): array {
+    $booked = appointment_consultation_daily_count($conn, $date);
+    $limit = appointment_consultation_daily_limit();
+    return [
+        'booked' => $booked,
+        'remaining' => max(0, $limit - $booked),
+        'limit' => $limit,
+        'is_full' => $booked >= $limit,
+    ];
+}
+
+function appointment_doctor_daily_count(mysqli $conn, int $doctorId, string $date): int {
+    if ($doctorId <= 0 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        return 0;
+    }
+
+    $stmt = $conn->prepare(
+        "SELECT COUNT(*) AS total
+         FROM appointments
+         WHERE doctor_id = ?
+           AND appointment_date = ?
+           AND booking_type = 'consultation'
+           AND status <> 'cancelled'"
+    );
+    $stmt->bind_param('is', $doctorId, $date);
+    $stmt->execute();
+    $count = (int) ($stmt->get_result()->fetch_assoc()['total'] ?? 0);
+    $stmt->close();
+    return $count;
+}
+
+/**
+ * @return array<int,array<string,int>>
+ */
+function appointment_doctor_daily_counts_between(
+    mysqli $conn,
+    string $dateFrom,
+    string $dateTo,
+    array $doctorIds = []
+): array {
+    $counts = [];
+    $doctorIds = array_values(array_unique(array_filter(
+        array_map('intval', $doctorIds),
+        static fn (int $id): bool => $id > 0
+    )));
+
+    $sql = "SELECT doctor_id, appointment_date, COUNT(*) AS total
+            FROM appointments
+            WHERE doctor_id IS NOT NULL
+              AND appointment_date >= ?
+              AND appointment_date < ?
+              AND booking_type = 'consultation'
+              AND status <> 'cancelled'";
+    if ($doctorIds) {
+        $sql .= ' AND doctor_id IN (' . implode(',', $doctorIds) . ')';
+    }
+    $sql .= ' GROUP BY doctor_id, appointment_date';
+
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param('ss', $dateFrom, $dateTo);
+    $stmt->execute();
+    foreach ($stmt->get_result()->fetch_all(MYSQLI_ASSOC) as $row) {
+        $doctorId = (int) ($row['doctor_id'] ?? 0);
+        $date = (string) ($row['appointment_date'] ?? '');
+        if ($doctorId > 0 && $date !== '') {
+            $counts[$doctorId][$date] = (int) ($row['total'] ?? 0);
+        }
+    }
+    $stmt->close();
+    return $counts;
+}
+
+function appointment_doctor_day_capacity(mysqli $conn, int $doctorId, string $date): array {
+    $booked = appointment_doctor_daily_count($conn, $doctorId, $date);
+    $limit = appointment_doctor_daily_limit();
+    return [
+        'booked' => $booked,
+        'remaining' => max(0, $limit - $booked),
+        'limit' => $limit,
+        'is_full' => $booked >= $limit,
+    ];
+}
+
+function appointment_lab_daily_count(mysqli $conn, string $date): int {
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        return 0;
+    }
+
+    $stmt = $conn->prepare(
+        "SELECT COUNT(*) AS total
+         FROM appointments
+         WHERE appointment_date = ?
+           AND booking_type IN ('package', 'individual')
+           AND status <> 'cancelled'"
+    );
+    $stmt->bind_param('s', $date);
+    $stmt->execute();
+    $count = (int) ($stmt->get_result()->fetch_assoc()['total'] ?? 0);
+    $stmt->close();
+    return $count;
+}
+
+/**
+ * @return array<string,int>
+ */
+function appointment_lab_daily_counts_between(mysqli $conn, string $dateFrom, string $dateTo): array {
+    $counts = [];
+    $stmt = $conn->prepare(
+        "SELECT appointment_date, COUNT(*) AS total
+         FROM appointments
+         WHERE appointment_date >= ?
+           AND appointment_date < ?
+           AND booking_type IN ('package', 'individual')
+           AND status <> 'cancelled'
+         GROUP BY appointment_date"
+    );
+    $stmt->bind_param('ss', $dateFrom, $dateTo);
+    $stmt->execute();
+    foreach ($stmt->get_result()->fetch_all(MYSQLI_ASSOC) as $row) {
+        $date = (string) ($row['appointment_date'] ?? '');
+        if ($date !== '') {
+            $counts[$date] = (int) ($row['total'] ?? 0);
+        }
+    }
+    $stmt->close();
+    return $counts;
+}
+
+function appointment_lab_day_capacity(mysqli $conn, string $date): array {
+    $booked = appointment_lab_daily_count($conn, $date);
+    $limit = appointment_lab_daily_limit();
+    return [
+        'booked' => $booked,
+        'remaining' => max(0, $limit - $booked),
+        'limit' => $limit,
+        'is_full' => $booked >= $limit,
+    ];
+}
+
+function appointment_ultrasound_daily_count(mysqli $conn, string $date): int {
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        return 0;
+    }
+
+    $stmt = $conn->prepare(
+        "SELECT COUNT(*) AS total
+         FROM appointments
+         WHERE appointment_date = ?
+           AND booking_type = 'ultrasound'
+           AND status <> 'cancelled'"
+    );
+    $stmt->bind_param('s', $date);
+    $stmt->execute();
+    $count = (int) ($stmt->get_result()->fetch_assoc()['total'] ?? 0);
+    $stmt->close();
+    return $count;
+}
+
+/** @return array<string,int> */
+function appointment_ultrasound_daily_counts_between(mysqli $conn, string $dateFrom, string $dateTo): array {
+    $counts = [];
+    $stmt = $conn->prepare(
+        "SELECT appointment_date, COUNT(*) AS total
+         FROM appointments
+         WHERE appointment_date >= ?
+           AND appointment_date < ?
+           AND booking_type = 'ultrasound'
+           AND status <> 'cancelled'
+         GROUP BY appointment_date"
+    );
+    $stmt->bind_param('ss', $dateFrom, $dateTo);
+    $stmt->execute();
+    foreach ($stmt->get_result()->fetch_all(MYSQLI_ASSOC) as $row) {
+        $date = (string) ($row['appointment_date'] ?? '');
+        if ($date !== '') {
+            $counts[$date] = (int) ($row['total'] ?? 0);
+        }
+    }
+    $stmt->close();
+    return $counts;
+}
+
+/** @return array{booked:int,remaining:int,limit:int,is_full:bool} */
+function appointment_ultrasound_day_capacity(mysqli $conn, string $date): array {
+    $booked = appointment_ultrasound_daily_count($conn, $date);
+    $limit = appointment_ultrasound_daily_limit();
+    return [
+        'booked' => $booked,
+        'remaining' => max(0, $limit - $booked),
+        'limit' => $limit,
+        'is_full' => $booked >= $limit,
+    ];
+}
+
+function appointment_init_queue_schema(mysqli $conn): void {
+    $conn->query("CREATE TABLE IF NOT EXISTS clinic_queue (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        queue_date DATE NOT NULL,
+        queue_type ENUM('walk_in','online') NOT NULL DEFAULT 'online',
+        queue_number VARCHAR(12) NOT NULL,
+        patient_id INT NOT NULL,
+        appointment_id INT DEFAULT NULL,
+        service VARCHAR(160) NOT NULL DEFAULT 'General Consultation',
+        status ENUM('waiting','serving','completed') NOT NULL DEFAULT 'waiting',
+        time_added DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        time_called DATETIME DEFAULT NULL,
+        completed_at DATETIME DEFAULT NULL,
+        UNIQUE KEY unique_daily_queue (queue_date, queue_number),
+        KEY idx_queue_day_status (queue_date, status, queue_type, id),
+        KEY idx_queue_patient (patient_id),
+        KEY idx_queue_appointment (appointment_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
+    $conn->query("CREATE TABLE IF NOT EXISTS clinic_queue_services (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        queue_id INT NOT NULL,
+        service_id INT DEFAULT NULL,
+        service_name VARCHAR(255) NOT NULL,
+        unit_price DECIMAL(10,2) NOT NULL DEFAULT 0,
+        quantity INT NOT NULL DEFAULT 1,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        KEY idx_queue_services_queue (queue_id),
+        KEY idx_queue_services_service (service_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
+}
+
+function appointment_next_online_queue_number(mysqli $conn, string $date): string {
+    $type = 'online';
+    $stmt = $conn->prepare("SELECT queue_number FROM clinic_queue WHERE queue_date = ? AND queue_type = ? ORDER BY id DESC LIMIT 1");
+    $stmt->bind_param('ss', $date, $type);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    $next = 1;
+    if ($row && preg_match('/-(\d+)$/', (string) $row['queue_number'], $matches)) {
+        $next = (int) $matches[1] + 1;
+    }
+    return 'O-' . str_pad((string) $next, 3, '0', STR_PAD_LEFT);
+}
+
+function appointment_create_online_queue(mysqli $conn, int $appointmentId, int $patientId, string $date, string $service): string {
+    $existingStmt = $conn->prepare("SELECT queue_number FROM clinic_queue WHERE appointment_id = ? LIMIT 1");
+    $existingStmt->bind_param('i', $appointmentId);
+    $existingStmt->execute();
+    $existing = $existingStmt->get_result()->fetch_assoc();
+    $existingStmt->close();
+    if ($existing) {
+        return (string) $existing['queue_number'];
+    }
+
+    $queueNumber = appointment_next_online_queue_number($conn, $date);
+    $queueType = 'online';
+    $insertStmt = $conn->prepare("INSERT INTO clinic_queue (queue_date, queue_type, queue_number, patient_id, appointment_id, service, status) VALUES (?, ?, ?, ?, ?, ?, 'waiting')");
+    $insertStmt->bind_param('sssiis', $date, $queueType, $queueNumber, $patientId, $appointmentId, $service);
+    if (!$insertStmt->execute()) {
+        throw new RuntimeException('Could not generate the queue number.');
+    }
+    $insertStmt->close();
+
+    return $queueNumber;
+}
 
 function appointment_mask_email(string $email): string {
     $email = trim($email);
@@ -45,9 +373,33 @@ function appointment_fetch_services(mysqli $conn, array $serviceIds): array {
     return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
 
+function appointment_clinic_is_open_at(string $date, string $time): bool {
+    $timestamp = strtotime($date);
+    if ($timestamp === false) {
+        return false;
+    }
+
+    $dayOfWeek = (int) date('N', $timestamp);
+    if ($dayOfWeek < 1 || $dayOfWeek > 6) {
+        return false;
+    }
+
+    $normalizedTime = substr(trim($time), 0, 5);
+    return $normalizedTime >= '08:00' && $normalizedTime <= '17:00';
+}
+
+function appointment_ultrasound_is_available_date(string $date): bool {
+    $timestamp = strtotime($date);
+    if ($timestamp === false) {
+        return false;
+    }
+
+    return in_array((int) date('N', $timestamp), [3, 6], true);
+}
+
 function appointment_validate_payload(mysqli $conn, int $patientId, array $payload): array {
     $type = (string) ($payload['type'] ?? '');
-    if (!in_array($type, ['package', 'individual'], true)) {
+    if (!in_array($type, ['package', 'individual', 'consultation', 'ultrasound'], true)) {
         return ['ok' => false, 'error' => 'The selected appointment type is invalid. Please review your booking again.'];
     }
 
@@ -68,27 +420,80 @@ function appointment_validate_payload(mysqli $conn, int $patientId, array $paylo
     if ($appointmentAt <= $now) {
         return ['ok' => false, 'error' => 'The selected appointment time has already passed. Please choose a future schedule.'];
     }
-
-    $serviceIds = array_values(array_unique(array_filter(
-        array_map('intval', (array) ($payload['service_ids'] ?? [])),
-        static fn ($id) => $id > 0
-    )));
-    $services = appointment_fetch_services($conn, $serviceIds);
-    if (empty($serviceIds) || count($services) !== count($serviceIds)) {
-        return ['ok' => false, 'error' => 'One or more selected services are no longer available. Please review your booking again.'];
+    if ($type === 'ultrasound' && !appointment_ultrasound_is_available_date($date)) {
+        return ['ok' => false, 'error' => 'Ultra sound appointments are available on Wednesday and Saturday only. Please choose another date.'];
+    }
+    if ($type !== 'consultation' && !appointment_clinic_is_open_at($date, $time)) {
+        return ['ok' => false, 'error' => 'The clinic is open Monday to Saturday, from 8:00 AM to 5:00 PM. Please choose a schedule within clinic hours.'];
     }
 
-    foreach ($services as $service) {
-        if (!lab_booking_service_matches_type($service, $type)) {
-            return ['ok' => false, 'error' => 'One of the selected services does not match this booking type.'];
+    $serviceIds = [];
+    $services = [];
+    if (in_array($type, ['package', 'individual'], true)) {
+        $serviceIds = array_values(array_unique(array_filter(
+            array_map('intval', (array) ($payload['service_ids'] ?? [])),
+            static fn ($id) => $id > 0
+        )));
+        $services = appointment_fetch_services($conn, $serviceIds);
+        if (empty($serviceIds) || count($services) !== count($serviceIds)) {
+            return ['ok' => false, 'error' => 'One or more selected services are no longer available. Please review your booking again.'];
+        }
+
+        foreach ($services as $service) {
+            if (!lab_booking_service_matches_type($service, $type)) {
+                return ['ok' => false, 'error' => 'One of the selected services does not match this booking type.'];
+            }
         }
     }
 
-    $doctorId = $type === 'individual' ? (int) ($payload['doctor_id'] ?? 0) : 0;
-    if ($type === 'individual') {
-        if ($doctorId <= 0 || !user_is_doctor_available_at($conn, $doctorId, $date, $time)) {
-            return ['ok' => false, 'error' => 'The selected doctor is no longer available at that time. Please choose another schedule.'];
+    $doctorId = (int) ($payload['doctor_id'] ?? 0);
+    $doctorName = '';
+    if ($type === 'consultation') {
+        if ($doctorId <= 0) {
+            return ['ok' => false, 'error' => 'Please choose a doctor for your consultation.'];
         }
+
+        $doctorStmt = $conn->prepare(
+           "SELECT " . dbUsersNameExpression() . " AS full_name
+             FROM users
+             WHERE id = ? AND role = 'doctor' AND COALESCE(is_active, 1) = 1
+             LIMIT 1"
+        );
+        $doctorStmt->bind_param('i', $doctorId);
+        $doctorStmt->execute();
+        $doctorRow = $doctorStmt->get_result()->fetch_assoc();
+        $doctorStmt->close();
+        if (!$doctorRow) {
+            return ['ok' => false, 'error' => 'The selected doctor is no longer available. Please choose another doctor.'];
+        }
+        if (!user_is_doctor_available_at($conn, $doctorId, $date, $time)) {
+            return ['ok' => false, 'error' => 'The selected doctor is not available on that schedule. Please choose another date.'];
+        }
+
+        $doctorName = (string) ($doctorRow['full_name'] ?? 'Selected doctor');
+        $capacity = appointment_doctor_day_capacity($conn, $doctorId, $date);
+        if ($capacity['is_full']) {
+            return [
+                'ok' => false,
+                'error' => 'This doctor is fully booked on the selected date ('
+                    . $capacity['booked'] . '/' . $capacity['limit']
+                    . ' bookings). Please choose another date.',
+            ];
+        }
+    } else {
+        $capacity = $type === 'ultrasound'
+            ? appointment_ultrasound_day_capacity($conn, $date)
+            : appointment_lab_day_capacity($conn, $date);
+        if ($capacity['is_full']) {
+            return [
+                'ok' => false,
+                'error' => ($type === 'ultrasound' ? 'Ultra sound appointments' : 'Laboratory appointments')
+                    . ' are fully booked on the selected date ('
+                    . $capacity['booked'] . '/' . $capacity['limit']
+                    . ' bookings). Please choose another date.',
+            ];
+        }
+        $doctorId = 0;
     }
 
     $duplicate = $conn->prepare(
@@ -105,7 +510,7 @@ function appointment_validate_payload(mysqli $conn, int $patientId, array $paylo
         return ['ok' => false, 'error' => 'You already have an appointment at this date and time.'];
     }
 
-    $userStmt = $conn->prepare("SELECT full_name, email, phone FROM users WHERE id = ? AND role = 'patient' LIMIT 1");
+    $userStmt = $conn->prepare("SELECT " . dbUsersNameExpression() . " AS full_name, email, phone FROM users WHERE id = ? AND role = 'patient' LIMIT 1");
     $userStmt->bind_param('i', $patientId);
     $userStmt->execute();
     $patient = $userStmt->get_result()->fetch_assoc();
@@ -113,28 +518,20 @@ function appointment_validate_payload(mysqli $conn, int $patientId, array $paylo
     if (!$patient) {
         return ['ok' => false, 'error' => 'Your patient account could not be found. Please sign in again.'];
     }
-    if (!filter_var((string) ($patient['email'] ?? ''), FILTER_VALIDATE_EMAIL)) {
-        return ['ok' => false, 'error' => 'Add a valid email address to your patient profile before booking an appointment.'];
+    $patientEmailValid = filter_var((string) ($patient['email'] ?? ''), FILTER_VALIDATE_EMAIL);
+    $patientPhoneValid = clinic_sms_normalize_phone((string) ($patient['phone'] ?? '')) !== null;
+    if (!$patientEmailValid && !$patientPhoneValid) {
+        return ['ok' => false, 'error' => 'Add a valid Philippine mobile number to your patient profile before booking an appointment.'];
     }
 
-    $channel = $type === 'package'
-        ? 'opd'
-        : (((string) ($payload['price_channel'] ?? 'opd')) === 'home' ? 'home' : 'opd');
-    $serviceNames = [];
+    $channel = 'opd';
+    $serviceNames = $type === 'consultation'
+        ? ['Doctor consultation']
+        : ($type === 'ultrasound' ? ['Ultra sound'] : []);
     $total = 0.0;
     foreach ($services as $service) {
         $serviceNames[] = (string) $service['name'];
         $total += appointment_unit_price($service, $channel);
-    }
-
-    $doctorName = '';
-    if ($doctorId > 0) {
-        $doctorStmt = $conn->prepare("SELECT full_name FROM users WHERE id = ? AND role = 'doctor' LIMIT 1");
-        $doctorStmt->bind_param('i', $doctorId);
-        $doctorStmt->execute();
-        $doctor = $doctorStmt->get_result()->fetch_assoc();
-        $doctorStmt->close();
-        $doctorName = (string) ($doctor['full_name'] ?? '');
     }
 
     return [
@@ -153,145 +550,6 @@ function appointment_validate_payload(mysqli $conn, int $patientId, array $paylo
         'patient' => $patient,
         'doctor_name' => $doctorName,
     ];
-}
-
-function appointment_issue_verification(mysqli $conn, int $patientId, array $payload): array {
-    $validated = appointment_validate_payload($conn, $patientId, $payload);
-    if (!$validated['ok']) {
-        return $validated;
-    }
-
-    $json = json_encode($validated['booking'], JSON_UNESCAPED_SLASHES);
-    $recent = $conn->prepare(
-        'SELECT id, booking_payload FROM appointment_booking_verifications
-         WHERE patient_id = ? AND last_sent_at >= DATE_SUB(NOW(), INTERVAL 60 SECOND)
-           AND used_at IS NULL
-         ORDER BY id DESC LIMIT 1'
-    );
-    $recent->bind_param('i', $patientId);
-    $recent->execute();
-    $recentRow = $recent->get_result()->fetch_assoc();
-    $recent->close();
-    if ($recentRow && hash_equals((string) $recentRow['booking_payload'], (string) $json)) {
-        return [
-            'ok' => true,
-            'verification_id' => (int) $recentRow['id'],
-            'email' => (string) $validated['patient']['email'],
-            'already_sent' => true,
-        ];
-    }
-
-    $invalidate = $conn->prepare(
-        'UPDATE appointment_booking_verifications
-         SET used_at = NOW()
-         WHERE patient_id = ? AND used_at IS NULL'
-    );
-    $invalidate->bind_param('i', $patientId);
-    $invalidate->execute();
-    $invalidate->close();
-
-    $code = (string) random_int(100000, 999999);
-    $hash = password_hash($code, PASSWORD_DEFAULT);
-    $email = (string) $validated['patient']['email'];
-
-    $insert = $conn->prepare(
-        'INSERT INTO appointment_booking_verifications
-            (patient_id, email, code_hash, booking_payload, expires_at, last_sent_at)
-         VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE), NOW())'
-    );
-    $insert->bind_param('isss', $patientId, $email, $hash, $json);
-    $created = $insert->execute();
-    $verificationId = (int) $conn->insert_id;
-    $insert->close();
-    if (!$created) {
-        return ['ok' => false, 'error' => 'We could not prepare the appointment verification. Please try again.'];
-    }
-
-    $sent = clinic_send_otp_email(
-        $email,
-        (string) $validated['patient']['full_name'],
-        $code,
-        'appointment'
-    );
-    if (!$sent['ok']) {
-        $disable = $conn->prepare('UPDATE appointment_booking_verifications SET used_at = NOW() WHERE id = ?');
-        $disable->bind_param('i', $verificationId);
-        $disable->execute();
-        $disable->close();
-        return ['ok' => false, 'error' => $sent['error']];
-    }
-
-    return [
-        'ok' => true,
-        'verification_id' => $verificationId,
-        'email' => $email,
-        'already_sent' => false,
-    ];
-}
-
-function appointment_get_verification(mysqli $conn, int $patientId, int $verificationId): ?array {
-    $stmt = $conn->prepare(
-        'SELECT id, patient_id, email, code_hash, booking_payload, expires_at,
-                attempts, last_sent_at, used_at
-         FROM appointment_booking_verifications
-         WHERE id = ? AND patient_id = ?
-         LIMIT 1'
-    );
-    $stmt->bind_param('ii', $verificationId, $patientId);
-    $stmt->execute();
-    $row = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-    return $row ?: null;
-}
-
-function appointment_resend_verification(mysqli $conn, int $patientId, int $verificationId): array {
-    $row = appointment_get_verification($conn, $patientId, $verificationId);
-    if (!$row || $row['used_at'] !== null) {
-        return ['ok' => false, 'error' => 'This booking verification is no longer active. Please review the appointment again.'];
-    }
-
-    $waitStmt = $conn->prepare(
-        'SELECT GREATEST(0, 60 - TIMESTAMPDIFF(SECOND, last_sent_at, NOW())) AS wait_seconds
-         FROM appointment_booking_verifications WHERE id = ?'
-    );
-    $waitStmt->bind_param('i', $verificationId);
-    $waitStmt->execute();
-    $wait = (int) ($waitStmt->get_result()->fetch_assoc()['wait_seconds'] ?? 0);
-    $waitStmt->close();
-    if ($wait > 0) {
-        return ['ok' => false, 'error' => 'Please wait ' . $wait . ' seconds before requesting another code.'];
-    }
-
-    $payload = json_decode((string) $row['booking_payload'], true);
-    $validated = appointment_validate_payload($conn, $patientId, is_array($payload) ? $payload : []);
-    if (!$validated['ok']) {
-        return $validated;
-    }
-
-    $code = (string) random_int(100000, 999999);
-    $hash = password_hash($code, PASSWORD_DEFAULT);
-    $update = $conn->prepare(
-        'UPDATE appointment_booking_verifications
-         SET code_hash = ?, expires_at = DATE_ADD(NOW(), INTERVAL 10 MINUTE),
-             attempts = 0, last_sent_at = NOW()
-         WHERE id = ? AND patient_id = ? AND used_at IS NULL'
-    );
-    $update->bind_param('sii', $hash, $verificationId, $patientId);
-    $updated = $update->execute() && $update->affected_rows === 1;
-    $update->close();
-    if (!$updated) {
-        return ['ok' => false, 'error' => 'We could not create a new verification code. Please try again.'];
-    }
-
-    $sent = clinic_send_otp_email(
-        (string) $validated['patient']['email'],
-        (string) $validated['patient']['full_name'],
-        $code,
-        'appointment'
-    );
-    return $sent['ok']
-        ? ['ok' => true]
-        : ['ok' => false, 'error' => $sent['error']];
 }
 
 function appointment_email_layout(string $title, string $intro, array $rows, string $footer): array {
@@ -323,23 +581,30 @@ function appointment_email_layout(string $title, string $intro, array $rows, str
 }
 
 function appointment_send_booking_email(array $details): array {
+    if (!clinic_notification_enabled('appointment_confirmation')) {
+        return clinic_notification_disabled_result('Appointment confirmation');
+    }
     $dateLabel = date('F j, Y', strtotime((string) $details['appointment_date']));
     $timeLabel = date('g:i A', strtotime((string) $details['appointment_time']));
+    $isClinicFeeAtDesk = in_array(($details['booking_type'] ?? ''), ['consultation', 'ultrasound'], true);
     $rows = [
         'Reference number' => '#' . (int) $details['appointment_id'],
+        'Queue number' => (string) ($details['queue_number'] ?? 'Pending'),
         'Date' => $dateLabel,
         'Time' => $timeLabel,
         'Services' => implode(', ', (array) $details['service_names']),
-        'Estimated total' => 'PHP ' . number_format((float) $details['total'], 2),
         'Status' => 'Pending clinic confirmation',
     ];
+    $rows['Payment'] = $isClinicFeeAtDesk
+        ? (($details['booking_type'] ?? '') === 'ultrasound' ? 'Ultra sound fee confirmed at clinic' : 'Consultation fee confirmed at clinic')
+        : 'Total: PHP ' . number_format((float) $details['total'], 2);
     if (!empty($details['doctor_name'])) {
         $rows['Doctor'] = (string) $details['doctor_name'];
     }
 
     $content = appointment_email_layout(
         'Appointment request received',
-        'Hello ' . (string) $details['patient_name'] . '. Your email was verified and your appointment request was submitted successfully.',
+        'Hello ' . (string) $details['patient_name'] . '. Your verification code was accepted and your appointment request was submitted successfully.',
         $rows,
         'The clinic will review your request. Payment is made at the clinic. You will receive a reminder before the appointment after the clinic confirms it.'
     );
@@ -353,7 +618,24 @@ function appointment_send_booking_email(array $details): array {
     );
 }
 
+function appointment_send_booking_sms(array $details): array {
+    if (!clinic_notification_enabled('appointment_confirmation')) {
+        return clinic_notification_disabled_result('Appointment confirmation');
+    }
+    $dateLabel = date('M j, Y', strtotime((string) $details['appointment_date']));
+    $timeLabel = date('g:i A', strtotime((string) $details['appointment_time']));
+    $message = 'Globalife: Appointment request #' . (int) $details['appointment_id']
+        . ' queue ' . (string) ($details['queue_number'] ?? '')
+        . ' received for ' . $dateLabel . ' at ' . $timeLabel
+        . '. Please wait for clinic confirmation.';
+
+    return clinic_send_sms_message((string) ($details['phone'] ?? ''), $message);
+}
+
 function appointment_send_reminder_email(array $details): array {
+    if (!clinic_notification_enabled('appointment_reminder')) {
+        return clinic_notification_disabled_result('Appointment reminder');
+    }
     $dateLabel = date('F j, Y', strtotime((string) $details['appointment_date']));
     $timeLabel = date('g:i A', strtotime((string) $details['appointment_time']));
     $rows = [
@@ -382,14 +664,31 @@ function appointment_send_reminder_email(array $details): array {
     );
 }
 
-function appointment_fetch_email_details(mysqli $conn, int $appointmentId): ?array {
+function appointment_send_reminder_sms(array $details): array {
+    if (!clinic_notification_enabled('appointment_reminder')) {
+        return clinic_notification_disabled_result('Appointment reminder');
+    }
+    $dateLabel = date('M j, Y', strtotime((string) $details['appointment_date']));
+    $timeLabel = date('g:i A', strtotime((string) $details['appointment_time']));
+    $message = 'Globalife reminder: Appointment #' . (int) $details['appointment_id']
+        . ' is on ' . $dateLabel . ' at ' . $timeLabel
+        . '. Please arrive 10-15 minutes early.';
+
+    return clinic_send_sms_message((string) ($details['phone'] ?? ''), $message);
+}
+
+function appointment_fetch_notification_details(mysqli $conn, int $appointmentId): ?array {
     $stmt = $conn->prepare(
-        "SELECT a.id AS appointment_id, a.appointment_date, a.appointment_time,
-                p.full_name AS patient_name, p.email,
-                d.full_name AS doctor_name,
+        "SELECT a.id AS appointment_id, a.appointment_date, a.appointment_time, a.booking_type, a.cancellation_reason,
+                " . dbUsersNameExpression('p') . " AS patient_name, p.email, p.phone,
+                " . dbUsersNameExpression('d') . " AS doctor_name,
                 COALESCE(
                     GROUP_CONCAT(DISTINCT ls.name ORDER BY ls.name SEPARATOR ', '),
-                    'Clinic appointment'
+                    CASE
+                        WHEN a.booking_type = 'consultation' THEN 'Doctor consultation'
+                        WHEN a.booking_type = 'ultrasound' THEN 'Ultra sound'
+                        ELSE 'Clinic appointment'
+                    END
                 ) AS services
          FROM appointments a
          INNER JOIN users p ON p.id = a.patient_id
@@ -398,7 +697,9 @@ function appointment_fetch_email_details(mysqli $conn, int $appointmentId): ?arr
          LEFT JOIN lab_services ls ON ls.id = aps.service_id
          WHERE a.id = ?
          GROUP BY a.id, a.appointment_date, a.appointment_time,
-                  p.full_name, p.email, d.full_name
+                 a.booking_type, a.cancellation_reason,
+                 p.first_name, p.middle_name, p.last_name, p.suffix, p.email, p.phone,
+                 d.first_name, d.middle_name, d.last_name, d.suffix
          LIMIT 1"
     );
     $stmt->bind_param('i', $appointmentId);
@@ -409,7 +710,10 @@ function appointment_fetch_email_details(mysqli $conn, int $appointmentId): ?arr
 }
 
 function appointment_send_clinic_confirmation_email(mysqli $conn, int $appointmentId): array {
-    $details = appointment_fetch_email_details($conn, $appointmentId);
+    if (!clinic_notification_enabled('appointment_confirmation')) {
+        return clinic_notification_disabled_result('Appointment confirmation');
+    }
+    $details = appointment_fetch_notification_details($conn, $appointmentId);
     if (!$details || !filter_var((string) ($details['email'] ?? ''), FILTER_VALIDATE_EMAIL)) {
         return ['ok' => false, 'error' => 'The patient does not have a valid email address.'];
     }
@@ -431,7 +735,7 @@ function appointment_send_clinic_confirmation_email(mysqli $conn, int $appointme
         'Your appointment is confirmed',
         'Hello ' . (string) $details['patient_name'] . '. The clinic has confirmed your Globalife appointment.',
         $rows,
-        'Please arrive 10-15 minutes early. We will also email you a reminder before your appointment.'
+        'Please arrive 10-15 minutes early. We will also send email and SMS reminders before your appointment.'
     );
 
     return clinic_send_email(
@@ -443,53 +747,102 @@ function appointment_send_clinic_confirmation_email(mysqli $conn, int $appointme
     );
 }
 
-function appointment_verify_and_create(mysqli $conn, int $patientId, int $verificationId, string $code): array {
-    $code = preg_replace('/\D+/', '', trim($code));
-    if (!preg_match('/^\d{6}$/', $code)) {
-        return ['ok' => false, 'error' => 'Enter the complete 6-digit verification code.'];
+function appointment_send_clinic_confirmation_sms(mysqli $conn, int $appointmentId): array {
+    if (!clinic_notification_enabled('appointment_confirmation')) {
+        return clinic_notification_disabled_result('Appointment confirmation');
+    }
+    $details = appointment_fetch_notification_details($conn, $appointmentId);
+    if (!$details) {
+        return ['ok' => false, 'error' => 'The appointment notification details could not be found.'];
     }
 
-    $row = appointment_get_verification($conn, $patientId, $verificationId);
-    if (!$row || $row['used_at'] !== null) {
-        return ['ok' => false, 'error' => 'This booking verification is no longer active. Please review the appointment again.'];
+    $dateLabel = date('M j, Y', strtotime((string) $details['appointment_date']));
+    $timeLabel = date('g:i A', strtotime((string) $details['appointment_time']));
+    $message = 'Globalife: Appointment #' . (int) $details['appointment_id']
+        . ' is confirmed for ' . $dateLabel . ' at ' . $timeLabel
+        . '. Please arrive 10-15 minutes early.';
+
+    return clinic_send_sms_message((string) ($details['phone'] ?? ''), $message);
+}
+
+function appointment_send_cancellation_email(mysqli $conn, int $appointmentId): array {
+    if (!clinic_notification_enabled('appointment_cancellation')) {
+        return clinic_notification_disabled_result('Appointment cancellation');
     }
 
-    $expiryStmt = $conn->prepare('SELECT expires_at < NOW() AS is_expired FROM appointment_booking_verifications WHERE id = ?');
-    $expiryStmt->bind_param('i', $verificationId);
-    $expiryStmt->execute();
-    $isExpired = (int) ($expiryStmt->get_result()->fetch_assoc()['is_expired'] ?? 1);
-    $expiryStmt->close();
-    if ($isExpired === 1) {
-        return ['ok' => false, 'error' => 'This verification code has expired. Request a new code.'];
-    }
-    if ((int) $row['attempts'] >= 5) {
-        return ['ok' => false, 'error' => 'Too many incorrect attempts. Request a new verification code.'];
-    }
-    if (!password_verify($code, (string) $row['code_hash'])) {
-        $attempt = $conn->prepare('UPDATE appointment_booking_verifications SET attempts = attempts + 1 WHERE id = ?');
-        $attempt->bind_param('i', $verificationId);
-        $attempt->execute();
-        $attempt->close();
-        $remaining = max(0, 4 - (int) $row['attempts']);
-        return [
-            'ok' => false,
-            'error' => 'Incorrect verification code. ' . $remaining . ' attempt' . ($remaining === 1 ? '' : 's') . ' remaining.',
-        ];
+    $details = appointment_fetch_notification_details($conn, $appointmentId);
+    if (!$details || !filter_var((string) ($details['email'] ?? ''), FILTER_VALIDATE_EMAIL)) {
+        return ['ok' => false, 'error' => 'The patient does not have a valid email address.'];
     }
 
-    $payload = json_decode((string) $row['booking_payload'], true);
-    $validated = appointment_validate_payload($conn, $patientId, is_array($payload) ? $payload : []);
+    $dateLabel = date('F j, Y', strtotime((string) $details['appointment_date']));
+    $timeLabel = date('g:i A', strtotime((string) $details['appointment_time']));
+    $rows = [
+        'Reference number' => '#' . (int) $details['appointment_id'],
+        'Date' => $dateLabel,
+        'Time' => $timeLabel,
+        'Services' => (string) $details['services'],
+        'Status' => 'Cancelled',
+    ];
+    if (trim((string) ($details['cancellation_reason'] ?? '')) !== '') {
+        $rows['Reason'] = (string) $details['cancellation_reason'];
+    }
+
+    $content = appointment_email_layout(
+        'Your appointment was cancelled',
+        'Hello ' . (string) $details['patient_name'] . '. Your Globalife appointment has been cancelled.',
+        $rows,
+        'Please contact the clinic if you need help booking another appointment.'
+    );
+
+    return clinic_send_email(
+        (string) $details['email'],
+        (string) $details['patient_name'],
+        'Cancelled: Globalife appointment #' . (int) $details['appointment_id'],
+        $content['html'],
+        $content['text']
+    );
+}
+
+function appointment_send_cancellation_sms(mysqli $conn, int $appointmentId): array {
+    if (!clinic_notification_enabled('appointment_cancellation')) {
+        return clinic_notification_disabled_result('Appointment cancellation');
+    }
+
+    $details = appointment_fetch_notification_details($conn, $appointmentId);
+    if (!$details) {
+        return ['ok' => false, 'error' => 'The appointment notification details could not be found.'];
+    }
+
+    $message = 'Globalife: Appointment #' . (int) $details['appointment_id'] . ' on '
+        . date('M j, Y', strtotime((string) $details['appointment_date']))
+        . ' at ' . date('g:i A', strtotime((string) $details['appointment_time']))
+        . ' was cancelled.';
+    return clinic_send_sms_message((string) ($details['phone'] ?? ''), $message);
+}
+
+function appointment_create_direct(mysqli $conn, int $patientId, array $payload): array {
+    $validated = appointment_validate_payload($conn, $patientId, $payload);
     if (!$validated['ok']) {
         return $validated;
     }
+    appointment_init_queue_schema($conn);
 
     $booking = $validated['booking'];
     $serviceNames = $validated['service_names'];
-    $notes = 'Services: ' . implode(', ', $serviceNames)
-        . ' | Channel: ' . strtoupper((string) $booking['price_channel'])
-        . ' | Est. total: PHP ' . number_format((float) $validated['total'], 2);
+    if (($booking['type'] ?? '') === 'consultation') {
+        $notes = 'Doctor consultation | ' . (string) $validated['doctor_name']
+            . ' | Consultation fee confirmed at clinic';
+    } elseif (($booking['type'] ?? '') === 'ultrasound') {
+        $notes = 'Ultra sound | Fee confirmed at clinic';
+    } else {
+        $notes = 'Services: ' . implode(', ', $serviceNames)
+            . ' | Total: PHP ' . number_format((float) $validated['total'], 2);
+    }
 
     $conn->begin_transaction();
+    $capacityLockName = '';
+    $queueNumber = '';
     try {
         $doctorId = $booking['doctor_id'];
         $appointmentDate = (string) $booking['appointment_date'];
@@ -497,6 +850,46 @@ function appointment_verify_and_create(mysqli $conn, int $patientId, int $verifi
         $bookingType = (string) $booking['type'];
         $total = (float) $validated['total'];
         $priceChannel = (string) $booking['price_channel'];
+        if ($bookingType === 'consultation') {
+            $capacityLockName = 'clinic-doctor-capacity-' . (int) $doctorId . '-' . $appointmentDate;
+            $lockStmt = $conn->prepare('SELECT GET_LOCK(?, 5) AS acquired');
+            $lockStmt->bind_param('s', $capacityLockName);
+            $lockStmt->execute();
+            $lockAcquired = (int) ($lockStmt->get_result()->fetch_assoc()['acquired'] ?? 0);
+            $lockStmt->close();
+            if ($lockAcquired !== 1) {
+                throw new RuntimeException('The selected date is being updated. Please try again.');
+            }
+
+            $capacity = appointment_doctor_day_capacity($conn, (int) $doctorId, $appointmentDate);
+            if ($capacity['is_full']) {
+                throw new RuntimeException(
+                    'This doctor is fully booked on the selected date ('
+                    . $capacity['booked'] . '/' . $capacity['limit']
+                    . ' bookings). Please choose another date.'
+                );
+            }
+        } elseif (in_array($bookingType, ['package', 'individual', 'ultrasound'], true)) {
+            $capacityLockName = 'laboratory-appointment-capacity-' . $appointmentDate;
+            $lockStmt = $conn->prepare('SELECT GET_LOCK(?, 5) AS acquired');
+            $lockStmt->bind_param('s', $capacityLockName);
+            $lockStmt->execute();
+            $lockAcquired = (int) ($lockStmt->get_result()->fetch_assoc()['acquired'] ?? 0);
+            $lockStmt->close();
+            if ($lockAcquired !== 1) {
+                throw new RuntimeException('The selected date is being updated. Please try again.');
+            }
+
+            $capacity = appointment_lab_day_capacity($conn, $appointmentDate);
+            if ($capacity['is_full']) {
+                throw new RuntimeException(
+                    ($bookingType === 'ultrasound' ? 'Ultra sound appointments' : 'Laboratory appointments')
+                    . ' are fully booked on the selected date ('
+                    . $capacity['booked'] . '/' . $capacity['limit']
+                    . ' bookings). Please choose another date.'
+                );
+            }
+        }
         if ($doctorId === null) {
             $insert = $conn->prepare(
                 "INSERT INTO appointments
@@ -559,7 +952,8 @@ function appointment_verify_and_create(mysqli $conn, int $patientId, int $verifi
             $appointmentDate . ' ' . $appointmentTime,
             $timezone
         );
-        $reminderAt = $appointmentAt->modify('-24 hours');
+        $reminderDays = clinic_notification_reminder_days();
+        $reminderAt = $appointmentAt->modify('-' . $reminderDays . ' days');
         $now = new DateTimeImmutable('now', $timezone);
         if ($reminderAt < $now) {
             $reminderAt = $now;
@@ -568,27 +962,41 @@ function appointment_verify_and_create(mysqli $conn, int $patientId, int $verifi
         $reminder = $conn->prepare(
             "INSERT INTO appointment_email_reminders
                 (appointment_id, reminder_type, scheduled_for)
-             VALUES (?, '24_hours', ?)"
+             VALUES (?, ?, ?)"
         );
-        $reminder->bind_param('is', $appointmentId, $scheduledFor);
+        $reminderType = $reminderDays . '_days';
+        $reminder->bind_param('iss', $appointmentId, $reminderType, $scheduledFor);
         if (!$reminder->execute()) {
             throw new RuntimeException('Could not schedule the appointment reminder.');
         }
         $reminder->close();
 
-        $used = $conn->prepare(
-            'UPDATE appointment_booking_verifications
-             SET used_at = NOW()
-             WHERE id = ? AND patient_id = ? AND used_at IS NULL'
+        $queueService = $bookingType === 'consultation'
+            ? 'General Consultation'
+            : ($bookingType === 'ultrasound' ? 'Ultra sound' : implode(', ', $serviceNames));
+        $queueNumber = appointment_create_online_queue(
+            $conn,
+            $appointmentId,
+            $patientId,
+            $appointmentDate,
+            $queueService
         );
-        $used->bind_param('ii', $verificationId, $patientId);
-        if (!$used->execute() || $used->affected_rows !== 1) {
-            throw new RuntimeException('This booking verification was already used.');
-        }
-        $used->close();
+
         $conn->commit();
+        if ($capacityLockName !== '') {
+            $releaseStmt = $conn->prepare('SELECT RELEASE_LOCK(?)');
+            $releaseStmt->bind_param('s', $capacityLockName);
+            $releaseStmt->execute();
+            $releaseStmt->close();
+        }
     } catch (Throwable $e) {
         $conn->rollback();
+        if ($capacityLockName !== '') {
+            $releaseStmt = $conn->prepare('SELECT RELEASE_LOCK(?)');
+            $releaseStmt->bind_param('s', $capacityLockName);
+            $releaseStmt->execute();
+            $releaseStmt->close();
+        }
         return ['ok' => false, 'error' => $e->getMessage()];
     }
 
@@ -600,14 +1008,24 @@ function appointment_verify_and_create(mysqli $conn, int $patientId, int $verifi
         'total' => $validated['total'],
         'patient_name' => (string) $validated['patient']['full_name'],
         'email' => (string) $validated['patient']['email'],
+        'phone' => (string) ($validated['patient']['phone'] ?? ''),
         'doctor_name' => (string) $validated['doctor_name'],
+        'booking_type' => (string) $booking['type'],
+        'queue_number' => $queueNumber,
     ];
     $emailResult = appointment_send_booking_email($details);
+    $smsResult = appointment_send_booking_sms($details);
+    create_patient_appointment_notification($conn, $appointmentId, 'booked');
+    create_clinic_appointment_notification($conn, $appointmentId, 'booked');
+    create_admin_appointment_notification($conn, $appointmentId, 'booked');
 
     return [
         'ok' => true,
         'appointment_id' => $appointmentId,
-        'email_sent' => (bool) $emailResult['ok'],
-        'email_error' => $emailResult['ok'] ? '' : (string) ($emailResult['error'] ?? ''),
+        'queue_number' => $queueNumber,
+        'email_sent' => (bool) ($emailResult['ok'] || !empty($emailResult['disabled'])),
+        'email_error' => ($emailResult['ok'] || !empty($emailResult['disabled'])) ? '' : (string) ($emailResult['error'] ?? ''),
+        'sms_sent' => (bool) ($smsResult['ok'] || !empty($smsResult['disabled'])),
+        'sms_error' => ($smsResult['ok'] || !empty($smsResult['disabled'])) ? '' : (string) ($smsResult['error'] ?? ''),
     ];
 }

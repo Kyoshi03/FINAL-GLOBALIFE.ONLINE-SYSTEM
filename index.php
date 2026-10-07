@@ -1,5 +1,6 @@
-﻿<?php
+<?php
 require_once 'includes/session.php';
+require_once __DIR__ . '/config/database.php';
 
 $loginError = '';
 $submittedUsername = '';
@@ -45,8 +46,18 @@ $isPatientLoggedIn = $currentUser && $currentUser['role'] === 'patient';
 $isLoggedInOnHome = $currentUser !== null;
 $currentUserDashboard = $currentUser ? dashboardForRole($currentUser['role']) : 'index.php';
 $publicLoginHref = '#patient-login';
-$publicSignUpHref = 'register_patient.php';
 $pageTitle = "Globalife Medical Appointment System";
+require_once __DIR__ . '/includes/clinic_info.php';
+$publicClinicInfo = clinic_info_defaults();
+if (function_exists('getDBConnection')) {
+    try {
+        $publicClinicInfoConn = getDBConnection();
+        $publicClinicInfo = clinic_info_get($publicClinicInfoConn);
+        $publicClinicInfoConn->close();
+    } catch (Throwable $e) {
+        $publicClinicInfo = clinic_info_defaults();
+    }
+}
 $additionalStyles = '
     body {
         background: #f5f8fa;
@@ -59,7 +70,6 @@ $additionalStyles = '
     #home,
     #visit-guide,
     #about,
-    #services,
     #contact {
         scroll-margin-top: 100px;
     }
@@ -67,7 +77,6 @@ $additionalStyles = '
     .hero .container,
     .visit-guide-section .container,
     .about-section .container,
-    #services .container,
     .patient-login-section .container,
     .contact-band .container {
         max-width: 1120px;
@@ -99,24 +108,6 @@ $additionalStyles = '
         grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
         gap: 44px;
         align-items: center;
-    }
-
-    .eyebrow {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        color: #006d77;
-        font-size: 0.9rem;
-        font-weight: 700;
-        margin-bottom: 16px;
-    }
-
-    .eyebrow::before {
-        content: "";
-        width: 34px;
-        height: 2px;
-        border-radius: 8px;
-        background: #2ec4b6;
     }
 
     .hero h2 {
@@ -195,43 +186,6 @@ $additionalStyles = '
         font-weight: 600;
     }
 
-    .patient-paths {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-bottom: 18px;
-    }
-
-    .patient-path {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 16px;
-        border-radius: 10px;
-        font-size: 0.9rem;
-        font-weight: 700;
-        text-decoration: none;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .patient-path--new {
-        background: #fff;
-        color: #0077b6;
-        border: 2px solid #48cae4;
-        box-shadow: 0 8px 18px rgba(0, 119, 182, 0.1);
-    }
-
-    .patient-path--return {
-        background: rgba(0, 119, 182, 0.08);
-        color: #073b4c;
-        border: 1px solid rgba(0, 119, 182, 0.2);
-    }
-
-    .patient-path:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 22px rgba(0, 119, 182, 0.14);
-    }
-
     .visit-guide-section {
         background: #fff;
         padding: 56px 0 64px;
@@ -291,96 +245,6 @@ $additionalStyles = '
         text-decoration: underline;
     }
 
-    .clinic-essentials {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 14px;
-        margin-top: 28px;
-    }
-
-    .essential-card {
-        display: flex;
-        gap: 14px;
-        align-items: center;
-        background: #f8fcfd;
-        border: 1px solid #dceef2;
-        border-radius: 16px;
-        padding: 20px;
-        box-shadow: 0 8px 24px rgba(13, 88, 126, 0.06);
-    }
-
-    .essential-icon {
-        flex-shrink: 0;
-        width: 54px;
-        height: 54px;
-        border-radius: 16px;
-        background: linear-gradient(145deg, #48cae4, #0077b6);
-        color: #fff;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
-    }
-
-    .essential-icon svg {
-        width: 28px;
-        height: 28px;
-        stroke-width: 2;
-    }
-
-    .essential-copy {
-        min-width: 0;
-    }
-
-    .essential-card h4 {
-        color: #073b4c;
-        font-size: 0.98rem;
-        margin: 0 0 6px;
-    }
-
-    .essential-card p {
-        color: #566872;
-        font-size: 0.88rem;
-        line-height: 1.55;
-        margin: 0;
-    }
-
-    .services-note {
-        margin-top: 22px;
-        padding: 14px 18px;
-        background: #fff8e6;
-        border: 1px solid #ffe08a;
-        border-radius: 10px;
-        color: #5c4a1a;
-        font-size: 0.92rem;
-        line-height: 1.6;
-    }
-
-    .login-first-time {
-        background: linear-gradient(135deg, #e8f8fc, #f0faf9);
-        border: 1px solid rgba(72, 202, 228, 0.5);
-        border-radius: 10px;
-        padding: 12px 14px;
-        margin-bottom: 16px;
-        font-size: 0.88rem;
-        color: #435761;
-        line-height: 1.55;
-    }
-
-    .login-first-time strong {
-        color: #0077b6;
-    }
-
-    .login-first-time a {
-        color: #0077b6;
-        font-weight: 700;
-        text-decoration: none;
-    }
-
-    .login-first-time a:hover {
-        text-decoration: underline;
-    }
-
     .field-hint {
         display: block;
         margin-top: 6px;
@@ -406,35 +270,6 @@ $additionalStyles = '
         text-decoration: none;
     }
 
-    .contact-details {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 14px;
-        margin-top: 18px;
-    }
-
-    .contact-detail-item {
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        border-radius: 10px;
-        padding: 14px 16px;
-    }
-
-    .contact-detail-item strong {
-        display: block;
-        color: #caf0f8;
-        font-size: 0.78rem;
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
-        margin-bottom: 6px;
-    }
-
-    .contact-detail-item span {
-        color: rgba(255, 255, 255, 0.9);
-        font-size: 0.9rem;
-        line-height: 1.5;
-    }
-
     .hero-panel {
         background: rgba(255, 255, 255, 0.86);
         border: 1px solid rgba(0, 119, 182, 0.16);
@@ -449,7 +284,7 @@ $additionalStyles = '
         justify-content: center;
         width: 132px;
         height: 132px;
-        margin-bottom: 24px;
+        margin: 0 auto 24px;
         border-radius: 50%;
         background: #fff;
         border: 1px solid rgba(72, 202, 228, 0.55);
@@ -461,13 +296,6 @@ $additionalStyles = '
         height: 108px;
         object-fit: contain;
         border-radius: 50%;
-    }
-
-    .panel-label {
-        color: #0077b6 !important;
-        font-size: 0.88rem !important;
-        font-weight: 700;
-        margin: 0 0 8px !important;
     }
 
     .hero-panel h3 {
@@ -590,49 +418,50 @@ $additionalStyles = '
         margin-bottom: 0;
     }
 
-    #services {
-        background: #f5f8fa;
-        padding: 72px 0;
+    .contact-us-panel {
+        margin-top: 28px;
+        padding: 28px;
+        background: #f8fcfd;
+        border: 1px solid #d8edf1;
+        border-radius: 8px;
+        box-shadow: 0 12px 24px rgba(7, 59, 76, 0.06);
     }
 
-    .services-list {
+    .contact-us-panel h4 {
+        color: #073b4c;
+        font-size: 1.35rem;
+        margin: 0 0 10px;
+    }
+
+    .contact-us-panel p {
+        color: #51636d;
+        line-height: 1.7;
+        margin: 0 0 16px;
+    }
+
+    .contact-us-list {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 16px;
+        gap: 10px;
         margin: 0;
         padding: 0;
         list-style: none;
     }
 
-    .services-list li {
-        display: grid;
-        grid-template-columns: 52px 1fr;
-        gap: 14px;
-        align-items: flex-start;
-        background: #fff;
-        border: 1px solid #dceef2;
-        border-radius: 12px;
-        padding: 22px;
-        box-shadow: 0 10px 22px rgba(7, 59, 76, 0.05);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .services-list li:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 16px 28px rgba(0, 119, 182, 0.12);
-    }
-
-    .services-list strong {
-        display: block;
+    .contact-us-list li {
         color: #073b4c;
-        margin-bottom: 6px;
+        line-height: 1.6;
     }
 
-    .services-list p {
-        color: #566872;
-        line-height: 1.55;
-        margin: 0;
-        font-size: 0.95rem;
+    .contact-us-list strong {
+        color: #006d77;
+        margin-right: 6px;
+    }
+
+    .contact-us-list a {
+        color: #0077b6;
+        font-weight: 700;
+        text-decoration: underline;
+        text-underline-offset: 4px;
     }
 
     .patient-login-section {
@@ -702,13 +531,7 @@ $additionalStyles = '
         color: #073b4c;
         font-size: 2rem;
         line-height: 1.2;
-        margin: 0 0 14px;
-    }
-
-    .patient-login-copy p {
-        color: #51636d;
-        line-height: 1.75;
-        margin: 0 0 22px;
+        margin: 0 0 18px;
     }
 
     .login-benefits {
@@ -925,9 +748,6 @@ $additionalStyles = '
 
         .mission-vision,
         .visit-steps,
-        .clinic-essentials,
-        .contact-details,
-        .services-list,
         .patient-login-grid {
             grid-template-columns: 1fr;
         }
@@ -1074,7 +894,7 @@ $additionalScripts = '
             window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
         }
 
-        document.querySelectorAll("a[href=\"#home\"], a[href=\"#visit-guide\"], a[href=\"#about\"], a[href=\"#services\"], a[href=\"#contact\"]").forEach(function (link) {
+        document.querySelectorAll("a[href=\"#home\"], a[href=\"#visit-guide\"], a[href=\"#about\"], a[href=\"#contact\"]").forEach(function (link) {
             link.addEventListener("click", function (event) {
                 const hash = link.getAttribute("href");
                 const target = hash ? document.querySelector(hash) : null;
@@ -1100,7 +920,7 @@ $additionalScripts = '
             });
         }
 
-        if (window.location.hash === "#home" || window.location.hash === "#visit-guide" || window.location.hash === "#about" || window.location.hash === "#services" || window.location.hash === "#contact") {
+        if (window.location.hash === "#home" || window.location.hash === "#visit-guide" || window.location.hash === "#about" || window.location.hash === "#contact") {
             window.setTimeout(function () {
                 scrollToPageSection(window.location.hash);
             }, 120);
@@ -1113,20 +933,9 @@ include 'includes/header.php';
     <section id="home" class="hero">
         <div class="container hero-grid">
             <div class="hero-copy">
-                <span class="eyebrow">Medical laboratory and polyclinic</span>
                 <h2>Book clinic and laboratory visits with less waiting.</h2>
-                <p>
-                    Welcome to Globalife Medical Laboratory & Polyclinic. Create your account,
-                    log in, and choose the clinic or laboratory service you need.
-                </p>
-                <div class="patient-paths">
-                    <a href="register_patient.php" class="patient-path patient-path--new">New here? Sign Up</a>
-                    <a href="#patient-login" class="patient-path patient-path--return">Already have an account? Log In</a>
-                </div>
                 <div class="hero-actions">
                     <a href="#patient-login" class="cta-btn">Book Appointment</a>
-                    <a href="#about" class="secondary-btn">About Us</a>
-                    <a href="#services" class="secondary-btn">View Services</a>
                 </div>
                 <div class="hero-highlights" aria-label="Clinic highlights">
                     <span>Online booking</span>
@@ -1137,9 +946,8 @@ include 'includes/header.php';
 
             <aside class="hero-panel" aria-label="Globalife care summary">
                 <div class="hero-logo-shell">
-                    <img src="globalife.png" alt="Globalife clinic logo">
+                    <img src="<?php echo htmlspecialchars((string) ($publicClinicInfo['clinic_logo'] ?? 'globalife.png')); ?>" alt="Globalife clinic logo">
                 </div>
-                <p class="panel-label">Globalife Medical Laboratory & Polyclinic</p>
                 <h3>Reliable healthcare support for everyday clinic and laboratory needs.</h3>
                 <div class="quick-list">
                     <div class="quick-item">
@@ -1167,7 +975,7 @@ include 'includes/header.php';
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
                             </svg>
                         </span>
-                        <span>Laboratory and medical services in one place</span>
+                        <span>Laboratory and Doctor Consultation</span>
                     </div>
                 </div>
             </aside>
@@ -1209,11 +1017,6 @@ include 'includes/header.php';
         <div class="container">
             <div class="section-heading">
                 <h3>About Us</h3>
-                <p>
-                    Globalife Medical Laboratory & Polyclinic provides practical and affordable care
-                    for the community. We offer laboratory tests, check-ups, and medical services with
-                    a team ready to assist every visitor clearly and respectfully.
-                </p>
             </div>
             <div class="mission-vision">
                 <div>
@@ -1232,135 +1035,25 @@ include 'includes/header.php';
                     </p>
                 </div>
             </div>
-            <div class="clinic-essentials" aria-label="Important information for clinic visitors">
-                <div class="essential-card">
-                    <span class="essential-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <rect x="3" y="5" width="18" height="14" rx="2"></rect>
-                            <circle cx="9" cy="11" r="2"></circle>
-                            <path d="M13.5 10h3.5M13.5 14h3.5M7 16c.7-1 1.5-1.5 2.5-1.5S11.3 15 12 16"></path>
-                        </svg>
-                    </span>
-                    <div class="essential-copy">
-                        <h4>Valid ID required</h4>
-                        <p>Please bring a government-issued ID on your visit for verification and clinic records.</p>
-                    </div>
-                </div>
-                <div class="essential-card">
-                    <span class="essential-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M4 7h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"></path>
-                            <path d="M2 10h20"></path>
-                            <path d="M7 15h4"></path>
-                        </svg>
-                    </span>
-                    <div class="essential-copy">
-                        <h4>Payment at the clinic</h4>
-                        <p>Consultation and laboratory fees are paid at the clinic front desk unless our staff gives other instructions.</p>
-                    </div>
-                </div>
-                <div class="essential-card">
-                    <span class="essential-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <circle cx="12" cy="12" r="9"></circle>
-                            <path d="M12 7v5l3 2"></path>
-                        </svg>
-                    </span>
-                    <div class="essential-copy">
-                        <h4>Arrive on time</h4>
-                        <p>Come a few minutes before your scheduled slot. Late arrivals may need to be rescheduled depending on clinic capacity.</p>
-                    </div>
-                </div>
-                <div class="essential-card">
-                    <span class="essential-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path>
-                            <path d="M14 3v5h5"></path>
-                            <path d="M9 13h6M9 17h6"></path>
-                        </svg>
-                    </span>
-                    <div class="essential-copy">
-                        <h4>Medical documents</h4>
-                        <p>Bring previous lab results, prescriptions, or referral letters if you have them. These help our doctors and staff assist you faster.</p>
-                    </div>
-                </div>
+            <div id="contact" class="contact-us-panel">
+                <h4>Contact Us</h4>
+                <p>Visit or message <?php echo htmlspecialchars((string) $publicClinicInfo['clinic_name']); ?>.</p>
+                <ul class="contact-us-list">
+                    <li>
+                        <strong>Location:</strong>
+                        <a href="<?php echo htmlspecialchars((string) $publicClinicInfo['clinic_location_url']); ?>" target="_blank" rel="noopener">
+                            <?php echo htmlspecialchars((string) $publicClinicInfo['clinic_location']); ?>
+                        </a>
+                    </li>
+                    <li>
+                        <strong>Facebook:</strong>
+                        <span><?php echo htmlspecialchars((string) $publicClinicInfo['clinic_facebook']); ?></span>
+                    </li>
+                </ul>
             </div>
         </div>
     </section>
-    <section id="services">
-        <div class="container">
-            <div class="section-heading">
-                <h3>Our Services</h3>
-                <p>Choose from clinic and laboratory services for everyday health needs.</p>
-            </div>
-            <ul class="services-list">
-                <li>
-                    <span class="clinic-mark clinic-mark--service" aria-hidden="true">
-                        <span class="clinic-mark-plus">+</span>
-                        <svg class="clinic-mark-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-                        </svg>
-                    </span>
-                    <div>
-                        <strong>General Consultation</strong>
-                        <p>Schedule check-ups and consultations with clinic professionals.</p>
-                    </div>
-                </li>
-                <li>
-                    <span class="clinic-mark clinic-mark--service" aria-hidden="true">
-                        <span class="clinic-mark-plus">+</span>
-                        <svg class="clinic-mark-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
-                        </svg>
-                    </span>
-                    <div>
-                        <strong>Laboratory Tests</strong>
-                        <p>Access routine laboratory testing for better health decisions.</p>
-                    </div>
-                </li>
-                <li>
-                    <span class="clinic-mark clinic-mark--service" aria-hidden="true">
-                        <span class="clinic-mark-plus">+</span>
-                        <svg class="clinic-mark-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                        </svg>
-                    </span>
-                    <div>
-                        <strong>Home Healthcare Service</strong>
-                        <p>Ask our staff about care support when visiting the clinic is difficult.</p>
-                    </div>
-                </li>
-                <li>
-                    <span class="clinic-mark clinic-mark--service" aria-hidden="true">
-                        <span class="clinic-mark-plus">+</span>
-                        <svg class="clinic-mark-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        </svg>
-                    </span>
-                    <div>
-                        <strong>Medical Services Provider</strong>
-                        <p>Get support from a clinic team focused on kind, attentive care.</p>
-                    </div>
-                </li>
-                <li>
-                    <span class="clinic-mark clinic-mark--service" aria-hidden="true">
-                        <span class="clinic-mark-plus">+</span>
-                        <svg class="clinic-mark-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10m10 0h4m-4 0a2 2 0 104 0m-4 0a2 2 0 11-4 0m6 0a2 2 0 11-4 0"/>
-                        </svg>
-                    </span>
-                    <div>
-                        <strong>Laboratory Pickup and Delivery</strong>
-                        <p>Arrange specimen pickup and delivery support for laboratory needs.</p>
-                    </div>
-                </li>
-            </ul>
-            <p class="services-note">
-                <strong>Good to know:</strong> Online booking reserves your slot. Final service availability and pricing are confirmed at the clinic. For home service or pickup and delivery, coordinate with our staff.
-            </p>
-        </div>
-    </section>
-    <section id="contact" class="contact-band">
+    <section class="contact-band">
         <div class="container contact-grid">
             <div>
                 <h3>Ready to schedule your visit?</h3>
@@ -1368,20 +1061,6 @@ include 'includes/header.php';
                     <strong>New here?</strong> Sign Up first, then Log In to book.
                     <strong>Already registered?</strong> Log In with your username and password to continue.
                 </p>
-                <div class="contact-details">
-                    <div class="contact-detail-item">
-                        <strong>Clinic hours</strong>
-                        <span>Monday to Saturday. Please contact our front desk for today&#39;s schedule and holidays.</span>
-                    </div>
-                    <div class="contact-detail-item">
-                        <strong>What to bring</strong>
-                        <span>Valid ID, your booking confirmation, and any medical documents or referrals.</span>
-                    </div>
-                    <div class="contact-detail-item">
-                        <strong>Need help?</strong>
-                        <span>Visit the clinic reception or ask our staff during your appointment for assistance.</span>
-                    </div>
-                </div>
             </div>
             <div class="contact-actions">
                 <a href="register_patient.php" class="secondary-btn">Sign Up</a>
@@ -1394,11 +1073,7 @@ include 'includes/header.php';
         <div class="container patient-login-grid">
             <button type="button" class="modal-close-btn" data-login-close aria-label="Close login">&times;</button>
             <div class="patient-login-copy">
-                <h3 id="patient-login-title">Welcome back</h3>
-                <p>
-                    Enter your username and password. No need to choose a role;
-                    Globalife will open the correct dashboard for your account.
-                </p>
+                <h3 id="patient-login-title">Welcome!</h3>
                 <ul class="login-benefits">
                     <li>
                         <span class="clinic-mark" aria-hidden="true">
@@ -1425,7 +1100,7 @@ include 'includes/header.php';
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                         </span>
-                        <span>Every account opens the right dashboard automatically</span>
+                        <span>Your dashboard opens automatically after login.</span>
                     </li>
                 </ul>
             </div>
@@ -1439,7 +1114,7 @@ include 'includes/header.php';
                     <div class="patient-ready-actions">
                         <a href="<?php echo htmlspecialchars($currentUserDashboard); ?>" class="cta-btn">Go to Dashboard</a>
                         <?php if ($isPatientLoggedIn): ?>
-                            <a href="book_appointment.php" class="secondary-btn">Book Appointment</a>
+                            <a href="book_appointment.php?start=1" class="secondary-btn">Book Appointment</a>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -1447,11 +1122,6 @@ include 'includes/header.php';
                 <div class="patient-login-panel">
                     <h4>Log In</h4>
                     <p>Use the username and password assigned to your account.</p>
-
-                    <div class="login-first-time">
-                        <strong>New here?</strong> Create an account before booking.
-                        <a href="register_patient.php">Sign Up</a> takes only a few minutes.
-                    </div>
 
                     <?php if ($loginError): ?>
                         <div class="login-alert">
@@ -1509,4 +1179,3 @@ include 'includes/header.php';
         </div>
     </section>
 <?php include 'includes/footer.php'; ?>
-

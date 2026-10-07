@@ -1,7 +1,7 @@
 <?php
 /**
  * Clinic doctor accounts + availability windows.
- * day_of_week: 1 = Monday … 7 = Sunday (ISO-8601, PHP date('N')).
+ * day_of_week: 1 = Monday â€¦ 7 = Sunday (ISO-8601, PHP date('N')).
  */
 
 function doctor_sched_column_exists(mysqli $conn, string $table, string $column): bool {
@@ -22,7 +22,9 @@ function init_doctor_schema_and_accounts(mysqli $conn): void {
     $roleCol = $conn->query("SHOW COLUMNS FROM users WHERE Field = 'role'");
     $roleRow = $roleCol ? $roleCol->fetch_assoc() : null;
     if ($roleRow && stripos((string) $roleRow['Type'], 'doctor') === false) {
-        $conn->query("ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'nurse', 'receptionist', 'patient', 'doctor') NOT NULL");
+        $conn->query("UPDATE users SET role = 'admin' WHERE role = 'receptionist'");
+        $conn->query("UPDATE users SET role = 'doctor' WHERE role = 'nurse'");
+        $conn->query("ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'patient', 'doctor') NOT NULL");
     }
 
     $conn->query("CREATE TABLE IF NOT EXISTS doctor_availability (
@@ -35,73 +37,10 @@ function init_doctor_schema_and_accounts(mysqli $conn): void {
         INDEX idx_user_day (user_id, day_of_week)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
-    $defaultPass = password_hash('password123', PASSWORD_DEFAULT);
-    $doctors = [
-        [
-            'username' => 'dr.estrada',
-            'full_name' => 'DR. RYAN CLIFFORD ESTRADA',
-            'specialty' => 'Internist',
-            'email' => 'dr.estrada@globalife.local',
-            'phone' => '',
-            'slots' => [
-                [2, '14:00:00', '15:00:00'],
-                [6, '11:30:00', '12:30:00'],
-            ],
-        ],
-        [
-            'username' => 'dra.tebelin',
-            'full_name' => 'DRA. RODA TEBELIN',
-            'specialty' => 'Pediatrician',
-            'email' => 'dra.tebelin@globalife.local',
-            'phone' => '',
-            'slots' => [
-                [1, '13:00:00', '15:00:00'],
-                [3, '13:00:00', '15:00:00'],
-                [5, '13:00:00', '16:00:00'],
-            ],
-        ],
-    ];
-
-    foreach ($doctors as $d) {
-        $chk = $conn->prepare('SELECT id FROM users WHERE username = ?');
-        $chk->bind_param('s', $d['username']);
-        $chk->execute();
-        $ex = $chk->get_result()->fetch_assoc();
-        $chk->close();
-
-        if ($ex) {
-            $uid = (int) $ex['id'];
-            $up = $conn->prepare("UPDATE users SET full_name = ?, role = 'doctor', specialty = ?, email = ?, phone = ? WHERE id = ?");
-            $up->bind_param('ssssi', $d['full_name'], $d['specialty'], $d['email'], $d['phone'], $uid);
-            $up->execute();
-            $up->close();
-        } else {
-            $ins = $conn->prepare("INSERT INTO users (username, password, full_name, role, specialty, email, phone, is_active) VALUES (?, ?, ?, 'doctor', ?, ?, ?, 1)");
-            $ins->bind_param('ssssss', $d['username'], $defaultPass, $d['full_name'], $d['specialty'], $d['email'], $d['phone']);
-            $ins->execute();
-            $uid = (int) $conn->insert_id;
-            $ins->close();
-        }
-
-        $cnt = $conn->prepare('SELECT COUNT(*) AS c FROM doctor_availability WHERE user_id = ?');
-        $cnt->bind_param('i', $uid);
-        $cnt->execute();
-        $n = (int) ($cnt->get_result()->fetch_assoc()['c'] ?? 0);
-        $cnt->close();
-        if ($n > 0) {
-            continue;
-        }
-
-        $slotIns = $conn->prepare('INSERT INTO doctor_availability (user_id, day_of_week, time_start, time_end) VALUES (?, ?, ?, ?)');
-        foreach ($d['slots'] as $sl) {
-            $dow = (int) $sl[0];
-            $ts = $sl[1];
-            $te = $sl[2];
-            $slotIns->bind_param('iiss', $uid, $dow, $ts, $te);
-            $slotIns->execute();
-        }
-        $slotIns->close();
-    }
+    $conn->query("CREATE TABLE IF NOT EXISTS system_seed_state (
+        seed_key VARCHAR(100) PRIMARY KEY,
+        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 }
 
 function normalize_booking_time(string $t): string {
@@ -171,14 +110,15 @@ function doctor_specialty_theme(?string $specialty): array {
     if (strpos($s, 'pediat') !== false) {
         return ['label' => strtoupper($specialty ?: 'PEDIATRICIAN'), 'class' => 'theme-peds'];
     }
-    return ['label' => strtoupper($specialty ?: 'INTERNIST'), 'class' => 'theme-intern'];
+    return ['label' => strtoupper($specialty ?: 'GENERAL DOCTOR'), 'class' => 'theme-intern'];
 }
 
 /**
  * @return array<int,array<string,mixed>>
  */
 function fetch_doctors_schedule_reference(mysqli $conn): array {
-    $res = $conn->query("SELECT id, full_name, specialty, COALESCE(is_active, 1) AS is_active FROM users WHERE role = 'doctor' ORDER BY full_name ASC");
+        $doctorNameSql = dbUsersNameExpression();
+        $res = $conn->query("SELECT id, {$doctorNameSql} AS full_name, specialty, COALESCE(is_active, 1) AS is_active FROM users WHERE role = 'doctor' ORDER BY {$doctorNameSql} ASC");
     if (!$res) return [];
     $out = [];
     while ($r = $res->fetch_assoc()) {
@@ -203,7 +143,8 @@ function fetch_doctors_schedule_reference(mysqli $conn): array {
  * @return array<int,array<string,mixed>>
  */
 function fetch_doctors_for_booking_display(mysqli $conn, string $dateYmd, string $timeHi): array {
-    $res = $conn->query("SELECT id, full_name, specialty, COALESCE(is_active, 1) AS is_active FROM users WHERE role = 'doctor' ORDER BY full_name ASC");
+        $doctorNameSql = dbUsersNameExpression();
+        $res = $conn->query("SELECT id, {$doctorNameSql} AS full_name, specialty, COALESCE(is_active, 1) AS is_active FROM users WHERE role = 'doctor' ORDER BY {$doctorNameSql} ASC");
     if (!$res) return [];
     $out = [];
     while ($r = $res->fetch_assoc()) {
@@ -238,7 +179,8 @@ function fetch_doctors_available_at(mysqli $conn, string $dateYmd, string $timeH
     $n = (int) date('N', strtotime($dateYmd));
     if ($n < 1 || $n > 7) return [];
     $tm = normalize_booking_time($timeHi);
-    $sql = "SELECT DISTINCT u.id, u.full_name, u.specialty
+    $doctorNameSql = dbUsersNameExpression('u');
+    $sql = "SELECT DISTINCT u.id, {$doctorNameSql} AS full_name, u.specialty
             FROM users u
             INNER JOIN doctor_availability da ON da.user_id = u.id AND da.day_of_week = ?
             WHERE u.role = 'doctor' AND COALESCE(u.is_active, 1) = 1
@@ -255,4 +197,3 @@ function user_is_doctor_available_at(mysqli $conn, int $userId, string $dateYmd,
     if (!doctor_user_is_active($conn, $userId)) return false;
     return doctor_time_matches_clinic_slot($conn, $userId, $dateYmd, $timeHi);
 }
-

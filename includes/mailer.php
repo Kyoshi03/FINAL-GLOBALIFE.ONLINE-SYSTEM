@@ -25,16 +25,51 @@ function clinic_mail_config(): array {
         'from_name' => 'Globalife Medical Laboratory & Polyclinic',
     ];
 
-    $filename = clinic_mail_is_live_host() ? 'mail.production.php' : 'mail.local.php';
-    $path = __DIR__ . '/../config/' . $filename;
-    if (is_file($path)) {
+    $configDirectory = __DIR__ . '/../config/';
+    $preferredFilename = clinic_mail_is_live_host() ? 'mail.production.php' : 'mail.local.php';
+    $fallbackFilename = clinic_mail_is_live_host() ? 'mail.local.php' : 'mail.production.php';
+
+    foreach ([$preferredFilename, $fallbackFilename] as $filename) {
+        $path = $configDirectory . $filename;
+        if (!is_file($path)) {
+            continue;
+        }
+
         $loaded = require $path;
         if (is_array($loaded)) {
             $config = array_merge($config, $loaded);
+            break;
         }
     }
 
-    $config['password'] = str_replace(' ', '', (string) $config['password']);
+    $environmentValues = [
+        'host' => getenv('SMTP_HOST'),
+        'port' => getenv('SMTP_PORT'),
+        'encryption' => getenv('SMTP_ENCRYPTION'),
+        'username' => getenv('SMTP_USERNAME'),
+        'password' => getenv('SMTP_PASSWORD'),
+        'from_email' => getenv('SMTP_FROM_EMAIL'),
+        'from_name' => getenv('SMTP_FROM_NAME'),
+    ];
+    foreach ($environmentValues as $key => $value) {
+        if ($value !== false && trim((string) $value) !== '') {
+            $config[$key] = $value;
+        }
+    }
+
+    $enabledEnvironmentValue = getenv('SMTP_ENABLED');
+    if ($enabledEnvironmentValue !== false && trim((string) $enabledEnvironmentValue) !== '') {
+        $config['enabled'] = filter_var($enabledEnvironmentValue, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    $config['host'] = trim((string) $config['host']);
+    $config['username'] = trim((string) $config['username']);
+    $config['from_email'] = trim((string) $config['from_email']);
+    $config['from_name'] = trim((string) $config['from_name']);
+    $config['password'] = trim((string) $config['password']);
+    $config['encryption'] = strtolower(trim((string) $config['encryption']));
+    $config['port'] = (int) $config['port'];
+
     return $config;
 }
 
@@ -264,6 +299,9 @@ function clinic_send_otp_email(string $email, string $name, string $code, string
     } elseif ($purpose === 'appointment') {
         $title = 'Confirm your Globalife appointment request';
         $instruction = 'Enter this code on the appointment verification page to confirm that this booking request is yours.';
+    } elseif ($purpose === 'profile_update') {
+        $title = 'Confirm your Globalife profile change';
+        $instruction = 'Enter this code on your profile page to finish changing your email or password.';
     } else {
         $title = 'Reset your Globalife password';
         $instruction = 'Enter this code on the Forgot Password page to create a new password.';

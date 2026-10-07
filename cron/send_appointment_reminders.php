@@ -20,12 +20,17 @@ if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) {
 $conn = getDBConnection();
 $result = $conn->query(
     "SELECT r.id AS reminder_id, r.appointment_id,
+            r.email_sent_at, r.sms_sent_at,
             a.appointment_date, a.appointment_time,
-            p.full_name AS patient_name, p.email,
-            d.full_name AS doctor_name,
+            " . dbUsersNameExpression('p') . " AS patient_name, p.email, p.phone,
+            " . dbUsersNameExpression('d') . " AS doctor_name,
             COALESCE(
                 GROUP_CONCAT(DISTINCT ls.name ORDER BY ls.name SEPARATOR ', '),
-                'Clinic appointment'
+                CASE
+                    WHEN a.booking_type = 'consultation' THEN 'Doctor consultation'
+                    WHEN a.booking_type = 'ultrasound' THEN 'Ultra sound'
+                    ELSE 'Clinic appointment'
+                END
             ) AS services
      FROM appointment_email_reminders r
      INNER JOIN appointments a ON a.id = r.appointment_id
@@ -34,12 +39,15 @@ $result = $conn->query(
      LEFT JOIN appointment_services aps ON aps.appointment_id = a.id
      LEFT JOIN lab_services ls ON ls.id = aps.service_id
      WHERE r.sent_at IS NULL
+       AND (r.email_sent_at IS NULL OR r.sms_sent_at IS NULL)
        AND r.scheduled_for <= NOW()
        AND r.attempts < 5
        AND a.status = 'confirmed'
        AND TIMESTAMP(a.appointment_date, a.appointment_time) > NOW()
      GROUP BY r.id, r.appointment_id, a.appointment_date, a.appointment_time,
-              p.full_name, p.email, d.full_name
+              r.email_sent_at, r.sms_sent_at,
+              p.first_name, p.middle_name, p.last_name, p.suffix, p.email, p.phone,
+              d.first_name, d.middle_name, d.last_name, d.suffix
      ORDER BY r.scheduled_for ASC
      LIMIT 50"
 );
@@ -47,36 +55,69 @@ $result = $conn->query(
 $sentCount = 0;
 $failedCount = 0;
 while ($result && ($row = $result->fetch_assoc())) {
-    $sent = appointment_send_reminder_email($row);
     $reminderId = (int) $row['reminder_id'];
+    $emailSent = $row['email_sent_at'] !== null;
+    $smsSent = $row['sms_sent_at'] !== null;
+    $errors = [];
 
-    if ($sent['ok']) {
+    if (!$emailSent && clinic_notification_enabled('appointment_reminder')) {
+        $emailResult = appointment_send_reminder_email($row);
+        if ($emailResult['ok']) {
+            $markEmail = $conn->prepare(
+                'UPDATE appointment_email_reminders SET email_sent_at = NOW() WHERE id = ?'
+            );
+            $markEmail->bind_param('i', $reminderId);
+            $markEmail->execute();
+            $markEmail->close();
+            $emailSent = true;
+        } else {
+            $errors[] = 'Email: ' . (string) ($emailResult['error'] ?? 'Unknown delivery error');
+        }
+    } elseif (!$emailSent) {
+        $emailSent = true;
+    }
+
+    if (!$smsSent && clinic_notification_enabled('appointment_reminder')) {
+        $smsResult = appointment_send_reminder_sms($row);
+        if ($smsResult['ok']) {
+            $markSms = $conn->prepare(
+                'UPDATE appointment_email_reminders SET sms_sent_at = NOW() WHERE id = ?'
+            );
+            $markSms->bind_param('i', $reminderId);
+            $markSms->execute();
+            $markSms->close();
+            $smsSent = true;
+        } else {
+            $errors[] = 'SMS: ' . (string) ($smsResult['error'] ?? 'Unknown delivery error');
+        }
+    } elseif (!$smsSent) {
+        $smsSent = true;
+    }
+
+    $message = $errors ? substr(implode(' | ', $errors), 0, 500) : null;
+    if ($emailSent && $smsSent) {
         $update = $conn->prepare(
             'UPDATE appointment_email_reminders
              SET sent_at = NOW(), attempts = attempts + 1, last_error = NULL
              WHERE id = ? AND sent_at IS NULL'
         );
         $update->bind_param('i', $reminderId);
-        $update->execute();
-        $update->close();
         $sentCount++;
     } else {
-        $message = substr((string) ($sent['error'] ?? 'Unknown email error'), 0, 500);
         $update = $conn->prepare(
             'UPDATE appointment_email_reminders
              SET attempts = attempts + 1, last_error = ?
              WHERE id = ? AND sent_at IS NULL'
         );
         $update->bind_param('si', $message, $reminderId);
-        $update->execute();
-        $update->close();
         $failedCount++;
     }
+    $update->execute();
+    $update->close();
 }
 
 $conn->close();
 flock($lock, LOCK_UN);
 fclose($lock);
 
-echo 'Appointment reminders: ' . $sentCount . ' sent, ' . $failedCount . " failed.\n";
-
+echo 'Appointment reminders: ' . $sentCount . ' completed, ' . $failedCount . " pending retry.\n";

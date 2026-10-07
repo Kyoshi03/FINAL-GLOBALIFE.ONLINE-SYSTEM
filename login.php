@@ -213,7 +213,7 @@ $pageTitle = "Login | Globalife Medical Laboratory & Polyclinic";
             <div class="login-brand">
                 <img src="globalife.png" alt="Globalife clinic logo">
                 <h2 id="login-title">Welcome back</h2>
-                <p>Use one login form for patients, admin, nurses, doctors, and receptionists.</p>
+                <p>Use one login form for patients, admin, and doctors.</p>
             </div>
 
             <div class="login-note">

@@ -1,11 +1,12 @@
 <?php
 /**
  * Initialize default users for the clinic system
- * Run this file once to create default admin, nurse, receptionist, and patient accounts
+ * Run this file once to create default admin and patient accounts.
  * Default password for all users: password123
  */
 
 require_once 'config/database.php';
+require_once __DIR__ . '/includes/name_parts.php';
 
 $conn = getDBConnection();
 
@@ -17,38 +18,39 @@ $users = [
     [
         'username' => 'admin',
         'password' => $defaultPassword,
-        'full_name' => 'Administrator',
+        'first_name' => 'Administrator',
+        'middle_name' => '',
+        'last_name' => '',
+        'suffix' => '',
         'role' => 'admin',
         'email' => 'admin@globalife.com',
         'phone' => '09123456789'
     ],
     [
-        'username' => 'nurse1',
-        'password' => $defaultPassword,
-        'full_name' => 'Dr. Maria Santos',
-        'role' => 'nurse',
-        'email' => 'nurse1@globalife.com',
-        'phone' => '09123456790'
-    ],
-    [
         'username' => 'receptionist1',
         'password' => $defaultPassword,
-        'full_name' => 'Receptionist User',
-        'role' => 'receptionist',
+        'first_name' => 'Receptionist',
+        'middle_name' => '',
+        'last_name' => 'User',
+        'suffix' => '',
+        'role' => 'admin',
         'email' => 'receptionist1@globalife.com',
         'phone' => '09123456791'
     ],
     [
         'username' => 'patient1',
         'password' => $defaultPassword,
-        'full_name' => 'Junnie Abrador',
+        'first_name' => 'Junnie',
+        'middle_name' => '',
+        'last_name' => 'Abrador',
+        'suffix' => '',
         'role' => 'patient',
         'email' => 'patient1@globalife.com',
         'phone' => '09123456792'
     ]
 ];
 
-$stmt = $conn->prepare("INSERT INTO users (username, password, full_name, role, email, phone) VALUES (?, ?, ?, ?, ?, ?)");
+$stmt = $conn->prepare("INSERT INTO users (username, password, first_name, middle_name, last_name, suffix, role, email, phone) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
 foreach ($users as $user) {
     // Check if user already exists
@@ -58,10 +60,13 @@ foreach ($users as $user) {
     $result = $checkStmt->get_result();
     
     if ($result->num_rows === 0) {
-        $stmt->bind_param("ssssss", 
+        $stmt->bind_param("sssssssss", 
             $user['username'],
             $user['password'],
-            $user['full_name'],
+            $user['first_name'],
+            $user['middle_name'],
+            $user['last_name'],
+            $user['suffix'],
             $user['role'],
             $user['email'],
             $user['phone']
@@ -86,8 +91,6 @@ echo "<br><strong>Default users initialized!</strong><br>";
 echo "All users have the password: <strong>password123</strong><br>";
 echo "<br>You can now login with:<br>";
 echo "- admin / password123 (Admin)<br>";
-echo "- nurse1 / password123 (Nurse/Doctor)<br>";
-echo "- receptionist1 / password123 (Receptionist)<br>";
+echo "- receptionist1 / password123 (Admin / Reception Desk)<br>";
 echo "- patient1 / password123 (Patient)<br>";
 ?>
-

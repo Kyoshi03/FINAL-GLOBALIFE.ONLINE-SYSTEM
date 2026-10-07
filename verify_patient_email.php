@@ -6,6 +6,9 @@ header('Expires: 0');
 require_once 'includes/session.php';
 require_once 'config/database.php';
 require_once 'includes/mailer.php';
+require_once 'includes/sms.php';
+require_once 'includes/notification_settings.php';
+require_once 'includes/admin_notifications.php';
 
 if (empty($_SESSION['pending_patient_registration']['data'])) {
     header('Location: register_patient.php');
@@ -14,9 +17,14 @@ if (empty($_SESSION['pending_patient_registration']['data'])) {
 
 $pending = &$_SESSION['pending_patient_registration'];
 $patient = $pending['data'];
+$verificationChannel = ($patient['verification_channel'] ?? 'email') === 'sms' ? 'sms' : 'email';
+$verificationDestination = $verificationChannel === 'sms'
+    ? clinic_sms_mask_phone((string) ($patient['phone'] ?? ''))
+    : registration_mask_email((string) ($patient['email'] ?? ''));
+$verificationLabel = $verificationChannel === 'sms' ? 'mobile number' : 'email';
 $error = '';
 $success = isset($_GET['sent']) && $_GET['sent'] === '1'
-    ? 'We sent a 6-digit verification code to your email.'
+    ? 'We sent a 6-digit verification code to your ' . $verificationLabel . '.'
     : '';
 
 function registration_mask_email(string $email): string {
@@ -43,12 +51,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Please wait ' . $wait . ' seconds before requesting another code.';
         } else {
             $code = (string) random_int(100000, 999999);
-            $sent = clinic_send_otp_email(
-                (string) $patient['email'],
-                (string) $patient['full_name'],
-                $code,
-                'registration'
-            );
+            $sent = clinic_notification_enabled('account_verification')
+                ? clinic_send_verification_code(
+                    $verificationChannel,
+                    (string) $patient['email'],
+                    (string) $patient['phone'],
+                    (string) $patient['display_name'],
+                    $code,
+                    'registration'
+                )
+                : clinic_notification_disabled_result('Account verification');
 
             if (!$sent['ok']) {
                 $error = $sent['error'];
@@ -57,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pending['expires_at'] = time() + 10 * 60;
                 $pending['sent_at'] = time();
                 $pending['attempts'] = 0;
-                $success = 'A new verification code was sent to your email.';
+                $success = 'A new verification code was sent to your ' . $verificationLabel . '.';
             }
         }
     }
@@ -78,9 +90,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $conn = getDBConnection();
 
             $username = (string) $patient['username'];
-            $email = (string) $patient['email'];
-            $check = $conn->prepare('SELECT id FROM users WHERE username = ? OR LOWER(email) = LOWER(?) LIMIT 1');
-            $check->bind_param('ss', $username, $email);
+            $email = trim((string) ($patient['email'] ?? ''));
+            $emailForInsert = $email === '' ? null : strtolower($email);
+            $phoneForCheck = (string) ($patient['phone'] ?? '');
+            $normalizedPhone = clinic_sms_normalize_phone($phoneForCheck) ?? $phoneForCheck;
+            $phoneLocal = str_starts_with($normalizedPhone, '+63') ? '0' . substr($normalizedPhone, 3) : $phoneForCheck;
+            $phoneIntlNoPlus = str_starts_with($normalizedPhone, '+') ? substr($normalizedPhone, 1) : $normalizedPhone;
+
+            if ($emailForInsert === null) {
+                $check = $conn->prepare('SELECT id FROM users WHERE username = ? OR phone IN (?, ?, ?) LIMIT 1');
+                $check->bind_param('ssss', $username, $phoneForCheck, $phoneLocal, $normalizedPhone);
+            } else {
+                $check = $conn->prepare('SELECT id FROM users WHERE username = ? OR LOWER(email) = LOWER(?) OR phone IN (?, ?, ?, ?) LIMIT 1');
+                $check->bind_param('ssssss', $username, $emailForInsert, $phoneForCheck, $phoneLocal, $normalizedPhone, $phoneIntlNoPlus);
+            }
             $check->execute();
             $exists = $check->get_result()->fetch_assoc();
             $check->close();
@@ -88,10 +111,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($exists) {
                 $conn->close();
                 unset($_SESSION['pending_patient_registration']);
-                $error = 'That username or email is already registered. Please start again.';
+                $error = 'That username, email, or mobile number is already registered. Please start again.';
             } else {
                 $passwordHash = (string) $patient['password'];
-                $fullName = (string) $patient['full_name'];
+                $displayName = (string) $patient['display_name'];
+                $firstName = (string) ($patient['first_name'] ?? '');
+                $middleName = (string) ($patient['middle_name'] ?? '');
+                $lastName = (string) ($patient['last_name'] ?? '');
+                $suffix = (string) ($patient['suffix'] ?? '');
                 $role = (string) $patient['role'];
                 $phone = (string) $patient['phone'];
                 $gender = (string) $patient['gender'];
@@ -106,19 +133,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $emergencyNumber = (string) $patient['emergency_contact_number'];
                 $insert = $conn->prepare(
                     'INSERT INTO users (
-                        username, password, full_name, role, email, phone, gender,
+                        username, password, first_name, middle_name, last_name, suffix, role, email, phone, gender,
                         date_of_birth, age, civil_status, address, barangay, city,
                         emergency_contact_name, emergency_contact_relationship,
                         emergency_contact_number
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
                 );
+                                $bindTypes = str_repeat('s', 11) . 'i' . str_repeat('s', 7);
                 $insert->bind_param(
-                    'ssssssssisssssss',
+                    $bindTypes,
                     $username,
                     $passwordHash,
-                    $fullName,
+                    $firstName,
+                    $middleName,
+                    $lastName,
+                    $suffix,
                     $role,
-                    $email,
+                    $emailForInsert,
                     $phone,
                     $gender,
                     $dateOfBirth,
@@ -132,16 +163,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $emergencyNumber
                 );
                 $created = $insert->execute();
+                $newPatientId = $created ? (int) $insert->insert_id : 0;
                 $insert->close();
-                $conn->close();
 
                 if (!$created) {
+                    $conn->close();
                     $error = 'We could not create your account. Please try again.';
                 } else {
+                    $verifiedColumn = $verificationChannel === 'sms' ? 'phone_verified_at' : 'email_verified_at';
+                    $verifiedStmt = $conn->prepare("UPDATE users SET {$verifiedColumn} = NOW() WHERE id = ? AND role = 'patient'");
+                    if ($verifiedStmt) {
+                        $verifiedStmt->bind_param('i', $newPatientId);
+                        $verifiedStmt->execute();
+                        $verifiedStmt->close();
+                    }
+                    $registrationSource = (string) ($patient['registration_source'] ?? '');
+                    $notificationMessage = $displayName . ' created a verified patient account';
+                    if ($registrationSource === 'walkin_qr') {
+                        $notificationMessage .= ' using the reception desk QR code.';
+                    } else {
+                        $notificationMessage .= '.';
+                    }
+                    create_admin_notification(
+                        $conn,
+                        'patient_registration',
+                        'New patient account',
+                        $notificationMessage,
+                        $newPatientId
+                    );
+                    $conn->close();
                     $_SESSION['patient_pending_welcome'] = true;
                     $_SESSION['patient_registration_success'] = [
                         'username' => $patient['username'],
-                        'display_name' => $patient['full_name'],
+                        'display_name' => $displayName,
                     ];
                     unset($_SESSION['pending_patient_registration']);
                     header('Location: register_patient.php?created=1');
@@ -152,8 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$maskedEmail = registration_mask_email((string) $patient['email']);
-$pageTitle = 'Verify Email | Globalife Medical Laboratory & Polyclinic';
+$pageTitle = 'Verify Account | Globalife Medical Laboratory & Polyclinic';
 $publicLoginHref = 'index.php#patient-login';
 $publicSignUpHref = 'register_patient.php';
 $additionalStyles = '
@@ -163,7 +216,7 @@ $additionalStyles = '
     .verify-logo { width:70px; height:70px; border-radius:50%; object-fit:cover; border:3px solid #48cae4; margin-bottom:14px; }
     .verify-card h2 { margin:0 0 8px; color:#073b4c; font-size:1.65rem; }
     .verify-card > p { color:#5e7380; line-height:1.6; margin:0 0 20px; }
-    .email-chip { display:inline-block; background:#edf8fd; color:#00699b; border:1px solid #cbe8f5; border-radius:999px; padding:8px 14px; font-weight:700; margin-bottom:20px; }
+    .destination-chip { display:inline-block; max-width:100%; box-sizing:border-box; background:#edf8fd; color:#00699b; border:1px solid #cbe8f5; border-radius:999px; padding:8px 14px; font-weight:700; margin-bottom:20px; overflow-wrap:anywhere; }
     .notice { padding:12px 14px; border-radius:8px; margin-bottom:16px; text-align:left; line-height:1.45; }
     .notice.error { background:#fff0f0; border:1px solid #ffd0d0; color:#8c1d2b; }
     .notice.success { background:#eefaf2; border:1px solid #c7ead2; color:#17652b; }
@@ -180,9 +233,9 @@ include 'includes/header.php';
 <main class="verify-page">
     <section class="verify-card">
         <img src="globalife.png" alt="Globalife" class="verify-logo">
-        <h2>Verify your email</h2>
-        <p>Enter the code sent to your email to finish creating your patient account.</p>
-        <div class="email-chip"><?php echo htmlspecialchars($maskedEmail); ?></div>
+        <h2>Verify your account</h2>
+        <p>Enter the code sent to your <?php echo htmlspecialchars($verificationLabel); ?> to finish creating your patient account.</p>
+        <div class="destination-chip"><?php echo htmlspecialchars($verificationDestination); ?></div>
 
         <?php if ($error): ?>
             <div class="notice error"><?php echo htmlspecialchars($error); ?></div>
@@ -209,7 +262,12 @@ include 'includes/header.php';
             <button type="submit" class="primary-btn">Verify and Create Account</button>
         </form>
 
-        <p class="expiry-note">The code expires after 10 minutes. Check your spam folder if it is not in your inbox.</p>
+        <p class="expiry-note">
+            The code expires after 10 minutes.
+            <?php echo $verificationChannel === 'email'
+                ? 'Check your spam folder if it is not in your inbox.'
+                : 'Check that your mobile number has signal and can receive text messages.'; ?>
+        </p>
 
         <div class="secondary-actions">
             <form method="POST" action="verify_patient_email.php">
@@ -218,7 +276,7 @@ include 'includes/header.php';
             </form>
             <form method="POST" action="verify_patient_email.php">
                 <input type="hidden" name="action" value="cancel">
-                <button type="submit" class="link-btn">Change email</button>
+                <button type="submit" class="link-btn">Change details</button>
             </form>
         </div>
     </section>

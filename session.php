@@ -41,7 +41,7 @@ function login($username, $password) {
     require_once __DIR__ . '/../config/database.php';
     $conn = getDBConnection();
     
-    $stmt = $conn->prepare("SELECT id, username, password, full_name, role FROM users WHERE username = ?");
+    $stmt = $conn->prepare("SELECT id, username, password, first_name, middle_name, last_name, suffix, role FROM users WHERE username = ?");
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -51,7 +51,7 @@ function login($username, $password) {
         if (password_verify($password, $user['password'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
-            $_SESSION['full_name'] = $user['full_name'];
+            $_SESSION['full_name'] = clinic_name_display_from_row($user);
             $_SESSION['user_role'] = $user['role'];
             
             $stmt->close();

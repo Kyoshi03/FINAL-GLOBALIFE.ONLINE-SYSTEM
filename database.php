@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/includes/name_parts.php';
+
 // Database configuration
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
@@ -16,6 +18,65 @@ function getDBConnection() {
     return $conn;
 }
 
+function clinic_db_users_name_expression(string $alias = ''): string {
+    $prefix = $alias !== '' ? rtrim($alias, '.') . '.' : '';
+    return "TRIM(CONCAT_WS(' ', NULLIF({$prefix}first_name, ''), NULLIF({$prefix}middle_name, ''), NULLIF({$prefix}last_name, ''), NULLIF({$prefix}suffix, '')))";
+}
+
+function clinic_db_backfill_users_name_parts(mysqli $conn): void {
+    $requiredColumns = ['full_name', 'first_name', 'middle_name', 'last_name', 'suffix'];
+    foreach ($requiredColumns as $column) {
+        $check = $conn->query("SHOW COLUMNS FROM users LIKE '" . $conn->real_escape_string($column) . "'");
+        if (!$check || $check->num_rows === 0) {
+            return;
+        }
+    }
+
+    $result = $conn->query("SELECT id, full_name, first_name, middle_name, last_name, suffix FROM users ORDER BY id ASC");
+    if (!$result) {
+        return;
+    }
+
+    $update = $conn->prepare("UPDATE users SET first_name = ?, middle_name = ?, last_name = ?, suffix = ? WHERE id = ?");
+    if (!$update) {
+        return;
+    }
+
+    while ($row = $result->fetch_assoc()) {
+        $parsed = clinic_name_split_full_name((string) ($row['full_name'] ?? ''));
+
+        $firstName = trim((string) ($row['first_name'] ?? ''));
+        $middleName = trim((string) ($row['middle_name'] ?? ''));
+        $lastName = trim((string) ($row['last_name'] ?? ''));
+        $suffix = trim((string) ($row['suffix'] ?? ''));
+
+        $newFirstName = $firstName !== '' ? $firstName : $parsed['first_name'];
+        $newMiddleName = $middleName !== '' ? $middleName : $parsed['middle_name'];
+        $newLastName = $lastName !== '' ? $lastName : $parsed['last_name'];
+        $newSuffix = $suffix !== '' ? $suffix : $parsed['suffix'];
+
+        if ($newFirstName === $firstName && $newMiddleName === $middleName && $newLastName === $lastName && $newSuffix === $suffix) {
+            continue;
+        }
+
+        $id = (int) $row['id'];
+        $update->bind_param('ssssi', $newFirstName, $newMiddleName, $newLastName, $newSuffix, $id);
+        $update->execute();
+    }
+
+    $update->close();
+}
+
+function clinic_db_remove_legacy_full_name(mysqli $conn): bool {
+    $columnResult = $conn->query("SHOW COLUMNS FROM users LIKE 'full_name'");
+    if (!$columnResult || $columnResult->num_rows === 0) {
+        return true;
+    }
+
+    clinic_db_backfill_users_name_parts($conn);
+    return $conn->query("ALTER TABLE users DROP COLUMN full_name") === true;
+}
+
 // Initialize database tables if they don't exist
 function initDatabase() {
     $conn = new mysqli(DB_HOST, DB_USER, DB_PASS);
@@ -29,10 +90,15 @@ function initDatabase() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(50) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
-        full_name VARCHAR(100) NOT NULL,
-        role ENUM('admin', 'nurse', 'receptionist', 'patient') NOT NULL,
+        first_name VARCHAR(40) DEFAULT NULL,
+        middle_name VARCHAR(10) DEFAULT NULL,
+        last_name VARCHAR(40) DEFAULT NULL,
+        suffix VARCHAR(10) DEFAULT NULL,
+        role ENUM('admin', 'patient', 'doctor') NOT NULL,
         email VARCHAR(100),
+        email_verified_at DATETIME DEFAULT NULL,
         phone VARCHAR(20),
+        phone_verified_at DATETIME DEFAULT NULL,
         gender ENUM('Male', 'Female', 'Other') DEFAULT NULL,
         date_of_birth DATE DEFAULT NULL,
         age INT DEFAULT NULL,
@@ -48,6 +114,12 @@ function initDatabase() {
     
     // Add new columns if they don't exist (for existing databases)
     $columns_to_add = [
+        ['first_name', "VARCHAR(40) DEFAULT NULL", 'password'],
+        ['middle_name', "VARCHAR(10) DEFAULT NULL", 'first_name'],
+        ['last_name', "VARCHAR(40) DEFAULT NULL", 'middle_name'],
+        ['suffix', "VARCHAR(10) DEFAULT NULL", 'last_name'],
+        ['email_verified_at', 'DATETIME DEFAULT NULL', 'email'],
+        ['phone_verified_at', 'DATETIME DEFAULT NULL', 'phone'],
         ['gender', "ENUM('Male', 'Female', 'Other') DEFAULT NULL", 'phone'],
         ['date_of_birth', 'DATE DEFAULT NULL', 'gender'],
         ['age', 'INT DEFAULT NULL', 'date_of_birth'],
@@ -67,6 +139,11 @@ function initDatabase() {
             $conn->query("ALTER TABLE users ADD COLUMN {$col[0]} {$col[1]} {$after}");
         }
     }
+
+    if (!clinic_db_remove_legacy_full_name($conn)) {
+        $conn->close();
+        return false;
+    }
     
     // Create appointments table
     $conn->query("CREATE TABLE IF NOT EXISTS appointments (
@@ -77,9 +154,36 @@ function initDatabase() {
         appointment_time TIME NOT NULL,
         status ENUM('pending', 'confirmed', 'completed', 'cancelled') DEFAULT 'pending',
         notes TEXT,
+        cancellation_reason TEXT DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE
     )");
+    $conn->query("UPDATE users SET role = 'admin' WHERE role = 'receptionist'");
+    $conn->query("UPDATE users SET role = 'doctor' WHERE role = 'nurse'");
+    $conn->query("ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'patient', 'doctor') NOT NULL");
+
+    $bookingTypeColumn = $conn->query("SHOW COLUMNS FROM appointments LIKE 'booking_type'");
+    $bookingTypeDefinition = $bookingTypeColumn ? $bookingTypeColumn->fetch_assoc() : null;
+    if (!$bookingTypeDefinition) {
+        $conn->query("ALTER TABLE appointments ADD COLUMN booking_type ENUM('package','individual','consultation','ultrasound') DEFAULT NULL AFTER notes");
+    } elseif (
+        stripos((string) ($bookingTypeDefinition['Type'] ?? ''), 'ultrasound') === false
+        || stripos((string) ($bookingTypeDefinition['Type'] ?? ''), 'consultation') === false
+    ) {
+        $conn->query("ALTER TABLE appointments MODIFY COLUMN booking_type ENUM('package','individual','consultation','ultrasound') DEFAULT NULL");
+    }
+    $cancellationReasonColumn = $conn->query("SHOW COLUMNS FROM appointments LIKE 'cancellation_reason'");
+    if (!$cancellationReasonColumn || !$cancellationReasonColumn->fetch_assoc()) {
+        $conn->query("ALTER TABLE appointments ADD COLUMN cancellation_reason TEXT DEFAULT NULL AFTER notes");
+    }
+    $totalDisplayColumn = $conn->query("SHOW COLUMNS FROM appointments LIKE 'total_display_price'");
+    if (!$totalDisplayColumn || !$totalDisplayColumn->fetch_assoc()) {
+        $conn->query("ALTER TABLE appointments ADD COLUMN total_display_price DECIMAL(10,2) DEFAULT NULL AFTER booking_type");
+    }
+    $priceChannelColumn = $conn->query("SHOW COLUMNS FROM appointments LIKE 'price_channel'");
+    if (!$priceChannelColumn || !$priceChannelColumn->fetch_assoc()) {
+        $conn->query("ALTER TABLE appointments ADD COLUMN price_channel ENUM('opd','home') DEFAULT 'opd' AFTER total_display_price");
+    }
     
     $conn->close();
 }

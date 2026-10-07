@@ -1,4 +1,7 @@
 <?php
+// The clinic operates on Philippine time across every page and scheduled job.
+date_default_timezone_set('Asia/Manila');
+
 // Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -9,16 +12,17 @@ function isLoggedIn() {
     return isset($_SESSION['user_id']);
 }
 
+function normalizeUserRole(string $role): string {
+    return $role === 'receptionist' ? 'admin' : $role;
+}
+
 function dashboardForRole(string $role): string {
+    $role = normalizeUserRole($role);
     switch ($role) {
         case 'admin':
             return 'admin.php';
-        case 'nurse':
-            return 'nurse.php';
         case 'doctor':
-            return 'view_appointments.php';
-        case 'receptionist':
-            return 'receptionist.php';
+            return 'doctor.php';
         case 'patient':
             return 'patients.php';
         default:
@@ -42,19 +46,23 @@ function checkRole($requiredRole) {
         exit();
     }
     
-    if ($_SESSION['user_role'] !== $requiredRole) {
+    $currentRole = normalizeUserRole((string) $_SESSION['user_role']);
+    $requiredRole = normalizeUserRole((string) $requiredRole);
+    if ($currentRole !== $requiredRole) {
         header('Location: index.php');
         exit();
     }
 }
 
-/** Allow any of the given roles (e.g. nurse + doctor for clinical pages). */
+/** Allow any of the given roles for shared pages. */
 function checkAnyRole(array $requiredRoles) {
     if (!isLoggedIn()) {
         header('Location: index.php');
         exit();
     }
-    if (!in_array($_SESSION['user_role'], $requiredRoles, true)) {
+    $currentRole = normalizeUserRole((string) $_SESSION['user_role']);
+    $requiredRoles = array_map('normalizeUserRole', $requiredRoles);
+    if (!in_array($currentRole, $requiredRoles, true)) {
         header('Location: index.php');
         exit();
     }
@@ -70,7 +78,7 @@ function getCurrentUser() {
         'id' => $_SESSION['user_id'],
         'username' => $_SESSION['username'],
         'full_name' => $_SESSION['full_name'],
-        'role' => $_SESSION['user_role']
+        'role' => normalizeUserRole((string) $_SESSION['user_role'])
     ];
 }
 
@@ -79,24 +87,33 @@ function login($username, $password) {
     require_once __DIR__ . '/../config/database.php';
     $conn = getDBConnection();
     
-    $stmt = $conn->prepare("SELECT id, username, password, full_name, role, COALESCE(is_active, 1) AS is_active FROM users WHERE username = ?");
+    $stmt = $conn->prepare("SELECT id, username, password, first_name, middle_name, last_name, suffix, role, COALESCE(is_active, 1) AS is_active FROM users WHERE username = ?");
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $result = $stmt->get_result();
     
     if ($result->num_rows === 1) {
         $user = $result->fetch_assoc();
-        if ($user['role'] === 'doctor' && (int) $user['is_active'] !== 1) {
+        if ((int) $user['is_active'] !== 1) {
             $stmt->close();
             $conn->close();
             return false;
         }
 
         if (password_verify($password, $user['password'])) {
+            $sessionRole = normalizeUserRole((string) $user['role']);
+            if ($user['role'] === 'receptionist') {
+                $migrateStmt = $conn->prepare("UPDATE users SET role = 'admin' WHERE id = ? AND role = 'receptionist'");
+                if ($migrateStmt) {
+                    $migrateStmt->bind_param('i', $user['id']);
+                    $migrateStmt->execute();
+                    $migrateStmt->close();
+                }
+            }
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
-            $_SESSION['full_name'] = $user['full_name'];
-            $_SESSION['user_role'] = $user['role'];
+            $_SESSION['full_name'] = clinic_name_display_from_row($user);
+            $_SESSION['user_role'] = $sessionRole;
             
             $stmt->close();
             $conn->close();
@@ -116,4 +133,3 @@ function logout() {
     exit();
 }
 ?>
-

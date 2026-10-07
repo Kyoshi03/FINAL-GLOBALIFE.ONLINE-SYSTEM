@@ -1,5 +1,10 @@
 <?php
+// Keep PHP date/time values aligned with the database and clinic location.
+date_default_timezone_set('Asia/Manila');
+
 mysqli_report(MYSQLI_REPORT_OFF);
+
+require_once __DIR__ . '/../includes/name_parts.php';
 
 function dbIsLiveHost(): bool {
     $host = strtolower($_SERVER['HTTP_HOST'] ?? '');
@@ -42,6 +47,18 @@ define('DB_NAME', dbConfigValue($productionConfig, 'name', 'DB_NAME', 'clinic1_d
 define('DB_HAS_PRODUCTION_CONFIG', $hasProductionConfig);
 define('DB_ENVIRONMENT', $isLiveHost ? 'hosting' : 'local');
 
+function dbHasPlaceholderCredentials(): bool {
+    $password = trim(DB_PASS);
+    return DB_ENVIRONMENT === 'hosting'
+        && (
+            $password === ''
+            || stripos($password, 'PALITAN_MO') !== false
+            || stripos($password, 'HOSTINGER_DATABASE_PASSWORD') !== false
+            || stripos($password, 'your_hostinger') !== false
+            || stripos($password, 'MYSQL_PASSWORD_HERE') !== false
+        );
+}
+
 function renderDatabaseSetupError(string $title, string $message): void {
     http_response_code(500);
     $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
@@ -49,6 +66,9 @@ function renderDatabaseSetupError(string $title, string $message): void {
     $safeDb = htmlspecialchars(DB_NAME, ENT_QUOTES, 'UTF-8');
     $safeUser = htmlspecialchars(DB_USER, ENT_QUOTES, 'UTF-8');
     $safeHost = htmlspecialchars(DB_HOST, ENT_QUOTES, 'UTF-8');
+    $settingsDetails = DB_ENVIRONMENT === 'hosting'
+        ? '<p>For security, database credentials are hidden on the live website.</p>'
+        : "<p>Host: <code>{$safeHost}</code><br>User: <code>{$safeUser}</code><br>Database: <code>{$safeDb}</code></p>";
 
     echo <<<HTML
 <!DOCTYPE html>
@@ -71,8 +91,8 @@ function renderDatabaseSetupError(string $title, string $message): void {
         <h1>{$safeTitle}</h1>
         <p>{$safeMessage}</p>
         <div class="hint">
-            <p><strong>Hosting database settings currently loaded:</strong></p>
-            <p>Host: <code>{$safeHost}</code><br>User: <code>{$safeUser}</code><br>Database: <code>{$safeDb}</code></p>
+            <p><strong>Database configuration:</strong></p>
+            {$settingsDetails}
             <p>Create or update <code>config/production.php</code> with the exact Hostinger database name, user, password, and host.</p>
         </div>
     </main>
@@ -93,6 +113,13 @@ function getDBConnection() {
         );
     }
 
+    if (dbHasPlaceholderCredentials()) {
+        renderDatabaseSetupError(
+            'Hostinger database password required',
+            'The production database password has not been configured. In Hostinger hPanel, open Databases > Management, reset or copy the password for the assigned MySQL user, then place that exact password in config/production.php.'
+        );
+    }
+
     $conn = @new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
     
     if ($conn->connect_error) {
@@ -107,9 +134,12 @@ function getDBConnection() {
         }
 
         if ($conn->connect_error) {
+            $connectionMessage = DB_ENVIRONMENT === 'hosting'
+                ? 'The hosting database rejected the configured credentials. Confirm that the MySQL username, database name, and database-user password in config/production.php exactly match Hostinger hPanel.'
+                : 'The system could not connect to the database: ' . $conn->connect_error;
             renderDatabaseSetupError(
                 'Database connection failed',
-                'The system could not connect to the database: ' . $conn->connect_error
+                $connectionMessage
             );
         }
     }
@@ -153,6 +183,65 @@ function dbTableWorks(mysqli $conn, string $table): bool {
 
         throw $e;
     }
+}
+
+function dbUsersNameExpression(string $alias = ''): string {
+    $prefix = $alias !== '' ? rtrim($alias, '.') . '.' : '';
+    return "TRIM(CONCAT_WS(' ', NULLIF({$prefix}first_name, ''), NULLIF({$prefix}middle_name, ''), NULLIF({$prefix}last_name, ''), NULLIF({$prefix}suffix, '')))";
+}
+
+function dbBackfillUsersNameParts(mysqli $conn): void {
+    $requiredColumns = ['full_name', 'first_name', 'middle_name', 'last_name', 'suffix'];
+    foreach ($requiredColumns as $column) {
+        $check = $conn->query("SHOW COLUMNS FROM users LIKE '" . $conn->real_escape_string($column) . "'");
+        if (!$check || $check->num_rows === 0) {
+            return;
+        }
+    }
+
+    $result = $conn->query("SELECT id, full_name, first_name, middle_name, last_name, suffix FROM users ORDER BY id ASC");
+    if (!$result) {
+        return;
+    }
+
+    $update = $conn->prepare("UPDATE users SET first_name = ?, middle_name = ?, last_name = ?, suffix = ? WHERE id = ?");
+    if (!$update) {
+        return;
+    }
+
+    while ($row = $result->fetch_assoc()) {
+        $parsed = clinic_name_split_full_name((string) ($row['full_name'] ?? ''));
+
+        $firstName = trim((string) ($row['first_name'] ?? ''));
+        $middleName = trim((string) ($row['middle_name'] ?? ''));
+        $lastName = trim((string) ($row['last_name'] ?? ''));
+        $suffix = trim((string) ($row['suffix'] ?? ''));
+
+        $newFirstName = $firstName !== '' ? $firstName : $parsed['first_name'];
+        $newMiddleName = $middleName !== '' ? $middleName : $parsed['middle_name'];
+        $newLastName = $lastName !== '' ? $lastName : $parsed['last_name'];
+        $newSuffix = $suffix !== '' ? $suffix : $parsed['suffix'];
+
+        if ($newFirstName === $firstName && $newMiddleName === $middleName && $newLastName === $lastName && $newSuffix === $suffix) {
+            continue;
+        }
+
+        $id = (int) $row['id'];
+        $update->bind_param('ssssi', $newFirstName, $newMiddleName, $newLastName, $newSuffix, $id);
+        $update->execute();
+    }
+
+    $update->close();
+}
+
+function dbRemoveLegacyUsersFullNameColumn(mysqli $conn): bool {
+    $columnResult = $conn->query("SHOW COLUMNS FROM users LIKE 'full_name'");
+    if (!$columnResult || $columnResult->num_rows === 0) {
+        return true;
+    }
+
+    dbBackfillUsersNameParts($conn);
+    return $conn->query("ALTER TABLE users DROP COLUMN full_name") === true;
 }
 
 function dbDropTableIfPresent(mysqli $conn, string $table): void {
@@ -218,11 +307,16 @@ function initDatabase() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(50) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
-        full_name VARCHAR(100) NOT NULL,
-        role ENUM('admin', 'nurse', 'receptionist', 'patient', 'doctor') NOT NULL,
+        first_name VARCHAR(40) DEFAULT NULL,
+        middle_name VARCHAR(10) DEFAULT NULL,
+        last_name VARCHAR(40) DEFAULT NULL,
+        suffix VARCHAR(10) DEFAULT NULL,
+        role ENUM('admin', 'patient', 'doctor') NOT NULL,
         email VARCHAR(100),
+        email_verified_at DATETIME DEFAULT NULL,
         phone VARCHAR(20),
-        gender ENUM('Male', 'Female', 'Other') DEFAULT NULL,
+        phone_verified_at DATETIME DEFAULT NULL,
+        gender ENUM('Male', 'Female') DEFAULT NULL,
         date_of_birth DATE DEFAULT NULL,
         age INT DEFAULT NULL,
         civil_status VARCHAR(20) DEFAULT NULL,
@@ -234,10 +328,19 @@ function initDatabase() {
         emergency_contact_number VARCHAR(20) DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
+    $conn->query("UPDATE users SET role = 'admin' WHERE role = 'receptionist'");
+    $conn->query("UPDATE users SET role = 'doctor' WHERE role = 'nurse'");
+    $conn->query("ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'patient', 'doctor') NOT NULL");
     
     // Add new columns if they don't exist (for existing databases)
     $columns_to_add = [
-        ['gender', "ENUM('Male', 'Female', 'Other') DEFAULT NULL", 'phone'],
+        ['first_name', "VARCHAR(40) DEFAULT NULL", 'password'],
+        ['middle_name', "VARCHAR(10) DEFAULT NULL", 'first_name'],
+        ['last_name', "VARCHAR(40) DEFAULT NULL", 'middle_name'],
+        ['suffix', "VARCHAR(10) DEFAULT NULL", 'last_name'],
+        ['email_verified_at', 'DATETIME DEFAULT NULL', 'email'],
+        ['phone_verified_at', 'DATETIME DEFAULT NULL', 'phone'],
+        ['gender', "ENUM('Male', 'Female') DEFAULT NULL", 'phone'],
         ['date_of_birth', 'DATE DEFAULT NULL', 'gender'],
         ['age', 'INT DEFAULT NULL', 'date_of_birth'],
         ['civil_status', 'VARCHAR(20) DEFAULT NULL', 'age'],
@@ -256,6 +359,23 @@ function initDatabase() {
             $conn->query("ALTER TABLE users ADD COLUMN {$col[0]} {$col[1]} {$after}");
         }
     }
+
+    $genderColumn = $conn->query("SHOW COLUMNS FROM users LIKE 'gender'");
+    $genderInfo = $genderColumn ? $genderColumn->fetch_assoc() : null;
+    if ($genderInfo && strpos((string) ($genderInfo['Type'] ?? ''), "'Other'") !== false) {
+        $conn->query("DELETE FROM users WHERE gender = 'Other'");
+        $conn->query("ALTER TABLE users MODIFY COLUMN gender ENUM('Male', 'Female') DEFAULT NULL");
+    }
+    if (!dbRemoveLegacyUsersFullNameColumn($conn)) {
+        $conn->close();
+        return false;
+    }
+
+    $emailColumn = $conn->query("SHOW COLUMNS FROM users LIKE 'email'");
+    $emailInfo = $emailColumn ? $emailColumn->fetch_assoc() : null;
+    if ($emailInfo && strtoupper((string) ($emailInfo['Null'] ?? '')) !== 'YES') {
+        $conn->query("ALTER TABLE users MODIFY email VARCHAR(100) DEFAULT NULL");
+    }
     
     // Create appointments table
     $conn->query("CREATE TABLE IF NOT EXISTS appointments (
@@ -266,6 +386,7 @@ function initDatabase() {
         appointment_time TIME NOT NULL,
         status ENUM('pending', 'confirmed', 'completed', 'cancelled') DEFAULT 'pending',
         notes TEXT,
+        cancellation_reason TEXT DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE
     )");
@@ -291,7 +412,8 @@ function dbColumnExists($conn, $table, $column) {
 
 function initLabBookingSchema($conn) {
     $apptCols = [
-        ['booking_type', "ENUM('package','individual') DEFAULT NULL", 'notes'],
+        ['cancellation_reason', 'TEXT DEFAULT NULL', 'notes'],
+        ['booking_type', "ENUM('package','individual','consultation','ultrasound') DEFAULT NULL", 'notes'],
         ['total_display_price', 'DECIMAL(10,2) DEFAULT NULL', 'booking_type'],
         ['price_channel', "ENUM('opd','home') DEFAULT 'opd'", 'total_display_price'],
     ];
@@ -301,6 +423,22 @@ function initLabBookingSchema($conn) {
             $conn->query("ALTER TABLE appointments ADD COLUMN `{$col[0]}` {$col[1]} {$after}");
         }
     }
+    $bookingTypeColumn = $conn->query("SHOW COLUMNS FROM appointments LIKE 'booking_type'");
+    $bookingTypeDefinition = $bookingTypeColumn ? $bookingTypeColumn->fetch_assoc() : null;
+    if (
+        $bookingTypeDefinition
+        && (
+            stripos((string) ($bookingTypeDefinition['Type'] ?? ''), 'consultation') === false
+            || stripos((string) ($bookingTypeDefinition['Type'] ?? ''), 'ultrasound') === false
+        )
+    ) {
+        $conn->query("ALTER TABLE appointments MODIFY COLUMN booking_type ENUM('package','individual','consultation','ultrasound') DEFAULT NULL");
+    }
+    $conn->query(
+        "UPDATE appointments
+         SET notes = REPLACE(notes, 'Est. total:', 'Total:')
+         WHERE notes LIKE '%Est. total:%'"
+    );
     
     $conn->query("CREATE TABLE IF NOT EXISTS lab_services (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -346,10 +484,10 @@ function initLabBookingSchema($conn) {
 
     require_once __DIR__ . '/../includes/doctor_schedule.php';
     init_doctor_schema_and_accounts($conn);
-    initNurseClinicalSchema($conn);
+    initDoctorClinicalSchema($conn);
 }
 
-function initNurseClinicalSchema(mysqli $conn): void {
+function initDoctorClinicalSchema(mysqli $conn): void {
     if (!dbColumnExists($conn, 'users', 'is_active')) {
         $conn->query('ALTER TABLE users ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1');
     }
@@ -360,6 +498,7 @@ function initNurseClinicalSchema(mysqli $conn): void {
         title VARCHAR(220) NOT NULL,
         content TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NULL,
         FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE,
         INDEX idx_med_patient (patient_id)
@@ -392,27 +531,13 @@ function initNurseClinicalSchema(mysqli $conn): void {
         INDEX idx_reset_user (user_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
-    $conn->query("CREATE TABLE IF NOT EXISTS appointment_booking_verifications (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        patient_id INT NOT NULL,
-        email VARCHAR(100) NOT NULL,
-        code_hash VARCHAR(255) NOT NULL,
-        booking_payload LONGTEXT NOT NULL,
-        expires_at DATETIME NOT NULL,
-        attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
-        last_sent_at DATETIME NOT NULL,
-        used_at DATETIME DEFAULT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE,
-        INDEX idx_booking_verify_patient (patient_id),
-        INDEX idx_booking_verify_active (patient_id, used_at)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-
     $conn->query("CREATE TABLE IF NOT EXISTS appointment_email_reminders (
         id INT AUTO_INCREMENT PRIMARY KEY,
         appointment_id INT NOT NULL,
         reminder_type VARCHAR(30) NOT NULL DEFAULT '24_hours',
         scheduled_for DATETIME NOT NULL,
+        email_sent_at DATETIME DEFAULT NULL,
+        sms_sent_at DATETIME DEFAULT NULL,
         sent_at DATETIME DEFAULT NULL,
         attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
         last_error VARCHAR(500) DEFAULT NULL,
@@ -421,6 +546,12 @@ function initNurseClinicalSchema(mysqli $conn): void {
         UNIQUE KEY uq_appointment_reminder (appointment_id, reminder_type),
         INDEX idx_reminders_due (sent_at, scheduled_for)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    if (!dbColumnExists($conn, 'appointment_email_reminders', 'email_sent_at')) {
+        $conn->query("ALTER TABLE appointment_email_reminders ADD COLUMN email_sent_at DATETIME DEFAULT NULL AFTER scheduled_for");
+    }
+    if (!dbColumnExists($conn, 'appointment_email_reminders', 'sms_sent_at')) {
+        $conn->query("ALTER TABLE appointment_email_reminders ADD COLUMN sms_sent_at DATETIME DEFAULT NULL AFTER email_sent_at");
+    }
 }
 
 function seedDefaultLabServices($conn) {

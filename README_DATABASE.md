@@ -39,14 +39,17 @@
 - **id** - Primary key
 - **username** - Unique username
 - **password** - Hashed password
-- **full_name** - Patient's full name
-- **role** - User role (admin, nurse, receptionist, patient)
+- **first_name** - Patient's first name
+- **middle_name** - Patient's middle name or initial
+- **last_name** - Patient's last name
+- **suffix** - Optional name suffix such as JR or SR
+- **role** - User role (admin, doctor, receptionist, patient)
 - **email** - Email address
 - **phone** - Mobile number
 - **gender** - Male, Female, or Other
 - **date_of_birth** - Date of birth
 - **age** - Auto-computed age
-- **civil_status** - Single, Married, Divorced, Widowed
+- **civil_status** - Single, Married, Widowed
 - **address** - Street address
 - **barangay** - Barangay
 - **city** - City
@@ -69,7 +72,6 @@
 
 After setting up the database, run `init_users.php` to create default user accounts:
 - Admin: `admin` / `password123`
-- Nurse: `nurse1` / `password123`
+- Doctor accounts are created from the admin doctor management page.
 - Receptionist: `receptionist1` / `password123`
 - Patient: `patient1` / `password123`
-
