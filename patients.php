@@ -1597,8 +1597,8 @@ $additionalStyles = '
 
     .appointment-row {
         display: grid;
-        grid-template-columns: 86px minmax(0, 1fr) 210px;
-        gap: 18px;
+        grid-template-columns: 86px minmax(0, 1fr) 108px 184px;
+        gap: 12px;
         align-items: center;
         border-bottom: 1px solid #e6eef5;
         padding: 11px 14px;
@@ -1652,24 +1652,25 @@ $additionalStyles = '
 
     .appointment-side {
         display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
+        align-items: center;
+        justify-content: center;
+        min-width: 0;
     }
 
-    .appointment-side > .status-badge {
-        margin: 0;
+    .appointment-status {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         min-width: 0;
-        box-sizing: border-box;
-        white-space: nowrap;
+        text-align: center;
     }
 
     .appointment-action-stack {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         align-items: center;
-        gap: 6px;
-        width: min(210px, 100%);
+        gap: 5px;
+        width: min(184px, 100%);
         margin-inline: auto;
     }
 
@@ -1677,9 +1678,6 @@ $additionalStyles = '
         margin: 0;
         width: 100%;
         min-width: 0;
-    }
-
-    .appointment-action-stack form {
         grid-column: 2;
         grid-row: 1;
     }
@@ -1698,9 +1696,9 @@ $additionalStyles = '
         cursor: pointer;
         font-weight: 800;
         min-width: 0;
-        min-height: 30px;
-        padding: 5px 4px;
-        font-size: .75rem;
+        min-height: 28px;
+        padding: 4px 3px;
+        font-size: .68rem;
         line-height: 1.05;
         white-space: nowrap;
         width: 100%;
@@ -1710,10 +1708,10 @@ $additionalStyles = '
         grid-column: 1 / -1;
         grid-row: 2;
         min-width: 0;
-        min-height: 30px;
-        padding: 5px 2px;
+        min-height: 28px;
+        padding: 4px 2px;
         border-radius: 8px;
-        font-size: .6rem;
+        font-size: .58rem;
         font-weight: 800;
         line-height: 1.05;
         white-space: nowrap;
@@ -1725,15 +1723,15 @@ $additionalStyles = '
     }
 
     .patient-details-inline {
-        min-height: 30px;
-        padding: 5px 4px;
+        min-height: 28px;
+        padding: 4px 3px;
         border: 1px solid #cbd5e1;
         border-radius: 8px;
         background: #f1f5f9;
         color: #475569;
         cursor: pointer;
         font: inherit;
-        font-size: .75rem;
+        font-size: .68rem;
         font-weight: 800;
         line-height: 1.05;
         white-space: nowrap;
@@ -3591,11 +3589,13 @@ include 'includes/header.php';
                                         <?php endif; ?>
                                     </div>
                                 </div>
+                                <div class="appointment-status">
+                                    <span class="status-badge <?php echo htmlspecialchars($statusClass); ?>">
+                                        <?php echo htmlspecialchars($statusLabel); ?>
+                                    </span>
+                                </div>
                                 <div class="appointment-side">
                                     <?php if (in_array($statusClass, ['pending', 'confirmed'], true)): ?>
-                                        <span class="status-badge <?php echo htmlspecialchars($statusClass); ?>">
-                                            <?php echo htmlspecialchars($statusLabel); ?>
-                                        </span>
                                         <div class="appointment-action-stack <?php echo $statusClass === 'pending' ? 'has-cancel' : 'no-cancel'; ?>">
                                             <?php if ($statusClass === 'pending'): ?>
                                                 <form method="post" action="patients.php" data-patient-cancel-form>
@@ -3612,10 +3612,6 @@ include 'includes/header.php';
                                                 data-reschedule-time="<?php echo htmlspecialchars((string) ($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                                 data-reschedule-label="Current schedule: <?php echo htmlspecialchars(patient_format_date($appointment['appointment_date'] ?? '') . ' at ' . patient_format_time($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">Reschedule</button>
                                         </div>
-                                    <?php else: ?>
-                                        <span class="status-badge <?php echo htmlspecialchars($statusClass); ?>">
-                                            <?php echo htmlspecialchars($statusLabel); ?>
-                                        </span>
                                     <?php endif; ?>
                                 </div>
                             </article>
