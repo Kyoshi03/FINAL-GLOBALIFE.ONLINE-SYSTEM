@@ -13,6 +13,11 @@
 .reschedule-field input { width:100%; box-sizing:border-box; min-height:46px; padding:10px 12px; border:1px solid #cfe3f2; border-radius:10px; color:#10233f; background:#fff; font:inherit; }
 .reschedule-field input:focus { outline:none; border-color:#0f7cc2; box-shadow:0 0 0 4px rgba(15,124,194,.1); }
 .reschedule-note { margin:0 0 8px; color:#60758a; line-height:1.45; font-size:.88rem; }
+.reschedule-availability { min-height:20px; margin:0 0 16px; padding:9px 11px; border-radius:9px; background:#f2f8fc; color:#42657a; font-size:.84rem; line-height:1.4; }
+.reschedule-availability.is-loading { color:#6e7d87; }
+.reschedule-availability.is-error { background:#fff3f3; color:#a52835; }
+.reschedule-availability.is-ready { background:#effaf3; color:#246b43; }
+.reschedule-actions button:disabled { opacity:.55; cursor:not-allowed; }
 .reschedule-actions { display:flex; justify-content:flex-end; gap:10px; padding:16px 24px 24px; }
 @media (max-width:520px) { .reschedule-actions { flex-direction:column-reverse; } .reschedule-actions .btn { width:100%; } }
 .reschedule-success-modal { position:fixed; inset:0; z-index:3300; display:flex; align-items:center; justify-content:center; padding:18px; background:rgba(3,18,30,.5); backdrop-filter:blur(4px); }
@@ -52,6 +57,7 @@ $rescheduleMinTime = $rescheduleNow->modify('+1 minute')->format('H:i');
             <input type="hidden" name="return_url" value="<?php echo htmlspecialchars((string) $appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
             <div class="reschedule-body">
                 <p class="reschedule-note" id="appointmentRescheduleNotice">The new schedule will be checked against clinic hours, availability, and daily capacity.</p>
+                <p class="reschedule-availability is-loading" id="appointmentRescheduleAvailability" aria-live="polite">Checking the doctor's available dates...</p>
                 <div class="reschedule-field">
                     <label for="appointmentRescheduleDate">New date</label>
                     <input type="date" name="appointment_date" id="appointmentRescheduleDate"
@@ -64,7 +70,7 @@ $rescheduleMinTime = $rescheduleNow->modify('+1 minute')->format('H:i');
             </div>
             <div class="reschedule-actions">
                 <button type="button" class="btn btn-light" data-close-reschedule>Cancel</button>
-                <button type="submit" class="btn btn-primary">Save new schedule</button>
+                <button type="submit" class="btn btn-primary" id="appointmentRescheduleSubmit" disabled>Save new schedule</button>
             </div>
         </form>
     </div>
@@ -106,6 +112,8 @@ unset($_SESSION['reschedule_error']);
     var idInput = document.getElementById('appointmentRescheduleId');
     var dateInput = document.getElementById('appointmentRescheduleDate');
     var timeInput = document.getElementById('appointmentRescheduleTime');
+    var availabilityNote = document.getElementById('appointmentRescheduleAvailability');
+    var submitButton = document.getElementById('appointmentRescheduleSubmit');
     var currentText = document.getElementById('appointmentRescheduleCurrent');
     var successModal = document.getElementById('rescheduleSuccessModal');
     var successOk = document.getElementById('rescheduleSuccessOk');
@@ -114,6 +122,115 @@ unset($_SESSION['reschedule_error']);
     if (!modal || !form || !idInput || !dateInput || !timeInput) return;
     var today = modal.getAttribute('data-today') || '';
     var minimumTimeToday = modal.getAttribute('data-min-time') || '';
+    var availability = null;
+    var availabilityRequest = null;
+
+    function setAvailabilityNote(message, state) {
+        if (!availabilityNote) return;
+        availabilityNote.textContent = message;
+        availabilityNote.className = 'reschedule-availability ' + (state ? 'is-' + state : '');
+    }
+
+    function setSubmitEnabled(enabled) {
+        if (submitButton) submitButton.disabled = !enabled;
+    }
+
+    function dateIsAvailable(date) {
+        return availability && Array.isArray(availability.available_dates)
+            && availability.available_dates.indexOf(date) !== -1;
+    }
+
+    function slotsForDate(date) {
+        return availability && availability.slots_by_date && Array.isArray(availability.slots_by_date[date])
+            ? availability.slots_by_date[date] : [];
+    }
+
+    function timeIsInDoctorSchedule(date, time) {
+        if (!dateIsAvailable(date) || !/^\d{2}:\d{2}$/.test(time)) return false;
+        return slotsForDate(date).some(function (slot) {
+            return time >= slot.start && time <= slot.end;
+        });
+    }
+
+    function firstAvailableDate() {
+        return availability && availability.available_dates && availability.available_dates.length
+            ? availability.available_dates[0] : '';
+    }
+
+    function firstAvailableTime(date) {
+        var slots = slotsForDate(date);
+        if (!slots.length) return '';
+        var first = slots[0].start;
+        if (date === today && minimumTimeToday > first) first = minimumTimeToday;
+        return first;
+    }
+
+    function updateAvailabilityForSelection() {
+        if (!availability || availability.booking_type !== 'consultation') {
+            updateTimeMinimum();
+            return true;
+        }
+        var date = dateInput.value;
+        if (!dateIsAvailable(date)) {
+            dateInput.setCustomValidity('Choose an available date for this doctor.');
+            timeInput.setCustomValidity('Choose an available doctor schedule first.');
+            var reason = availability.unavailable_reasons && availability.unavailable_reasons[date]
+                ? availability.unavailable_reasons[date] : 'This doctor has no available schedule on the selected date.';
+            setAvailabilityNote(reason + ' Choose another available date.', 'error');
+            return false;
+        }
+        dateInput.setCustomValidity('');
+        updateTimeMinimum();
+        var validTime = timeIsInDoctorSchedule(date, timeInput.value)
+            && (date !== today || timeInput.value >= minimumTimeToday);
+        timeInput.setCustomValidity(validTime ? '' : 'Choose a time within the doctor\'s available schedule.');
+        var slots = slotsForDate(date).map(function (slot) { return slot.start + ' - ' + slot.end; }).join(', ');
+        setAvailabilityNote('Available schedule: ' + slots + '. Booked: ' + ((availability.booked_by_date || {})[date] || 0) + '/' + availability.daily_limit + '.', 'ready');
+        return validTime;
+    }
+
+    function loadAvailability(appointmentId, preferredDate, preferredTime) {
+        availability = null;
+        setSubmitEnabled(false);
+        setAvailabilityNote('Checking the doctor\'s available dates...', 'loading');
+        if (availabilityRequest) availabilityRequest.abort();
+        availabilityRequest = new AbortController();
+        fetch('reschedule_availability.php?appointment_id=' + encodeURIComponent(appointmentId), {
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json' },
+            signal: availabilityRequest.signal
+        }).then(function (response) {
+            return response.json().then(function (data) {
+                if (!response.ok || !data.ok) throw new Error(data.error || 'The doctor schedule could not be loaded.');
+                return data;
+            });
+        }).then(function (data) {
+            availability = data;
+            if (data.booking_type !== 'consultation') {
+                setAvailabilityNote('The new schedule will still be checked before saving.', 'ready');
+                setSubmitEnabled(true);
+                updateTimeMinimum();
+                return;
+            }
+            dateInput.min = data.date_min || today;
+            dateInput.max = data.date_max || '';
+            var selectedDate = dateIsAvailable(preferredDate) ? preferredDate : firstAvailableDate();
+            dateInput.value = selectedDate;
+            var selectedTime = timeIsInDoctorSchedule(selectedDate, preferredTime) ? preferredTime : firstAvailableTime(selectedDate);
+            timeInput.value = selectedTime;
+            if (!selectedDate) {
+                setAvailabilityNote('There are no available future dates for this doctor.', 'error');
+                setSubmitEnabled(false);
+                return;
+            }
+            setSubmitEnabled(updateAvailabilityForSelection());
+        }).catch(function (error) {
+            if (error.name === 'AbortError') return;
+            availability = { booking_type: 'consultation' };
+            setAvailabilityNote(error.message || 'The doctor schedule could not be loaded. Please refresh and try again.', 'error');
+            setSubmitEnabled(false);
+        });
+    }
 
     function updateTimeMinimum() {
         if (dateInput.value === today) {
@@ -136,17 +253,39 @@ unset($_SESSION['reschedule_error']);
             event.stopPropagation();
             idInput.value = button.getAttribute('data-appointment-id') || '';
             var currentDate = button.getAttribute('data-reschedule-date') || '';
+            var currentTime = (button.getAttribute('data-reschedule-time') || '').slice(0, 5);
             dateInput.value = currentDate && currentDate >= today ? currentDate : today;
-            timeInput.value = (button.getAttribute('data-reschedule-time') || '').slice(0, 5);
-            updateTimeMinimum();
+            timeInput.value = currentTime;
+            dateInput.removeAttribute('max');
+            dateInput.setCustomValidity('');
+            timeInput.setCustomValidity('');
             var current = button.getAttribute('data-reschedule-label') || 'Current appointment schedule';
             if (currentText) currentText.textContent = current;
             modal.classList.add('is-open');
             modal.setAttribute('aria-hidden', 'false');
+            loadAvailability(idInput.value, currentDate, currentTime);
             window.setTimeout(function () { dateInput.focus(); }, 50);
         });
     });
-    dateInput.addEventListener('change', updateTimeMinimum);
+    dateInput.addEventListener('change', function () {
+        if (availability && availability.booking_type === 'consultation') {
+            var suggestedTime = firstAvailableTime(dateInput.value);
+            if (!timeIsInDoctorSchedule(dateInput.value, timeInput.value)) timeInput.value = suggestedTime;
+            setSubmitEnabled(updateAvailabilityForSelection());
+        } else {
+            updateTimeMinimum();
+        }
+    });
+    timeInput.addEventListener('change', function () {
+        if (availability && availability.booking_type === 'consultation') setSubmitEnabled(updateAvailabilityForSelection());
+    });
+    form.addEventListener('submit', function (event) {
+        if (availability && availability.booking_type === 'consultation' && !updateAvailabilityForSelection()) {
+            event.preventDefault();
+            dateInput.reportValidity();
+            timeInput.reportValidity();
+        }
+    });
     modal.querySelectorAll('[data-close-reschedule]').forEach(function (button) {
         button.addEventListener('click', closeModal);
     });
