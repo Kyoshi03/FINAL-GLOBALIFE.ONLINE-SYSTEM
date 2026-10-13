@@ -1268,20 +1268,54 @@ body {
 }
 
 .request-actions {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+    max-width: 220px;
 }
 
 .request-actions form {
     margin: 0;
+    width: 100%;
 }
 
 .request-actions .btn {
+    width: 100%;
     min-height: 34px;
-    padding: 7px 12px;
+    padding: 7px 9px;
     font-size: 0.82rem;
+}
+
+.request-actions .request-confirm-action {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.request-actions .request-cancel-action {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.request-actions .request-details-btn {
+    grid-column: 1;
+    grid-row: 2;
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #475569;
+    font-size: 0.75rem;
+}
+
+.request-actions .request-details-btn:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
+    color: #1e3a5f;
+}
+
+.request-actions .request-reschedule-btn {
+    grid-column: 2;
+    grid-row: 2;
 }
 
 .appointment-request-pagination {
@@ -3012,7 +3046,7 @@ include 'includes/header.php';
                                             <div class="request-actions">
                                                 <button
                                                     type="button"
-                                                    class="btn secondary"
+                                                    class="btn secondary request-details-btn"
                                                     data-admin-appointment
                                                     data-id="<?php echo (int) $appointment['id']; ?>"
                                                     data-patient="<?php echo htmlspecialchars((string) $appointment['patient_name'], ENT_QUOTES, 'UTF-8'); ?>"
@@ -3027,14 +3061,23 @@ include 'includes/header.php';
                                                     data-notes="<?php echo htmlspecialchars($requestPriceDetails, ENT_QUOTES, 'UTF-8'); ?>"
                                                     data-cancel-reason="<?php echo htmlspecialchars((string) (($appointment['cancellation_reason'] ?? '') ?: 'None'), ENT_QUOTES, 'UTF-8'); ?>"
                                                 >Details</button>
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-reschedule request-reschedule-btn"
+                                                    data-open-reschedule
+                                                    data-appointment-id="<?php echo (int) $appointment['id']; ?>"
+                                                    data-reschedule-date="<?php echo htmlspecialchars((string) ($appointment['appointment_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                                    data-reschedule-time="<?php echo htmlspecialchars((string) ($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                                    data-reschedule-label="Current schedule: <?php echo htmlspecialchars($requestSchedule, ENT_QUOTES, 'UTF-8'); ?>"
+                                                >Reschedule</button>
                                                 <?php if ($adminCanRespond): ?>
-                                                    <form method="post" action="update_appointment_status.php">
+                                                    <form method="post" action="update_appointment_status.php" class="request-confirm-action">
                                                         <input type="hidden" name="appointment_id" value="<?php echo (int) $appointment['id']; ?>">
                                                         <input type="hidden" name="status" value="confirmed">
                                                         <input type="hidden" name="return_url" value="admin.php">
                                                         <button class="btn secondary" type="submit" data-confirm-message="Are you sure you want to confirm this appointment request?">Confirm</button>
                                                     </form>
-                                                    <form method="post" action="update_appointment_status.php">
+                                                    <form method="post" action="update_appointment_status.php" class="request-cancel-action">
                                                         <input type="hidden" name="appointment_id" value="<?php echo (int) $appointment['id']; ?>">
                                                         <input type="hidden" name="status" value="cancelled">
                                                         <input type="hidden" name="return_url" value="admin.php">
@@ -3394,6 +3437,8 @@ include 'includes/header.php';
             </div>
         </div>
     </div>
+
+    <?php $appointmentPage = 'admin.php'; include __DIR__ . '/includes/appointment_reschedule_ui.php'; ?>
 
     <div class="admin-modal" id="adminConfirmActionModal" aria-hidden="true">
         <div class="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="adminConfirmActionTitle">
