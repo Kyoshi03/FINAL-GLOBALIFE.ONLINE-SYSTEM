@@ -1597,8 +1597,8 @@ $additionalStyles = '
 
     .appointment-row {
         display: grid;
-        grid-template-columns: 86px minmax(0, 1fr) 108px 184px;
-        gap: 12px;
+        grid-template-columns: 86px minmax(0, 1fr) 96px 160px;
+        gap: 10px;
         align-items: center;
         border-bottom: 1px solid #e6eef5;
         padding: 11px 14px;
@@ -1665,12 +1665,21 @@ $additionalStyles = '
         text-align: center;
     }
 
+    .appointment-status .status-badge {
+        box-sizing: border-box;
+        width: 96px;
+        min-width: 0;
+        padding: 6px 5px;
+        font-size: .68rem;
+        white-space: nowrap;
+    }
+
     .appointment-action-stack {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         align-items: center;
         gap: 5px;
-        width: min(184px, 100%);
+        width: min(160px, 100%);
         margin-inline: auto;
     }
 
@@ -1696,9 +1705,9 @@ $additionalStyles = '
         cursor: pointer;
         font-weight: 800;
         min-width: 0;
-        min-height: 28px;
-        padding: 4px 3px;
-        font-size: .68rem;
+        min-height: 26px;
+        padding: 3px 2px;
+        font-size: .6rem;
         line-height: 1.05;
         white-space: nowrap;
         width: 100%;
@@ -1708,10 +1717,10 @@ $additionalStyles = '
         grid-column: 1 / -1;
         grid-row: 2;
         min-width: 0;
-        min-height: 28px;
-        padding: 4px 2px;
+        min-height: 26px;
+        padding: 3px 2px;
         border-radius: 8px;
-        font-size: .58rem;
+        font-size: .54rem;
         font-weight: 800;
         line-height: 1.05;
         white-space: nowrap;
@@ -1723,15 +1732,15 @@ $additionalStyles = '
     }
 
     .patient-details-inline {
-        min-height: 28px;
-        padding: 4px 3px;
+        min-height: 26px;
+        padding: 3px 2px;
         border: 1px solid #cbd5e1;
         border-radius: 8px;
         background: #f1f5f9;
         color: #475569;
         cursor: pointer;
         font: inherit;
-        font-size: .68rem;
+        font-size: .6rem;
         font-weight: 800;
         line-height: 1.05;
         white-space: nowrap;
