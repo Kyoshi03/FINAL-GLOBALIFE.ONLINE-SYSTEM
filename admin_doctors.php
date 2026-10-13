@@ -339,8 +339,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     || trim((string) ($currentDoctor['phone'] ?? '')) !== $phone;
 
                 if (!$profileChanged) {
-                    $message = '';
-                    $successText = '';
+                    $message = 'No changes were made.';
+                    $successTitle = 'No changes';
+                    $successText = 'There are no changes to save for this doctor profile.';
                 } else {
                     $stmt = $conn->prepare("UPDATE users SET first_name = ?, middle_name = ?, last_name = ?, suffix = ?, specialty = ?, email = ?, phone = ? WHERE id = ? AND role = 'doctor'");
                     $stmt->bind_param('sssssssi', $nameParts['first_name'], $nameParts['middle_name'], $nameParts['last_name'], $nameParts['suffix'], $spec, $email, $phone, $id);
