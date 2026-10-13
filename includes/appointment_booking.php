@@ -411,7 +411,18 @@ function appointment_validate_payload(mysqli $conn, int $patientId, array $paylo
 
     try {
         $timezone = new DateTimeZone('Asia/Manila');
-        $appointmentAt = new DateTimeImmutable($date . ' ' . $time, $timezone);
+        $normalizedTime = strlen($time) === 5 ? $time . ':00' : $time;
+        $appointmentAt = DateTimeImmutable::createFromFormat(
+            '!Y-m-d H:i:s',
+            $date . ' ' . $normalizedTime,
+            $timezone
+        );
+        $dateErrors = DateTimeImmutable::getLastErrors();
+        $hasDateErrors = is_array($dateErrors)
+            && (($dateErrors['warning_count'] ?? 0) > 0 || ($dateErrors['error_count'] ?? 0) > 0);
+        if (!$appointmentAt || $hasDateErrors || $appointmentAt->format('Y-m-d H:i:s') !== $date . ' ' . $normalizedTime) {
+            throw new InvalidArgumentException('Invalid appointment date or time.');
+        }
         $now = new DateTimeImmutable('now', $timezone);
     } catch (Exception $e) {
         return ['ok' => false, 'error' => 'The appointment schedule could not be read. Please choose it again.'];

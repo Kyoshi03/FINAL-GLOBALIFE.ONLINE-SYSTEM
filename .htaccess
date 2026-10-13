@@ -8,3 +8,15 @@ DirectoryIndex index.php
 <IfModule mod_negotiation.c>
     Options -MultiViews
 </IfModule>
+
+# Keep deployment metadata, configuration, logs, and private runtime state
+# outside the public surface of the application.
+<IfModule mod_rewrite.c>
+    RewriteRule ^\.git(?:/|$) - [R=404,L,NC]
+    RewriteRule ^(?:config|logs)(?:/|$) - [R=404,L,NC]
+    RewriteRule ^storage/(?:notification_settings\.json|appointment_capacity\.json|sessions(?:/|$)|.*\.lock$) - [R=404,L,NC]
+</IfModule>
+
+<FilesMatch "^(?:\.gitignore|.*\.md|.*\.sql)$">
+    Require all denied
+</FilesMatch>
