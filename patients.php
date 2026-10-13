@@ -1722,6 +1722,7 @@ $additionalStyles = '
         justify-self: center;
         padding: 3px 2px;
         border-radius: 8px;
+        cursor: pointer;
         font-size: .6rem;
         font-weight: 800;
         line-height: 1.05;
