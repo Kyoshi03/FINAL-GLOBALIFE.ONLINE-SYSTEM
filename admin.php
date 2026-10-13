@@ -381,10 +381,6 @@ if (!$hasCustomTrendRange) {
 $trendRangeLabel = $hasCustomTrendRange
     ? $trendFrom->format('F j, Y') . ' - ' . $trendTo->format('F j, Y')
     : $defaultTrendRanges[$trendPeriod][2];
-$trendReferenceLabel = $todayDate->format('F j, Y');
-$trendMonthLabel = $todayDate->format('F Y');
-$trendQuarter = (int) floor(((int) $todayDate->format('n') - 1) / 3) + 1;
-$trendQuarterLabel = 'Q' . $trendQuarter . ' ' . $todayDate->format('Y');
 $trendData = [];
 foreach (['daily', 'monthly', 'quarterly'] as $period) {
     if ($hasCustomTrendRange) {
@@ -395,11 +391,13 @@ foreach (['daily', 'monthly', 'quarterly'] as $period) {
         $trendData[$period]['range'] = $periodLabel;
     }
 }
-$trendCardData = [
-    'daily' => admin_appointment_trend_series($conn, 'daily', $todayDate, $todayDate),
-    'monthly' => admin_appointment_trend_series($conn, 'monthly', $currentMonthStart, $todayDate),
-    'quarterly' => admin_appointment_trend_series($conn, 'quarterly', $currentQuarterStart, $todayDate),
-];
+$trendCardData = $trendData;
+$trendCardSubtitles = [];
+foreach (['daily', 'monthly', 'quarterly'] as $period) {
+    $trendCardSubtitles[$period] = $hasCustomTrendRange
+        ? 'Appointments from ' . $trendRangeLabel
+        : 'Appointments in ' . $defaultTrendRanges[$period][2];
+}
 
 $conn->close();
 
@@ -2858,18 +2856,18 @@ include 'includes/header.php';
     <section class="trend-metrics" aria-label="Appointment report periods">
         <button class="trend-card" type="button" data-trend-card="daily" aria-pressed="false">
             <span class="trend-card-label">Daily</span>
-            <strong><?php echo (int) ($trendCardData['daily']['values'][count($trendCardData['daily']['values']) - 1] ?? 0); ?></strong>
-            <small>Appointments on <?php echo htmlspecialchars($trendReferenceLabel); ?></small>
+            <strong><?php echo (int) ($trendCardData['daily']['total'] ?? 0); ?></strong>
+            <small><?php echo htmlspecialchars($trendCardSubtitles['daily']); ?></small>
         </button>
         <button class="trend-card" type="button" data-trend-card="monthly" aria-pressed="false">
             <span class="trend-card-label">Monthly</span>
-            <strong><?php echo (int) ($trendCardData['monthly']['values'][count($trendCardData['monthly']['values']) - 1] ?? 0); ?></strong>
-            <small>Appointments in <?php echo htmlspecialchars($trendMonthLabel); ?></small>
+            <strong><?php echo (int) ($trendCardData['monthly']['total'] ?? 0); ?></strong>
+            <small><?php echo htmlspecialchars($trendCardSubtitles['monthly']); ?></small>
         </button>
         <button class="trend-card" type="button" data-trend-card="quarterly" aria-pressed="false">
             <span class="trend-card-label">Quarterly</span>
-            <strong><?php echo (int) ($trendCardData['quarterly']['values'][count($trendCardData['quarterly']['values']) - 1] ?? 0); ?></strong>
-            <small>Appointments in <?php echo htmlspecialchars($trendQuarterLabel); ?></small>
+            <strong><?php echo (int) ($trendCardData['quarterly']['total'] ?? 0); ?></strong>
+            <small><?php echo htmlspecialchars($trendCardSubtitles['quarterly']); ?></small>
         </button>
     </section>
 
