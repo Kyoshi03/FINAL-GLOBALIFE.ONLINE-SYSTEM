@@ -18,7 +18,7 @@
 .reschedule-availability.is-error { background:#fff3f3; color:#a52835; }
 .reschedule-availability.is-ready { background:#effaf3; color:#246b43; }
 .reschedule-actions button:disabled { opacity:.55; cursor:not-allowed; }
-.reschedule-calendar-panel { display:none; margin:0 0 16px; border:1px solid #d8e8f2; border-radius:15px; overflow:hidden; background:#fff; }
+.reschedule-calendar-panel { display:none !important; margin:0 0 16px; border:1px solid #d8e8f2; border-radius:15px; overflow:hidden; background:#fff; }
 .reschedule-calendar-panel.is-visible { display:block; }
 .reschedule-calendar-head { display:grid; grid-template-columns:minmax(190px,1fr) minmax(210px,1fr); gap:14px; align-items:center; padding:15px; border-bottom:1px solid #d8e8f2; background:#fff; }
 .reschedule-calendar-title { display:grid; grid-template-columns:38px 1fr 38px; align-items:center; gap:8px; }
@@ -58,6 +58,9 @@
 .reschedule-time-field { grid-template-columns:auto minmax(150px,220px); align-items:center; gap:10px; margin:2px 0 8px; }
 .reschedule-time-field label { margin:0; white-space:nowrap; }
 .reschedule-time-field input, .reschedule-time-field select { width:220px; min-height:42px; }
+.reschedule-compact-field { margin-bottom:12px; }
+.reschedule-compact-field select { min-height:42px; }
+.reschedule-compact-field select:disabled { color:#7a8b99; background:#f7fafc; }
 @media (max-width:620px) { .reschedule-calendar-head { grid-template-columns:1fr; } .reschedule-calendar-day { min-height:60px; padding:7px 5px; } .reschedule-day-status { font-size:.55rem; padding:3px 4px; } }
 @media (max-width:520px) { .reschedule-time-field { grid-template-columns:1fr; gap:6px; } .reschedule-time-field input, .reschedule-time-field select { width:100%; } }
 .reschedule-actions { display:flex; justify-content:flex-end; gap:10px; padding:16px 24px 24px; }
@@ -118,12 +121,16 @@ $rescheduleMinTime = $rescheduleNow->modify('+1 minute')->format('H:i');
                     </div>
                     <div class="reschedule-calendar-grid" id="appointmentRescheduleCalendarGrid"></div>
                 </div>
-                <div class="reschedule-field reschedule-time-field">
+                <div class="reschedule-field reschedule-compact-field" id="appointmentRescheduleDateChoicesField" hidden>
+                    <label for="appointmentRescheduleDateChoices">New date</label>
+                    <select id="appointmentRescheduleDateChoices" aria-label="Available appointment dates"></select>
+                </div>
+                <div class="reschedule-field" id="appointmentRescheduleDateField">
                     <label for="appointmentRescheduleDate" id="appointmentRescheduleDateLabel">New date</label>
                     <input type="date" name="appointment_date" id="appointmentRescheduleDate"
                         min="<?php echo htmlspecialchars($rescheduleToday, ENT_QUOTES, 'UTF-8'); ?>" required>
                 </div>
-                <div class="reschedule-field">
+                <div class="reschedule-field reschedule-time-field">
                     <label for="appointmentRescheduleTime">New time</label>
                     <input type="time" name="appointment_time" id="appointmentRescheduleTime" required>
                     <select id="appointmentRescheduleTimeChoices" aria-label="Available appointment times" hidden></select>
@@ -172,7 +179,9 @@ unset($_SESSION['reschedule_error']);
     var form = document.getElementById('appointmentRescheduleForm');
     var idInput = document.getElementById('appointmentRescheduleId');
     var dateInput = document.getElementById('appointmentRescheduleDate');
-    var dateField = dateInput ? dateInput.closest('.reschedule-field') : null;
+    var dateField = document.getElementById('appointmentRescheduleDateField');
+    var dateChoicesField = document.getElementById('appointmentRescheduleDateChoicesField');
+    var dateChoices = document.getElementById('appointmentRescheduleDateChoices');
     var timeInput = document.getElementById('appointmentRescheduleTime');
     var timeChoices = document.getElementById('appointmentRescheduleTimeChoices');
     var availabilityNote = document.getElementById('appointmentRescheduleAvailability');
@@ -271,6 +280,42 @@ unset($_SESSION['reschedule_error']);
         var first = slots[0].start;
         if (date === today && minimumTimeToday > first) first = minimumTimeToday;
         return first;
+    }
+
+    function populateDateChoices(preferredDate) {
+        if (!dateChoices) return '';
+        dateChoices.innerHTML = '';
+        dateChoices.disabled = false;
+        var dates = availability && Array.isArray(availability.available_dates)
+            ? availability.available_dates.slice() : [];
+        dates.sort();
+        if (!dates.length) {
+            var emptyOption = document.createElement('option');
+            emptyOption.value = '';
+            emptyOption.textContent = 'No available dates';
+            dateChoices.appendChild(emptyOption);
+            dateChoices.disabled = true;
+            dateChoices.value = '';
+            return '';
+        }
+        var groups = {};
+        dates.forEach(function (value) {
+            var parsed = parseDateValue(value);
+            if (!parsed) return;
+            var key = monthValue(parsed);
+            if (!groups[key]) {
+                groups[key] = document.createElement('optgroup');
+                groups[key].label = parsed.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                dateChoices.appendChild(groups[key]);
+            }
+            var option = document.createElement('option');
+            option.value = value;
+            option.textContent = formatDateLabel(value);
+            groups[key].appendChild(option);
+        });
+        var selectedDate = dateIsAvailable(preferredDate) ? preferredDate : dates[0];
+        dateChoices.value = selectedDate || '';
+        return selectedDate || '';
     }
 
     function setTimeChoices(date, preferredTime) {
@@ -439,6 +484,8 @@ unset($_SESSION['reschedule_error']);
             if (data.booking_type !== 'consultation') {
                 if (calendarPanel) calendarPanel.classList.remove('is-visible');
                 if (dateField) dateField.style.display = '';
+                if (dateChoicesField) dateChoicesField.hidden = true;
+                if (dateChoices) dateChoices.required = false;
                 if (dateLabel) dateLabel.textContent = 'New date';
                 showManualTimeInput();
                 setAvailabilityNote('The new schedule will still be checked before saving.', 'ready');
@@ -448,10 +495,12 @@ unset($_SESSION['reschedule_error']);
             }
             dateInput.min = data.date_min || today;
             dateInput.max = data.date_max || '';
-            if (calendarPanel) calendarPanel.classList.add('is-visible');
+            if (calendarPanel) calendarPanel.classList.remove('is-visible');
             if (dateField) dateField.style.display = 'none';
-            if (dateLabel) dateLabel.textContent = 'Selected date';
-            var selectedDate = dateIsAvailable(preferredDate) ? preferredDate : firstAvailableDate();
+            if (dateChoicesField) dateChoicesField.hidden = false;
+            if (dateChoices) dateChoices.required = true;
+            if (dateLabel) dateLabel.textContent = 'New date';
+            var selectedDate = populateDateChoices(preferredDate);
             dateInput.value = selectedDate;
             calendarMonth = parseDateValue(selectedDate || data.date_min || today);
             if (calendarMonth) calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
@@ -468,6 +517,8 @@ unset($_SESSION['reschedule_error']);
             availability = { booking_type: 'consultation' };
             if (calendarPanel) calendarPanel.classList.remove('is-visible');
             if (dateField) dateField.style.display = '';
+            if (dateChoicesField) dateChoicesField.hidden = true;
+            if (dateChoices) dateChoices.required = false;
             showManualTimeInput();
             setAvailabilityNote(error.message || 'The doctor schedule could not be loaded. Please refresh and try again.', 'error');
             setSubmitEnabled(false);
@@ -500,6 +551,8 @@ unset($_SESSION['reschedule_error']);
             timeInput.value = currentTime;
             if (calendarPanel) calendarPanel.classList.remove('is-visible');
             if (dateField) dateField.style.display = '';
+            if (dateChoicesField) dateChoicesField.hidden = true;
+            if (dateChoices) dateChoices.required = false;
             showManualTimeInput();
             dateInput.removeAttribute('max');
             dateInput.setCustomValidity('');
@@ -509,7 +562,10 @@ unset($_SESSION['reschedule_error']);
             modal.classList.add('is-open');
             modal.setAttribute('aria-hidden', 'false');
             loadAvailability(idInput.value, currentDate, currentTime);
-            window.setTimeout(function () { dateInput.focus(); }, 50);
+            window.setTimeout(function () {
+                if (dateChoicesField && !dateChoicesField.hidden) dateChoices.focus();
+                else dateInput.focus();
+            }, 50);
         });
     });
     dateInput.addEventListener('change', function () {
@@ -520,6 +576,12 @@ unset($_SESSION['reschedule_error']);
         } else {
             updateTimeMinimum();
         }
+    });
+    if (dateChoices) dateChoices.addEventListener('change', function () {
+        dateInput.value = dateChoices.value;
+        var selectedTime = timeChoices && timeChoices.value ? timeChoices.value : timeInput.value;
+        setTimeChoices(dateInput.value, timeIsInDoctorSchedule(dateInput.value, selectedTime) ? selectedTime : '');
+        setSubmitEnabled(updateAvailabilityForSelection());
     });
     if (prevMonthButton) prevMonthButton.addEventListener('click', function () {
         if (!calendarMonth || prevMonthButton.disabled) return;
