@@ -140,10 +140,10 @@ if ($updateStmt->execute()) {
         $emailResult = appointment_send_clinic_confirmation_email($conn, (int) $appointment_id);
         $smsResult = appointment_send_clinic_confirmation_sms($conn, (int) $appointment_id);
         $failedChannels = [];
-        if (!$emailResult['ok']) {
+        if (!$emailResult['ok'] && empty($emailResult['disabled'])) {
             $failedChannels[] = 'email';
         }
-        if (!$smsResult['ok']) {
+        if (!$smsResult['ok'] && empty($smsResult['disabled'])) {
             $failedChannels[] = 'SMS';
         }
         if ($failedChannels) {
