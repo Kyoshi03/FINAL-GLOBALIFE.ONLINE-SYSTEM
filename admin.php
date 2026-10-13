@@ -1156,18 +1156,19 @@ body {
 
 .appointment-request-table {
     table-layout: fixed;
+    min-width: 820px;
 }
 
 .appointment-request-table th:nth-child(1),
-.appointment-request-table td:nth-child(1) { width: 33%; }
+.appointment-request-table td:nth-child(1) { width: 30%; }
 .appointment-request-table th:nth-child(2),
-.appointment-request-table td:nth-child(2) { width: 18%; }
+.appointment-request-table td:nth-child(2) { width: 16%; }
 .appointment-request-table th:nth-child(3),
-.appointment-request-table td:nth-child(3) { width: 20%; }
+.appointment-request-table td:nth-child(3) { width: 18%; }
 .appointment-request-table th:nth-child(4),
 .appointment-request-table td:nth-child(4) { width: 12%; }
 .appointment-request-table th:nth-child(5),
-.appointment-request-table td:nth-child(5) { width: 17%; }
+.appointment-request-table td:nth-child(5) { width: 24%; }
 
 .appointment-request-table .queue-patient,
 .appointment-request-table .queue-service {
@@ -1273,19 +1274,25 @@ body {
     align-items: center;
     gap: 6px;
     width: 100%;
-    max-width: 220px;
+    min-width: 170px;
+    max-width: 240px;
 }
 
 .request-actions form {
     margin: 0;
     width: 100%;
+    min-width: 0;
 }
 
 .request-actions .btn {
     width: 100%;
+    min-width: 0;
     min-height: 34px;
-    padding: 7px 9px;
-    font-size: 0.82rem;
+    padding: 7px 6px;
+    font-size: 0.76rem;
+    line-height: 1.1;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .request-actions .request-confirm-action {
