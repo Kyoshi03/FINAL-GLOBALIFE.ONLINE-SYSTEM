@@ -1718,9 +1718,11 @@ $additionalStyles = '
         grid-row: 2;
         min-width: 0;
         min-height: 26px;
+        width: 110px;
+        justify-self: center;
         padding: 3px 2px;
         border-radius: 8px;
-        font-size: .54rem;
+        font-size: .6rem;
         font-weight: 800;
         line-height: 1.05;
         white-space: nowrap;
@@ -1729,6 +1731,7 @@ $additionalStyles = '
     .appointment-action-stack.no-cancel .patient-reschedule-btn {
         grid-column: 2;
         grid-row: 1;
+        justify-self: center;
     }
 
     .patient-details-inline {
