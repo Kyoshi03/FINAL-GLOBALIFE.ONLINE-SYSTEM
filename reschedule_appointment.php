@@ -20,7 +20,11 @@ function reschedule_finish(?mysqli $conn, string $returnUrl, bool $ok, string $m
     if ($conn) {
         $conn->close();
     }
-    $_SESSION[$ok ? 'success' : 'error'] = $message;
+    if ($ok) {
+        $_SESSION['reschedule_success'] = $message;
+    } else {
+        $_SESSION['error'] = $message;
+    }
     header('Location: ' . $returnUrl);
     exit();
 }

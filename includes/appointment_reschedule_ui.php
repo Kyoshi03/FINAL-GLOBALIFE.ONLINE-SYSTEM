@@ -15,6 +15,13 @@
 .reschedule-note { margin:0 0 8px; color:#60758a; line-height:1.45; font-size:.88rem; }
 .reschedule-actions { display:flex; justify-content:flex-end; gap:10px; padding:16px 24px 24px; }
 @media (max-width:520px) { .reschedule-actions { flex-direction:column-reverse; } .reschedule-actions .btn { width:100%; } }
+.reschedule-success-modal { position:fixed; inset:0; z-index:3300; display:flex; align-items:center; justify-content:center; padding:18px; background:rgba(3,18,30,.5); backdrop-filter:blur(4px); }
+.reschedule-success-modal[aria-hidden="true"] { display:none; }
+.reschedule-success-card { width:min(420px,100%); border:1px solid #cde8f3; border-radius:18px; background:#fff; box-shadow:0 24px 70px rgba(2,62,138,.2); text-align:center; }
+.reschedule-success-body { padding:30px 28px 28px; }
+.reschedule-success-icon { display:inline-grid; place-items:center; width:64px; height:64px; margin-bottom:16px; border-radius:50%; background:#dcf7e7; color:#148047; font-size:2rem; font-weight:950; }
+.reschedule-success-body h3 { margin:0 0 8px; color:#073b4c; font-size:1.28rem; }
+.reschedule-success-body p { margin:0 0 20px; color:#60727d; line-height:1.45; }
 </style>
 <?php
 $rescheduleNow = new DateTimeImmutable('now', new DateTimeZone('Asia/Manila'));
@@ -55,6 +62,22 @@ $rescheduleMinTime = $rescheduleNow->modify('+1 minute')->format('H:i');
         </form>
     </div>
 </div>
+<?php
+$rescheduleSuccessMessage = trim((string) ($_SESSION['reschedule_success'] ?? ''));
+unset($_SESSION['reschedule_success']);
+?>
+<div class="reschedule-success-modal" id="rescheduleSuccessModal"
+    aria-hidden="<?php echo $rescheduleSuccessMessage !== '' ? 'false' : 'true'; ?>"
+    role="dialog" aria-modal="true" aria-labelledby="rescheduleSuccessTitle">
+    <div class="reschedule-success-card">
+        <div class="reschedule-success-body">
+            <span class="reschedule-success-icon" aria-hidden="true">&#10003;</span>
+            <h3 id="rescheduleSuccessTitle">Successfully rescheduled</h3>
+            <p id="rescheduleSuccessText">You have successfully rescheduled your appointment.</p>
+            <button type="button" class="btn btn-primary" id="rescheduleSuccessOk">OK</button>
+        </div>
+    </div>
+</div>
 <script>
 (function () {
     var modal = document.getElementById('appointmentRescheduleModal');
@@ -63,6 +86,8 @@ $rescheduleMinTime = $rescheduleNow->modify('+1 minute')->format('H:i');
     var dateInput = document.getElementById('appointmentRescheduleDate');
     var timeInput = document.getElementById('appointmentRescheduleTime');
     var currentText = document.getElementById('appointmentRescheduleCurrent');
+    var successModal = document.getElementById('rescheduleSuccessModal');
+    var successOk = document.getElementById('rescheduleSuccessOk');
     if (!modal || !form || !idInput || !dateInput || !timeInput) return;
     var today = modal.getAttribute('data-today') || '';
     var minimumTimeToday = modal.getAttribute('data-min-time') || '';
@@ -105,8 +130,19 @@ $rescheduleMinTime = $rescheduleNow->modify('+1 minute')->format('H:i');
     modal.addEventListener('click', function (event) {
         if (event.target === modal) closeModal();
     });
+    function closeSuccessModal() {
+        if (!successModal) return;
+        successModal.setAttribute('aria-hidden', 'true');
+    }
+    if (successOk) successOk.addEventListener('click', closeSuccessModal);
+    if (successModal) {
+        successModal.addEventListener('click', function (event) {
+            if (event.target === successModal) closeSuccessModal();
+        });
+    }
     document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
+        if (event.key === 'Escape' && successModal && successModal.getAttribute('aria-hidden') === 'false') closeSuccessModal();
     });
 })();
 </script>
