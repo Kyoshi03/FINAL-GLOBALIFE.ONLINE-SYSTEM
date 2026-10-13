@@ -245,6 +245,42 @@ function doctor_summary_pagination_url(string $period, string $from, string $to,
     ]) . '#consultationSummary';
 }
 
+function doctor_completed_consultations(mysqli $conn, int $doctorId): array {
+    if ($doctorId <= 0) {
+        return [];
+    }
+
+    $stmt = $conn->prepare("SELECT a.*,
+                                    " . dbUsersNameExpression('p') . " AS patient_name,
+                            p.profile_photo,
+                            p.profile_updated_at,
+                            p.phone AS patient_phone,
+                            p.email AS patient_email,
+                            p.gender AS patient_gender,
+                            p.age AS patient_age,
+                                    " . dbUsersNameExpression('d') . " AS doctor_name
+                            FROM appointments a
+                            JOIN users p ON a.patient_id = p.id
+                            LEFT JOIN users d ON a.doctor_id = d.id
+                            WHERE a.booking_type = 'consultation'
+                              AND a.doctor_id = ?
+                              AND a.status = 'completed'
+                            ORDER BY a.appointment_date DESC, a.appointment_time DESC");
+    if (!$stmt) {
+        return [];
+    }
+
+    $stmt->bind_param('i', $doctorId);
+    if (!$stmt->execute()) {
+        $stmt->close();
+        return [];
+    }
+
+    $completed = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+    return $completed;
+}
+
 $summaryPeriod = strtolower(trim((string) ($_GET['summary_period'] ?? '')));
 $allowedSummaryPeriods = ['daily', 'monthly', 'quarterly'];
 if (!in_array($summaryPeriod, $allowedSummaryPeriods, true)) {
@@ -258,6 +294,7 @@ $summaryGraphPoints = [];
 $summaryGraphMax = 0;
 $summaryPage = max(1, (int) ($_GET['summary_page'] ?? 1));
 $summaryPerPage = 5;
+$summaryAllCompletedConsultations = doctor_completed_consultations($conn, $staffId);
 
 if ($summaryPeriod !== '') {
     $candidateFrom = trim((string) ($_GET['summary_from'] ?? ''));
@@ -269,10 +306,7 @@ if ($summaryPeriod !== '') {
         [$summaryFrom, $summaryTo] = doctor_summary_default_range($summaryPeriod, $today);
     }
 
-    foreach ($todayAppointments as $appointment) {
-        if (doctor_status($appointment) !== 'completed') {
-            continue;
-        }
+    foreach ($summaryAllCompletedConsultations as $appointment) {
         $appointmentDate = (string) ($appointment['appointment_date'] ?? '');
         if (!doctor_summary_valid_date($appointmentDate) || $appointmentDate < $summaryFrom || $appointmentDate > $summaryTo) {
             continue;
@@ -338,14 +372,6 @@ if ($summaryPeriod !== '') {
         $point['y'] = 250 - (($point['value'] / max(1, $summaryGraphMax)) * 190);
     }
     unset($point);
-}
-
-$summaryAllCompletedConsultations = [];
-foreach ($todayAppointments as $appointment) {
-    $appointmentDate = (string) ($appointment['appointment_date'] ?? '');
-    if (doctor_status($appointment) === 'completed' && doctor_summary_valid_date($appointmentDate)) {
-        $summaryAllCompletedConsultations[] = $appointment;
-    }
 }
 
 $summaryDefaultRanges = [];
