@@ -345,37 +345,56 @@ $adminNotifications = fetch_admin_notifications($conn, $showAdminNotificationsPa
 $unreadNotificationCount = count_unread_admin_notifications($conn);
 
 $todayDate = new DateTimeImmutable($today);
-$defaultTrendFrom = $todayDate->modify('-29 days');
+$requestedTrendPeriod = strtolower(trim((string) ($_GET['trend_period'] ?? 'daily')));
+$trendPeriod = in_array($requestedTrendPeriod, ['daily', 'monthly', 'quarterly'], true) ? $requestedTrendPeriod : 'daily';
+$clearTrendRange = (string) ($_GET['clear_range'] ?? '') === '1';
+$currentMonthStart = $todayDate->modify('first day of this month');
+$currentQuarterMonth = (int) (floor(((int) $todayDate->format('n') - 1) / 3) * 3 + 1);
+$currentQuarterStart = $todayDate->setDate((int) $todayDate->format('Y'), $currentQuarterMonth, 1);
+$defaultTrendRanges = [
+    'daily' => [$todayDate->modify('-6 days'), $todayDate, 'Last 7 days'],
+    'monthly' => [$currentMonthStart->modify('-11 months'), $todayDate, 'Last 12 months'],
+    'quarterly' => [$currentQuarterStart->modify('-9 months'), $todayDate, 'Last 4 quarters'],
+];
 $requestedTrendFrom = trim((string) ($_GET['trend_from'] ?? ''));
 $requestedTrendTo = trim((string) ($_GET['trend_to'] ?? ''));
-$trendFrom = admin_valid_trend_date($requestedTrendFrom) ? new DateTimeImmutable($requestedTrendFrom) : $defaultTrendFrom;
-$trendTo = admin_valid_trend_date($requestedTrendTo) ? new DateTimeImmutable($requestedTrendTo) : $todayDate;
-if ($trendFrom > $trendTo) {
-    [$trendFrom, $trendTo] = [$trendTo, $trendFrom];
+$hasCustomTrendRange = !$clearTrendRange && admin_valid_trend_date($requestedTrendFrom) && admin_valid_trend_date($requestedTrendTo);
+if ($hasCustomTrendRange) {
+    $trendFrom = new DateTimeImmutable($requestedTrendFrom);
+    $trendTo = new DateTimeImmutable($requestedTrendTo);
+    if ($trendFrom > $trendTo) {
+        [$trendFrom, $trendTo] = [$trendTo, $trendFrom];
+    }
+    if ($trendFrom > $todayDate) {
+        $trendFrom = $todayDate;
+    }
+    if ($trendTo > $todayDate) {
+        $trendTo = $todayDate;
+    }
+    if ($trendFrom > $trendTo) {
+        $hasCustomTrendRange = false;
+    }
 }
-if ($trendFrom > $todayDate) {
-    $trendFrom = $todayDate;
+if (!$hasCustomTrendRange) {
+    [$trendFrom, $trendTo] = $defaultTrendRanges[$trendPeriod];
 }
-if ($trendTo > $todayDate) {
-    $trendTo = $todayDate;
-}
-if ($trendFrom > $trendTo) {
-    $trendFrom = $defaultTrendFrom;
-    $trendTo = $todayDate;
-}
-$trendRangeLabel = $trendFrom->format('F j, Y') . ' - ' . $trendTo->format('F j, Y');
+$trendRangeLabel = $hasCustomTrendRange
+    ? $trendFrom->format('F j, Y') . ' - ' . $trendTo->format('F j, Y')
+    : $defaultTrendRanges[$trendPeriod][2];
 $trendReferenceLabel = $todayDate->format('F j, Y');
 $trendMonthLabel = $todayDate->format('F Y');
 $trendQuarter = (int) floor(((int) $todayDate->format('n') - 1) / 3) + 1;
 $trendQuarterLabel = 'Q' . $trendQuarter . ' ' . $todayDate->format('Y');
-$trendData = [
-    'daily' => admin_appointment_trend_series($conn, 'daily', $trendFrom, $trendTo),
-    'monthly' => admin_appointment_trend_series($conn, 'monthly', $trendFrom, $trendTo),
-    'quarterly' => admin_appointment_trend_series($conn, 'quarterly', $trendFrom, $trendTo),
-];
-$currentMonthStart = $todayDate->modify('first day of this month');
-$currentQuarterMonth = (int) (floor(((int) $todayDate->format('n') - 1) / 3) * 3 + 1);
-$currentQuarterStart = $todayDate->setDate((int) $todayDate->format('Y'), $currentQuarterMonth, 1);
+$trendData = [];
+foreach (['daily', 'monthly', 'quarterly'] as $period) {
+    if ($hasCustomTrendRange) {
+        $trendData[$period] = admin_appointment_trend_series($conn, $period, $trendFrom, $trendTo);
+    } else {
+        [$periodFrom, $periodTo, $periodLabel] = $defaultTrendRanges[$period];
+        $trendData[$period] = admin_appointment_trend_series($conn, $period, $periodFrom, $periodTo);
+        $trendData[$period]['range'] = $periodLabel;
+    }
+}
 $trendCardData = [
     'daily' => admin_appointment_trend_series($conn, 'daily', $todayDate, $todayDate),
     'monthly' => admin_appointment_trend_series($conn, 'monthly', $currentMonthStart, $todayDate),
@@ -2197,6 +2216,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var trendFromInput = document.getElementById("adminTrendFrom");
     var trendToInput = document.getElementById("adminTrendTo");
     var trendPeriodInput = document.getElementById("adminTrendPeriod");
+    var trendClearInput = document.getElementById("adminTrendClearRange");
     var trendScrollStorageKey = "adminAppointmentReportScrollY";
     function submitTrendForm() {
         try {
@@ -2227,6 +2247,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var rangeFromValue = document.getElementById("adminTrendRangeFromValue");
     var rangeToValue = document.getElementById("adminTrendRangeToValue");
     var rangeSet = document.getElementById("adminTrendRangeSet");
+    var rangeClear = document.getElementById("adminTrendRangeClear");
     var rangeMessage = document.getElementById("adminTrendRangeMessage");
     var rangeClose = document.getElementById("adminTrendRangeClose");
     var rangeCancel = document.getElementById("adminTrendRangeCancel");
@@ -2388,6 +2409,14 @@ document.addEventListener("DOMContentLoaded", function () {
     if (rangeClose) rangeClose.addEventListener("click", function () { closeRangeModal(true); });
     if (rangeCancel) rangeCancel.addEventListener("click", function () { closeRangeModal(true); });
     if (rangeModal) rangeModal.addEventListener("click", function (event) { if (event.target === rangeModal) closeRangeModal(true); });
+    if (rangeClear) rangeClear.addEventListener("click", function () {
+        if (trendFromInput) trendFromInput.value = "";
+        if (trendToInput) trendToInput.value = "";
+        if (trendClearInput) trendClearInput.value = "1";
+        if (trendPeriodInput) trendPeriodInput.value = activePeriod || "daily";
+        closeRangeModal(false);
+        submitTrendForm();
+    });
     if (rangeSet) rangeSet.addEventListener("click", function () {
         if (!draftFrom || !draftTo || draftFrom > draftTo) {
             if (rangeMessage) { rangeMessage.hidden = false; rangeMessage.textContent = "Select a valid start date and end date first."; }
@@ -2395,6 +2424,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         trendFromInput.value = draftFrom;
         trendToInput.value = draftTo;
+        if (trendClearInput) trendClearInput.value = "0";
         if (trendPeriodInput) trendPeriodInput.value = activePeriod || "";
         closeRangeModal(false);
         submitTrendForm();
@@ -2908,6 +2938,7 @@ include 'includes/header.php';
                 <form class="trend-date-form" method="get" id="adminTrendFilterForm">
                     <button type="button" class="trend-range-open" id="adminTrendRangeOpen">Custom Date Range</button>
                     <input type="hidden" name="trend_period" id="adminTrendPeriod" value="<?php echo htmlspecialchars((string) ($_GET['trend_period'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="hidden" name="clear_range" id="adminTrendClearRange" value="0">
                     <input type="hidden" name="trend_from" id="adminTrendFrom" value="<?php echo htmlspecialchars($trendFrom->format('Y-m-d'), ENT_QUOTES, 'UTF-8'); ?>">
                     <input type="hidden" name="trend_to" id="adminTrendTo" value="<?php echo htmlspecialchars($trendTo->format('Y-m-d'), ENT_QUOTES, 'UTF-8'); ?>">
                 </form>
@@ -2932,7 +2963,7 @@ include 'includes/header.php';
         <section class="sales-range-dialog" role="dialog" aria-modal="true" aria-labelledby="adminTrendRangeTitle">
             <div class="sales-range-dialog-header"><h2 id="adminTrendRangeTitle">Custom Date Range</h2><button type="button" class="sales-range-close" id="adminTrendRangeClose" aria-label="Close date range picker">&times;</button></div>
             <div class="sales-range-calendars" id="adminTrendRangeCalendars"></div>
-            <div class="sales-range-footer"><div><div class="sales-range-values" aria-live="polite"><span class="sales-range-value" id="adminTrendRangeFromValue">Select start date</span><span class="sales-range-separator" aria-hidden="true">&ndash;</span><span class="sales-range-value" id="adminTrendRangeToValue">Select end date</span></div><p class="sales-range-message" id="adminTrendRangeMessage" hidden>Select a start date and an end date first.</p></div><div class="sales-range-actions"><button type="button" class="sales-range-action" id="adminTrendRangeCancel">Cancel</button><button type="button" class="sales-range-action primary" id="adminTrendRangeSet">Set Date</button></div></div>
+            <div class="sales-range-footer"><div><div class="sales-range-values" aria-live="polite"><span class="sales-range-value" id="adminTrendRangeFromValue">Select start date</span><span class="sales-range-separator" aria-hidden="true">&ndash;</span><span class="sales-range-value" id="adminTrendRangeToValue">Select end date</span></div><p class="sales-range-message" id="adminTrendRangeMessage" hidden>Select a start date and an end date first.</p></div><div class="sales-range-actions"><button type="button" class="sales-range-action" id="adminTrendRangeClear">Clear</button><button type="button" class="sales-range-action" id="adminTrendRangeCancel">Cancel</button><button type="button" class="sales-range-action primary" id="adminTrendRangeSet">Set Date</button></div></div>
         </section>
     </div>
 
