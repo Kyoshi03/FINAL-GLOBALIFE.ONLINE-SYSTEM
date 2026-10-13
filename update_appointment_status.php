@@ -23,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $appointment_id = $_POST['appointment_id'] ?? '';
 $new_status = $_POST['status'] ?? '';
+$new_status = strtolower(trim((string) $new_status));
 $returnUrl = trim((string) ($_POST['return_url'] ?? $appointmentPage));
 $wantsJson = strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest'
     || strpos((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json') !== false;
@@ -49,6 +50,10 @@ function appointment_status_finish(?mysqli $conn, string $returnUrl, bool $wants
 
 if (empty($appointment_id) || empty($new_status)) {
     appointment_status_finish(null, $returnUrl, $wantsJson, false, 'Invalid request.');
+}
+
+if (!in_array($new_status, ['pending', 'confirmed', 'completed', 'cancelled'], true)) {
+    appointment_status_finish(null, $returnUrl, $wantsJson, false, 'Invalid appointment status.');
 }
 
 $conn = getDBConnection();
@@ -78,11 +83,15 @@ if ($result->num_rows === 0) {
 
 $appointment = $result->fetch_assoc();
 $checkStmt->close();
+$previousStatus = strtolower((string) ($appointment['status'] ?? ''));
 
 // Check permissions
 $canUpdate = false;
 if ($userRole === 'admin') {
-    $canUpdate = (string) ($appointment['booking_type'] ?? '') !== 'consultation';
+    if ((string) ($appointment['booking_type'] ?? '') !== 'consultation') {
+        $canUpdate = ($previousStatus === 'pending' && in_array($new_status, ['confirmed', 'cancelled'], true))
+            || ($previousStatus === 'confirmed' && in_array($new_status, ['completed', 'cancelled'], true));
+    }
 } elseif ($userRole === 'doctor'
     && (int) $appointment['doctor_id'] === (int) $currentUser['id']
     && (string) ($appointment['booking_type'] ?? '') === 'consultation'
@@ -116,14 +125,14 @@ if ($new_status === 'cancelled') {
 
 // Update appointment status
 if ($new_status === 'cancelled') {
-    $updateStmt = $conn->prepare("UPDATE appointments SET status = ?, cancellation_reason = ? WHERE id = ?");
-    $updateStmt->bind_param("ssi", $new_status, $cancellationReason, $appointment_id);
+    $updateStmt = $conn->prepare("UPDATE appointments SET status = ?, cancellation_reason = ? WHERE id = ? AND status = ?");
+    $updateStmt->bind_param("ssis", $new_status, $cancellationReason, $appointment_id, $previousStatus);
 } else {
-    $updateStmt = $conn->prepare("UPDATE appointments SET status = ?, cancellation_reason = NULL WHERE id = ?");
-    $updateStmt->bind_param("si", $new_status, $appointment_id);
+    $updateStmt = $conn->prepare("UPDATE appointments SET status = ?, cancellation_reason = NULL WHERE id = ? AND status = ?");
+    $updateStmt->bind_param("sis", $new_status, $appointment_id, $previousStatus);
 }
 
-if ($updateStmt->execute()) {
+if ($updateStmt->execute() && $updateStmt->affected_rows > 0) {
     $statusMessage = $new_status === 'cancelled'
         ? 'Appointment cancelled with reason saved.'
         : (($userRole === 'doctor' && $new_status === 'confirmed')
@@ -131,7 +140,7 @@ if ($updateStmt->execute()) {
             : (($userRole === 'doctor' && $new_status === 'completed')
                 ? 'Appointment marked as completed successfully.'
                 : 'Appointment status updated successfully.'));
-    if ($new_status !== $appointment['status']) {
+    if ($new_status !== $previousStatus) {
         create_patient_appointment_notification($conn, (int) $appointment_id, $new_status);
         create_clinic_appointment_notification($conn, (int) $appointment_id, $new_status);
         create_admin_appointment_notification($conn, (int) $appointment_id, $new_status);
@@ -168,7 +177,7 @@ if ($updateStmt->execute()) {
         }
     }
 } else {
-    $statusMessage = 'Error updating appointment status.';
+    $statusMessage = 'The appointment status changed before this request was completed. Refresh the page and try again.';
 }
 
 $updateStmt->close();
