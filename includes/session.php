@@ -15,6 +15,94 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+/** Return the application-wide CSRF token for the current session. */
+function clinic_csrf_token(): string {
+    if (empty($_SESSION['_clinic_csrf_token'])) {
+        $_SESSION['_clinic_csrf_token'] = bin2hex(random_bytes(32));
+    }
+
+    return (string) $_SESSION['_clinic_csrf_token'];
+}
+
+/** Render a hidden CSRF field for normal HTML forms. */
+function clinic_csrf_field(): string {
+    return '<input type="hidden" name="csrf_token" value="'
+        . htmlspecialchars(clinic_csrf_token(), ENT_QUOTES, 'UTF-8') . '">';
+}
+
+function clinic_csrf_request_token(): string {
+    $postedToken = trim((string) ($_POST['csrf_token'] ?? ''));
+    if ($postedToken !== '') {
+        return $postedToken;
+    }
+
+    return trim((string) ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''));
+}
+
+function clinic_csrf_token_matches(string $submittedToken): bool {
+    if ($submittedToken === '') {
+        return false;
+    }
+
+    $validTokens = [clinic_csrf_token()];
+    // Keep the older page-specific tokens valid while those pages migrate to
+    // the shared token, so existing open tabs are not broken.
+    foreach ($_SESSION as $key => $value) {
+        if (is_string($key) && str_ends_with($key, '_csrf') && is_string($value)) {
+            $validTokens[] = $value;
+        }
+    }
+
+    foreach ($validTokens as $validToken) {
+        if ($validToken !== '' && hash_equals($validToken, $submittedToken)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/** Reject state-changing requests that did not come from this application. */
+function clinic_csrf_guard_request(): void {
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        return;
+    }
+
+    $submittedToken = clinic_csrf_request_token();
+    if (clinic_csrf_token_matches($submittedToken)) {
+        return;
+    }
+
+    $wantsJson = strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest'
+        || strpos((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json') !== false;
+    http_response_code(403);
+    if ($wantsJson) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok' => false, 'error' => 'The security token expired. Refresh the page and try again.']);
+    } else {
+        echo 'The security token expired. Refresh the page and try again.';
+    }
+    exit();
+}
+
+/** Inject a token into legacy POST forms that have not been updated explicitly. */
+function clinic_csrf_inject_form(string $html): string {
+    if (stripos($html, '<form') === false) {
+        return $html;
+    }
+
+    $field = clinic_csrf_field();
+    return preg_replace_callback(
+        '/(<form\b[^>]*\bmethod\s*=\s*["\']?post["\']?[^>]*>)(?![^<]*name\s*=\s*["\']csrf_token["\'])/is',
+        static function (array $match) use ($field): string {
+            return $match[1] . $field;
+        },
+        $html
+    ) ?? $html;
+}
+
+ob_start('clinic_csrf_inject_form');
+
 // Check if user is logged in
 function isLoggedIn() {
     return isset($_SESSION['user_id']);
@@ -141,4 +229,6 @@ function logout() {
     header('Location: index.php');
     exit();
 }
+
+clinic_csrf_guard_request();
 ?>

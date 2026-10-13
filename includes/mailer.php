@@ -243,12 +243,15 @@ function clinic_send_email(string $toEmail, string $toName, string $subject, str
         ['DATA', [354]],
     ];
 
-    foreach ($commands as [$command, $expected]) {
+    foreach ($commands as $commandIndex => [$command, $expected]) {
         $result = clinic_smtp_command($socket, $command, $expected);
         if (!$result['ok']) {
             @clinic_smtp_command($socket, 'QUIT', [221]);
             fclose($socket);
-            return ['ok' => false, 'error' => 'The email server rejected the message or login.'];
+            if ($commandIndex < 3) {
+                return ['ok' => false, 'error' => 'SMTP mailbox authentication failed. Check the Hostinger mailbox email and mailbox password.'];
+            }
+            return ['ok' => false, 'error' => 'The email server rejected the message.'];
         }
     }
 

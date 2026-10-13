@@ -3021,7 +3021,10 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             readRequestSent = true;
             fetch(menuButton.dataset.markReadUrl || 'mark_patient_notifications.php', {
                 method: 'POST',
-                headers: {'X-Requested-With': 'XMLHttpRequest'},
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-Token': '<?php echo htmlspecialchars(clinic_csrf_token(), ENT_QUOTES, 'UTF-8'); ?>'
+                },
                 credentials: 'same-origin'
             })
                 .then(function(response) { return response.ok ? response.json() : {ok: false}; })
