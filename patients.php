@@ -1651,17 +1651,14 @@ $additionalStyles = '
     }
 
     .appointment-side {
-        display: grid;
-        grid-template-columns: max-content 112px;
-        align-items: start;
-        justify-content: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         gap: 8px;
     }
 
     .appointment-side > .status-badge {
-        grid-column: 1;
-        justify-self: start;
-        margin-top: 3px;
+        margin: 0;
         min-width: 0;
         box-sizing: border-box;
         white-space: nowrap;
@@ -1669,11 +1666,10 @@ $additionalStyles = '
 
     .appointment-action-stack {
         display: flex;
-        grid-column: 2;
         flex-direction: column;
         align-items: stretch;
         gap: 8px;
-        width: 112px;
+        width: 136px;
     }
 
     .appointment-action-stack form,
@@ -1701,6 +1697,25 @@ $additionalStyles = '
         font-weight: 800;
         line-height: 1.2;
         white-space: normal;
+    }
+
+    .patient-details-inline {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid #cfe3f2;
+        border-radius: 8px;
+        background: #f5fbff;
+        color: #0b4f80;
+        cursor: pointer;
+        font: inherit;
+        font-size: .84rem;
+        font-weight: 800;
+        line-height: 1.2;
+    }
+
+    .patient-details-inline:hover {
+        background: #e7f5fc;
+        border-color: #9ccce4;
     }
 
     .appointment-pagination {
@@ -3030,9 +3045,7 @@ $additionalStyles = '
         }
 
         .appointment-side {
-            grid-template-columns: max-content 112px;
-            align-items: flex-start;
-            justify-content: center;
+            align-items: center;
             width: 100%;
         }
 
@@ -3564,6 +3577,7 @@ include 'includes/header.php';
                                             </form>
                                         <?php endif; ?>
                                         <?php if (in_array($statusClass, ['pending', 'confirmed'], true)): ?>
+                                            <button type="button" class="patient-details-inline" data-open-patient-details>Details</button>
                                             <button type="button" class="btn btn-reschedule patient-reschedule-btn"
                                                 data-open-reschedule
                                                 data-appointment-id="<?php echo (int) $appointment['id']; ?>"
@@ -4087,6 +4101,15 @@ include 'includes/header.php';
                 if (event.target.closest('button, form, a, input, textarea, select')) return;
                 event.preventDefault();
                 showAppointmentDetails(row);
+            });
+        });
+
+        document.querySelectorAll('[data-open-patient-details]').forEach(function(button) {
+            button.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                const row = button.closest('.appointment-row');
+                if (row) showAppointmentDetails(row);
             });
         });
 
