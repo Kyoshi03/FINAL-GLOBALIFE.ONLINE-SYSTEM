@@ -1669,12 +1669,27 @@ $additionalStyles = '
         flex-direction: column;
         align-items: stretch;
         gap: 8px;
-        width: 136px;
+        width: min(204px, 100%);
     }
 
     .appointment-action-stack form,
     .appointment-action-stack .patient-reschedule-btn {
         width: 100%;
+    }
+
+    .appointment-details-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: center;
+        gap: 8px;
+    }
+
+    .appointment-details-row .status-badge {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        white-space: nowrap;
+        text-align: center;
     }
 
     .cancel-inline {
@@ -3565,27 +3580,33 @@ include 'includes/header.php';
                                     </div>
                                 </div>
                                 <div class="appointment-side">
-                                    <span class="status-badge <?php echo htmlspecialchars($statusClass); ?>">
-                                        <?php echo htmlspecialchars($statusLabel); ?>
-                                    </span>
-                                    <div class="appointment-action-stack">
-                                        <?php if ($statusClass === 'pending'): ?>
-                                            <form method="post" action="patients.php" data-patient-cancel-form>
-                                                <input type="hidden" name="patient_action" value="cancel_appointment">
-                                                <input type="hidden" name="appointment_id" value="<?php echo (int) $appointment['id']; ?>">
-                                                <button type="submit" class="cancel-inline" data-cancel-message="Are you sure you want to cancel this appointment?">Cancel</button>
-                                            </form>
-                                        <?php endif; ?>
-                                        <?php if (in_array($statusClass, ['pending', 'confirmed'], true)): ?>
-                                            <button type="button" class="patient-details-inline" data-open-patient-details>Details</button>
+                                    <?php if (in_array($statusClass, ['pending', 'confirmed'], true)): ?>
+                                        <div class="appointment-action-stack">
+                                            <?php if ($statusClass === 'pending'): ?>
+                                                <form method="post" action="patients.php" data-patient-cancel-form>
+                                                    <input type="hidden" name="patient_action" value="cancel_appointment">
+                                                    <input type="hidden" name="appointment_id" value="<?php echo (int) $appointment['id']; ?>">
+                                                    <button type="submit" class="cancel-inline" data-cancel-message="Are you sure you want to cancel this appointment?">Cancel</button>
+                                                </form>
+                                            <?php endif; ?>
+                                            <div class="appointment-details-row">
+                                                <span class="status-badge <?php echo htmlspecialchars($statusClass); ?>">
+                                                    <?php echo htmlspecialchars($statusLabel); ?>
+                                                </span>
+                                                <button type="button" class="patient-details-inline" data-open-patient-details>Details</button>
+                                            </div>
                                             <button type="button" class="btn btn-reschedule patient-reschedule-btn"
                                                 data-open-reschedule
                                                 data-appointment-id="<?php echo (int) $appointment['id']; ?>"
                                                 data-reschedule-date="<?php echo htmlspecialchars((string) ($appointment['appointment_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                                 data-reschedule-time="<?php echo htmlspecialchars((string) ($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                                 data-reschedule-label="Current schedule: <?php echo htmlspecialchars(patient_format_date($appointment['appointment_date'] ?? '') . ' at ' . patient_format_time($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">Reschedule</button>
-                                        <?php endif; ?>
-                                    </div>
+                                        </div>
+                                    <?php else: ?>
+                                        <span class="status-badge <?php echo htmlspecialchars($statusClass); ?>">
+                                            <?php echo htmlspecialchars($statusLabel); ?>
+                                        </span>
+                                    <?php endif; ?>
                                 </div>
                             </article>
                         <?php endforeach; ?>
