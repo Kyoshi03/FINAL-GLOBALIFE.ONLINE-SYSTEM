@@ -220,12 +220,12 @@ function admin_doctor_save_slots(mysqli $conn, int $doctorId, array $slots): voi
     $insert->close();
 }
 
-function admin_doctor_form_slots(): array {
-    if (isset($_POST['slot_day']) && is_array($_POST['slot_day'])) {
+function admin_doctor_form_slots(array $source = []): array {
+    if (isset($source['slot_day']) && is_array($source['slot_day'])) {
         $rows = [];
-        $days = $_POST['slot_day'] ?? [];
-        $starts = $_POST['slot_start'] ?? [];
-        $ends = $_POST['slot_end'] ?? [];
+        $days = $source['slot_day'] ?? [];
+        $starts = $source['slot_start'] ?? [];
+        $ends = $source['slot_end'] ?? [];
         $rowCount = max(count($days), count($starts), count($ends));
         for ($i = 0; $i < $rowCount; $i++) {
             $rows[] = [
@@ -462,7 +462,8 @@ if ($result) {
 
 $activeCount = count(array_filter($doctors, static fn ($doctor) => (int) $doctor['is_active'] === 1));
 $inactiveCount = count($doctors) - $activeCount;
-$addFormSlots = admin_doctor_form_slots();
+$addFormData = $openAddDoctorModal ? $_POST : [];
+$addFormSlots = admin_doctor_form_slots($addFormData);
 
 $conn->close();
 
@@ -1536,12 +1537,12 @@ include 'includes/header.php';
                     <div class="account-info-grid">
                         <div class="field">
                             <label for="new_username">Username</label>
-                            <input id="new_username" name="username" placeholder="e.g. dr.maria2026" value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>" required>
+                            <input id="new_username" name="username" placeholder="e.g. dr.maria2026" value="<?php echo htmlspecialchars($addFormData['username'] ?? ''); ?>" required>
                             <p class="field-hint">Enter the username the doctor will use to login.</p>
                         </div>
                         <div class="field">
                             <label for="new_password">Password</label>
-                            <input type="text" id="new_password" name="password" placeholder="e.g. password123" value="<?php echo htmlspecialchars($_POST['password'] ?? $defaultDoctorPassword); ?>" required>
+                            <input type="text" id="new_password" name="password" placeholder="e.g. password123" value="<?php echo htmlspecialchars($addFormData['password'] ?? $defaultDoctorPassword); ?>" required>
                             <p class="field-hint">Doctor can change this after login.</p>
                         </div>
                     </div>
@@ -1550,23 +1551,23 @@ include 'includes/header.php';
                 <section class="doctor-form-section">
                     <h3 class="doctor-section-title">Personal Information</h3>
                     <div class="personal-info-grid">
-                        <div class="field"><label for="new_first_name">First Name</label><input id="new_first_name" name="first_name" maxlength="15" placeholder="e.g. Maria" value="<?php echo htmlspecialchars($_POST['first_name'] ?? ''); ?>" required></div>
-                        <div class="field"><label for="new_middle_name">Middle Name</label><input id="new_middle_name" name="middle_name" maxlength="1" placeholder="e.g. S" value="<?php echo htmlspecialchars($_POST['middle_name'] ?? ''); ?>"></div>
-                        <div class="field"><label for="new_last_name">Last Name</label><input id="new_last_name" name="last_name" maxlength="15" placeholder="e.g. Dela Cruz" value="<?php echo htmlspecialchars($_POST['last_name'] ?? ''); ?>" required></div>
-                        <div class="field"><label for="new_suffix">Suffix</label><input id="new_suffix" name="suffix" maxlength="3" placeholder="e.g. Jr." value="<?php echo htmlspecialchars($_POST['suffix'] ?? ''); ?>"></div>
+                        <div class="field"><label for="new_first_name">First Name</label><input id="new_first_name" name="first_name" maxlength="15" placeholder="e.g. Maria" value="<?php echo htmlspecialchars($addFormData['first_name'] ?? ''); ?>" required></div>
+                        <div class="field"><label for="new_middle_name">Middle Name</label><input id="new_middle_name" name="middle_name" maxlength="1" placeholder="e.g. S" value="<?php echo htmlspecialchars($addFormData['middle_name'] ?? ''); ?>"></div>
+                        <div class="field"><label for="new_last_name">Last Name</label><input id="new_last_name" name="last_name" maxlength="15" placeholder="e.g. Dela Cruz" value="<?php echo htmlspecialchars($addFormData['last_name'] ?? ''); ?>" required></div>
+                        <div class="field"><label for="new_suffix">Suffix</label><input id="new_suffix" name="suffix" maxlength="3" placeholder="e.g. Jr." value="<?php echo htmlspecialchars($addFormData['suffix'] ?? ''); ?>"></div>
                         <div class="field">
                             <label for="new_specialty">Specialty</label>
                             <select id="new_specialty" name="specialty">
-                                <?php $selectedNewSpecialty = (string) ($_POST['specialty'] ?? ''); ?>
+                                <?php $selectedNewSpecialty = (string) ($addFormData['specialty'] ?? ''); ?>
                                 <option value="" <?php echo $selectedNewSpecialty === '' ? 'selected' : ''; ?>>Select specialty</option>
                                 <option value="General Doctor" <?php echo $selectedNewSpecialty === 'General Doctor' ? 'selected' : ''; ?>>General Doctor</option>
                                 <option value="Pediatrician" <?php echo $selectedNewSpecialty === 'Pediatrician' ? 'selected' : ''; ?>>Pediatrician</option>
                                 <option value="General Doctor / Pediatrician" <?php echo $selectedNewSpecialty === 'General Doctor / Pediatrician' ? 'selected' : ''; ?>>General Doctor / Pediatrician</option>
                             </select>
                         </div>
-                        <div class="field"><label for="new_email">Email (optional)</label><input type="email" id="new_email" name="email" placeholder="e.g. maria@email.com" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>"></div>
-                        <div class="field"><label for="new_custom_specialty">Custom specialty (optional)</label><input id="new_custom_specialty" name="custom_specialty" placeholder="Type another specialty" value="<?php echo htmlspecialchars($_POST['custom_specialty'] ?? ''); ?>"></div>
-                        <div class="field phone-field"><label for="new_phone">Phone (optional)</label><input id="new_phone" name="phone" placeholder="e.g. 0917 123 4567" value="<?php echo htmlspecialchars($_POST['phone'] ?? ''); ?>"></div>
+                        <div class="field"><label for="new_email">Email (optional)</label><input type="email" id="new_email" name="email" placeholder="e.g. maria@email.com" value="<?php echo htmlspecialchars($addFormData['email'] ?? ''); ?>"></div>
+                        <div class="field"><label for="new_custom_specialty">Custom specialty (optional)</label><input id="new_custom_specialty" name="custom_specialty" placeholder="Type another specialty" value="<?php echo htmlspecialchars($addFormData['custom_specialty'] ?? ''); ?>"></div>
+                        <div class="field phone-field"><label for="new_phone">Phone (optional)</label><input id="new_phone" name="phone" placeholder="e.g. 0917 123 4567" value="<?php echo htmlspecialchars($addFormData['phone'] ?? ''); ?>"></div>
                     </div>
                 </section>
 
