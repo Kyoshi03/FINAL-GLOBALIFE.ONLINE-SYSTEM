@@ -110,7 +110,10 @@ function create_clinic_appointment_notification(mysqli $conn, int $appointmentId
     }
     if (in_array($eventType, ['confirmed', 'cancelled', 'rescheduled'], true) && $doctorId > 0) {
         $doctorContext = $doctor !== '' ? ' with you' : '';
-        $rows[] = [null, $doctorId, $eventType === 'confirmed' ? 'Appointment confirmed' : 'Appointment update', "{$patient}'s {$services} appointment{$doctorContext} is set for {$schedule}."];
+        $title = $eventType === 'confirmed'
+            ? 'Appointment confirmed'
+            : ($eventType === 'rescheduled' ? 'Appointment rescheduled' : 'Appointment update');
+        $rows[] = [null, $doctorId, $title, "{$patient}'s {$services} appointment{$doctorContext} is set for {$schedule}."];
     }
 
     foreach ($rows as $row) {

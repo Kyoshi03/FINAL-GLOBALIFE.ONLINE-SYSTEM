@@ -1892,6 +1892,14 @@ include __DIR__ . '/includes/header.php';
                             <td data-label="Actions">
                                 <div class="action-buttons <?php echo (($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation')) && $appointment['status'] === 'pending' ? 'pending-actions' : ''; ?>">
                                     <button type="button" class="btn btn-details" data-open-details>Details</button>
+                                    <?php if (in_array($statusValue, ['pending', 'confirmed'], true)): ?>
+                                        <button type="button" class="btn btn-reschedule"
+                                            data-open-reschedule
+                                            data-appointment-id="<?php echo (int) ($appointment['id'] ?? 0); ?>"
+                                            data-reschedule-date="<?php echo htmlspecialchars((string) ($appointment['appointment_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-reschedule-time="<?php echo htmlspecialchars((string) ($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-reschedule-label="Current schedule: <?php echo htmlspecialchars($formattedDate . ' at ' . $formattedTime, ENT_QUOTES, 'UTF-8'); ?>">Reschedule</button>
+                                    <?php endif; ?>
                                     <?php if (($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation' && $appointment['status'] === 'pending')): ?>
                                         <?php if ($appointment['status'] === 'pending'): ?>
                                             <form method="POST" action="update_appointment_status.php" class="confirm-action">
@@ -2053,6 +2061,8 @@ include __DIR__ . '/includes/header.php';
         </div>
     </div>
 </div>
+
+<?php include __DIR__ . '/includes/appointment_reschedule_ui.php'; ?>
 
 <script>
 (function() {

@@ -776,6 +776,61 @@ function appointment_send_clinic_confirmation_sms(mysqli $conn, int $appointment
     return clinic_send_sms_message((string) ($details['phone'] ?? ''), $message);
 }
 
+function appointment_send_rescheduled_email(mysqli $conn, int $appointmentId): array {
+    if (!clinic_notification_enabled('appointment_confirmation')) {
+        return clinic_notification_disabled_result('Appointment update');
+    }
+
+    $details = appointment_fetch_notification_details($conn, $appointmentId);
+    if (!$details || !filter_var((string) ($details['email'] ?? ''), FILTER_VALIDATE_EMAIL)) {
+        return ['ok' => false, 'error' => 'The patient does not have a valid email address.'];
+    }
+
+    $dateLabel = date('F j, Y', strtotime((string) $details['appointment_date']));
+    $timeLabel = date('g:i A', strtotime((string) $details['appointment_time']));
+    $rows = [
+        'Reference number' => '#' . (int) $details['appointment_id'],
+        'New date' => $dateLabel,
+        'New time' => $timeLabel,
+        'Services' => (string) $details['services'],
+        'Status' => 'Schedule updated',
+    ];
+    if (!empty($details['doctor_name'])) {
+        $rows['Doctor'] = (string) $details['doctor_name'];
+    }
+
+    $content = appointment_email_layout(
+        'Your appointment was rescheduled',
+        'Hello ' . (string) $details['patient_name'] . '. Your Globalife appointment schedule has been updated.',
+        $rows,
+        'Please review the new schedule in your patient account. We will send another reminder before the appointment.'
+    );
+
+    return clinic_send_email(
+        (string) $details['email'],
+        (string) $details['patient_name'],
+        'Rescheduled: Globalife appointment #' . (int) $details['appointment_id'],
+        $content['html'],
+        $content['text']
+    );
+}
+
+function appointment_send_rescheduled_sms(mysqli $conn, int $appointmentId): array {
+    if (!clinic_notification_enabled('appointment_confirmation')) {
+        return clinic_notification_disabled_result('Appointment update');
+    }
+
+    $details = appointment_fetch_notification_details($conn, $appointmentId);
+    if (!$details) {
+        return ['ok' => false, 'error' => 'The appointment notification details could not be found.'];
+    }
+
+    $message = 'Globalife: Appointment #' . (int) $details['appointment_id']
+        . ' was rescheduled to ' . date('M j, Y', strtotime((string) $details['appointment_date']))
+        . ' at ' . date('g:i A', strtotime((string) $details['appointment_time'])) . '.';
+    return clinic_send_sms_message((string) ($details['phone'] ?? ''), $message);
+}
+
 function appointment_send_cancellation_email(mysqli $conn, int $appointmentId): array {
     if (!clinic_notification_enabled('appointment_cancellation')) {
         return clinic_notification_disabled_result('Appointment cancellation');
