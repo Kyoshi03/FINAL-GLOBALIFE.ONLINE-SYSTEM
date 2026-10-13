@@ -2436,8 +2436,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
         var width = 920;
         var height = 320;
-        var left = 58;
-        var right = 22;
+        var left = 42;
+        var right = 16;
         var top = 22;
         var bottom = 52;
         var plotWidth = width - left - right;
@@ -2457,8 +2457,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         chart.appendChild(svgElement("line", { "class": "axis-line", x1: left, y1: top, x2: left, y2: top + plotHeight }));
         chart.appendChild(svgElement("line", { "class": "axis-line", x1: left, y1: top + plotHeight, x2: width - right, y2: top + plotHeight }));
-        addText(chart, { "class": "axis-title", x: 14, y: top + (plotHeight / 2), transform: "rotate(-90 14 " + (top + (plotHeight / 2)) + ")", "text-anchor": "middle" }, "Appointments");
-
         var linePoints = points.map(function (point) { return point.x + "," + point.y; }).join(" ");
         var baseline = top + plotHeight;
         var areaPoints = linePoints + " " + points[points.length - 1].x + "," + baseline + " " + points[0].x + "," + baseline;
