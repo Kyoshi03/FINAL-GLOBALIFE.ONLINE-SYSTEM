@@ -2718,7 +2718,7 @@ include 'includes/header.php';
             </div>
             <div class="trend-panel-actions">
                 <form class="trend-date-form" method="get">
-                    <label for="adminTrendDate">Reference date</label>
+                    <label for="adminTrendDate">Report date</label>
                     <input type="hidden" name="trend_period" value="<?php echo htmlspecialchars((string) ($_GET['trend_period'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
                     <input type="date" id="adminTrendDate" name="trend_date" value="<?php echo htmlspecialchars($trendDate, ENT_QUOTES, 'UTF-8'); ?>" max="<?php echo htmlspecialchars($today, ENT_QUOTES, 'UTF-8'); ?>" data-default-value="<?php echo htmlspecialchars($today, ENT_QUOTES, 'UTF-8'); ?>">
                 </form>
