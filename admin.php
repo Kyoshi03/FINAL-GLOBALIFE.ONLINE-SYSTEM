@@ -1287,8 +1287,8 @@ body {
     align-items: center;
     gap: 6px;
     width: 100%;
-    min-width: 170px;
-    max-width: 240px;
+    min-width: 0;
+    max-width: 210px;
 }
 
 .request-actions form {
@@ -1300,12 +1300,11 @@ body {
 .request-actions .btn {
     width: 100%;
     min-width: 0;
-    min-height: 34px;
-    padding: 7px 6px;
-    font-size: 0.76rem;
-    line-height: 1.1;
-    white-space: normal;
-    overflow-wrap: anywhere;
+    min-height: 30px;
+    padding: 5px 4px;
+    font-size: 0.68rem;
+    line-height: 1.05;
+    white-space: nowrap;
 }
 
 .request-actions .request-confirm-action {
@@ -1336,6 +1335,13 @@ body {
 .request-actions .request-reschedule-btn {
     grid-column: 2;
     grid-row: 2;
+}
+
+@media (max-width: 760px) {
+    .request-actions .btn {
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
 }
 
 .appointment-request-pagination {
