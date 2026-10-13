@@ -13,6 +13,7 @@ $pageTitle = 'Email/SMS Settings | Globalife Administration';
 $mailConfig = clinic_mail_config();
 $smsConfig = clinic_sms_config();
 $mailReady = clinic_mail_ready();
+$smsReady = clinic_sms_ready();
 $testNotice = null;
 
 $notificationSettings = [
@@ -79,11 +80,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
         }
     } elseif (($_POST['action'] ?? '') === 'test_sms') {
-        $testNotice = [
-            'type' => 'error',
-            'channel' => 'sms',
-            'message' => 'SMS service is currently expired. Renew the SkySMS account and replace the API key before sending a test SMS.',
-        ];
+        $recipient = trim((string) ($_POST['test_sms_phone'] ?? ''));
+        if (!$smsReady) {
+            $testNotice = ['type' => 'error', 'channel' => 'sms', 'message' => 'SMS service is not configured. Check the SkySMS API settings first.'];
+        } elseif (clinic_sms_normalize_phone($recipient) === null) {
+            $testNotice = ['type' => 'error', 'channel' => 'sms', 'message' => 'Enter a valid Philippine mobile number, such as 09171234567.'];
+        } else {
+            $smsResult = clinic_send_sms_message($recipient, 'This is a test SMS from Globalife Medical Laboratory & Polyclinic.');
+            $testNotice = [
+                'type' => !empty($smsResult['ok']) ? 'success' : 'error',
+                'channel' => 'sms',
+                'message' => !empty($smsResult['ok']) ? 'Test SMS sent successfully.' : (string) ($smsResult['error'] ?? 'Test SMS could not be sent.'),
+            ];
+        }
     }
 }
 
@@ -174,8 +183,8 @@ include 'includes/header.php';
                 <span class="notification-card-icon"><?php echo email_sms_icon('sms'); ?></span>
                 <div><h2>SMS Notifications</h2><p>Send appointment confirmations, updates, and reminders via SMS.</p></div>
             </div>
-            <div class="notification-status needs-renewal">Needs renewal</div>
-            <p class="notification-service-note">SMS service is expired and currently unavailable.</p>
+            <div class="notification-status<?php echo $smsReady ? '' : ' needs-renewal'; ?>"><?php echo $smsReady ? 'Configured' : 'Needs setup'; ?></div>
+            <p class="notification-service-note">SMS service is <?php echo $smsReady ? 'configured.' : 'not configured.'; ?></p>
             <button type="button" class="notification-card-button" data-open-test="sms"><?php echo email_sms_icon('sms'); ?>Send Test SMS</button>
         </article>
 
@@ -223,11 +232,14 @@ include 'includes/header.php';
 </div>
 
 <div class="test-modal-overlay" id="smsTestModal" role="dialog" aria-modal="true" aria-labelledby="smsTestTitle">
-    <div class="test-modal">
+    <form class="test-modal" method="post">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars((string) $_SESSION['email_sms_csrf']); ?>">
+        <input type="hidden" name="action" value="test_sms">
         <h2 id="smsTestTitle">Send Test SMS</h2>
-        <p>SMS sending is temporarily unavailable because the SkySMS service or subscription has expired. Renew it first, then update the API key before testing.</p>
-        <div class="test-modal-actions"><button class="test-modal-close" type="button" data-close-modal>Close</button><button class="test-modal-submit" type="button" disabled>Send Test SMS</button></div>
-    </div>
+        <p>Enter a Philippine mobile number that should receive the test message.</p>
+        <label>Mobile number<input type="tel" name="test_sms_phone" value="<?php echo htmlspecialchars((string) ($_POST['test_sms_phone'] ?? '')); ?>" placeholder="09171234567" inputmode="tel" required></label>
+        <div class="test-modal-actions"><button class="test-modal-close" type="button" data-close-modal>Cancel</button><button class="test-modal-submit" type="submit"<?php echo $smsReady ? '' : ' disabled'; ?>>Send Test SMS</button></div>
+    </form>
 </div>
 
 <?php if ($testNotice !== null): ?>

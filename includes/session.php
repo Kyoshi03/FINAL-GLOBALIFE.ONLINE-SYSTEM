@@ -4,6 +4,14 @@ date_default_timezone_set('Asia/Manila');
 
 // Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
+    // Keep sessions in the app's writable storage instead of relying on a host-specific temp path.
+    $sessionPath = __DIR__ . '/../storage/sessions';
+    if (!is_dir($sessionPath)) {
+        @mkdir($sessionPath, 0700, true);
+    }
+    if (is_dir($sessionPath) && is_writable($sessionPath)) {
+        session_save_path($sessionPath);
+    }
     session_start();
 }
 
