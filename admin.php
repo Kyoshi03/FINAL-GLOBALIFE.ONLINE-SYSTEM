@@ -88,7 +88,7 @@ function admin_appointment_trend_series(mysqli $conn, string $period, DateTimeIm
     } else {
         $quarterStartMonth = (int) (floor(((int) $today->format('n') - 1) / 3) * 3 + 1);
         $currentQuarter = $today->setDate((int) $today->format('Y'), $quarterStartMonth, 1);
-        for ($offset = 7; $offset >= 0; $offset--) {
+        for ($offset = 3; $offset >= 0; $offset--) {
             $pointDate = $currentQuarter->modify('-' . ($offset * 3) . ' months');
             $quarter = (int) floor(((int) $pointDate->format('n') - 1) / 3) + 1;
             $points[] = [
@@ -109,10 +109,11 @@ function admin_appointment_trend_series(mysqli $conn, string $period, DateTimeIm
     $lastPoint = $points[count($points) - 1] ?? null;
     $to = $lastPoint['to'] ?? $today->format('Y-m-d');
     $stmt = $conn->prepare(
-        'SELECT appointment_date, COUNT(*) AS total
+        "SELECT appointment_date, COUNT(*) AS total
          FROM appointments
          WHERE appointment_date BETWEEN ? AND ?
-         GROUP BY appointment_date'
+           AND status <> 'cancelled'
+         GROUP BY appointment_date"
     );
     if ($stmt) {
         $stmt->bind_param('ss', $from, $to);
@@ -135,7 +136,7 @@ function admin_appointment_trend_series(mysqli $conn, string $period, DateTimeIm
         'labels' => array_values(array_map(static fn(array $point): string => $point['label'], $points)),
         'values' => array_values($values),
         'total' => array_sum($values),
-        'range' => $period === 'daily' ? 'Last 7 days' : ($period === 'monthly' ? 'Last 12 months' : 'Last 8 quarters'),
+        'range' => $period === 'daily' ? 'Last 7 days' : ($period === 'monthly' ? 'Last 12 months' : 'Last 4 quarters'),
     ];
 }
 
