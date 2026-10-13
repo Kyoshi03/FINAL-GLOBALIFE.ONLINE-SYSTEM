@@ -1954,7 +1954,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                 </section>
             </div>
             <div class="popup-actions">
-                <button type="button" class="popup-btn popup-btn-primary" id="termsPolicyClose">OK</button>
+                <button type="button" class="popup-btn popup-btn-primary" id="termsPolicyClose">I Understand</button>
             </div>
         </div>
     </div>
@@ -2075,6 +2075,8 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                 termsPolicyClose.addEventListener('click', function () {
                     hidePopup('termsPolicyPopup');
                     if (termsCheckbox) {
+                        termsCheckbox.checked = true;
+                        syncTermsSubmitState();
                         termsCheckbox.focus();
                     }
                 });
