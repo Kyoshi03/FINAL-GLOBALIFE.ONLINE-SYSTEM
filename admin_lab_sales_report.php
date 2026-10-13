@@ -22,13 +22,16 @@ function sales_report_period(string $period): string {
 }
 
 function sales_report_range_for_period(string $period, DateTimeImmutable $anchor): array {
+    if ($period === 'daily') {
+        return [$anchor->modify('-6 days'), $anchor];
+    }
     if ($period === 'monthly') {
-        return [$anchor->modify('first day of this month'), $anchor->modify('last day of this month')];
+        return [$anchor->modify('first day of this month')->modify('-11 months'), $anchor];
     }
     if ($period === 'quarterly') {
         $firstMonth = (int) (floor(((int) $anchor->format('n') - 1) / 3) * 3 + 1);
         $start = $anchor->setDate((int) $anchor->format('Y'), $firstMonth, 1);
-        return [$start, $start->modify('+2 months')->modify('last day of this month')];
+        return [$start->modify('-9 months'), $anchor];
     }
     return [$anchor, $anchor];
 }
@@ -219,6 +222,51 @@ function sales_report_money(float $amount): string {
     return '₱' . number_format($amount, 2);
 }
 
+function sales_report_chart_values(array $rows, string $period, DateTimeImmutable $fromDate, DateTimeImmutable $toDate): array {
+    $values = [];
+    if ($period === 'monthly') {
+        $cursor = $fromDate->modify('first day of this month');
+        $last = $toDate->modify('first day of this month');
+        while ($cursor <= $last) {
+            $values[$cursor->format('Y-m-d')] = 0.0;
+            $cursor = $cursor->modify('+1 month');
+        }
+    } elseif ($period === 'quarterly') {
+        $fromMonth = (int) floor(((int) $fromDate->format('n') - 1) / 3) * 3 + 1;
+        $toMonth = (int) floor(((int) $toDate->format('n') - 1) / 3) * 3 + 1;
+        $cursor = $fromDate->setDate((int) $fromDate->format('Y'), $fromMonth, 1);
+        $last = $toDate->setDate((int) $toDate->format('Y'), $toMonth, 1);
+        while ($cursor <= $last) {
+            $values[$cursor->format('Y-m-d')] = 0.0;
+            $cursor = $cursor->modify('+3 months');
+        }
+    } else {
+        for ($cursor = $fromDate; $cursor <= $toDate; $cursor = $cursor->modify('+1 day')) {
+            $values[$cursor->format('Y-m-d')] = 0.0;
+        }
+    }
+
+    foreach ($rows as $row) {
+        $date = DateTimeImmutable::createFromFormat('!Y-m-d', (string) ($row['date'] ?? ''));
+        if (!$date) {
+            continue;
+        }
+        if ($period === 'monthly') {
+            $key = $date->format('Y-m-01');
+        } elseif ($period === 'quarterly') {
+            $quarterMonth = (int) floor(((int) $date->format('n') - 1) / 3) * 3 + 1;
+            $key = $date->setDate((int) $date->format('Y'), $quarterMonth, 1)->format('Y-m-d');
+        } else {
+            $key = $date->format('Y-m-d');
+        }
+        if (array_key_exists($key, $values)) {
+            $values[$key] += (float) ($row['total_amount'] ?? 0);
+        }
+    }
+
+    return $values;
+}
+
 function sales_report_pdf_page(array $rows, string $from, string $to, float $total, int $quantity, int $page, int $pages, ?array $logo): string {
     $ops = [];
     clinic_pdf_line($ops, 34, 805, 561, 805, 2.2);
@@ -325,7 +373,7 @@ if ($anchor > $today) { $anchor = $today; $anchorDate = $today->format('Y-m-d');
 $requestedFrom = trim((string) ($_GET['from_date'] ?? ''));
 $requestedTo = trim((string) ($_GET['to_date'] ?? ''));
 $rangePreset = strtolower(trim((string) ($_GET['range_preset'] ?? '')));
-$allowedRangePresets = ['today', 'yesterday', 'past_3_days', 'past_7_days', 'past_2_weeks', 'past_30_days', 'current_month', 'current_quarter', 'custom'];
+$allowedRangePresets = ['today', 'yesterday', 'past_3_days', 'past_7_days', 'past_2_weeks', 'past_30_days', 'last_7_days', 'last_12_months', 'last_4_quarters', 'current_month', 'current_quarter', 'custom'];
 if (!in_array($rangePreset, $allowedRangePresets, true)) {
     $rangePreset = $requestedFrom !== '' || $requestedTo !== '' ? 'custom' : 'today';
 }
@@ -347,6 +395,16 @@ if ($rangePreset !== 'custom' && isset($presetDays[$rangePreset])) {
     $quarterStartMonth = ((int) floor(((int) $anchor->format('n') - 1) / 3) * 3) + 1;
     $fromDate = $anchor->setDate((int) $anchor->format('Y'), $quarterStartMonth, 1);
     $toDate = $fromDate->modify('+2 months')->modify('last day of this month');
+} elseif ($rangePreset === 'last_7_days') {
+    $fromDate = $anchor->modify('-6 days');
+    $toDate = $anchor;
+} elseif ($rangePreset === 'last_12_months') {
+    $fromDate = $anchor->modify('first day of this month')->modify('-11 months');
+    $toDate = $anchor;
+} elseif ($rangePreset === 'last_4_quarters') {
+    $quarterStartMonth = ((int) floor(((int) $anchor->format('n') - 1) / 3) * 3) + 1;
+    $fromDate = $anchor->setDate((int) $anchor->format('Y'), $quarterStartMonth, 1)->modify('-9 months');
+    $toDate = $anchor;
 } elseif (sales_report_valid_date($requestedFrom) && sales_report_valid_date($requestedTo)) {
     $fromDate = new DateTimeImmutable($requestedFrom);
     $toDate = new DateTimeImmutable($requestedTo);
@@ -415,13 +473,11 @@ foreach ($periodRows as $viewKey => $viewData) {
 }
 $rangeLabel = $formatDateRange($fromDate, $toDate);
 $periodCardSubtitles = [
-    'daily' => $anchor->format('M j, Y'),
-    'monthly' => $anchor->format('F Y'),
-    'quarterly' => 'Q' . (int) ceil((int) $anchor->format('n') / 3) . ' ' . $anchor->format('Y'),
+    'daily' => 'Last 7 days',
+    'monthly' => 'Last 12 months',
+    'quarterly' => 'Last 4 quarters',
 ];
 if (strtolower((string) ($_GET['format'] ?? '')) === 'pdf') sales_report_output_pdf($rows, $from, $to, $totalSales, $completedTests);
-$dailyTrendFromDate = $anchor->modify('-6 days');
-$dailyTrendRows = sales_report_rows($conn, $dailyTrendFromDate->format('Y-m-d'), $anchor->format('Y-m-d'));
 $conn->close();
 
 $chartWidth = 1080; $chartHeight = 350; $chartLeft = 78; $chartRight = 28; $chartTop = 28; $chartBottom = 58;
@@ -443,7 +499,7 @@ if ($chartPoints) {
     $chartAreaPoints .= ' ' . number_format($chartPoints[0]['x'], 2, '.', '') . ',' . $chartBaseline;
 }
 
-$buildSalesChartView = static function (array $dailyValues, DateTimeImmutable $viewFrom, DateTimeImmutable $viewTo) use ($chartWidth, $chartHeight, $chartLeft, $chartRight, $chartTop, $chartBottom, $plotWidth, $plotHeight): array {
+$buildSalesChartView = static function (array $dailyValues, DateTimeImmutable $viewFrom, DateTimeImmutable $viewTo, string $period = 'daily') use ($chartWidth, $chartHeight, $chartLeft, $chartRight, $chartTop, $chartBottom, $plotWidth, $plotHeight): array {
     $viewMax = max(100.0, max($dailyValues ?: [0.0]));
     $viewTick = max(25.0, ceil($viewMax / 4 / 100) * 100);
     $viewMax = max($viewTick * 4, 100.0);
@@ -453,7 +509,13 @@ $buildSalesChartView = static function (array $dailyValues, DateTimeImmutable $v
     foreach ($dailyValues as $date => $amount) {
         $x = $chartLeft + ($viewPointCount > 1 ? ($viewPointIndex / ($viewPointCount - 1)) * $plotWidth : $plotWidth / 2);
         $y = $chartTop + $plotHeight - (((float) $amount / $viewMax) * $plotHeight);
-        $viewPoints[] = ['date' => $date, 'amount' => (float) $amount, 'x' => $x, 'y' => $y];
+        $pointDate = new DateTimeImmutable($date);
+        $label = $period === 'monthly'
+            ? $pointDate->format('M Y')
+            : ($period === 'quarterly'
+                ? 'Q' . (int) ceil((int) $pointDate->format('n') / 3) . ' ' . $pointDate->format('Y')
+                : $pointDate->format('M j'));
+        $viewPoints[] = ['date' => $date, 'label' => $label, 'amount' => (float) $amount, 'x' => $x, 'y' => $y];
         $viewPointIndex++;
     }
     $viewPolyline = implode(' ', array_map(static fn(array $point): string => number_format($point['x'], 2, '.', '') . ',' . number_format($point['y'], 2, '.', ''), $viewPoints));
@@ -483,33 +545,11 @@ $chartViews = [
     ],
 ];
 foreach (['daily', 'monthly', 'quarterly'] as $chartPeriod) {
-    $viewDailySales = [];
     $viewFrom = $periodRows[$chartPeriod]['from'];
     $viewTo = $periodRows[$chartPeriod]['to'];
-    $viewCursor = $viewFrom;
-    while ($viewCursor <= $viewTo) {
-        $viewDailySales[$viewCursor->format('Y-m-d')] = 0.0;
-        $viewCursor = $viewCursor->modify('+1 day');
-    }
-    foreach ($periodRows[$chartPeriod]['rows'] as $periodRow) {
-        if (array_key_exists($periodRow['date'], $viewDailySales)) {
-            $viewDailySales[$periodRow['date']] += (float) $periodRow['total_amount'];
-        }
-    }
-    $chartViews[$chartPeriod] = $buildSalesChartView($viewDailySales, $viewFrom, $viewTo);
+    $viewValues = sales_report_chart_values($periodRows[$chartPeriod]['rows'], $chartPeriod, $viewFrom, $viewTo);
+    $chartViews[$chartPeriod] = $buildSalesChartView($viewValues, $viewFrom, $viewTo, $chartPeriod);
 }
-$dailyTrendValues = [];
-$dailyTrendCursor = $dailyTrendFromDate;
-while ($dailyTrendCursor <= $anchor) {
-    $dailyTrendValues[$dailyTrendCursor->format('Y-m-d')] = 0.0;
-    $dailyTrendCursor = $dailyTrendCursor->modify('+1 day');
-}
-foreach ($dailyTrendRows as $dailyTrendRow) {
-    if (array_key_exists($dailyTrendRow['date'], $dailyTrendValues)) {
-        $dailyTrendValues[$dailyTrendRow['date']] += (float) $dailyTrendRow['total_amount'];
-    }
-}
-$chartViews['daily'] = $buildSalesChartView($dailyTrendValues, $dailyTrendFromDate, $anchor);
 foreach ($chartViews as $viewKey => &$chartView) {
     $viewData = $reportViews[$viewKey];
     $chartView['from'] = $viewData['from']->format('Y-m-d');
@@ -522,7 +562,7 @@ unset($chartView);
 $allowedViewModes = ['current', 'daily', 'monthly', 'quarterly'];
 $viewMode = strtolower(trim((string) ($_GET['view_mode'] ?? '')));
 if (!in_array($viewMode, $allowedViewModes, true)) $viewMode = in_array($period, ['daily', 'monthly', 'quarterly'], true) ? $period : 'current';
-$showGraph = $showTrend && $viewMode !== 'daily';
+$showGraph = $showTrend;
 $selectedViewKey = $showTrend && isset($reportViews[$viewMode]) ? $viewMode : 'current';
 $selectedReportView = $reportViews[$selectedViewKey];
 $displayFrom = $selectedReportView['from']->format('Y-m-d');
@@ -531,16 +571,14 @@ $displayRangeLabel = $formatDateRange($selectedReportView['from'], $selectedRepo
 $displayTrendRangeLabel = $chartViews[$selectedViewKey]['range_label'] ?? $displayRangeLabel;
 $displayTotalSales = (float) $selectedReportView['sales'];
 $displayCompletedTests = (int) $selectedReportView['tests'];
-$displayRangePreset = $selectedViewKey === 'current' ? $rangePreset : ($viewMode === 'monthly' ? 'current_month' : ($viewMode === 'quarterly' ? 'current_quarter' : 'today'));
+$displayRangePreset = $selectedViewKey === 'current' ? $rangePreset : ($viewMode === 'monthly' ? 'last_12_months' : ($viewMode === 'quarterly' ? 'last_4_quarters' : 'last_7_days'));
 $displaySummaryLabel = $displayRangeLabel;
-if ($selectedViewKey === 'daily') $displaySummaryLabel = $anchor->format('F j, Y');
-if ($selectedViewKey === 'monthly') $displaySummaryLabel = $anchor->format('F Y');
-if ($selectedViewKey === 'quarterly') $displaySummaryLabel = 'Q' . (int) ceil((int) $anchor->format('n') / 3) . ' ' . $anchor->format('Y') . ' to date';
+if (isset($periodCardSubtitles[$selectedViewKey])) $displaySummaryLabel = $periodCardSubtitles[$selectedViewKey];
 $viewSummaryLabels = [
     'current' => $displayRangeLabel,
-    'daily' => $anchor->format('F j, Y'),
-    'monthly' => $anchor->format('F Y'),
-    'quarterly' => 'Q' . (int) ceil((int) $anchor->format('n') / 3) . ' ' . $anchor->format('Y') . ' to date',
+    'daily' => $periodCardSubtitles['daily'],
+    'monthly' => $periodCardSubtitles['monthly'],
+    'quarterly' => $periodCardSubtitles['quarterly'],
 ];
 
 $additionalStyles = '
@@ -572,7 +610,7 @@ require_once __DIR__ . '/includes/header.php';
         <div class="sales-controls"><form class="sales-date-form" method="get" id="salesFilterForm">
             <input type="hidden" name="period" id="salesPeriod" value="<?php echo htmlspecialchars($period, ENT_QUOTES, 'UTF-8'); ?>"><input type="hidden" name="view_mode" id="salesViewMode" value="<?php echo htmlspecialchars($viewMode, ENT_QUOTES, 'UTF-8'); ?>"><input type="hidden" name="anchor_date" id="salesAnchorDate" value="<?php echo htmlspecialchars($anchorDate, ENT_QUOTES, 'UTF-8'); ?>"><input type="hidden" name="show_trend" id="salesShowTrend" value="<?php echo $showTrend ? '1' : '0'; ?>">
             <div class="sales-range-field"><label for="salesRangePreset">Date Range</label><div class="sales-range-select-wrap"><select id="salesRangePreset" name="range_preset" data-today="<?php echo htmlspecialchars($today->format('Y-m-d'), ENT_QUOTES, 'UTF-8'); ?>">
-                <?php foreach (['today' => 'Today', 'yesterday' => 'Yesterday', 'past_3_days' => 'Past 3 Days', 'past_7_days' => 'Past 7 Days', 'past_2_weeks' => 'Past 2 Weeks', 'past_30_days' => 'Past 30 Days', 'current_month' => 'Current Month', 'current_quarter' => 'Current Quarter', 'custom' => 'Custom Date Range'] as $rangeValue => $rangeText): ?><option value="<?php echo $rangeValue; ?>"<?php echo $displayRangePreset === $rangeValue ? ' selected' : ''; ?>><?php echo $rangeText; ?></option><?php endforeach; ?>
+                <?php foreach (['today' => 'Today', 'yesterday' => 'Yesterday', 'past_3_days' => 'Past 3 Days', 'past_7_days' => 'Past 7 Days', 'past_2_weeks' => 'Past 2 Weeks', 'past_30_days' => 'Past 30 Days', 'last_7_days' => 'Last 7 Days', 'last_12_months' => 'Last 12 Months', 'last_4_quarters' => 'Last 4 Quarters', 'current_month' => 'Current Month', 'current_quarter' => 'Current Quarter', 'custom' => 'Custom Date Range'] as $rangeValue => $rangeText): ?><option value="<?php echo $rangeValue; ?>"<?php echo $displayRangePreset === $rangeValue ? ' selected' : ''; ?>><?php echo $rangeText; ?></option><?php endforeach; ?>
             </select><button type="button" class="sales-range-edit" id="editCustomRange" hidden>Edit dates</button></div></div>
             <input type="hidden" id="salesFromDate" name="from_date" value="<?php echo htmlspecialchars($displayFrom, ENT_QUOTES, 'UTF-8'); ?>"><input type="hidden" id="salesToDate" name="to_date" value="<?php echo htmlspecialchars($displayTo, ENT_QUOTES, 'UTF-8'); ?>">
         </form></div>
@@ -581,10 +619,10 @@ require_once __DIR__ . '/includes/header.php';
     <section class="sales-panel sales-trend-panel" id="salesTrendPanel" aria-label="Sales trend" style="padding-top:10px" aria-hidden="<?php echo $showGraph ? 'false' : 'true'; ?>"<?php echo $showGraph ? '' : ' hidden'; ?>>
         <div id="salesTrendViews">
         <?php foreach ($chartViews as $viewKey => $view): ?><div class="sales-chart-view" data-sales-chart-view="<?php echo htmlspecialchars($viewKey, ENT_QUOTES, 'UTF-8'); ?>" data-range-label="<?php echo htmlspecialchars($view['range_label'], ENT_QUOTES, 'UTF-8'); ?>" data-from-date="<?php echo htmlspecialchars($view['from'], ENT_QUOTES, 'UTF-8'); ?>" data-to-date="<?php echo htmlspecialchars($view['to'], ENT_QUOTES, 'UTF-8'); ?>" data-report-range-label="<?php echo htmlspecialchars($formatDateRange($reportViews[$viewKey]['from'], $reportViews[$viewKey]['to']), ENT_QUOTES, 'UTF-8'); ?>" data-summary-label="<?php echo htmlspecialchars($viewSummaryLabels[$viewKey] ?? $displayRangeLabel, ENT_QUOTES, 'UTF-8'); ?>" data-report-from-date="<?php echo htmlspecialchars($reportViews[$viewKey]['from']->format('Y-m-d'), ENT_QUOTES, 'UTF-8'); ?>" data-report-to-date="<?php echo htmlspecialchars($reportViews[$viewKey]['to']->format('Y-m-d'), ENT_QUOTES, 'UTF-8'); ?>" data-sales-total="<?php echo htmlspecialchars($formatMoney((float) $view['sales']), ENT_QUOTES, 'UTF-8'); ?>" data-completed-tests="<?php echo (int) $view['tests']; ?>"<?php echo !$showGraph || $viewKey !== $selectedViewKey ? ' hidden' : ''; ?>>
-            <?php if ($view['points']): ?><svg class="sales-chart" viewBox="0 0 <?php echo $chartWidth; ?> <?php echo $chartHeight; ?>" role="img" aria-label="Daily laboratory sales trend">
+            <?php if ($view['points']): ?><svg class="sales-chart" viewBox="0 0 <?php echo $chartWidth; ?> <?php echo $chartHeight; ?>" role="img" aria-label="<?php echo htmlspecialchars(ucfirst($viewKey) . ' laboratory sales trend', ENT_QUOTES, 'UTF-8'); ?>">
                 <?php for ($tick = 0; $tick <= 4; $tick++): ?><?php $tickY = $chartTop + $plotHeight - (($tick / 4) * $plotHeight); ?><line class="grid-line" x1="<?php echo $chartLeft; ?>" y1="<?php echo number_format($tickY, 2, '.', ''); ?>" x2="<?php echo $chartWidth - $chartRight; ?>" y2="<?php echo number_format($tickY, 2, '.', ''); ?>"></line><text x="<?php echo $chartLeft - 10; ?>" y="<?php echo number_format($tickY + 4, 2, '.', ''); ?>" text-anchor="end">₱<?php echo number_format($view['chart_max'] * ($tick / 4), 0); ?></text><?php endfor; ?>
                 <line class="axis-line" x1="<?php echo $chartLeft; ?>" y1="<?php echo $chartTop; ?>" x2="<?php echo $chartLeft; ?>" y2="<?php echo $chartTop + $plotHeight; ?>"></line><line class="axis-line" x1="<?php echo $chartLeft; ?>" y1="<?php echo $chartTop + $plotHeight; ?>" x2="<?php echo $chartWidth - $chartRight; ?>" y2="<?php echo $chartTop + $plotHeight; ?>"></line><polygon class="trend-area" points="<?php echo htmlspecialchars($view['area'], ENT_QUOTES, 'UTF-8'); ?>"></polygon><polyline class="trend-line" points="<?php echo htmlspecialchars($view['polyline'], ENT_QUOTES, 'UTF-8'); ?>"></polyline>
-                <?php foreach ($view['points'] as $index => $point): ?><circle class="trend-dot" cx="<?php echo number_format($point['x'], 2, '.', ''); ?>" cy="<?php echo number_format($point['y'], 2, '.', ''); ?>" r="3.5"><title><?php echo htmlspecialchars(date('M j, Y', strtotime($point['date'])) . ': ' . $formatMoney((float) $point['amount']), ENT_QUOTES, 'UTF-8'); ?></title></circle><?php if ($index % $view['label_step'] === 0 || $index === count($view['points']) - 1): ?><text x="<?php echo number_format($point['x'], 2, '.', ''); ?>" y="<?php echo $chartTop + $plotHeight + 25; ?>" text-anchor="middle"><?php echo htmlspecialchars(date('M j', strtotime($point['date']))); ?></text><?php endif; ?><?php endforeach; ?>
+                <?php foreach ($view['points'] as $index => $point): ?><circle class="trend-dot" cx="<?php echo number_format($point['x'], 2, '.', ''); ?>" cy="<?php echo number_format($point['y'], 2, '.', ''); ?>" r="3.5"><title><?php echo htmlspecialchars(($point['label'] ?? date('M j, Y', strtotime($point['date']))) . ': ' . $formatMoney((float) $point['amount']), ENT_QUOTES, 'UTF-8'); ?></title></circle><?php if ($index % $view['label_step'] === 0 || $index === count($view['points']) - 1): ?><text x="<?php echo number_format($point['x'], 2, '.', ''); ?>" y="<?php echo $chartTop + $plotHeight + 25; ?>" text-anchor="middle"><?php echo htmlspecialchars($point['label'] ?? date('M j', strtotime($point['date']))); ?></text><?php endif; ?><?php endforeach; ?>
             </svg><?php else: ?><div class="sales-empty">No laboratory sales found for this period.</div><?php endif; ?>
         </div><?php endforeach; ?>
         </div>
@@ -609,11 +647,12 @@ document.addEventListener('DOMContentLoaded',function(){
     function setActivePeriod(period,active){document.querySelectorAll('.sales-period-card').forEach(function(button){var selected=active&&button.getAttribute('data-sales-period')===period;button.classList.toggle('is-active',selected);button.setAttribute('aria-pressed',selected?'true':'false')})}
     function focusPeriodCard(period){var card=document.querySelector('.sales-period-card[data-sales-period="'+period+'"]'),cards=document.querySelector('.sales-period-cards');if(!card)return;var rect=cards?cards.getBoundingClientRect():null,viewportHeight=window.innerHeight||document.documentElement.clientHeight;if(rect&&(rect.top<76||rect.bottom>viewportHeight-16)){cards.scrollIntoView({behavior:'smooth',block:'start'})}try{card.focus({preventScroll:true})}catch(error){card.focus()}}
     function updatePdfLink(viewKey,selectedView){if(!pdfLink||!selectedView)return;try{var url=new URL(pdfLink.href,window.location.href);url.searchParams.set('period',viewKey==='current'?(p.value||'daily'):viewKey);url.searchParams.set('range_preset','custom');url.searchParams.set('from_date',selectedView.getAttribute('data-report-from-date')||a.value);url.searchParams.set('to_date',selectedView.getAttribute('data-report-to-date')||b.value);url.searchParams.set('anchor_date',h.value||a.value);pdfLink.href=url.toString()}catch(error){}}
-    function showChart(viewKey){var selectedView=null;document.querySelectorAll('[data-sales-chart-view]').forEach(function(view){var selected=view.getAttribute('data-sales-chart-view')===viewKey;view.hidden=!selected;if(selected)selectedView=view});document.querySelectorAll('[data-sales-details-view]').forEach(function(view){view.hidden=view.getAttribute('data-sales-details-view')!==viewKey});if(selectedView){var graphRangeLabel=selectedView.getAttribute('data-range-label')||'',reportRangeLabel=selectedView.getAttribute('data-report-range-label')||graphRangeLabel,summaryLabel=selectedView.getAttribute('data-summary-label')||reportRangeLabel;if(trendRange)trendRange.textContent=graphRangeLabel;if(summarySales)summarySales.textContent=selectedView.getAttribute('data-sales-total')||'₱0.00';if(summaryTests)summaryTests.textContent=selectedView.getAttribute('data-completed-tests')||'0';if(summaryRange)summaryRange.textContent=summaryLabel;if(detailsRange)detailsRange.textContent=reportRangeLabel;if(viewKey!=='current'){if(a)a.value=selectedView.getAttribute('data-report-from-date')||a.value;if(b)b.value=selectedView.getAttribute('data-report-to-date')||b.value;var cardRange=viewKey==='monthly'?'current_month':(viewKey==='quarterly'?'current_quarter':'today');if(r)r.value=cardRange;syncCustomRangeEditor();lastRangePreset=cardRange;viewMode.value=viewKey;p.value=viewKey;if(showTrend)showTrend.value=viewKey==='daily'?'0':'1'}updatePdfLink(viewKey,selectedView);selectedView.querySelectorAll('.trend-area,.trend-line,.trend-dot').forEach(function(node){node.style.animation='none';void node.offsetWidth;node.style.animation=''})}}
+    function showChart(viewKey){var selectedView=null;document.querySelectorAll('[data-sales-chart-view]').forEach(function(view){var selected=view.getAttribute('data-sales-chart-view')===viewKey;view.hidden=!selected;if(selected)selectedView=view});document.querySelectorAll('[data-sales-details-view]').forEach(function(view){view.hidden=view.getAttribute('data-sales-details-view')!==viewKey});if(selectedView){var graphRangeLabel=selectedView.getAttribute('data-range-label')||'',reportRangeLabel=selectedView.getAttribute('data-report-range-label')||graphRangeLabel,summaryLabel=selectedView.getAttribute('data-summary-label')||reportRangeLabel;if(trendRange)trendRange.textContent=graphRangeLabel;if(summarySales)summarySales.textContent=selectedView.getAttribute('data-sales-total')||'₱0.00';if(summaryTests)summaryTests.textContent=selectedView.getAttribute('data-completed-tests')||'0';if(summaryRange)summaryRange.textContent=summaryLabel;if(detailsRange)detailsRange.textContent=reportRangeLabel;if(viewKey!=='current'){if(a)a.value=selectedView.getAttribute('data-report-from-date')||a.value;if(b)b.value=selectedView.getAttribute('data-report-to-date')||b.value;var cardRange=viewKey==='monthly'?'last_12_months':(viewKey==='quarterly'?'last_4_quarters':'last_7_days');if(r)r.value=cardRange;syncCustomRangeEditor();lastRangePreset=cardRange;viewMode.value=viewKey;p.value=viewKey;if(showTrend)showTrend.value='1'}updatePdfLink(viewKey,selectedView);selectedView.querySelectorAll('.trend-area,.trend-line,.trend-dot').forEach(function(node){node.style.animation='none';void node.offsetWidth;node.style.animation=''})}}
     function setTrendVisible(visible,viewKey){if(!trendPanel)return;trendPanel.hidden=!visible;trendPanel.setAttribute('aria-hidden',visible?'false':'true');if(showTrend)showTrend.value=visible?'1':'0';if(visible&&viewKey)showChart(viewKey)}
     function submit(scrollTarget){if(a.value&&b.value&&a.value>b.value){var x=a.value;a.value=b.value;b.value=x}h.value=b.value||a.value||h.value;try{sessionStorage.setItem(salesScrollStorageKey,JSON.stringify({y:window.scrollY||window.pageYOffset||0,target:scrollTarget||'current'}))}catch(error){}f.submit()}
     function setRange(daysBack,endDate){var end=new Date((endDate||r.getAttribute('data-today'))+'T00:00:00');var start=new Date(end);start.setDate(end.getDate()-daysBack);a.value=localDate(start);b.value=localDate(end)}
     function setCurrentPeriodRange(preset){var anchorDate=parseRangeDate(h.value)||parseRangeDate(r.getAttribute('data-today'))||new Date(),start,end;if(preset==='current_month'){start=new Date(anchorDate.getFullYear(),anchorDate.getMonth(),1);end=new Date(anchorDate.getFullYear(),anchorDate.getMonth()+1,0)}else{start=new Date(anchorDate.getFullYear(),Math.floor(anchorDate.getMonth()/3)*3,1);end=new Date(start.getFullYear(),start.getMonth()+3,0)}a.value=localDate(start);b.value=localDate(end)}
+    function setReportPeriodRange(period){var anchorDate=parseRangeDate(h.value)||parseRangeDate(r.getAttribute('data-today'))||new Date(),start,end;if(period==='daily'){start=new Date(anchorDate);start.setDate(start.getDate()-6);end=anchorDate}else if(period==='monthly'){start=new Date(anchorDate.getFullYear(),anchorDate.getMonth(),1);start.setMonth(start.getMonth()-11);end=anchorDate}else{var quarterStartMonth=Math.floor(anchorDate.getMonth()/3)*3;start=new Date(anchorDate.getFullYear(),quarterStartMonth,1);start.setMonth(start.getMonth()-9);end=anchorDate}a.value=localDate(start);b.value=localDate(end)}
     function useManualRange(showGraph){viewMode.value='current';p.value='daily';showTrend.value=showGraph?'1':'0';setActivePeriod('',false)}
     var lastRangePreset=r.value,rangeModalState=null,draftFrom='',draftTo='',calendarLeftMonth=null,calendarRightMonth=null;
     function syncCustomRangeEditor(){if(editCustomRange)editCustomRange.hidden=r.value!=='custom'}
@@ -647,8 +686,8 @@ document.addEventListener('DOMContentLoaded',function(){
     setupSalesPagination();
     if(editCustomRange)editCustomRange.addEventListener('click',function(){openRangeModal()});
     syncCustomRangeEditor();
-    r.addEventListener('change',function(){var v=r.value;if(v==='custom'){openRangeModal();return}if(v==='current_month'){setCurrentPeriodRange(v);viewMode.value='monthly';p.value='monthly';showTrend.value='1';setActivePeriod('monthly',true);lastRangePreset=v;submit();return}if(v==='current_quarter'){setCurrentPeriodRange(v);viewMode.value='quarterly';p.value='quarterly';showTrend.value='1';setActivePeriod('quarterly',true);lastRangePreset=v;submit();return}if(v==='today'){setRange(0)}else if(v==='yesterday'){var y=new Date(r.getAttribute('data-today')+'T00:00:00');y.setDate(y.getDate()-1);setRange(0,localDate(y))}else if(v==='past_3_days'){setRange(2)}else if(v==='past_7_days'){setRange(6)}else if(v==='past_2_weeks'){setRange(13)}else if(v==='past_30_days'){setRange(29)}useManualRange(v!=='today');lastRangePreset=v;submit()});
-    document.querySelectorAll('[data-sales-period]').forEach(function(btn){btn.addEventListener('click',function(){var v=btn.getAttribute('data-sales-period'),isVisible=trendPanel&&!trendPanel.hidden,isActiveButton=btn.classList.contains('is-active');if(v==='daily'){showChart(v);setTrendVisible(false);setActivePeriod(v,true);focusPeriodCard(v);return}if(isVisible&&isActiveButton){setTrendVisible(false);setActivePeriod(v,false);return}setActivePeriod(v,true);setTrendVisible(true,v);focusPeriodCard(v)})});
+    r.addEventListener('change',function(){var v=r.value;if(v==='custom'){openRangeModal();return}if(v==='current_month'){setCurrentPeriodRange(v);viewMode.value='monthly';p.value='monthly';showTrend.value='1';setActivePeriod('monthly',true);lastRangePreset=v;submit();return}if(v==='current_quarter'){setCurrentPeriodRange(v);viewMode.value='quarterly';p.value='quarterly';showTrend.value='1';setActivePeriod('quarterly',true);lastRangePreset=v;submit();return}if(v==='last_7_days'){setRange(6, h.value);viewMode.value='daily';p.value='daily';showTrend.value='1';setActivePeriod('daily',true);lastRangePreset=v;submit();return}if(v==='last_12_months'){setReportPeriodRange('monthly');viewMode.value='monthly';p.value='monthly';showTrend.value='1';setActivePeriod('monthly',true);lastRangePreset=v;submit();return}if(v==='last_4_quarters'){setReportPeriodRange('quarterly');viewMode.value='quarterly';p.value='quarterly';showTrend.value='1';setActivePeriod('quarterly',true);lastRangePreset=v;submit();return}if(v==='today'){setRange(0)}else if(v==='yesterday'){var y=new Date(r.getAttribute('data-today')+'T00:00:00');y.setDate(y.getDate()-1);setRange(0,localDate(y))}else if(v==='past_3_days'){setRange(2)}else if(v==='past_7_days'){setRange(6)}else if(v==='past_2_weeks'){setRange(13)}else if(v==='past_30_days'){setRange(29)}useManualRange(v!=='today');lastRangePreset=v;submit()});
+    document.querySelectorAll('[data-sales-period]').forEach(function(btn){btn.addEventListener('click',function(){var v=btn.getAttribute('data-sales-period'),isVisible=trendPanel&&!trendPanel.hidden,isActiveButton=btn.classList.contains('is-active');if(isVisible&&isActiveButton){setTrendVisible(false);setActivePeriod(v,false);return}setActivePeriod(v,true);setTrendVisible(true,v);focusPeriodCard(v)})});
     var print=document.getElementById('printSalesReport');if(print)print.addEventListener('click',function(){salesPaginationViews.forEach(function(view){if(view._salesPaginationShowAll)view._salesPaginationShowAll()});window.print();window.setTimeout(function(){salesPaginationViews.forEach(function(view){if(view._salesPaginationRender)view._salesPaginationRender()})},100)})
     try{var savedScrollState=sessionStorage.getItem(salesScrollStorageKey);if(savedScrollState){sessionStorage.removeItem(salesScrollStorageKey);var state;try{state=JSON.parse(savedScrollState)}catch(error){state={y:Number(savedScrollState)||0,target:'current'}}window.requestAnimationFrame(function(){window.requestAnimationFrame(function(){if(state&&state.target==='period-cards'){var cards=document.querySelector('.sales-period-cards');if(cards){window.scrollTo(0,Math.max(0,Math.round(cards.getBoundingClientRect().top+window.pageYOffset-76)));var activeCard=cards.querySelector('.sales-period-card.is-active');if(activeCard){try{activeCard.focus({preventScroll:true})}catch(error){activeCard.focus()}}return}}window.scrollTo(0,Number(state&&state.y)||0)})})}}catch(error){}
 });
