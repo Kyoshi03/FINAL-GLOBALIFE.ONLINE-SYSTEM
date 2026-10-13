@@ -1654,7 +1654,7 @@ $additionalStyles = '
         display: grid;
         grid-template-columns: max-content 112px;
         align-items: start;
-        justify-content: end;
+        justify-content: center;
         gap: 8px;
     }
 
@@ -3032,7 +3032,7 @@ $additionalStyles = '
         .appointment-side {
             grid-template-columns: max-content 112px;
             align-items: flex-start;
-            justify-content: space-between;
+            justify-content: center;
             width: 100%;
         }
 
