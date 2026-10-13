@@ -94,9 +94,12 @@ function getCurrentUser() {
 function login($username, $password) {
     require_once __DIR__ . '/../config/database.php';
     $conn = getDBConnection();
-    
-    $stmt = $conn->prepare("SELECT id, username, password, first_name, middle_name, last_name, suffix, role, COALESCE(is_active, 1) AS is_active FROM users WHERE username = ?");
-    $stmt->bind_param("s", $username);
+
+    // Patients may sign in with either the username they created or their registered email.
+    $identifier = trim((string) $username);
+    $emailIdentifier = strtolower($identifier);
+    $stmt = $conn->prepare("SELECT id, username, password, first_name, middle_name, last_name, suffix, role, COALESCE(is_active, 1) AS is_active FROM users WHERE username = ? OR LOWER(email) = ? LIMIT 1");
+    $stmt->bind_param("ss", $identifier, $emailIdentifier);
     $stmt->execute();
     $result = $stmt->get_result();
     

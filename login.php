@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
 
     if ($submittedUsername === '' || $password === '') {
-        $error = 'Please enter your username and password.';
+        $error = 'Please enter your username or email and password.';
     } elseif (login($submittedUsername, $password)) {
         $user = getCurrentUser();
         header('Location: ' . dashboardForRole($user['role']));
@@ -226,19 +226,19 @@ $pageTitle = "Login | Globalife Medical Laboratory & Polyclinic";
 
             <form method="POST" action="login.php">
                 <div class="form-group">
-                    <label for="username">Username</label>
+                    <label for="username">Username or email</label>
                     <div class="input-wrap">
                         <input
                             type="text"
                             id="username"
                             name="username"
                             value="<?php echo htmlspecialchars($submittedUsername); ?>"
-                            placeholder="Enter your username"
+                            placeholder="Enter your username or email"
                             autocomplete="username"
                             required
                         >
                     </div>
-                    <span class="field-hint">Use the username given to you or the one you created when signing up.</span>
+                    <span class="field-hint">Use the username or email registered on your account.</span>
                 </div>
 
                 <div class="form-group">
