@@ -53,9 +53,16 @@ function normalize_booking_time(string $t): string {
 
 function doctor_user_is_active(mysqli $conn, int $userId): bool {
     $st = $conn->prepare("SELECT COALESCE(is_active, 1) AS a FROM users WHERE id = ? AND role = 'doctor' LIMIT 1");
+    if (!$st) {
+        return false;
+    }
     $st->bind_param('i', $userId);
-    $st->execute();
-    $row = $st->get_result()->fetch_assoc();
+    if (!$st->execute()) {
+        $st->close();
+        return false;
+    }
+    $result = $st->get_result();
+    $row = $result ? $result->fetch_assoc() : null;
     $st->close();
     return $row && (int) $row['a'] === 1;
 }
@@ -65,9 +72,16 @@ function doctor_time_matches_clinic_slot(mysqli $conn, int $userId, string $date
     if ($n < 1 || $n > 7) return false;
     $tm = normalize_booking_time($timeHi);
     $st = $conn->prepare('SELECT 1 FROM doctor_availability WHERE user_id = ? AND day_of_week = ? AND time_start <= ? AND time_end >= ? LIMIT 1');
+    if (!$st) {
+        return false;
+    }
     $st->bind_param('iiss', $userId, $n, $tm, $tm);
-    $st->execute();
-    $ok = $st->get_result()->num_rows > 0;
+    if (!$st->execute()) {
+        $st->close();
+        return false;
+    }
+    $result = $st->get_result();
+    $ok = $result && $result->num_rows > 0;
     $st->close();
     return $ok;
 }
@@ -77,9 +91,16 @@ function doctor_time_matches_clinic_slot(mysqli $conn, int $userId, string $date
  */
 function doctor_fetch_availability_slots(mysqli $conn, int $userId): array {
     $st = $conn->prepare('SELECT day_of_week, time_start, time_end FROM doctor_availability WHERE user_id = ? ORDER BY day_of_week, time_start');
+    if (!$st) {
+        return [];
+    }
     $st->bind_param('i', $userId);
-    $st->execute();
-    $rows = $st->get_result()->fetch_all(MYSQLI_ASSOC);
+    if (!$st->execute()) {
+        $st->close();
+        return [];
+    }
+    $result = $st->get_result();
+    $rows = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     $st->close();
     return $rows;
 }
