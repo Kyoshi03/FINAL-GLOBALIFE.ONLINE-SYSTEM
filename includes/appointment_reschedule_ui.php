@@ -7,13 +7,13 @@
 .reschedule-head { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; padding:24px 26px; background:linear-gradient(135deg,#fff,#eefaff); border-bottom:1px solid #d8eef7; }
 .reschedule-head h3 { margin:0; color:#10233f; font-size:1.28rem; }
 .reschedule-head p { margin:8px 0 0; color:#60758a; font-size:.9rem; }
-.reschedule-body { padding:22px 24px 8px; }
+.reschedule-body { padding:16px 18px 4px; }
 .reschedule-field { display:grid; gap:7px; margin-bottom:16px; }
 .reschedule-field label { color:#315c70; font-weight:800; font-size:.9rem; }
 .reschedule-field input, .reschedule-field select { width:100%; box-sizing:border-box; min-height:46px; padding:10px 12px; border:1px solid #cfe3f2; border-radius:10px; color:#10233f; background:#fff; font:inherit; }
 .reschedule-field input:focus, .reschedule-field select:focus { outline:none; border-color:#0f7cc2; box-shadow:0 0 0 4px rgba(15,124,194,.1); }
 .reschedule-note { margin:0 0 8px; color:#60758a; line-height:1.45; font-size:.88rem; }
-.reschedule-availability { min-height:20px; margin:0 0 16px; padding:9px 11px; border-radius:9px; background:#f2f8fc; color:#42657a; font-size:.84rem; line-height:1.4; }
+.reschedule-availability { min-height:18px; margin:0 0 11px; padding:7px 10px; border-radius:8px; background:#f2f8fc; color:#42657a; font-size:.78rem; line-height:1.35; }
 .reschedule-availability.is-loading { color:#6e7d87; }
 .reschedule-availability.is-error { background:#fff3f3; color:#a52835; }
 .reschedule-availability.is-ready { background:#effaf3; color:#246b43; }
@@ -55,7 +55,11 @@
 .reschedule-calendar-legend i { width:9px; height:9px; border-radius:50%; background:#bfe9d0; }
 .reschedule-calendar-legend .legend-full i { background:#f0d6a8; }
 .reschedule-calendar-legend .legend-unavailable i { background:#d7e0e7; }
+.reschedule-time-field { grid-template-columns:auto minmax(150px,220px); align-items:center; gap:10px; margin:2px 0 8px; }
+.reschedule-time-field label { margin:0; white-space:nowrap; }
+.reschedule-time-field input, .reschedule-time-field select { width:220px; min-height:42px; }
 @media (max-width:620px) { .reschedule-calendar-head { grid-template-columns:1fr; } .reschedule-calendar-day { min-height:60px; padding:7px 5px; } .reschedule-day-status { font-size:.55rem; padding:3px 4px; } }
+@media (max-width:520px) { .reschedule-time-field { grid-template-columns:1fr; gap:6px; } .reschedule-time-field input, .reschedule-time-field select { width:100%; } }
 .reschedule-actions { display:flex; justify-content:flex-end; gap:10px; padding:16px 24px 24px; }
 @media (max-width:520px) { .reschedule-actions { flex-direction:column-reverse; } .reschedule-actions .btn { width:100%; } }
 .reschedule-success-modal { position:fixed; inset:0; z-index:3300; display:flex; align-items:center; justify-content:center; padding:18px; background:rgba(3,18,30,.5); backdrop-filter:blur(4px); }
@@ -94,7 +98,7 @@ $rescheduleMinTime = $rescheduleNow->modify('+1 minute')->format('H:i');
             <input type="hidden" name="appointment_id" id="appointmentRescheduleId" value="">
             <input type="hidden" name="return_url" value="<?php echo htmlspecialchars((string) $appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
             <div class="reschedule-body">
-                <p class="reschedule-note" id="appointmentRescheduleNotice">The new schedule will be checked against clinic hours, availability, and daily capacity.</p>
+                <p class="reschedule-note" id="appointmentRescheduleNotice">Choose an available date and time.</p>
                 <p class="reschedule-availability is-loading" id="appointmentRescheduleAvailability" aria-live="polite">Checking the doctor's available dates...</p>
                 <div class="reschedule-calendar-panel" id="appointmentRescheduleCalendarPanel" aria-label="Doctor availability calendar">
                     <div class="reschedule-calendar-head">
@@ -113,13 +117,8 @@ $rescheduleMinTime = $rescheduleNow->modify('+1 minute')->format('H:i');
                         </div>
                     </div>
                     <div class="reschedule-calendar-grid" id="appointmentRescheduleCalendarGrid"></div>
-                    <div class="reschedule-calendar-legend" aria-label="Calendar legend">
-                        <span><i></i>Available</span>
-                        <span class="legend-full"><i></i>Fully booked</span>
-                        <span class="legend-unavailable"><i></i>Doctor not available</span>
-                    </div>
                 </div>
-                <div class="reschedule-field">
+                <div class="reschedule-field reschedule-time-field">
                     <label for="appointmentRescheduleDate" id="appointmentRescheduleDateLabel">New date</label>
                     <input type="date" name="appointment_date" id="appointmentRescheduleDate"
                         min="<?php echo htmlspecialchars($rescheduleToday, ENT_QUOTES, 'UTF-8'); ?>" required>
@@ -414,7 +413,7 @@ unset($_SESSION['reschedule_error']);
             && (date !== today || timeInput.value >= minimumTimeToday);
         timeInput.setCustomValidity(validTime ? '' : 'Choose a time within the doctor\'s available schedule.');
         var slots = slotsForDate(date).map(function (slot) { return formatTimeLabel(slot.start) + ' - ' + formatTimeLabel(slot.end); }).join(', ');
-        setAvailabilityNote('Doctor schedule: ' + slots + '. Select a time below.', 'ready');
+        setAvailabilityNote('Doctor schedule: ' + slots + '.', 'ready');
         updateSelectedSummary();
         renderCalendar();
         return validTime;
