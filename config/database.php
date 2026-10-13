@@ -452,6 +452,23 @@ function initLabBookingSchema($conn) {
         is_active TINYINT(1) NOT NULL DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    // Upgrade older installations that already have lab_services but are missing
+    // columns introduced by the package/individual service catalog.
+    $labServiceCols = [
+        ['description', 'TEXT', 'name'],
+        ['included_tests', 'TEXT', 'description'],
+        ['opd_price', 'DECIMAL(10,2) NOT NULL DEFAULT 0', 'included_tests'],
+        ['home_service_price', 'DECIMAL(10,2) DEFAULT NULL', 'opd_price'],
+        ['is_package', 'TINYINT(1) NOT NULL DEFAULT 0', 'home_service_price'],
+        ['is_active', 'TINYINT(1) NOT NULL DEFAULT 1', 'is_package'],
+        ['created_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP', 'is_active'],
+    ];
+    foreach ($labServiceCols as $col) {
+        if (!dbColumnExists($conn, 'lab_services', $col[0])) {
+            $conn->query("ALTER TABLE lab_services ADD COLUMN `{$col[0]}` {$col[1]} AFTER `{$col[2]}`");
+        }
+    }
     
     $conn->query("CREATE TABLE IF NOT EXISTS appointment_services (
         id INT AUTO_INCREMENT PRIMARY KEY,

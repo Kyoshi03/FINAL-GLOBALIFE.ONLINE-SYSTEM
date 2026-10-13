@@ -313,6 +313,10 @@ include 'includes/header.php';
         <div class="tool-row">
             <p>Create or update laboratory services. Package and individual lists below are scrollable for easier admin review.</p>
             <div class="tool-actions">
+                <form method="post" onsubmit="return confirm('Import missing laboratory catalog rows?');">
+                    <input type="hidden" name="admin_svc_action" value="import_catalog">
+                    <button type="submit" class="btn secondary">Import missing catalog</button>
+                </form>
                 <button type="button" class="btn primary-action" data-open-modal="addServiceModal">Add laboratory service</button>
             </div>
         </div>
@@ -394,12 +398,12 @@ include 'includes/header.php';
     ?>
 
     <section class="lab-card service-section-card">
-        <div class="section-head"><h2 class="section-title">Package deals</h2></div>
+        <div class="section-head"><h2 class="section-title">Package deals (<?php echo $packageCount; ?>)</h2></div>
         <?php $renderTable($groupedPackages, 'No matching package rows.', true); ?>
     </section>
 
     <section class="lab-card service-section-card">
-        <div class="section-head"><h2 class="section-title">Individual laboratory tests</h2></div>
+        <div class="section-head"><h2 class="section-title">Individual laboratory tests (<?php echo $individualCount; ?>)</h2></div>
         <?php $renderTable($groupedIndividuals, 'No matching individual test rows.'); ?>
     </section>
 
@@ -416,7 +420,7 @@ include 'includes/header.php';
                         <label class="field">OPD price<input type="number" step="0.01" min="0" name="opd_price" required value="0"></label>
                         <label class="field">Home service price<input type="number" step="0.01" min="0" name="home_service_price" placeholder="Leave blank if unavailable"></label>
                     </div>
-                    <div class="checks" style="margin-top:16px;"><label><input type="checkbox" name="is_package"> Package deal</label><label><input type="checkbox" name="is_active" checked> Active in booking</label></div>
+                    <div class="checks" style="margin-top:16px;"><label><input type="checkbox" name="is_package"> Package deal <small>(leave unchecked for an individual laboratory test)</small></label><label><input type="checkbox" name="is_active" checked> Active in booking</label></div>
                 </div>
                 <div class="modal-actions"><button type="button" class="btn secondary" data-close-modal="addServiceModal">Cancel</button><button type="submit" class="btn">Add service</button></div>
             </form>
