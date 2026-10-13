@@ -1018,6 +1018,12 @@ body {
     margin-bottom: 16px;
 }
 
+.main-grid > *,
+.dashboard-stack,
+.panel {
+    min-width: 0;
+}
+
 .dashboard-stack {
     display: grid;
     gap: 16px;
@@ -1144,6 +1150,7 @@ body {
 
 .queue-table-wrap {
     overflow: auto;
+    min-width: 0;
     border: 1px solid #e0ebf3;
     border-radius: 8px;
 }
