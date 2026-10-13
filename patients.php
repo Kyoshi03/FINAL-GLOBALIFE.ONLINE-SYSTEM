@@ -1651,11 +1651,15 @@ $additionalStyles = '
     }
 
     .appointment-side {
-        display: grid;
-        grid-template-columns: minmax(96px, 1fr) minmax(86px, auto);
-        gap: 10px;
+        display: flex;
+        flex-direction: column;
         align-items: flex-end;
-        justify-items: end;
+        gap: 8px;
+    }
+
+    .appointment-side form,
+    .appointment-side .patient-reschedule-btn {
+        width: 112px;
     }
 
     .cancel-inline {
@@ -1667,6 +1671,17 @@ $additionalStyles = '
         font-weight: 800;
         min-width: 84px;
         padding: 8px 11px;
+        width: 100%;
+    }
+
+    .patient-reschedule-btn {
+        min-width: 0;
+        padding: 8px 10px;
+        border-radius: 8px;
+        font-size: .84rem;
+        font-weight: 800;
+        line-height: 1.2;
+        white-space: normal;
     }
 
     .appointment-pagination {
@@ -3528,6 +3543,14 @@ include 'includes/header.php';
                                             <button type="submit" class="cancel-inline" data-cancel-message="Are you sure you want to cancel this appointment?">Cancel</button>
                                         </form>
                                     <?php endif; ?>
+                                    <?php if (in_array($statusClass, ['pending', 'confirmed'], true)): ?>
+                                        <button type="button" class="btn btn-reschedule patient-reschedule-btn"
+                                            data-open-reschedule
+                                            data-appointment-id="<?php echo (int) $appointment['id']; ?>"
+                                            data-reschedule-date="<?php echo htmlspecialchars((string) ($appointment['appointment_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-reschedule-time="<?php echo htmlspecialchars((string) ($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-reschedule-label="Current schedule: <?php echo htmlspecialchars(patient_format_date($appointment['appointment_date'] ?? '') . ' at ' . patient_format_time($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">Reschedule</button>
+                                    <?php endif; ?>
                                 </div>
                             </article>
                         <?php endforeach; ?>
@@ -4546,4 +4569,5 @@ include 'includes/header.php';
         });
     })();
     </script>
+<?php $appointmentPage = 'patients.php'; include __DIR__ . '/includes/appointment_reschedule_ui.php'; ?>
 <?php include 'includes/footer.php'; ?>
