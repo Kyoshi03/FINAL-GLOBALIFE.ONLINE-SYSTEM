@@ -923,41 +923,6 @@ body {
     box-shadow: 0 0 0 3px rgba(15, 124, 194, .10);
 }
 
-.trend-tabs {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px;
-    border: 1px solid #d8e6ed;
-    border-radius: 8px;
-    background: #f5faff;
-}
-
-.trend-tab {
-    min-height: 34px;
-    border: 0;
-    border-radius: 6px;
-    padding: 6px 12px;
-    background: transparent;
-    color: #607784;
-    cursor: pointer;
-    font: inherit;
-    font-size: .8rem;
-    font-weight: 900;
-}
-
-.trend-tab:hover,
-.trend-tab:focus-visible {
-    color: #0b4f80;
-    outline: 2px solid #8ed9ef;
-    outline-offset: 1px;
-}
-
-.trend-tab.is-active {
-    background: #0f7cc2;
-    color: #fff;
-}
-
 .trend-meta {
     display: flex;
     align-items: center;
@@ -2180,14 +2145,6 @@ body {
         width: 100%;
     }
 
-    .trend-tabs {
-        width: 100%;
-    }
-
-    .trend-tab {
-        flex: 1;
-    }
-
     .trend-chart-wrap {
         min-height: 220px;
     }
@@ -2464,12 +2421,6 @@ document.addEventListener("DOMContentLoaded", function () {
             button.classList.toggle("is-active", active);
             button.setAttribute("aria-pressed", active ? "true" : "false");
         });
-        document.querySelectorAll("[data-trend-tab]").forEach(function (button) {
-            var active = button.getAttribute("data-trend-tab") === period;
-            button.classList.toggle("is-active", active);
-            button.setAttribute("aria-selected", active ? "true" : "false");
-        });
-
         if (description) description.textContent = periodNames[period] + " appointments for " + (dataset.range || "the selected period") + ".";
         if (range) range.textContent = dataset.range || "Selected period";
         if (total) total.textContent = "Total: " + totalValue + " appointment" + (totalValue === 1 ? "" : "s");
@@ -2540,15 +2491,11 @@ document.addEventListener("DOMContentLoaded", function () {
             button.classList.remove("is-active");
             button.setAttribute("aria-pressed", "false");
         });
-        document.querySelectorAll("[data-trend-tab]").forEach(function (button) {
-            button.classList.remove("is-active");
-            button.setAttribute("aria-selected", "false");
-        });
     }
 
-    document.querySelectorAll("[data-trend-card], [data-trend-tab]").forEach(function (button) {
+    document.querySelectorAll("[data-trend-card]").forEach(function (button) {
         button.addEventListener("click", function () {
-            var period = button.getAttribute("data-trend-card") || button.getAttribute("data-trend-tab");
+            var period = button.getAttribute("data-trend-card");
             if (activePeriod === period && trendPanel && !trendPanel.hidden) {
                 hideTrend();
             } else {
@@ -2945,11 +2892,6 @@ include 'includes/header.php';
                     <input type="hidden" name="trend_from" id="adminTrendFrom" value="<?php echo htmlspecialchars($trendFrom->format('Y-m-d'), ENT_QUOTES, 'UTF-8'); ?>">
                     <input type="hidden" name="trend_to" id="adminTrendTo" value="<?php echo htmlspecialchars($trendTo->format('Y-m-d'), ENT_QUOTES, 'UTF-8'); ?>">
                 </form>
-                <div class="trend-tabs" role="tablist" aria-label="Appointment report period">
-                    <button class="trend-tab" type="button" role="tab" aria-selected="false" data-trend-tab="daily">Daily</button>
-                    <button class="trend-tab" type="button" role="tab" aria-selected="false" data-trend-tab="monthly">Monthly</button>
-                    <button class="trend-tab" type="button" role="tab" aria-selected="false" data-trend-tab="quarterly">Quarterly</button>
-                </div>
             </div>
         </div>
         <div class="trend-meta">
