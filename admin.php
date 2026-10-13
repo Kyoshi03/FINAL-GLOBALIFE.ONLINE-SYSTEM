@@ -59,13 +59,12 @@ function admin_trend_quarter_key(string $date): string {
     return $parsed->format('Y') . '-Q' . $quarter;
 }
 
-function admin_appointment_trend_series(mysqli $conn, string $period, DateTimeImmutable $today): array {
+function admin_appointment_trend_series(mysqli $conn, string $period, DateTimeImmutable $fromDate, DateTimeImmutable $toDate): array {
     $period = strtolower($period);
     $points = [];
 
     if ($period === 'daily') {
-        for ($offset = 6; $offset >= 0; $offset--) {
-            $pointDate = $today->modify('-' . $offset . ' days');
+        for ($pointDate = $fromDate; $pointDate <= $toDate; $pointDate = $pointDate->modify('+1 day')) {
             $key = $pointDate->format('Y-m-d');
             $points[] = [
                 'key' => $key,
@@ -75,9 +74,9 @@ function admin_appointment_trend_series(mysqli $conn, string $period, DateTimeIm
             ];
         }
     } elseif ($period === 'monthly') {
-        $currentMonth = $today->modify('first day of this month');
-        for ($offset = 11; $offset >= 0; $offset--) {
-            $pointDate = $currentMonth->modify('-' . $offset . ' months');
+        $pointDate = $fromDate->modify('first day of this month');
+        $lastMonth = $toDate->modify('first day of this month');
+        for (; $pointDate <= $lastMonth; $pointDate = $pointDate->modify('+1 month')) {
             $points[] = [
                 'key' => $pointDate->format('Y-m'),
                 'label' => $pointDate->format('M Y'),
@@ -86,10 +85,11 @@ function admin_appointment_trend_series(mysqli $conn, string $period, DateTimeIm
             ];
         }
     } else {
-        $quarterStartMonth = (int) (floor(((int) $today->format('n') - 1) / 3) * 3 + 1);
-        $currentQuarter = $today->setDate((int) $today->format('Y'), $quarterStartMonth, 1);
-        for ($offset = 3; $offset >= 0; $offset--) {
-            $pointDate = $currentQuarter->modify('-' . ($offset * 3) . ' months');
+        $fromQuarterMonth = (int) (floor(((int) $fromDate->format('n') - 1) / 3) * 3 + 1);
+        $pointDate = $fromDate->setDate((int) $fromDate->format('Y'), $fromQuarterMonth, 1);
+        $toQuarterMonth = (int) (floor(((int) $toDate->format('n') - 1) / 3) * 3 + 1);
+        $lastQuarter = $toDate->setDate((int) $toDate->format('Y'), $toQuarterMonth, 1);
+        for (; $pointDate <= $lastQuarter; $pointDate = $pointDate->modify('+3 months')) {
             $quarter = (int) floor(((int) $pointDate->format('n') - 1) / 3) + 1;
             $points[] = [
                 'key' => $pointDate->format('Y') . '-Q' . $quarter,
@@ -105,9 +105,8 @@ function admin_appointment_trend_series(mysqli $conn, string $period, DateTimeIm
         $values[$point['key']] = 0;
     }
 
-    $from = $points[0]['from'] ?? $today->format('Y-m-d');
-    $lastPoint = $points[count($points) - 1] ?? null;
-    $to = $lastPoint['to'] ?? $today->format('Y-m-d');
+    $from = $fromDate->format('Y-m-d');
+    $to = $toDate->format('Y-m-d');
     $stmt = $conn->prepare(
         "SELECT appointment_date, COUNT(*) AS total
          FROM appointments
@@ -136,7 +135,7 @@ function admin_appointment_trend_series(mysqli $conn, string $period, DateTimeIm
         'labels' => array_values(array_map(static fn(array $point): string => $point['label'], $points)),
         'values' => array_values($values),
         'total' => array_sum($values),
-        'range' => $period === 'daily' ? 'Last 7 days' : ($period === 'monthly' ? 'Last 12 months' : 'Last 4 quarters'),
+        'range' => $fromDate->format('F j, Y') . ' - ' . $toDate->format('F j, Y'),
     ];
 }
 
@@ -345,24 +344,42 @@ if ($doctorResult) {
 $adminNotifications = fetch_admin_notifications($conn, $showAdminNotificationsPage ? 50 : 8);
 $unreadNotificationCount = count_unread_admin_notifications($conn);
 
-$trendDate = trim((string) ($_GET['trend_date'] ?? $today));
-if (!admin_valid_trend_date($trendDate)) {
-    $trendDate = $today;
-}
-$trendToday = new DateTimeImmutable($trendDate);
 $todayDate = new DateTimeImmutable($today);
-if ($trendToday > $todayDate) {
-    $trendDate = $today;
-    $trendToday = $todayDate;
+$defaultTrendFrom = $todayDate->modify('-29 days');
+$requestedTrendFrom = trim((string) ($_GET['trend_from'] ?? ''));
+$requestedTrendTo = trim((string) ($_GET['trend_to'] ?? ''));
+$trendFrom = admin_valid_trend_date($requestedTrendFrom) ? new DateTimeImmutable($requestedTrendFrom) : $defaultTrendFrom;
+$trendTo = admin_valid_trend_date($requestedTrendTo) ? new DateTimeImmutable($requestedTrendTo) : $todayDate;
+if ($trendFrom > $trendTo) {
+    [$trendFrom, $trendTo] = [$trendTo, $trendFrom];
 }
-$trendReferenceLabel = $trendToday->format('F j, Y');
-$trendMonthLabel = $trendToday->format('F Y');
-$trendQuarter = (int) floor(((int) $trendToday->format('n') - 1) / 3) + 1;
-$trendQuarterLabel = 'Q' . $trendQuarter . ' ' . $trendToday->format('Y');
+if ($trendFrom > $todayDate) {
+    $trendFrom = $todayDate;
+}
+if ($trendTo > $todayDate) {
+    $trendTo = $todayDate;
+}
+if ($trendFrom > $trendTo) {
+    $trendFrom = $defaultTrendFrom;
+    $trendTo = $todayDate;
+}
+$trendRangeLabel = $trendFrom->format('F j, Y') . ' - ' . $trendTo->format('F j, Y');
+$trendReferenceLabel = $todayDate->format('F j, Y');
+$trendMonthLabel = $todayDate->format('F Y');
+$trendQuarter = (int) floor(((int) $todayDate->format('n') - 1) / 3) + 1;
+$trendQuarterLabel = 'Q' . $trendQuarter . ' ' . $todayDate->format('Y');
 $trendData = [
-    'daily' => admin_appointment_trend_series($conn, 'daily', $trendToday),
-    'monthly' => admin_appointment_trend_series($conn, 'monthly', $trendToday),
-    'quarterly' => admin_appointment_trend_series($conn, 'quarterly', $trendToday),
+    'daily' => admin_appointment_trend_series($conn, 'daily', $trendFrom, $trendTo),
+    'monthly' => admin_appointment_trend_series($conn, 'monthly', $trendFrom, $trendTo),
+    'quarterly' => admin_appointment_trend_series($conn, 'quarterly', $trendFrom, $trendTo),
+];
+$currentMonthStart = $todayDate->modify('first day of this month');
+$currentQuarterMonth = (int) (floor(((int) $todayDate->format('n') - 1) / 3) * 3 + 1);
+$currentQuarterStart = $todayDate->setDate((int) $todayDate->format('Y'), $currentQuarterMonth, 1);
+$trendCardData = [
+    'daily' => admin_appointment_trend_series($conn, 'daily', $todayDate, $todayDate),
+    'monthly' => admin_appointment_trend_series($conn, 'monthly', $currentMonthStart, $todayDate),
+    'quarterly' => admin_appointment_trend_series($conn, 'quarterly', $currentQuarterStart, $todayDate),
 ];
 
 $conn->close();
@@ -2166,13 +2183,21 @@ body {
 }
 ';
 
+$additionalStyles .= '.sales-range-open{overflow:hidden}.sales-range-modal{position:fixed;inset:0;z-index:1200;display:grid;place-items:center;padding:20px;background:rgba(7,59,76,.42)}.sales-range-modal[hidden]{display:none}.sales-range-dialog{width:min(900px,100%);max-height:min(680px,calc(100vh - 40px));overflow:auto;border:1px solid #cfe1ee;border-radius:12px;background:#fff;box-shadow:0 22px 60px rgba(7,59,76,.24)}.sales-range-dialog-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 22px;border-bottom:1px solid #e5eef3}.sales-range-dialog-header h2{margin:0;color:#073b4c;font-size:1.05rem}.sales-range-close,.sales-range-nav{display:inline-flex;align-items:center;justify-content:center;border:1px solid #d8e6ed;border-radius:7px;color:#0b4f80;background:#f8fbfd;font:inherit;font-weight:900;cursor:pointer}.sales-range-close{width:34px;height:34px;font-size:1.25rem;line-height:1}.sales-range-close:hover,.sales-range-nav:hover{border-color:#8ed9ef;background:#eef8ff}.sales-range-calendars{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.sales-range-month{padding:20px 22px}.sales-range-month+ .sales-range-month{border-left:1px solid #e5eef3}.sales-range-month-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:16px}.sales-range-month-title{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:0;color:#073b4c;font-size:1rem;font-weight:900}.sales-range-nav{width:30px;height:30px;font-size:1rem}.sales-range-weekdays,.sales-range-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}.sales-range-weekdays{margin-bottom:8px;color:#708792;font-size:.72rem;font-weight:900;text-align:center}.sales-range-day{position:relative;min-width:0;aspect-ratio:1;border:1px solid transparent;border-radius:7px;color:#1f343d;background:#fff;font:inherit;font-size:.84rem;cursor:pointer}.sales-range-day:hover:not(:disabled){border-color:#8ed9ef;background:#eef8ff}.sales-range-day.is-outside,.sales-range-day:disabled{color:#b9c8d0;background:#f8fbfd;cursor:not-allowed}.sales-range-day.is-in-range{border-radius:0;background:#eaf6fb;color:#0b4f80}.sales-range-day.is-start,.sales-range-day.is-end{border-color:#0f7cc2;border-radius:7px;color:#fff;background:#0f7cc2;font-weight:900}.sales-range-day.is-start.is-end{border-radius:7px}.sales-range-day.is-start{border-top-right-radius:0;border-bottom-right-radius:0}.sales-range-day.is-end{border-top-left-radius:0;border-bottom-left-radius:0}.sales-range-year-select{min-width:72px;padding:3px 20px 3px 5px;border:1px solid transparent;border-radius:5px;color:#073b4c;background:#fff;font:inherit;font-weight:900;cursor:pointer}.sales-range-year-select:hover,.sales-range-year-select:focus-visible{border-color:#8ed9ef;outline:none;background:#eef7ff}.sales-range-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 22px;border-top:1px solid #e5eef3;background:#fbfdfe}.sales-range-values{display:flex;align-items:center;gap:8px;min-width:0}.sales-range-value{min-width:145px;padding:9px 11px;border:1px solid #cfe1ee;border-radius:7px;color:#405b67;background:#fff;font-size:.84rem}.sales-range-separator{color:#8aa0ac}.sales-range-actions{display:flex;align-items:center;gap:8px}.sales-range-action{min-height:38px;padding:8px 16px;border:1px solid #cfe1ee;border-radius:7px;color:#0b4f80;background:#fff;font:inherit;font-size:.82rem;font-weight:900;cursor:pointer}.sales-range-action.primary{border-color:#0f7cc2;color:#fff;background:#0f7cc2}.sales-range-action:disabled{opacity:.5;cursor:not-allowed}.sales-range-message{margin:8px 0 0;color:#b42318;font-size:.78rem;font-weight:700}.sales-range-message[hidden]{display:none}.sales-range-nav:disabled{border-color:#d9e3e8;color:#9aaeb9;background:#f3f6f8;cursor:not-allowed;opacity:1}.sales-range-nav:disabled:hover{border-color:#d9e3e8;background:#f3f6f8}.sales-range-modal,.sales-range-dialog,.sales-range-footer,.sales-range-action{pointer-events:auto}.sales-range-dialog{position:relative;z-index:1}.sales-range-footer{position:relative;z-index:2}.sales-range-action{position:relative;z-index:3;appearance:none}@media(max-width:700px){.sales-range-modal{padding:10px}.sales-range-dialog{max-height:calc(100vh - 20px)}.sales-range-calendars{grid-template-columns:1fr}.sales-range-month{padding:16px}.sales-range-month+.sales-range-month{border-top:1px solid #e5eef3;border-left:0}.sales-range-footer{align-items:stretch;flex-direction:column}.sales-range-values,.sales-range-actions{width:100%}.sales-range-value{flex:1;min-width:0}.sales-range-action{flex:1}.sales-range-message{margin-top:0}}';
+$additionalStyles .= '.trend-range-select-wrap{display:flex;align-items:center;gap:8px}.trend-range-select-wrap select{min-height:36px;width:155px;box-sizing:border-box;border:1px solid #cfe1ee;border-radius:8px;padding:6px 9px;background:#fff;color:#1f343d;font:inherit;font-size:.82rem}.trend-range-select-wrap select:focus{outline:none;border-color:#0f7cc2;box-shadow:0 0 0 3px rgba(15,124,194,.10)}.trend-range-edit{min-height:36px;padding:7px 11px;border:1px solid #cfe1ee;border-radius:8px;color:#0b4f80;background:#fff;font:inherit;font-size:.78rem;font-weight:900;cursor:pointer;white-space:nowrap}.trend-range-edit:hover,.trend-range-edit:focus-visible{border-color:#0f7cc2;background:#eef8ff;outline:none}@media(max-width:760px){.trend-range-select-wrap{align-items:stretch;flex-direction:column}.trend-range-select-wrap select,.trend-range-edit{width:100%}}';
+
 $additionalScripts = '
 document.addEventListener("DOMContentLoaded", function () {
     var dataNode = document.getElementById("adminTrendData");
     var chart = document.getElementById("adminTrendChart");
     if (!dataNode || !chart) return;
 
-    var trendDateInput = document.getElementById("adminTrendDate");
+    var trendFilterForm = document.getElementById("adminTrendFilterForm");
+    var trendRangePreset = document.getElementById("adminTrendRangePreset");
+    var trendRangeEdit = document.getElementById("adminTrendRangeEdit");
+    var trendFromInput = document.getElementById("adminTrendFrom");
+    var trendToInput = document.getElementById("adminTrendTo");
+    var trendPeriodInput = document.getElementById("adminTrendPeriod");
     var trendScrollStorageKey = "adminAppointmentReportScrollY";
     function submitTrendForm() {
         try {
@@ -2180,24 +2205,7 @@ document.addEventListener("DOMContentLoaded", function () {
         } catch (error) {
             // Scroll restoration is an enhancement; form submission must still work if storage is unavailable.
         }
-        if (trendDateInput && trendDateInput.form) trendDateInput.form.submit();
-    }
-
-    if (trendDateInput) {
-        var defaultTrendDate = trendDateInput.getAttribute("data-default-value") || trendDateInput.value;
-        var trendPeriodInput = trendDateInput.form ? trendDateInput.form.querySelector("[name=trend_period]") : null;
-        trendDateInput.removeAttribute("onchange");
-        trendDateInput.addEventListener("change", function () {
-            if (trendPeriodInput && typeof activePeriod !== "undefined" && activePeriod) {
-                trendPeriodInput.value = activePeriod;
-            }
-            if (!trendDateInput.value) {
-                trendDateInput.value = defaultTrendDate;
-                submitTrendForm();
-                return;
-            }
-            submitTrendForm();
-        });
+        if (trendFilterForm) trendFilterForm.submit();
     }
 
     var trendData;
@@ -2215,6 +2223,185 @@ document.addEventListener("DOMContentLoaded", function () {
     var svgNamespace = "http://www.w3.org/2000/svg";
     var periodNames = { daily: "Daily", monthly: "Monthly", quarterly: "Quarterly" };
     var activePeriod = null;
+    var rangeModal = document.getElementById("adminTrendRangeModal");
+    var rangeCalendars = document.getElementById("adminTrendRangeCalendars");
+    var rangeFromValue = document.getElementById("adminTrendRangeFromValue");
+    var rangeToValue = document.getElementById("adminTrendRangeToValue");
+    var rangeSet = document.getElementById("adminTrendRangeSet");
+    var rangeMessage = document.getElementById("adminTrendRangeMessage");
+    var rangeClose = document.getElementById("adminTrendRangeClose");
+    var rangeCancel = document.getElementById("adminTrendRangeCancel");
+    var rangeModalState = null;
+    var draftFrom = "";
+    var draftTo = "";
+    var calendarLeftMonth = null;
+    var calendarRightMonth = null;
+
+    function parseRangeDate(value) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return null;
+        var parts = value.split("-").map(Number);
+        var date = new Date(parts[0], parts[1] - 1, parts[2]);
+        return date.getFullYear() === parts[0] && date.getMonth() === parts[1] - 1 && date.getDate() === parts[2] ? date : null;
+    }
+
+    function rangeDateKey(date) {
+        return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
+    }
+
+    function rangeDateLabel(value) {
+        var date = parseRangeDate(value);
+        return date ? date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Select date";
+    }
+
+    function rangeTodayDate() {
+        return parseRangeDate(rangeModal ? rangeModal.getAttribute("data-today") : "") || new Date();
+    }
+
+    function clampRangeCalendarMonth(month) {
+        var candidate = new Date(month.getFullYear(), month.getMonth(), 1);
+        var current = rangeTodayDate();
+        var currentMonth = new Date(current.getFullYear(), current.getMonth(), 1);
+        return candidate > currentMonth ? currentMonth : candidate;
+    }
+
+    function rangeCalendarYearOptions(month, side) {
+        var currentYear = rangeTodayDate().getFullYear();
+        var html = "<select class=\"sales-range-year-select\" data-admin-range-year-side=\"" + side + "\" aria-label=\"Select year\">";
+        for (var year = 2000; year <= currentYear; year++) {
+            html += "<option value=\"" + year + "\"" + (year === month.getFullYear() ? " selected" : "") + ">" + year + "</option>";
+        }
+        return html + "</select>";
+    }
+
+    function setRangeCalendarMonth(side, month) {
+        var nextMonth = clampRangeCalendarMonth(month);
+        if (side === "left") {
+            calendarLeftMonth = nextMonth;
+            if (calendarRightMonth && calendarRightMonth < nextMonth) calendarRightMonth = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1);
+        } else {
+            calendarRightMonth = nextMonth;
+            if (calendarLeftMonth && calendarLeftMonth > nextMonth) calendarLeftMonth = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1);
+        }
+    }
+
+    function renderRangeMonth(month, side) {
+        month = clampRangeCalendarMonth(month);
+        var year = month.getFullYear();
+        var monthIndex = month.getMonth();
+        var first = new Date(year, monthIndex, 1);
+        var daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+        var cellCount = Math.ceil((first.getDay() + daysInMonth) / 7) * 7;
+        var current = rangeTodayDate();
+        var currentMonth = new Date(current.getFullYear(), current.getMonth(), 1);
+        var isCurrentMonth = year === currentMonth.getFullYear() && monthIndex === currentMonth.getMonth();
+        var atMinimumMonth = year <= 2000 && monthIndex === 0;
+        var previousNav = "<button type=\"button\" class=\"sales-range-nav\" data-admin-range-nav=\"-1\" data-admin-range-side=\"" + side + "\" aria-label=\"Previous month\"" + (atMinimumMonth ? " disabled" : "") + ">&#8249;</button>";
+        var nextNav = "<button type=\"button\" class=\"sales-range-nav\" data-admin-range-nav=\"1\" data-admin-range-side=\"" + side + "\" aria-label=\"Next month\"" + (isCurrentMonth ? " disabled" : "") + ">&#8250;</button>";
+        var monthTitle = "<span class=\"sales-range-month-title\"><span>" + first.toLocaleDateString("en-US", { month: "long" }) + "</span>" + rangeCalendarYearOptions(month, side) + "</span>";
+        var html = "<div class=\"sales-range-month\"><div class=\"sales-range-month-head\">" + previousNav + monthTitle + nextNav + "</div><div class=\"sales-range-weekdays\"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div><div class=\"sales-range-days\">";
+        for (var index = 0; index < cellCount; index++) {
+            var date = new Date(year, monthIndex, 1 - first.getDay() + index);
+            var key = rangeDateKey(date);
+            var inMonth = date.getMonth() === monthIndex;
+            var isFuture = key > (rangeModal ? rangeModal.getAttribute("data-today") : "");
+            var isStart = draftFrom === key;
+            var isEnd = draftTo === key;
+            var isInRange = draftFrom && draftTo && key > draftFrom && key < draftTo;
+            var classes = "sales-range-day" + (inMonth ? "" : " is-outside") + (isInRange ? " is-in-range" : "") + (isStart ? " is-start" : "") + (isEnd ? " is-end" : "");
+            html += "<button type=\"button\" class=\"" + classes + "\" data-admin-range-date=\"" + key + "\"" + (!inMonth || isFuture ? " disabled" : "") + ">" + date.getDate() + "</button>";
+        }
+        return html + "</div></div>";
+    }
+
+    function renderRangeCalendar() {
+        if (!rangeCalendars || !calendarLeftMonth || !calendarRightMonth) return;
+        var invalidRange = !draftFrom || !draftTo || draftFrom > draftTo;
+        rangeCalendars.innerHTML = renderRangeMonth(calendarLeftMonth, "left") + renderRangeMonth(calendarRightMonth, "right");
+        if (rangeFromValue) rangeFromValue.textContent = rangeDateLabel(draftFrom);
+        if (rangeToValue) rangeToValue.textContent = rangeDateLabel(draftTo);
+        if (rangeSet) rangeSet.disabled = invalidRange;
+        if (rangeMessage) rangeMessage.hidden = !invalidRange;
+    }
+
+    function openRangeModal() {
+        if (!rangeModal || !rangeCalendars || !rangeModal.hidden) return;
+        rangeModalState = { from: trendFromInput.value, to: trendToInput.value };
+        draftFrom = trendFromInput.value;
+        draftTo = trendToInput.value;
+        var start = parseRangeDate(draftFrom) || rangeTodayDate();
+        var end = parseRangeDate(draftTo);
+        calendarLeftMonth = new Date(start.getFullYear(), start.getMonth(), 1);
+        calendarRightMonth = end ? new Date(end.getFullYear(), end.getMonth(), 1) : new Date(start.getFullYear(), start.getMonth() + 1, 1);
+        renderRangeCalendar();
+        rangeModal.hidden = false;
+        rangeModal.setAttribute("aria-hidden", "false");
+        document.body.classList.add("sales-range-open");
+        if (rangeClose) rangeClose.focus();
+    }
+
+    function closeRangeModal(restore) {
+        if (!rangeModal) return;
+        if (restore && rangeModalState) {
+            trendFromInput.value = rangeModalState.from;
+            trendToInput.value = rangeModalState.to;
+        }
+        rangeModal.hidden = true;
+        rangeModal.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("sales-range-open");
+        if (rangeMessage) rangeMessage.hidden = true;
+        rangeModalState = null;
+    }
+
+    function chooseRangeDate(key) {
+        if (!draftFrom || draftTo || key < draftFrom) {
+            draftFrom = key;
+            draftTo = "";
+        } else {
+            draftTo = key;
+        }
+        renderRangeCalendar();
+    }
+
+    if (rangeCalendars) rangeCalendars.addEventListener("click", function (event) {
+        var nav = event.target.closest("[data-admin-range-nav]");
+        var day = event.target.closest("[data-admin-range-date]");
+        if (nav) {
+            var side = nav.getAttribute("data-admin-range-side");
+            var month = side === "left" ? calendarLeftMonth : calendarRightMonth;
+            var shift = Number(nav.getAttribute("data-admin-range-nav"));
+            setRangeCalendarMonth(side, new Date(month.getFullYear(), month.getMonth() + shift, 1));
+            renderRangeCalendar();
+            return;
+        }
+        if (day && !day.disabled) chooseRangeDate(day.getAttribute("data-admin-range-date"));
+    });
+    if (rangeCalendars) rangeCalendars.addEventListener("change", function (event) {
+        var yearSelect = event.target.closest("[data-admin-range-year-side]");
+        if (!yearSelect) return;
+        var side = yearSelect.getAttribute("data-admin-range-year-side");
+        var month = side === "left" ? calendarLeftMonth : calendarRightMonth;
+        var year = Number(yearSelect.value);
+        if (!Number.isInteger(year) || year < 2000) return;
+        setRangeCalendarMonth(side, new Date(year, month.getMonth(), 1));
+        renderRangeCalendar();
+    });
+    if (trendRangeEdit) trendRangeEdit.addEventListener("click", openRangeModal);
+    if (trendRangePreset) trendRangePreset.addEventListener("change", openRangeModal);
+    if (rangeClose) rangeClose.addEventListener("click", function () { closeRangeModal(true); });
+    if (rangeCancel) rangeCancel.addEventListener("click", function () { closeRangeModal(true); });
+    if (rangeModal) rangeModal.addEventListener("click", function (event) { if (event.target === rangeModal) closeRangeModal(true); });
+    if (rangeSet) rangeSet.addEventListener("click", function () {
+        if (!draftFrom || !draftTo || draftFrom > draftTo) {
+            if (rangeMessage) { rangeMessage.hidden = false; rangeMessage.textContent = "Select a valid start date and end date first."; }
+            return;
+        }
+        trendFromInput.value = draftFrom;
+        trendToInput.value = draftTo;
+        if (trendPeriodInput) trendPeriodInput.value = activePeriod || "";
+        closeRangeModal(false);
+        submitTrendForm();
+    });
+    document.addEventListener("keydown", function (event) { if (event.key === "Escape" && rangeModal && !rangeModal.hidden) closeRangeModal(true); });
 
     function svgElement(name, attributes) {
         var node = document.createElementNS(svgNamespace, name);
@@ -2299,13 +2486,16 @@ document.addEventListener("DOMContentLoaded", function () {
         chart.appendChild(svgElement("polygon", { "class": "trend-area", points: areaPoints }));
         chart.appendChild(svgElement("polyline", { "class": "trend-line", points: linePoints }));
 
-        points.forEach(function (point) {
+        var labelStep = Math.max(1, Math.ceil(points.length / 12));
+        points.forEach(function (point, index) {
             var circle = svgElement("circle", { "class": "trend-dot", cx: point.x, cy: point.y, r: 4 });
             var title = svgElement("title", {});
             title.textContent = point.label + ": " + point.value + " appointment" + (point.value === 1 ? "" : "s");
             circle.appendChild(title);
             chart.appendChild(circle);
-            addText(chart, { x: point.x, y: baseline + 24, "text-anchor": "middle" }, point.label);
+            if (index === 0 || index === points.length - 1 || index % labelStep === 0) {
+                addText(chart, { x: point.x, y: baseline + 24, "text-anchor": "middle" }, point.label);
+            }
         });
         addText(chart, { "class": "axis-title", x: left + (plotWidth / 2), y: height - 7, "text-anchor": "middle" }, "Period");
     }
@@ -2695,17 +2885,17 @@ include 'includes/header.php';
     <section class="trend-metrics" aria-label="Appointment report periods">
         <button class="trend-card" type="button" data-trend-card="daily" aria-pressed="false">
             <span class="trend-card-label">Daily</span>
-            <strong><?php echo (int) ($trendData['daily']['values'][count($trendData['daily']['values']) - 1] ?? 0); ?></strong>
+            <strong><?php echo (int) ($trendCardData['daily']['values'][count($trendCardData['daily']['values']) - 1] ?? 0); ?></strong>
             <small>Appointments on <?php echo htmlspecialchars($trendReferenceLabel); ?></small>
         </button>
         <button class="trend-card" type="button" data-trend-card="monthly" aria-pressed="false">
             <span class="trend-card-label">Monthly</span>
-            <strong><?php echo (int) ($trendData['monthly']['values'][count($trendData['monthly']['values']) - 1] ?? 0); ?></strong>
+            <strong><?php echo (int) ($trendCardData['monthly']['values'][count($trendCardData['monthly']['values']) - 1] ?? 0); ?></strong>
             <small>Appointments in <?php echo htmlspecialchars($trendMonthLabel); ?></small>
         </button>
         <button class="trend-card" type="button" data-trend-card="quarterly" aria-pressed="false">
             <span class="trend-card-label">Quarterly</span>
-            <strong><?php echo (int) ($trendData['quarterly']['values'][count($trendData['quarterly']['values']) - 1] ?? 0); ?></strong>
+            <strong><?php echo (int) ($trendCardData['quarterly']['values'][count($trendCardData['quarterly']['values']) - 1] ?? 0); ?></strong>
             <small>Appointments in <?php echo htmlspecialchars($trendQuarterLabel); ?></small>
         </button>
     </section>
@@ -2714,13 +2904,20 @@ include 'includes/header.php';
         <div class="panel-head trend-panel-head">
             <div>
                 <h2 id="adminTrendTitle">Appointment Report</h2>
-                <p id="adminTrendDescription">Daily appointments for the last 7 days.</p>
+                <p id="adminTrendDescription">Daily appointments for <?php echo htmlspecialchars($trendRangeLabel); ?>.</p>
             </div>
             <div class="trend-panel-actions">
-                <form class="trend-date-form" method="get">
-                    <label for="adminTrendDate">Report date</label>
-                    <input type="hidden" name="trend_period" value="<?php echo htmlspecialchars((string) ($_GET['trend_period'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
-                    <input type="date" id="adminTrendDate" name="trend_date" value="<?php echo htmlspecialchars($trendDate, ENT_QUOTES, 'UTF-8'); ?>" max="<?php echo htmlspecialchars($today, ENT_QUOTES, 'UTF-8'); ?>" data-default-value="<?php echo htmlspecialchars($today, ENT_QUOTES, 'UTF-8'); ?>">
+                <form class="trend-date-form" method="get" id="adminTrendFilterForm">
+                    <label for="adminTrendRangePreset">Date range</label>
+                    <div class="trend-range-select-wrap">
+                        <select id="adminTrendRangePreset" aria-label="Appointment report date range">
+                            <option value="custom">Custom Date Range</option>
+                        </select>
+                        <button type="button" class="trend-range-edit" id="adminTrendRangeEdit">Edit dates</button>
+                    </div>
+                    <input type="hidden" name="trend_period" id="adminTrendPeriod" value="<?php echo htmlspecialchars((string) ($_GET['trend_period'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="hidden" name="trend_from" id="adminTrendFrom" value="<?php echo htmlspecialchars($trendFrom->format('Y-m-d'), ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="hidden" name="trend_to" id="adminTrendTo" value="<?php echo htmlspecialchars($trendTo->format('Y-m-d'), ENT_QUOTES, 'UTF-8'); ?>">
                 </form>
                 <div class="trend-tabs" role="tablist" aria-label="Appointment report period">
                     <button class="trend-tab" type="button" role="tab" aria-selected="false" data-trend-tab="daily">Daily</button>
@@ -2730,7 +2927,7 @@ include 'includes/header.php';
             </div>
         </div>
         <div class="trend-meta">
-            <span id="adminTrendRange">Last 7 days</span>
+            <span id="adminTrendRange"><?php echo htmlspecialchars($trendRangeLabel); ?></span>
             <strong id="adminTrendTotal">Total: <?php echo (int) ($trendData['daily']['total'] ?? 0); ?> appointments</strong>
         </div>
         <div class="trend-chart-wrap">
@@ -2738,6 +2935,14 @@ include 'includes/header.php';
             <div id="adminTrendEmpty" class="trend-empty">No appointments found for this period.</div>
         </div>
     </section>
+
+    <div class="sales-range-modal no-print" id="adminTrendRangeModal" data-today="<?php echo htmlspecialchars($today, ENT_QUOTES, 'UTF-8'); ?>" hidden aria-hidden="true">
+        <section class="sales-range-dialog" role="dialog" aria-modal="true" aria-labelledby="adminTrendRangeTitle">
+            <div class="sales-range-dialog-header"><h2 id="adminTrendRangeTitle">Custom Date Range</h2><button type="button" class="sales-range-close" id="adminTrendRangeClose" aria-label="Close date range picker">&times;</button></div>
+            <div class="sales-range-calendars" id="adminTrendRangeCalendars"></div>
+            <div class="sales-range-footer"><div><div class="sales-range-values" aria-live="polite"><span class="sales-range-value" id="adminTrendRangeFromValue">Select start date</span><span class="sales-range-separator" aria-hidden="true">&ndash;</span><span class="sales-range-value" id="adminTrendRangeToValue">Select end date</span></div><p class="sales-range-message" id="adminTrendRangeMessage" hidden>Select a start date and an end date first.</p></div><div class="sales-range-actions"><button type="button" class="sales-range-action" id="adminTrendRangeCancel">Cancel</button><button type="button" class="sales-range-action primary" id="adminTrendRangeSet">Set Date</button></div></div>
+        </section>
+    </div>
 
     <script type="application/json" id="adminTrendData"><?php echo json_encode($trendData, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?></script>
 
