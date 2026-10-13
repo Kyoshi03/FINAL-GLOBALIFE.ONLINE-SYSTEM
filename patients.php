@@ -1653,7 +1653,7 @@ $additionalStyles = '
     .appointment-side {
         display: flex;
         flex-direction: column;
-        align-items: center;
+        align-items: stretch;
         gap: 8px;
     }
 
@@ -1665,31 +1665,29 @@ $additionalStyles = '
     }
 
     .appointment-action-stack {
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-        width: min(204px, 100%);
-    }
-
-    .appointment-action-stack form,
-    .appointment-action-stack .patient-reschedule-btn {
-        width: 100%;
-    }
-
-    .appointment-details-row {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         align-items: center;
-        gap: 8px;
+        gap: 6px;
+        width: min(210px, 100%);
+        margin-inline: auto;
     }
 
-    .appointment-details-row .status-badge {
+    .appointment-action-stack form {
+        margin: 0;
         width: 100%;
         min-width: 0;
-        box-sizing: border-box;
-        white-space: nowrap;
-        text-align: center;
+    }
+
+    .appointment-action-stack form {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .patient-details-inline {
+        grid-column: 1;
+        grid-row: 1;
+        width: 100%;
     }
 
     .cancel-inline {
@@ -1699,38 +1697,52 @@ $additionalStyles = '
         color: #c52035;
         cursor: pointer;
         font-weight: 800;
-        min-width: 84px;
-        padding: 8px 11px;
+        min-width: 0;
+        min-height: 30px;
+        padding: 5px 4px;
+        font-size: .75rem;
+        line-height: 1.05;
+        white-space: nowrap;
         width: 100%;
     }
 
     .patient-reschedule-btn {
+        grid-column: 1 / -1;
+        grid-row: 2;
         min-width: 0;
-        padding: 8px 10px;
+        min-height: 30px;
+        padding: 5px 2px;
         border-radius: 8px;
-        font-size: .84rem;
+        font-size: .6rem;
         font-weight: 800;
-        line-height: 1.2;
-        white-space: normal;
+        line-height: 1.05;
+        white-space: nowrap;
+    }
+
+    .appointment-action-stack.no-cancel .patient-reschedule-btn {
+        grid-column: 2;
+        grid-row: 1;
     }
 
     .patient-details-inline {
-        width: 100%;
-        padding: 8px 10px;
-        border: 1px solid #cfe3f2;
+        min-height: 30px;
+        padding: 5px 4px;
+        border: 1px solid #cbd5e1;
         border-radius: 8px;
-        background: #f5fbff;
-        color: #0b4f80;
+        background: #f1f5f9;
+        color: #475569;
         cursor: pointer;
         font: inherit;
-        font-size: .84rem;
+        font-size: .75rem;
         font-weight: 800;
-        line-height: 1.2;
+        line-height: 1.05;
+        white-space: nowrap;
     }
 
     .patient-details-inline:hover {
-        background: #e7f5fc;
-        border-color: #9ccce4;
+        background: #e2e8f0;
+        border-color: #94a3b8;
+        color: #1e3a5f;
     }
 
     .appointment-pagination {
@@ -3581,7 +3593,10 @@ include 'includes/header.php';
                                 </div>
                                 <div class="appointment-side">
                                     <?php if (in_array($statusClass, ['pending', 'confirmed'], true)): ?>
-                                        <div class="appointment-action-stack">
+                                        <span class="status-badge <?php echo htmlspecialchars($statusClass); ?>">
+                                            <?php echo htmlspecialchars($statusLabel); ?>
+                                        </span>
+                                        <div class="appointment-action-stack <?php echo $statusClass === 'pending' ? 'has-cancel' : 'no-cancel'; ?>">
                                             <?php if ($statusClass === 'pending'): ?>
                                                 <form method="post" action="patients.php" data-patient-cancel-form>
                                                     <input type="hidden" name="patient_action" value="cancel_appointment">
@@ -3589,12 +3604,7 @@ include 'includes/header.php';
                                                     <button type="submit" class="cancel-inline" data-cancel-message="Are you sure you want to cancel this appointment?">Cancel</button>
                                                 </form>
                                             <?php endif; ?>
-                                            <div class="appointment-details-row">
-                                                <span class="status-badge <?php echo htmlspecialchars($statusClass); ?>">
-                                                    <?php echo htmlspecialchars($statusLabel); ?>
-                                                </span>
-                                                <button type="button" class="patient-details-inline" data-open-patient-details>Details</button>
-                                            </div>
+                                            <button type="button" class="patient-details-inline" data-open-patient-details>Details</button>
                                             <button type="button" class="btn btn-reschedule patient-reschedule-btn"
                                                 data-open-reschedule
                                                 data-appointment-id="<?php echo (int) $appointment['id']; ?>"
