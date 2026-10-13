@@ -1579,7 +1579,7 @@ $additionalStyles = patientAvatarStyles() . '
     }
     .appointments-table .action-buttons.pending-actions {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         align-items: center;
         justify-content: center;
         justify-items: center;
@@ -1597,11 +1597,11 @@ $additionalStyles = patientAvatarStyles() . '
         min-width: 0;
     }
     .appointments-table .action-buttons.pending-actions .decline-action {
-        grid-column: 3;
+        grid-column: 2;
         justify-self: stretch;
     }
     .appointments-table .action-buttons.pending-actions .confirm-action {
-        grid-column: 2;
+        grid-column: 1;
         grid-row: 1;
     }
     .appointments-table .action-buttons.pending-actions .decline-action {
@@ -1609,7 +1609,7 @@ $additionalStyles = patientAvatarStyles() . '
     }
     .appointments-table .action-buttons.pending-actions > .btn-details {
         grid-column: 1;
-        grid-row: 1;
+        grid-row: 2;
         width: 100%;
         min-width: 0;
         justify-self: stretch;
@@ -1625,11 +1625,11 @@ $additionalStyles = patientAvatarStyles() . '
         border-color: #94a3b8;
     }
     .appointments-table .action-buttons.pending-actions > .btn-reschedule {
-        grid-column: 1 / -1;
+        grid-column: 2;
         grid-row: 2;
-        width: auto;
-        min-width: 104px;
-        justify-self: center;
+        width: 100%;
+        min-width: 0;
+        justify-self: stretch;
     }
     @media (max-width: 760px) {
         .appointments-table td .action-buttons,
