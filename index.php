@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['portal_login'])) {
     $password = $_POST['password'] ?? '';
 
     if ($submittedUsername === '' || $password === '') {
-        $loginError = 'Please enter your username or email and password.';
+        $loginError = 'Please enter your username and password.';
     } elseif (login($submittedUsername, $password)) {
         $user = getCurrentUser();
 
@@ -1138,14 +1138,14 @@ include 'includes/header.php';
                         <input type="hidden" name="portal_login" value="1">
 
                         <div class="patient-form-group">
-                            <label for="patient-username">Username or email</label>
+                            <label for="patient-username">Username</label>
                             <div class="patient-input-wrap">
                                 <input
                                     type="text"
                                     id="patient-username"
                                     name="username"
                                     value="<?php echo htmlspecialchars($submittedUsername); ?>"
-                                    placeholder="Enter your username or email"
+                                    placeholder="Enter your username"
                                     autocomplete="username"
                                     required
                                 >
