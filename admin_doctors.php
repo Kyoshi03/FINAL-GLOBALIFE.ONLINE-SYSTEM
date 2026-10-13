@@ -1466,7 +1466,7 @@ include 'includes/header.php';
                                         <input type="hidden" name="user_id" value="<?php echo (int) $doctor['id']; ?>">
                                         <div class="name-grid">
                                             <div class="field"><label>First name</label><input name="first_name" value="<?php echo htmlspecialchars($doctorNameParts['first_name']); ?>" maxlength="15" required></div>
-                                            <div class="field"><label>Middle name</label><input name="middle_name" value="<?php echo htmlspecialchars($doctorNameParts['middle_name']); ?>" maxlength="1" placeholder="M"></div>
+                                            <div class="field"><label>Middle name (optional)</label><input name="middle_name" value="<?php echo htmlspecialchars($doctorNameParts['middle_name']); ?>" maxlength="1" placeholder="M"></div>
                                             <div class="field"><label>Last name</label><input name="last_name" value="<?php echo htmlspecialchars($doctorNameParts['last_name']); ?>" maxlength="15" required></div>
                                             <div class="field"><label>Suffix</label><input name="suffix" value="<?php echo htmlspecialchars($doctorNameParts['suffix']); ?>" maxlength="3" placeholder="Jr"></div>
                                         </div>
@@ -1552,7 +1552,7 @@ include 'includes/header.php';
                     <h3 class="doctor-section-title">Personal Information</h3>
                     <div class="personal-info-grid">
                         <div class="field"><label for="new_first_name">First Name</label><input id="new_first_name" name="first_name" maxlength="15" placeholder="e.g. Maria" value="<?php echo htmlspecialchars($addFormData['first_name'] ?? ''); ?>" required></div>
-                        <div class="field"><label for="new_middle_name">Middle Name</label><input id="new_middle_name" name="middle_name" maxlength="1" placeholder="e.g. S" value="<?php echo htmlspecialchars($addFormData['middle_name'] ?? ''); ?>"></div>
+                        <div class="field"><label for="new_middle_name">Middle Name (optional)</label><input id="new_middle_name" name="middle_name" maxlength="1" placeholder="e.g. S" value="<?php echo htmlspecialchars($addFormData['middle_name'] ?? ''); ?>"></div>
                         <div class="field"><label for="new_last_name">Last Name</label><input id="new_last_name" name="last_name" maxlength="15" placeholder="e.g. Dela Cruz" value="<?php echo htmlspecialchars($addFormData['last_name'] ?? ''); ?>" required></div>
                         <div class="field"><label for="new_suffix">Suffix</label><input id="new_suffix" name="suffix" maxlength="3" placeholder="e.g. Jr." value="<?php echo htmlspecialchars($addFormData['suffix'] ?? ''); ?>"></div>
                         <div class="field">
