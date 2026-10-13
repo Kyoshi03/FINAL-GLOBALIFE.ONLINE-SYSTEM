@@ -1335,6 +1335,10 @@ body {
 .request-actions .request-reschedule-btn {
     grid-column: 2;
     grid-row: 2;
+    padding-right: 2px;
+    padding-left: 2px;
+    font-size: 0.6rem;
+    font-weight: 800;
 }
 
 @media (max-width: 760px) {
