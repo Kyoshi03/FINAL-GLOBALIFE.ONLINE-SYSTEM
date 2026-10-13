@@ -1652,15 +1652,19 @@ $additionalStyles = '
 
     .appointment-side {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 112px;
+        grid-template-columns: max-content 112px;
         align-items: start;
-        gap: 8px 12px;
+        justify-content: end;
+        gap: 8px;
     }
 
     .appointment-side > .status-badge {
         grid-column: 1;
         justify-self: start;
         margin-top: 3px;
+        min-width: 0;
+        box-sizing: border-box;
+        white-space: nowrap;
     }
 
     .appointment-action-stack {
@@ -3026,8 +3030,9 @@ $additionalStyles = '
         }
 
         .appointment-side {
-            grid-template-columns: minmax(0, 1fr) 112px;
+            grid-template-columns: max-content 112px;
             align-items: flex-start;
+            justify-content: space-between;
             width: 100%;
         }
 
