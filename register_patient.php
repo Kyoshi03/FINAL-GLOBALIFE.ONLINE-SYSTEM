@@ -357,7 +357,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ];
 
                 $sent = clinic_notification_enabled('account_verification')
-                    ? clinic_send_verification_code(
+                    ? clinic_send_verification_code_with_fallback(
                         $verification_channel,
                         $email,
                         $phone,
@@ -371,6 +371,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     unset($_SESSION['pending_patient_registration']);
                     $error = $sent['error'];
                 } else {
+                    $_SESSION['pending_patient_registration']['data']['verification_channel'] = $sent['channel'] ?? $verification_channel;
                     $conn->close();
                     header('Location: verify_patient_email.php?sent=1');
                     exit();

@@ -289,3 +289,49 @@ function clinic_send_verification_code(
     require_once __DIR__ . '/mailer.php';
     return clinic_send_otp_email($email, $name, $code, $purpose);
 }
+
+/**
+ * Send a verification code through the selected channel and use SMS as a
+ * recovery channel when email delivery is unavailable.
+ */
+function clinic_send_verification_code_with_fallback(
+    string $channel,
+    string $email,
+    string $phone,
+    string $name,
+    string $code,
+    string $purpose
+): array {
+    $channel = strtolower(trim($channel));
+    $result = clinic_send_verification_code($channel, $email, $phone, $name, $code, $purpose);
+    if (!empty($result['ok'])) {
+        return array_merge($result, [
+            'channel' => $channel,
+            'email' => $email,
+            'phone' => $phone,
+            'masked' => $channel === 'sms' ? clinic_sms_mask_phone($phone) : '',
+        ]);
+    }
+
+    $normalizedPhone = clinic_sms_normalize_phone($phone);
+    if ($channel !== 'email' || $normalizedPhone === null || !clinic_sms_ready()) {
+        return $result;
+    }
+
+    $smsResult = clinic_send_sms_code($phone, $code, $purpose);
+    if (!empty($smsResult['ok'])) {
+        return array_merge($smsResult, [
+            'channel' => 'sms',
+            'email' => '',
+            'phone' => $phone,
+            'masked' => clinic_sms_mask_phone($phone),
+            'fallback' => true,
+        ]);
+    }
+
+    return [
+        'ok' => false,
+        'error' => (string) ($result['error'] ?? 'The verification code could not be sent.')
+            . ' SMS fallback was also unavailable.',
+    ];
+}

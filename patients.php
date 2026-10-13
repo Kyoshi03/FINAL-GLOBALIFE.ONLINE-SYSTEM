@@ -223,7 +223,7 @@ function patient_profile_email_is_taken(mysqli $conn, int $patientId, string $em
 
 function patient_profile_send_sensitive_code(array $delivery, string $name, array $payload): array {
     $code = (string) random_int(100000, 999999);
-    $sent = clinic_send_verification_code(
+    $sent = clinic_send_verification_code_with_fallback(
         (string) $delivery['channel'],
         (string) ($delivery['email'] ?? ''),
         (string) ($delivery['phone'] ?? ''),
@@ -235,19 +235,23 @@ function patient_profile_send_sensitive_code(array $delivery, string $name, arra
         return ['ok' => false, 'error' => $sent['error'] ?? 'Could not send the verification code.'];
     }
 
+    $actualChannel = (string) ($sent['channel'] ?? $delivery['channel']);
+    $actualEmail = (string) ($sent['email'] ?? $delivery['email'] ?? '');
+    $actualPhone = (string) ($sent['phone'] ?? $delivery['phone'] ?? '');
+    $actualMasked = (string) ($sent['masked'] ?? $delivery['masked'] ?? '');
     $_SESSION[PATIENT_PROFILE_VERIFY_SESSION] = [
         'user_id' => (int) ($_SESSION['user_id'] ?? 0),
         'payload' => $payload,
         'code_hash' => password_hash($code, PASSWORD_DEFAULT),
         'expires_at' => time() + 600,
         'attempts' => 0,
-        'channel' => (string) $delivery['channel'],
-        'email' => (string) ($delivery['email'] ?? ''),
-        'phone' => (string) ($delivery['phone'] ?? ''),
-        'masked' => (string) ($delivery['masked'] ?? ''),
+        'channel' => $actualChannel,
+        'email' => $actualEmail,
+        'phone' => $actualPhone,
+        'masked' => $actualMasked,
     ];
 
-    return ['ok' => true, 'masked' => (string) ($delivery['masked'] ?? '')];
+    return ['ok' => true, 'masked' => $actualMasked];
 }
 
 function patient_profile_apply_sensitive_changes(mysqli $conn, int $patientId, array $payload): array {

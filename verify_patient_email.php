@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $code = (string) random_int(100000, 999999);
             $sent = clinic_notification_enabled('account_verification')
-                ? clinic_send_verification_code(
+                ? clinic_send_verification_code_with_fallback(
                     $verificationChannel,
                     (string) $patient['email'],
                     (string) $patient['phone'],
@@ -65,6 +65,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$sent['ok']) {
                 $error = $sent['error'];
             } else {
+                if (($sent['channel'] ?? $verificationChannel) === 'sms' && $verificationChannel !== 'sms') {
+                    $pending['data']['verification_channel'] = 'sms';
+                    $verificationChannel = 'sms';
+                    $verificationLabel = 'mobile number';
+                    $verificationDestination = clinic_sms_mask_phone((string) ($patient['phone'] ?? ''));
+                }
                 $pending['code_hash'] = password_hash($code, PASSWORD_DEFAULT);
                 $pending['expires_at'] = time() + 10 * 60;
                 $pending['sent_at'] = time();
