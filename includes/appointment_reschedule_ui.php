@@ -22,6 +22,13 @@
 .reschedule-success-icon { display:inline-grid; place-items:center; width:64px; height:64px; margin-bottom:16px; border-radius:50%; background:#dcf7e7; color:#148047; font-size:2rem; font-weight:950; }
 .reschedule-success-body h3 { margin:0 0 8px; color:#073b4c; font-size:1.28rem; }
 .reschedule-success-body p { margin:0 0 20px; color:#60727d; line-height:1.45; }
+.reschedule-error-modal { position:fixed; inset:0; z-index:3300; display:flex; align-items:center; justify-content:center; padding:18px; background:rgba(3,18,30,.5); backdrop-filter:blur(4px); }
+.reschedule-error-modal[aria-hidden="true"] { display:none; }
+.reschedule-error-card { width:min(440px,100%); border:1px solid #f0c8ce; border-radius:18px; background:#fff; box-shadow:0 24px 70px rgba(2,62,138,.2); text-align:center; }
+.reschedule-error-body { padding:30px 28px 28px; }
+.reschedule-error-icon { display:inline-grid; place-items:center; width:64px; height:64px; margin-bottom:16px; border-radius:50%; background:#fff0f1; color:#c1121f; font-size:2rem; font-weight:950; }
+.reschedule-error-body h3 { margin:0 0 8px; color:#073b4c; font-size:1.28rem; }
+.reschedule-error-body p { margin:0 0 20px; color:#60727d; line-height:1.45; }
 </style>
 <?php
 $rescheduleNow = new DateTimeImmutable('now', new DateTimeZone('Asia/Manila'));
@@ -64,7 +71,9 @@ $rescheduleMinTime = $rescheduleNow->modify('+1 minute')->format('H:i');
 </div>
 <?php
 $rescheduleSuccessMessage = trim((string) ($_SESSION['reschedule_success'] ?? ''));
+$rescheduleErrorMessage = trim((string) ($_SESSION['reschedule_error'] ?? ''));
 unset($_SESSION['reschedule_success']);
+unset($_SESSION['reschedule_error']);
 ?>
 <div class="reschedule-success-modal" id="rescheduleSuccessModal"
     aria-hidden="<?php echo $rescheduleSuccessMessage !== '' ? 'false' : 'true'; ?>"
@@ -78,6 +87,18 @@ unset($_SESSION['reschedule_success']);
         </div>
     </div>
 </div>
+<div class="reschedule-error-modal" id="rescheduleErrorModal"
+    aria-hidden="<?php echo $rescheduleErrorMessage !== '' ? 'false' : 'true'; ?>"
+    role="alertdialog" aria-modal="true" aria-labelledby="rescheduleErrorTitle">
+    <div class="reschedule-error-card">
+        <div class="reschedule-error-body">
+            <span class="reschedule-error-icon" aria-hidden="true">!</span>
+            <h3 id="rescheduleErrorTitle">Unable to reschedule</h3>
+            <p id="rescheduleErrorText"><?php echo htmlspecialchars($rescheduleErrorMessage !== '' ? $rescheduleErrorMessage : 'Please check the new schedule and try again.', ENT_QUOTES, 'UTF-8'); ?></p>
+            <button type="button" class="btn btn-primary" id="rescheduleErrorOk">OK</button>
+        </div>
+    </div>
+</div>
 <script>
 (function () {
     var modal = document.getElementById('appointmentRescheduleModal');
@@ -88,6 +109,8 @@ unset($_SESSION['reschedule_success']);
     var currentText = document.getElementById('appointmentRescheduleCurrent');
     var successModal = document.getElementById('rescheduleSuccessModal');
     var successOk = document.getElementById('rescheduleSuccessOk');
+    var errorModal = document.getElementById('rescheduleErrorModal');
+    var errorOk = document.getElementById('rescheduleErrorOk');
     if (!modal || !form || !idInput || !dateInput || !timeInput) return;
     var today = modal.getAttribute('data-today') || '';
     var minimumTimeToday = modal.getAttribute('data-min-time') || '';
@@ -140,9 +163,20 @@ unset($_SESSION['reschedule_success']);
             if (event.target === successModal) closeSuccessModal();
         });
     }
+    function closeErrorModal() {
+        if (!errorModal) return;
+        errorModal.setAttribute('aria-hidden', 'true');
+    }
+    if (errorOk) errorOk.addEventListener('click', closeErrorModal);
+    if (errorModal) {
+        errorModal.addEventListener('click', function (event) {
+            if (event.target === errorModal) closeErrorModal();
+        });
+    }
     document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
         if (event.key === 'Escape' && successModal && successModal.getAttribute('aria-hidden') === 'false') closeSuccessModal();
+        if (event.key === 'Escape' && errorModal && errorModal.getAttribute('aria-hidden') === 'false') closeErrorModal();
     });
 })();
 </script>

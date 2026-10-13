@@ -23,7 +23,7 @@ function reschedule_finish(?mysqli $conn, string $returnUrl, bool $ok, string $m
     if ($ok) {
         $_SESSION['reschedule_success'] = $message;
     } else {
-        $_SESSION['error'] = $message;
+        $_SESSION['reschedule_error'] = $message;
     }
     header('Location: ' . $returnUrl);
     exit();
@@ -116,6 +116,17 @@ if ($userRole === 'admin') {
 
 if (!$hasPermission) {
     reschedule_finish($conn, $returnUrl, false, 'You do not have permission to reschedule this appointment.');
+}
+
+$existingAppointmentTime = trim((string) ($appointment['appointment_time'] ?? ''));
+if (preg_match('/^\d{2}:\d{2}$/', $existingAppointmentTime)) {
+    $existingAppointmentTime .= ':00';
+}
+if (
+    $requestedDate === (string) ($appointment['appointment_date'] ?? '')
+    && $normalizedTime === $existingAppointmentTime
+) {
+    reschedule_finish($conn, $returnUrl, false, 'The new schedule is the same as the current appointment schedule.');
 }
 
 if ($bookingType === 'ultrasound' && !appointment_ultrasound_is_available_date($requestedDate)) {
