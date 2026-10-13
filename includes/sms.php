@@ -152,6 +152,9 @@ function clinic_sms_request(string $path, array $payload): array {
 
     $config = clinic_sms_config();
     $url = $config['base_url'] . '/' . ltrim($path, '/');
+    if ($config['use_subscription'] && $path === 'sms/send') {
+        $payload['use_subscription'] = true;
+    }
     $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
     if ($json === false) {
         return ['ok' => false, 'error' => 'The SMS request could not be prepared.'];
