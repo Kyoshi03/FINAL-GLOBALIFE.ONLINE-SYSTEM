@@ -16,7 +16,14 @@
 .reschedule-actions { display:flex; justify-content:flex-end; gap:10px; padding:16px 24px 24px; }
 @media (max-width:520px) { .reschedule-actions { flex-direction:column-reverse; } .reschedule-actions .btn { width:100%; } }
 </style>
-<div class="reschedule-modal" id="appointmentRescheduleModal" aria-hidden="true">
+<?php
+$rescheduleNow = new DateTimeImmutable('now', new DateTimeZone('Asia/Manila'));
+$rescheduleToday = $rescheduleNow->format('Y-m-d');
+$rescheduleMinTime = $rescheduleNow->modify('+1 minute')->format('H:i');
+?>
+<div class="reschedule-modal" id="appointmentRescheduleModal" aria-hidden="true"
+    data-today="<?php echo htmlspecialchars($rescheduleToday, ENT_QUOTES, 'UTF-8'); ?>"
+    data-min-time="<?php echo htmlspecialchars($rescheduleMinTime, ENT_QUOTES, 'UTF-8'); ?>">
     <div class="reschedule-card" role="dialog" aria-modal="true" aria-labelledby="appointmentRescheduleTitle">
         <div class="reschedule-head">
             <div>
@@ -33,7 +40,8 @@
                 <p class="reschedule-note" id="appointmentRescheduleNotice">The new schedule will be checked against clinic hours, availability, and daily capacity.</p>
                 <div class="reschedule-field">
                     <label for="appointmentRescheduleDate">New date</label>
-                    <input type="date" name="appointment_date" id="appointmentRescheduleDate" required>
+                    <input type="date" name="appointment_date" id="appointmentRescheduleDate"
+                        min="<?php echo htmlspecialchars($rescheduleToday, ENT_QUOTES, 'UTF-8'); ?>" required>
                 </div>
                 <div class="reschedule-field">
                     <label for="appointmentRescheduleTime">New time</label>
@@ -56,6 +64,19 @@
     var timeInput = document.getElementById('appointmentRescheduleTime');
     var currentText = document.getElementById('appointmentRescheduleCurrent');
     if (!modal || !form || !idInput || !dateInput || !timeInput) return;
+    var today = modal.getAttribute('data-today') || '';
+    var minimumTimeToday = modal.getAttribute('data-min-time') || '';
+
+    function updateTimeMinimum() {
+        if (dateInput.value === today) {
+            timeInput.min = minimumTimeToday;
+            if (timeInput.value && timeInput.value < minimumTimeToday) {
+                timeInput.value = '';
+            }
+        } else {
+            timeInput.removeAttribute('min');
+        }
+    }
 
     function closeModal() {
         modal.classList.remove('is-open');
@@ -66,8 +87,10 @@
             event.preventDefault();
             event.stopPropagation();
             idInput.value = button.getAttribute('data-appointment-id') || '';
-            dateInput.value = button.getAttribute('data-reschedule-date') || '';
+            var currentDate = button.getAttribute('data-reschedule-date') || '';
+            dateInput.value = currentDate && currentDate >= today ? currentDate : today;
             timeInput.value = (button.getAttribute('data-reschedule-time') || '').slice(0, 5);
+            updateTimeMinimum();
             var current = button.getAttribute('data-reschedule-label') || 'Current appointment schedule';
             if (currentText) currentText.textContent = current;
             modal.classList.add('is-open');
@@ -75,6 +98,7 @@
             window.setTimeout(function () { dateInput.focus(); }, 50);
         });
     });
+    dateInput.addEventListener('change', updateTimeMinimum);
     modal.querySelectorAll('[data-close-reschedule]').forEach(function (button) {
         button.addEventListener('click', closeModal);
     });
