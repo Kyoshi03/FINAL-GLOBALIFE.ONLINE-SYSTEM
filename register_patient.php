@@ -1972,9 +1972,9 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                 <h3 class="popup-title" id="successPopupTitle" style="margin-bottom: 6px;">You have successfully created an account</h3>
                 <p class="popup-message" style="margin-bottom: 0; text-align: center;">
                     <?php if ($registeredDisplayName !== ''): ?>
-                        Welcome, <strong><?php echo htmlspecialchars($registeredDisplayName); ?></strong>. Your patient account is ready to use.
+                        Welcome, <strong><?php echo htmlspecialchars($registeredDisplayName); ?></strong>. Your user account is ready to use.
                     <?php else: ?>
-                        Your patient portal account is ready to use.
+                        Your user portal account is ready to use.
                     <?php endif; ?>
                 </p>
             </div>
@@ -1997,7 +1997,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                 </li>
                 <li>
                     <span class="success-step-num">2</span>
-                    <span>Select <strong>Back to Sign In</strong> to log in to your patient dashboard.</span>
+                    <span>Select <strong>Back to Sign In</strong> to log in to your user dashboard.</span>
                 </li>
                 <li>
                     <span class="success-step-num">3</span>
