@@ -157,28 +157,58 @@ function doctor_clinical_save_lab(mysqli $conn, int $patientId, int $authorId, s
     return ['ok' => true, 'message' => 'Lab result saved.', 'id' => $id];
 }
 
-function doctor_clinical_fetch_medical(mysqli $conn, int $id): ?array {
+function doctor_clinical_fetch_medical(mysqli $conn, int $id, int $doctorId = 0): ?array {
     doctor_clinical_ensure_schema($conn);
+    $accessSql = '';
+    if ($doctorId > 0) {
+        // A doctor may export records only for a patient with a completed consultation.
+        $accessSql = " AND EXISTS (
+            SELECT 1 FROM appointments a
+            WHERE a.patient_id = m.patient_id
+              AND a.doctor_id = ?
+              AND a.booking_type = 'consultation'
+              AND a.status = 'completed'
+        )";
+    }
     $stmt = $conn->prepare("SELECT m.*, " . dbUsersNameExpression('p') . " AS patient_name, p.date_of_birth, p.gender, p.phone, p.email, " . dbUsersNameExpression('u') . " AS author_name
         FROM medical_records m
         JOIN users p ON p.id = m.patient_id
         LEFT JOIN users u ON u.id = m.author_id
-        WHERE m.id = ? LIMIT 1");
-    $stmt->bind_param('i', $id);
+        WHERE m.id = ?{$accessSql} LIMIT 1");
+    if ($doctorId > 0) {
+        $stmt->bind_param('ii', $id, $doctorId);
+    } else {
+        $stmt->bind_param('i', $id);
+    }
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
     return $row ?: null;
 }
 
-function doctor_clinical_fetch_lab(mysqli $conn, int $id): ?array {
+function doctor_clinical_fetch_lab(mysqli $conn, int $id, int $doctorId = 0): ?array {
     doctor_clinical_ensure_schema($conn);
+    $accessSql = '';
+    if ($doctorId > 0) {
+        // Keep lab exports under the same completed-consultation access rule.
+        $accessSql = " AND EXISTS (
+            SELECT 1 FROM appointments a
+            WHERE a.patient_id = l.patient_id
+              AND a.doctor_id = ?
+              AND a.booking_type = 'consultation'
+              AND a.status = 'completed'
+        )";
+    }
     $stmt = $conn->prepare("SELECT l.*, " . dbUsersNameExpression('p') . " AS patient_name, p.date_of_birth, p.gender, p.phone, p.email, " . dbUsersNameExpression('u') . " AS author_name
         FROM lab_result_entries l
         JOIN users p ON p.id = l.patient_id
         LEFT JOIN users u ON u.id = l.author_id
-        WHERE l.id = ? LIMIT 1");
-    $stmt->bind_param('i', $id);
+        WHERE l.id = ?{$accessSql} LIMIT 1");
+    if ($doctorId > 0) {
+        $stmt->bind_param('ii', $id, $doctorId);
+    } else {
+        $stmt->bind_param('i', $id);
+    }
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();

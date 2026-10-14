@@ -10,6 +10,7 @@ require_once __DIR__ . '/includes/doctor_pdf_export.php';
 $type = strtolower(trim((string) ($_GET['type'] ?? '')));
 $action = strtolower(trim((string) ($_GET['action'] ?? 'print')));
 $recordId = (int) ($_GET['id'] ?? 0);
+$doctorId = (int) (getCurrentUser()['id'] ?? 0);
 
 if (!in_array($type, ['medical', 'lab'], true) || $recordId <= 0) {
     http_response_code(400);
@@ -23,8 +24,8 @@ if (!in_array($action, ['print', 'download'], true)) {
 
 $conn = getDBConnection();
 $data = $type === 'medical'
-    ? doctor_clinical_fetch_medical($conn, $recordId)
-    : doctor_clinical_fetch_lab($conn, $recordId);
+    ? doctor_clinical_fetch_medical($conn, $recordId, $doctorId)
+    : doctor_clinical_fetch_lab($conn, $recordId, $doctorId);
 $conn->close();
 
 if (!$data) {

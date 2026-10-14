@@ -411,8 +411,8 @@ $trendCardData = $trendData;
 $trendCardSubtitles = [];
 foreach (['daily', 'monthly', 'quarterly'] as $period) {
     $trendCardSubtitles[$period] = $hasCustomTrendRange
-        ? 'Appointments from ' . $trendRangeLabel
-        : 'Appointments in ' . $defaultTrendRanges[$period][2];
+        ? 'Non-cancelled appointments from ' . $trendRangeLabel
+        : 'Non-cancelled appointments in ' . $defaultTrendRanges[$period][2];
 }
 
 $conn->close();
@@ -2499,9 +2499,9 @@ document.addEventListener("DOMContentLoaded", function () {
             button.classList.toggle("is-active", active);
             button.setAttribute("aria-pressed", active ? "true" : "false");
         });
-        if (description) description.textContent = periodNames[period] + " appointments for " + (dataset.range || "the selected period") + ".";
+        if (description) description.textContent = periodNames[period] + " non-cancelled appointments for " + (dataset.range || "the selected period") + ".";
         if (range) range.textContent = dataset.range || "Selected period";
-        if (total) total.textContent = "Total: " + totalValue + " appointment" + (totalValue === 1 ? "" : "s");
+        if (total) total.textContent = "Non-cancelled total: " + totalValue + " appointment" + (totalValue === 1 ? "" : "s");
         while (chart.firstChild) chart.removeChild(chart.firstChild);
 
         if (!hasData) {
@@ -2955,7 +2955,7 @@ include 'includes/header.php';
         <div class="panel-head trend-panel-head">
             <div>
                 <h2 id="adminTrendTitle">Appointment Report</h2>
-                <p id="adminTrendDescription">Daily appointments for <?php echo htmlspecialchars($trendRangeLabel); ?>.</p>
+                <p id="adminTrendDescription">Daily non-cancelled appointments for <?php echo htmlspecialchars($trendRangeLabel); ?>.</p>
             </div>
             <div class="trend-panel-actions">
                 <form class="trend-date-form" method="get" id="adminTrendFilterForm">
@@ -2972,7 +2972,7 @@ include 'includes/header.php';
         </div>
         <div class="trend-meta">
             <span id="adminTrendRange"><?php echo htmlspecialchars($trendRangeLabel); ?></span>
-            <strong id="adminTrendTotal">Total: <?php echo (int) ($trendData['daily']['total'] ?? 0); ?> appointments</strong>
+            <strong id="adminTrendTotal">Non-cancelled total: <?php echo (int) ($trendData['daily']['total'] ?? 0); ?> appointments</strong>
         </div>
         <div class="trend-chart-wrap">
             <svg id="adminTrendChart" class="trend-chart" viewBox="0 0 920 320" role="img" aria-label="Daily appointment report chart"></svg>
@@ -2998,6 +2998,7 @@ include 'includes/header.php';
             <div class="metric-copy">
                 <span>Appointments</span>
                 <strong><?php echo $totalAppointments; ?></strong>
+                <small>All dates</small>
                 <a class="metric-link" href="admin_view_appointments.php?date_range=all">View appointments &rsaquo;</a>
             </div>
         </div>
@@ -3008,6 +3009,7 @@ include 'includes/header.php';
             <div class="metric-copy">
                 <span>Pending</span>
                 <strong><?php echo $pendingAppointments; ?></strong>
+                <small>All dates</small>
                 <a class="metric-link" href="admin_view_appointments.php?date_range=all&amp;status=pending">View pending &rsaquo;</a>
             </div>
         </div>
@@ -3018,6 +3020,7 @@ include 'includes/header.php';
             <div class="metric-copy">
                 <span>Completed</span>
                 <strong><?php echo $completedAppointments; ?></strong>
+                <small>All dates</small>
                 <a class="metric-link" href="admin_view_appointments.php?date_range=all&amp;status=completed">View completed &rsaquo;</a>
             </div>
         </div>
