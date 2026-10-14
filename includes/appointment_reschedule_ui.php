@@ -482,6 +482,27 @@ unset($_SESSION['reschedule_error']);
             });
         }).then(function (data) {
             availability = data;
+            if (data.booking_type === 'ultrasound' && Array.isArray(data.available_dates)) {
+                if (calendarPanel) calendarPanel.classList.remove('is-visible');
+                if (dateField) dateField.style.display = 'none';
+                if (dateChoicesField) dateChoicesField.hidden = false;
+                if (dateChoices) dateChoices.required = true;
+                if (dateLabel) dateLabel.textContent = 'New date';
+                dateInput.min = data.date_min || today;
+                dateInput.max = data.date_max || '';
+                var ultrasoundDate = populateDateChoices(preferredDate);
+                dateInput.value = ultrasoundDate;
+                showManualTimeInput();
+                if (!ultrasoundDate) {
+                    setAvailabilityNote('There are no available future ultrasound dates.', 'error');
+                    setSubmitEnabled(false);
+                    return;
+                }
+                setAvailabilityNote('Ultrasound is available on Wednesday and Saturday.', 'ready');
+                setSubmitEnabled(true);
+                updateTimeMinimum();
+                return;
+            }
             if (data.booking_type !== 'consultation') {
                 if (calendarPanel) calendarPanel.classList.remove('is-visible');
                 if (dateField) dateField.style.display = '';
