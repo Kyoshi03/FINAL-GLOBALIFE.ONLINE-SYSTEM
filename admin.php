@@ -1282,13 +1282,15 @@ body {
 }
 
 .request-actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
     align-items: center;
     gap: 6px;
     width: 100%;
     min-width: 0;
-    max-width: 210px;
+    max-width: 190px;
+    margin-inline: auto;
+    flex-wrap: nowrap;
+    white-space: nowrap;
 }
 
 .request-actions form {
@@ -1298,43 +1300,108 @@ body {
 }
 
 .request-actions .btn {
-    width: 100%;
-    min-width: 0;
-    min-height: 30px;
-    padding: 5px 4px;
-    font-size: 0.68rem;
-    line-height: 1.05;
+    min-height: 34px;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     white-space: nowrap;
 }
 
-.request-actions .request-confirm-action {
+.request-actions:not(.pending-actions) .btn {
+    min-width: 84px;
+}
+
+.request-actions .request-details-btn {
+    background: #fff;
+    color: #0066cc;
+    border: 1px solid #cde1ed;
+}
+
+.request-actions .request-details-btn:hover {
+    background: #f1f8ff;
+    border-color: #afd2e8;
+}
+
+.request-actions .request-confirm-action .btn {
+    background: #28a745;
+    border-color: #28a745;
+    color: #fff;
+}
+
+.request-actions .request-confirm-action .btn:hover {
+    background: #218838;
+    border-color: #218838;
+}
+
+.request-actions .request-cancel-action .btn {
+    background: #dc3545;
+    border-color: #dc3545;
+    color: #fff;
+}
+
+.request-actions .request-cancel-action .btn:hover {
+    background: #c82333;
+    border-color: #c82333;
+}
+
+.request-actions.pending-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: center;
+    justify-content: center;
+    justify-items: center;
+    column-gap: 6px;
+    row-gap: 6px;
+}
+
+.request-actions.pending-actions form {
+    display: block;
+    width: 100%;
+    margin: 0;
+}
+
+.request-actions.pending-actions > form .btn,
+.request-actions.pending-actions > .btn {
+    width: 100%;
+    min-width: 0;
+}
+
+.request-actions.pending-actions .request-confirm-action {
     grid-column: 1;
     grid-row: 1;
 }
 
-.request-actions .request-cancel-action {
+.request-actions.pending-actions .request-cancel-action {
     grid-column: 2;
     grid-row: 1;
 }
 
-.request-actions .request-details-btn {
+.request-actions.pending-actions .request-details-btn {
     grid-column: 1;
     grid-row: 2;
+    width: 100%;
+    min-width: 0;
+    justify-self: stretch;
+    padding: 6px 8px;
     background: #f1f5f9;
     border-color: #cbd5e1;
     color: #475569;
     font-size: 0.75rem;
 }
 
-.request-actions .request-details-btn:hover {
+.request-actions.pending-actions .request-details-btn:hover {
     background: #e2e8f0;
     border-color: #94a3b8;
     color: #1e3a5f;
 }
 
-.request-actions .request-reschedule-btn {
+.request-actions.pending-actions .request-reschedule-btn {
     grid-column: 2;
     grid-row: 2;
+    width: 100%;
+    min-width: 0;
+    justify-self: stretch;
     padding-right: 2px;
     padding-left: 2px;
     font-size: 0.6rem;
@@ -3073,7 +3140,7 @@ include 'includes/header.php';
                                         </td>
                                         <td><span class="badge <?php echo htmlspecialchars($requestStatus); ?>"><?php echo htmlspecialchars($requestStatusLabel); ?></span></td>
                                         <td>
-                                            <div class="request-actions">
+                                            <div class="request-actions <?php echo $adminCanRespond && $requestStatus === 'pending' ? 'pending-actions' : ''; ?>">
                                                 <button
                                                     type="button"
                                                     class="btn secondary request-details-btn"
