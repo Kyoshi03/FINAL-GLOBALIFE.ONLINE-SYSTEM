@@ -19,7 +19,8 @@
 .reschedule-availability.is-ready { background:#effaf3; color:#246b43; }
 .reschedule-actions button:disabled { opacity:.55; cursor:not-allowed; }
 .reschedule-calendar-panel { display:none !important; margin:0 0 16px; border:1px solid #d8e8f2; border-radius:15px; overflow:hidden; background:#fff; }
-.reschedule-calendar-panel.is-visible { display:block; }
+.reschedule-calendar-panel.is-visible { display:block !important; }
+.reschedule-field[hidden] { display:none !important; }
 .reschedule-calendar-head { display:grid; grid-template-columns:minmax(190px,1fr) minmax(210px,1fr); gap:14px; align-items:center; padding:15px; border-bottom:1px solid #d8e8f2; background:#fff; }
 .reschedule-calendar-title { display:grid; grid-template-columns:38px 1fr 38px; align-items:center; gap:8px; }
 .reschedule-calendar-title strong { color:#10233f; font-size:1.05rem; font-weight:900; text-align:center; }
