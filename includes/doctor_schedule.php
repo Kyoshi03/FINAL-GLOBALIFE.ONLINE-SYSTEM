@@ -23,7 +23,6 @@ function init_doctor_schema_and_accounts(mysqli $conn): void {
     $roleRow = $roleCol ? $roleCol->fetch_assoc() : null;
     if ($roleRow && stripos((string) $roleRow['Type'], 'doctor') === false) {
         $conn->query("UPDATE users SET role = 'admin' WHERE role = 'receptionist'");
-        $conn->query("UPDATE users SET role = 'doctor' WHERE role = 'nurse'");
         $conn->query("ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'patient', 'doctor') NOT NULL");
     }
 

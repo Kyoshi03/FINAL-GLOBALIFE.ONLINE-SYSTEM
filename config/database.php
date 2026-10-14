@@ -329,7 +329,6 @@ function initDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
     $conn->query("UPDATE users SET role = 'admin' WHERE role = 'receptionist'");
-    $conn->query("UPDATE users SET role = 'doctor' WHERE role = 'nurse'");
     $conn->query("ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'patient', 'doctor') NOT NULL");
     
     // Add new columns if they don't exist (for existing databases)
