@@ -1929,6 +1929,16 @@ body.doctor-summary-range-open {
     background: #0f7cc2;
 }
 
+.consultation-range-action.clear {
+    color: #0b4f80;
+    background: #eef7ff;
+}
+
+.consultation-range-action.clear:hover {
+    border-color: #8ed9ef;
+    background: #e1f3ff;
+}
+
 .consultation-range-message {
     margin: 8px 0 0;
     color: #b42318;
@@ -2449,6 +2459,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var summaryRangeMessage = document.getElementById("doctorSummaryRangeMessage");
         var summaryRangeClose = document.getElementById("doctorSummaryRangeClose");
         var summaryRangeCancel = document.getElementById("doctorSummaryRangeCancel");
+        var summaryRangeClear = document.getElementById("doctorSummaryRangeClear");
         var summaryRangeSet = document.getElementById("doctorSummaryRangeSet");
         var summaryRangeModalState = null;
         var summaryDraftFrom = "";
@@ -2969,6 +2980,14 @@ document.addEventListener("DOMContentLoaded", function () {
             summaryCloseRangeModal(false);
             summarySetRange({ from: summaryDraftFrom, to: summaryDraftTo });
         });
+        if (summaryRangeClear) summaryRangeClear.addEventListener("click", function () {
+            var defaults = summaryData.defaults && summaryData.defaults[summaryPeriod] ? summaryData.defaults[summaryPeriod] : null;
+            if (!defaults) return;
+            summaryDraftFrom = defaults.from;
+            summaryDraftTo = defaults.to;
+            summaryCloseRangeModal(false);
+            summarySetRange(defaults);
+        });
         document.addEventListener("keydown", function (event) {
             if (event.key === "Escape" && summaryRangeModal && !summaryRangeModal.hidden) summaryCloseRangeModal(true);
         });
@@ -3212,6 +3231,7 @@ include 'includes/header.php';
                         <p class="consultation-range-message" id="doctorSummaryRangeMessage" hidden>Select a start date and an end date first.</p>
                     </div>
                     <div class="consultation-range-actions">
+                        <button type="button" class="consultation-range-action clear" id="doctorSummaryRangeClear">Clear</button>
                         <button type="button" class="consultation-range-action" id="doctorSummaryRangeCancel">Cancel</button>
                         <button type="button" class="consultation-range-action primary" id="doctorSummaryRangeSet">Set Date</button>
                     </div>
