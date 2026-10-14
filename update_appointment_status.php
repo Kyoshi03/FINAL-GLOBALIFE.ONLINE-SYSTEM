@@ -71,7 +71,7 @@ if (!appointmentStatusColumnExists($conn, 'cancellation_reason')) {
 }
 
 // Check if appointment exists and user has permission
-$checkStmt = $conn->prepare("SELECT patient_id, doctor_id, status, booking_type FROM appointments WHERE id = ?");
+$checkStmt = $conn->prepare("SELECT patient_id, doctor_id, status, booking_type, appointment_date, notes FROM appointments WHERE id = ?");
 $checkStmt->bind_param("i", $appointment_id);
 $checkStmt->execute();
 $result = $checkStmt->get_result();
@@ -144,6 +144,21 @@ if ($updateStmt->execute() && $updateStmt->affected_rows > 0) {
         create_patient_appointment_notification($conn, (int) $appointment_id, $new_status);
         create_clinic_appointment_notification($conn, (int) $appointment_id, $new_status);
         create_admin_appointment_notification($conn, (int) $appointment_id, $new_status);
+    }
+    if ($new_status === 'confirmed' && $appointment['status'] !== 'confirmed') {
+        // Older appointments can be missing their queue row. Re-create it idempotently on confirmation.
+        appointment_init_queue_schema($conn);
+        try {
+            appointment_create_online_queue(
+                $conn,
+                (int) $appointment_id,
+                (int) $appointment['patient_id'],
+                (string) $appointment['appointment_date'],
+                appointment_queue_service_label($appointment)
+            );
+        } catch (Throwable $queueError) {
+            $statusMessage .= ' The appointment was confirmed, but its queue number could not be generated.';
+        }
     }
     if ($new_status === 'confirmed' && $appointment['status'] !== 'confirmed') {
         $emailResult = appointment_send_clinic_confirmation_email($conn, (int) $appointment_id);

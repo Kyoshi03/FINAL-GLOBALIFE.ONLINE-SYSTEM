@@ -123,6 +123,71 @@ function queue_services_text(array $appointment): string {
     return queue_booking_label($bookingType);
 }
 
+function queue_sync_confirmed_appointments(mysqli $conn, string $date): void {
+    $lockName = 'clinic-queue-confirmed-sync-' . $date;
+    $lockStmt = $conn->prepare('SELECT GET_LOCK(?, 5) AS acquired');
+    if (!$lockStmt) {
+        return;
+    }
+    $lockStmt->bind_param('s', $lockName);
+    $lockStmt->execute();
+    $lockAcquired = (int) ($lockStmt->get_result()->fetch_assoc()['acquired'] ?? 0);
+    $lockStmt->close();
+    if ($lockAcquired !== 1) {
+        return;
+    }
+
+    try {
+        $patientNameSql = dbUsersNameExpression('p');
+        $stmt = $conn->prepare("SELECT a.id, a.patient_id, a.appointment_time, a.booking_type, a.notes, a.total_display_price
+            FROM appointments a
+            JOIN users p ON p.id = a.patient_id
+            LEFT JOIN clinic_queue q ON q.appointment_id = a.id AND q.queue_date = ?
+            WHERE a.appointment_date = ?
+              AND a.status = 'confirmed'
+              AND q.id IS NULL
+            ORDER BY a.appointment_time ASC, {$patientNameSql} ASC");
+        if (!$stmt) {
+            return;
+        }
+        $stmt->bind_param('ss', $date, $date);
+        if (!$stmt->execute()) {
+            $stmt->close();
+            return;
+        }
+        $appointments = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+
+        foreach ($appointments as $appointment) {
+            $queueNumber = queue_next_number($conn, 'online', $date);
+            $patientId = (int) ($appointment['patient_id'] ?? 0);
+            $appointmentId = (int) ($appointment['id'] ?? 0);
+            $service = queue_services_text($appointment);
+            $serviceTotal = (float) ($appointment['total_display_price'] ?? 0);
+            if ($patientId <= 0 || $appointmentId <= 0 || $service === '') {
+                continue;
+            }
+
+            $insertStmt = $conn->prepare("INSERT INTO clinic_queue
+                (queue_date, queue_type, queue_number, patient_id, appointment_id, service, service_total, priority_type, status)
+                VALUES (?, 'online', ?, ?, ?, ?, ?, '', 'waiting')");
+            if (!$insertStmt) {
+                continue;
+            }
+            $insertStmt->bind_param('ssiisd', $date, $queueNumber, $patientId, $appointmentId, $service, $serviceTotal);
+            $insertStmt->execute();
+            $insertStmt->close();
+        }
+    } finally {
+        $releaseStmt = $conn->prepare('SELECT RELEASE_LOCK(?)');
+        if ($releaseStmt) {
+            $releaseStmt->bind_param('s', $lockName);
+            $releaseStmt->execute();
+            $releaseStmt->close();
+        }
+    }
+}
+
 function queue_next_number(mysqli $conn, string $type, string $date): string {
     $prefix = $type === 'online' ? 'O' : 'W';
     $stmt = $conn->prepare("SELECT queue_number FROM clinic_queue WHERE queue_date = ? AND queue_type = ? ORDER BY id DESC LIMIT 1");
@@ -414,6 +479,7 @@ function queue_insert_service_lines(mysqli $conn, int $queueId, array $serviceLi
 $conn = getDBConnection();
 queue_init_schema($conn);
 init_doctor_schema_and_accounts($conn);
+queue_sync_confirmed_appointments($conn, $today);
 
 $message = $_SESSION['success'] ?? '';
 $error = $_SESSION['error'] ?? '';

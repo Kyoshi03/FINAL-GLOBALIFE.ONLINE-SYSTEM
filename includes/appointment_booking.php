@@ -311,7 +311,7 @@ function appointment_next_online_queue_number(mysqli $conn, string $date): strin
 }
 
 function appointment_create_online_queue(mysqli $conn, int $appointmentId, int $patientId, string $date, string $service): string {
-    $existingStmt = $conn->prepare("SELECT queue_number FROM clinic_queue WHERE appointment_id = ? LIMIT 1");
+    $existingStmt = $conn->prepare("SELECT queue_number FROM clinic_queue WHERE appointment_id = ? AND status <> 'cancelled' LIMIT 1");
     $existingStmt->bind_param('i', $appointmentId);
     $existingStmt->execute();
     $existing = $existingStmt->get_result()->fetch_assoc();
@@ -330,6 +330,28 @@ function appointment_create_online_queue(mysqli $conn, int $appointmentId, int $
     $insertStmt->close();
 
     return $queueNumber;
+}
+
+function appointment_queue_service_label(array $appointment): string {
+    $bookingType = strtolower(trim((string) ($appointment['booking_type'] ?? '')));
+    if ($bookingType === 'consultation') {
+        return 'General Consultation';
+    }
+    if ($bookingType === 'ultrasound') {
+        return 'Ultra sound';
+    }
+
+    $notes = trim((string) ($appointment['notes'] ?? ''));
+    if (preg_match('/Services:\s*(.*?)(?:\s*\|\s*(?:Channel:|(?:Est\.\s*)?Total:)|\s*$)/i', $notes, $matches)) {
+        $services = trim((string) ($matches[1] ?? ''));
+        if ($services !== '') {
+            return $services;
+        }
+    }
+
+    return $bookingType === 'package'
+        ? 'Laboratory package'
+        : ($bookingType === 'individual' ? 'Laboratory tests' : 'General Consultation');
 }
 
 function appointment_mask_email(string $email): string {
