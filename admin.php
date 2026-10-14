@@ -273,16 +273,24 @@ $todayStatus = [
     'cancelled' => 0,
 ];
 $todayStmt = $conn->prepare('SELECT status, COUNT(*) AS total FROM appointments WHERE appointment_date = ? GROUP BY status');
-$todayStmt->bind_param('s', $today);
-$todayStmt->execute();
-$todayResult = $todayStmt->get_result();
-while ($row = $todayResult->fetch_assoc()) {
-    $status = strtolower((string) $row['status']);
-    if (isset($todayStatus[$status])) {
-        $todayStatus[$status] = (int) $row['total'];
+$todayResult = null;
+if ($todayStmt) {
+    $todayStmt->bind_param('s', $today);
+    if ($todayStmt->execute()) {
+        $todayResult = $todayStmt->get_result();
     }
+    if ($todayResult) {
+        while ($row = $todayResult->fetch_assoc()) {
+            $status = strtolower((string) $row['status']);
+            if (isset($todayStatus[$status])) {
+                $todayStatus[$status] = (int) $row['total'];
+            }
+        }
+    }
+    $todayStmt->close();
+} else {
+    $error = 'Unable to load today\'s appointment counts. Please check the appointment table configuration.';
 }
-$todayStmt->close();
 
 $appointmentRequests = [];
 $patientNameSql = dbUsersNameExpression('p');
@@ -307,10 +315,18 @@ $requestStmt = $conn->prepare("SELECT a.id, a.appointment_date, a.appointment_ti
                                 WHERE a.status = 'pending'
                                 ORDER BY a.appointment_date ASC, a.appointment_time ASC
                                 LIMIT ? OFFSET ?");
-$requestStmt->bind_param('ii', $appointmentRequestsPerPage, $appointmentRequestsOffset);
-$requestStmt->execute();
-$appointmentRequests = $requestStmt->get_result()->fetch_all(MYSQLI_ASSOC);
-$requestStmt->close();
+if ($requestStmt) {
+    $requestStmt->bind_param('ii', $appointmentRequestsPerPage, $appointmentRequestsOffset);
+    if ($requestStmt->execute()) {
+        $requestResult = $requestStmt->get_result();
+        if ($requestResult) {
+            $appointmentRequests = $requestResult->fetch_all(MYSQLI_ASSOC);
+        }
+    }
+    $requestStmt->close();
+} else {
+    $error = 'Unable to load appointment requests. Please check the appointment table configuration.';
+}
 
 $labServicePrices = [];
 if (admin_table_exists($conn, 'lab_services')) {
