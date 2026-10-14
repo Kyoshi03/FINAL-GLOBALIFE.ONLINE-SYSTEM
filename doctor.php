@@ -1673,6 +1673,16 @@ select:focus {
     background: #eef7ff;
 }
 
+.consultation-summary-range-clear {
+    color: #0b4f80;
+    background: #eef7ff;
+}
+
+.consultation-summary-range-clear:hover {
+    border-color: #8ed9ef;
+    background: #e1f3ff;
+}
+
 .consultation-summary-range-edit[hidden] {
     display: none;
 }
@@ -1927,16 +1937,6 @@ body.doctor-summary-range-open {
     border-color: #0f7cc2;
     color: #fff;
     background: #0f7cc2;
-}
-
-.consultation-range-action.clear {
-    color: #0b4f80;
-    background: #eef7ff;
-}
-
-.consultation-range-action.clear:hover {
-    border-color: #8ed9ef;
-    background: #e1f3ff;
 }
 
 .consultation-range-message {
@@ -2459,7 +2459,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var summaryRangeMessage = document.getElementById("doctorSummaryRangeMessage");
         var summaryRangeClose = document.getElementById("doctorSummaryRangeClose");
         var summaryRangeCancel = document.getElementById("doctorSummaryRangeCancel");
-        var summaryRangeClear = document.getElementById("doctorSummaryRangeClear");
+        var summaryClearRange = document.getElementById("doctorSummaryClearRange");
         var summaryRangeSet = document.getElementById("doctorSummaryRangeSet");
         var summaryRangeModalState = null;
         var summaryDraftFrom = "";
@@ -2980,12 +2980,9 @@ document.addEventListener("DOMContentLoaded", function () {
             summaryCloseRangeModal(false);
             summarySetRange({ from: summaryDraftFrom, to: summaryDraftTo });
         });
-        if (summaryRangeClear) summaryRangeClear.addEventListener("click", function () {
+        if (summaryClearRange) summaryClearRange.addEventListener("click", function () {
             var defaults = summaryData.defaults && summaryData.defaults[summaryPeriod] ? summaryData.defaults[summaryPeriod] : null;
             if (!defaults) return;
-            summaryDraftFrom = defaults.from;
-            summaryDraftTo = defaults.to;
-            summaryCloseRangeModal(false);
             summarySetRange(defaults);
         });
         document.addEventListener("keydown", function (event) {
@@ -3105,6 +3102,7 @@ include 'includes/header.php';
                         <input id="doctorSummaryPeriod" type="hidden" name="summary_period" value="<?php echo htmlspecialchars($summaryPeriod); ?>">
                         <input id="doctorSummaryToday" type="hidden" value="<?php echo htmlspecialchars($today); ?>">
                         <button type="button" class="consultation-summary-range-edit" id="doctorSummaryEditRange">Edit dates</button>
+                        <button type="button" class="consultation-summary-range-edit consultation-summary-range-clear" id="doctorSummaryClearRange">Clear</button>
                     </div>
 
                     <div class="consultation-summary-meta">
@@ -3231,7 +3229,6 @@ include 'includes/header.php';
                         <p class="consultation-range-message" id="doctorSummaryRangeMessage" hidden>Select a start date and an end date first.</p>
                     </div>
                     <div class="consultation-range-actions">
-                        <button type="button" class="consultation-range-action clear" id="doctorSummaryRangeClear">Clear</button>
                         <button type="button" class="consultation-range-action" id="doctorSummaryRangeCancel">Cancel</button>
                         <button type="button" class="consultation-range-action primary" id="doctorSummaryRangeSet">Set Date</button>
                     </div>
