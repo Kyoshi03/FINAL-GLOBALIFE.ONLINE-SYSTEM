@@ -192,13 +192,10 @@ function doctor_summary_default_range(string $period, string $today): array {
     if ($period === 'daily') {
         $from = $to->modify('-6 days');
     } elseif ($period === 'monthly') {
-        // Show the current year's month-to-date trend so Monthly has multiple
-        // month buckets when historical completed consultations are available.
-        $from = new DateTimeImmutable($to->format('Y') . '-01-01');
+        // Keep the summary consistent with the dashboard reporting window.
+        $from = $to->modify('first day of this month')->modify('-11 months');
     } else {
-        // Show the current year's quarter trend so Quarterly has meaningful points
-        // on first open instead of collapsing every record into one current-quarter point.
-        $from = new DateTimeImmutable($to->format('Y') . '-01-01');
+        $from = doctor_summary_quarter_start($to)->modify('-9 months');
     }
 
     return [$from->format('Y-m-d'), $to->format('Y-m-d')];
@@ -382,17 +379,15 @@ foreach ($allowedSummaryPeriods as $periodKey) {
     $summaryCardValues[$periodKey] = 0;
 }
 foreach ($summaryAllCompletedConsultations as $appointment) {
-    $appointmentDate = (string) $appointment['appointment_date'];
-    $appointmentMonth = substr($appointmentDate, 0, 7);
-    $appointmentQuarter = doctor_summary_bucket($appointmentDate, 'quarterly');
-    if ($appointmentDate === $today) {
-        $summaryCardValues['daily']++;
+    $appointmentDate = (string) ($appointment['appointment_date'] ?? '');
+    if (!doctor_summary_valid_date($appointmentDate)) {
+        continue;
     }
-    if ($appointmentMonth === substr($today, 0, 7)) {
-        $summaryCardValues['monthly']++;
-    }
-    if ($appointmentQuarter === doctor_summary_bucket($today, 'quarterly')) {
-        $summaryCardValues['quarterly']++;
+    foreach ($allowedSummaryPeriods as $periodKey) {
+        $range = $summaryDefaultRanges[$periodKey];
+        if ($appointmentDate >= $range['from'] && $appointmentDate <= $range['to']) {
+            $summaryCardValues[$periodKey]++;
+        }
     }
 }
 
@@ -3072,9 +3067,9 @@ include 'includes/header.php';
 
             <div class="consultation-summary-options" role="group" aria-label="Consultation summary period">
                 <?php foreach ([
-                    'daily' => ['Daily', 'Completed today'],
-                    'monthly' => ['Monthly', 'Completed this month'],
-                    'quarterly' => ['Quarterly', 'Completed this quarter'],
+                    'daily' => ['Daily', 'Completed in last 7 days'],
+                    'monthly' => ['Monthly', 'Completed in last 12 months'],
+                    'quarterly' => ['Quarterly', 'Completed in last 4 quarters'],
                 ] as $periodKey => $periodCopy): ?>
                     <button class="consultation-period-card<?php echo $summaryPeriod === $periodKey ? ' active' : ''; ?>" type="button" data-summary-period="<?php echo $periodKey; ?>" aria-pressed="<?php echo $summaryPeriod === $periodKey ? 'true' : 'false'; ?>">
                         <strong><?php echo htmlspecialchars($periodCopy[0]); ?></strong>
