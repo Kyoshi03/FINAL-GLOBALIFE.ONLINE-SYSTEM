@@ -130,9 +130,9 @@ function admin_appointment_filter_rows(array $appointments, string $from, string
 }
 
 $appointmentToday = date('Y-m-d');
-$appointmentDateRange = strtolower(trim((string) ($_GET['date_range'] ?? 'today')));
+$appointmentDateRange = strtolower(trim((string) ($_GET['date_range'] ?? 'all')));
 $allowedAppointmentRanges = ['all', 'today', 'yesterday', 'past_3_days', 'past_7_days', 'past_2_weeks', 'past_30_days', 'custom'];
-if (!in_array($appointmentDateRange, $allowedAppointmentRanges, true)) $appointmentDateRange = 'today';
+if (!in_array($appointmentDateRange, $allowedAppointmentRanges, true)) $appointmentDateRange = 'all';
 $appointmentDateFrom = $appointmentDateRange === 'all' ? '1900-01-01' : $appointmentToday;
 $appointmentDateTo = $appointmentToday;
 $appointmentRequestedFrom = trim((string) ($_GET['date_from'] ?? ''));
@@ -178,14 +178,14 @@ $appointmentRangeLabels = [
     'past_30_days' => 'Past 30 Days',
     'custom' => 'Custom Date Range',
 ];
-    $appointmentFilterLabel = $appointmentRangeLabels[$appointmentDateRange] ?? 'Today';
+    $appointmentFilterLabel = $appointmentRangeLabels[$appointmentDateRange] ?? 'All Dates';
 $appointmentPeriodLabel = admin_appointment_valid_date($appointmentDateFrom) && admin_appointment_valid_date($appointmentDateTo)
     ? ($appointmentDateFrom === $appointmentDateTo ? date('F j, Y', strtotime($appointmentDateFrom)) : date('F j, Y', strtotime($appointmentDateFrom)) . ' - ' . date('F j, Y', strtotime($appointmentDateTo)))
     : 'Selected dates';
 
 function admin_appointment_url(array $overrides = []): string {
     $params = array_merge([
-        'date_range' => $_GET['date_range'] ?? 'today',
+        'date_range' => $_GET['date_range'] ?? 'all',
         'date_from' => $_GET['date_from'] ?? '',
         'date_to' => $_GET['date_to'] ?? '',
         'search' => $_GET['search'] ?? '',
