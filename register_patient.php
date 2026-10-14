@@ -248,7 +248,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please enter a valid email address.';
     } elseif (!in_array($gender, ['Male', 'Female'], true)) {
         $error = 'Please choose a valid sex.';
-    } elseif (!in_array($civil_status, ['', 'Single', 'Married', 'Widowed'], true)) {
+    } elseif (!in_array($civil_status, ['', 'Single', 'Married', 'Widowed', 'Separated'], true)) {
         $error = 'Please choose a valid civil status.';
     } elseif (!in_array($verification_channel, ['email', 'sms'], true)) {
         $error = 'Please choose where you want to receive the verification code.';
@@ -1655,6 +1655,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                                     <option value="Single" <?php echo (!empty($success) ? '' : ((isset($_POST['civil_status']) && $_POST['civil_status'] === 'Single') ? 'selected' : '')); ?>>Single</option>
                                     <option value="Married" <?php echo (!empty($success) ? '' : ((isset($_POST['civil_status']) && $_POST['civil_status'] === 'Married') ? 'selected' : '')); ?>>Married</option>
                                     <option value="Widowed" <?php echo (!empty($success) ? '' : ((isset($_POST['civil_status']) && $_POST['civil_status'] === 'Widowed') ? 'selected' : '')); ?>>Widowed</option>
+                                    <option value="Separated" <?php echo (!empty($success) ? '' : ((isset($_POST['civil_status']) && $_POST['civil_status'] === 'Separated') ? 'selected' : '')); ?>>Separated</option>
                                 </select>
                             </div>
                         </div>

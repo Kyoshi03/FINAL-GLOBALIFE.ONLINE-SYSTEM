@@ -471,7 +471,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['profile_action'] ?? '') ==
     $newPassword = $_POST['new_password'] ?? '';
     $confirmNewPassword = $_POST['confirm_new_password'] ?? '';
     $allowedGenders = ['', 'Male', 'Female'];
-    $allowedCivilStatuses = ['', 'Single', 'Married', 'Widowed'];
+    $allowedCivilStatuses = ['', 'Single', 'Married', 'Widowed', 'Separated'];
     $computedAge = '';
     $parsedBirthDate = null;
     $birthDateIsValid = true;
@@ -3882,9 +3882,13 @@ include 'includes/header.php';
                                 <input type="date" id="modal_date_of_birth" name="date_of_birth" data-birthday-picker value="<?php echo htmlspecialchars($userDetails['date_of_birth'] ?? ''); ?>" max="<?php echo date('Y-m-d'); ?>" readonly tabindex="-1" aria-readonly="true">
                             </div>
                             <div class="profile-field">
-                                <label for="modal_civil_status_display">Civil status</label>
-                                <input type="text" id="modal_civil_status_display" value="<?php echo htmlspecialchars(trim((string) ($userDetails['civil_status'] ?? '')) !== '' ? $userDetails['civil_status'] : 'Not provided'); ?>" readonly>
-                                <input type="hidden" id="modal_civil_status" name="civil_status" value="<?php echo htmlspecialchars($userDetails['civil_status'] ?? ''); ?>">
+                                <label for="modal_civil_status">Civil status</label>
+                                <select id="modal_civil_status" name="civil_status">
+                                    <option value="">Select Civil Status</option>
+                                    <?php foreach (['Single', 'Married', 'Widowed', 'Separated'] as $civilStatusOption): ?>
+                                        <option value="<?php echo htmlspecialchars($civilStatusOption, ENT_QUOTES, 'UTF-8'); ?>" <?php echo (($userDetails['civil_status'] ?? '') === $civilStatusOption) ? 'selected' : ''; ?>><?php echo htmlspecialchars($civilStatusOption); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                             <div class="profile-field">
                                 <label>Age</label>

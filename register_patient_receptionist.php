@@ -109,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please choose a valid barangay for the selected city or municipality.';
     } elseif (!in_array($gender, ['Male', 'Female'], true)) {
         $error = 'Please choose a valid sex.';
-    } elseif (!in_array($civil_status, ['', 'Single', 'Married', 'Widowed'], true)) {
+    } elseif (!in_array($civil_status, ['', 'Single', 'Married', 'Widowed', 'Separated'], true)) {
         $error = 'Please choose a valid civil status.';
     } elseif ($firstNameLength > $rprFirstNameMax) {
         $error = 'First name must not exceed ' . $rprFirstNameMax . ' letters.';
@@ -1160,6 +1160,7 @@ include 'includes/header.php';
                                     <option value="Single" <?php echo rpr_selected('civil_status', 'Single'); ?>>Single</option>
                                     <option value="Married" <?php echo rpr_selected('civil_status', 'Married'); ?>>Married</option>
                                     <option value="Widowed" <?php echo rpr_selected('civil_status', 'Widowed'); ?>>Widowed</option>
+                                    <option value="Separated" <?php echo rpr_selected('civil_status', 'Separated'); ?>>Separated</option>
                                 </select>
                             </div>
 
