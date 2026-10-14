@@ -482,7 +482,8 @@ unset($_SESSION['reschedule_error']);
             });
         }).then(function (data) {
             availability = data;
-            if (data.booking_type === 'ultrasound' && Array.isArray(data.available_dates)) {
+            if (['ultrasound', 'package', 'individual'].indexOf(data.booking_type) !== -1
+                && Array.isArray(data.available_dates)) {
                 if (calendarPanel) calendarPanel.classList.remove('is-visible');
                 if (dateField) dateField.style.display = 'none';
                 if (dateChoicesField) dateChoicesField.hidden = false;
@@ -490,15 +491,25 @@ unset($_SESSION['reschedule_error']);
                 if (dateLabel) dateLabel.textContent = 'New date';
                 dateInput.min = data.date_min || today;
                 dateInput.max = data.date_max || '';
-                var ultrasoundDate = populateDateChoices(preferredDate);
-                dateInput.value = ultrasoundDate;
+                var availableDate = populateDateChoices(preferredDate);
+                dateInput.value = availableDate;
                 showManualTimeInput();
-                if (!ultrasoundDate) {
-                    setAvailabilityNote('There are no available future ultrasound dates.', 'error');
+                if (!availableDate) {
+                    setAvailabilityNote(
+                        data.booking_type === 'ultrasound'
+                            ? 'There are no available future ultrasound dates.'
+                            : 'There are no available future laboratory dates.',
+                        'error'
+                    );
                     setSubmitEnabled(false);
                     return;
                 }
-                setAvailabilityNote('Ultrasound is available on Wednesday and Saturday.', 'ready');
+                setAvailabilityNote(
+                    data.booking_type === 'ultrasound'
+                        ? 'Ultrasound is available on Wednesday and Saturday.'
+                        : 'Laboratory appointments are available Monday to Saturday.',
+                    'ready'
+                );
                 setSubmitEnabled(true);
                 updateTimeMinimum();
                 return;

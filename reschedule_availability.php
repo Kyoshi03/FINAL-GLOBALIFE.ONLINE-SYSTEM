@@ -129,6 +129,63 @@ if ($bookingType === 'ultrasound') {
     ]);
 }
 
+if (in_array($bookingType, ['package', 'individual'], true)) {
+    $today = new DateTimeImmutable('today', new DateTimeZone('Asia/Manila'));
+    $rangeEnd = $today->modify('+365 days');
+    $from = $today->format('Y-m-d');
+    $to = $rangeEnd->format('Y-m-d');
+    $bookedByDate = [];
+    $countStmt = $conn->prepare(
+        "SELECT appointment_date, COUNT(*) AS total
+         FROM appointments
+         WHERE appointment_date >= ?
+           AND appointment_date <= ?
+           AND booking_type IN ('package', 'individual')
+           AND status <> 'cancelled'
+           AND id <> ?
+         GROUP BY appointment_date"
+    );
+    if ($countStmt) {
+        $countStmt->bind_param('ssi', $from, $to, $appointmentId);
+        if ($countStmt->execute()) {
+            foreach ($countStmt->get_result()->fetch_all(MYSQLI_ASSOC) as $row) {
+                $date = (string) ($row['appointment_date'] ?? '');
+                if ($date !== '') {
+                    $bookedByDate[$date] = (int) ($row['total'] ?? 0);
+                }
+            }
+        }
+        $countStmt->close();
+    }
+
+    $limit = appointment_lab_daily_limit();
+    $availableDates = [];
+    $unavailableReasons = [];
+    $cursor = $today;
+    while ($cursor <= $rangeEnd) {
+        $date = $cursor->format('Y-m-d');
+        $booked = (int) ($bookedByDate[$date] ?? 0);
+        if (!appointment_clinic_is_open_at($date, '08:00')) {
+            $unavailableReasons[$date] = 'Laboratory appointments are available Monday to Saturday only.';
+        } elseif ($booked >= $limit) {
+            $unavailableReasons[$date] = 'Laboratory appointments are fully booked on this date.';
+        } else {
+            $availableDates[] = $date;
+        }
+        $cursor = $cursor->modify('+1 day');
+    }
+
+    $conn->close();
+    reschedule_availability_response($baseResponse + [
+        'date_min' => $from,
+        'date_max' => $to,
+        'daily_limit' => $limit,
+        'available_dates' => $availableDates,
+        'booked_by_date' => $bookedByDate,
+        'unavailable_reasons' => $unavailableReasons,
+    ]);
+}
+
 if ($bookingType !== 'consultation') {
     $conn->close();
     reschedule_availability_response($baseResponse);
