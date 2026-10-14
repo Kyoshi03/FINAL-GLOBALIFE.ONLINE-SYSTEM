@@ -496,12 +496,13 @@ unset($_SESSION['reschedule_error']);
             }
             dateInput.min = data.date_min || today;
             dateInput.max = data.date_max || '';
-            if (calendarPanel) calendarPanel.classList.add('is-visible');
+            if (calendarPanel) calendarPanel.classList.remove('is-visible');
             if (dateField) dateField.style.display = 'none';
-            if (dateChoicesField) dateChoicesField.hidden = true;
-            if (dateChoices) dateChoices.required = false;
-            var selectedDate = dateIsAvailable(preferredDate) ? preferredDate : firstAvailableDate();
-            dateInput.value = selectedDate || '';
+            if (dateChoicesField) dateChoicesField.hidden = false;
+            if (dateChoices) dateChoices.required = true;
+            if (dateLabel) dateLabel.textContent = 'New date';
+            var selectedDate = populateDateChoices(preferredDate);
+            dateInput.value = selectedDate;
             calendarMonth = parseDateValue(selectedDate || data.date_min || today);
             if (calendarMonth) calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
             var selectedTime = timeIsInDoctorSchedule(selectedDate, preferredTime) ? preferredTime : firstAvailableTime(selectedDate);
@@ -509,7 +510,6 @@ unset($_SESSION['reschedule_error']);
             if (!selectedDate) {
                 setAvailabilityNote('There are no available future dates for this doctor.', 'error');
                 setSubmitEnabled(false);
-                renderCalendar();
                 return;
             }
             setSubmitEnabled(updateAvailabilityForSelection());
