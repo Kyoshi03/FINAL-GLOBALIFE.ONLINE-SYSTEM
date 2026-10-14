@@ -134,7 +134,7 @@ $appointmentDateRange = strtolower(trim((string) ($_GET['date_range'] ?? 'all'))
 $allowedAppointmentRanges = ['all', 'today', 'yesterday', 'past_3_days', 'past_7_days', 'past_2_weeks', 'past_30_days', 'custom'];
 if (!in_array($appointmentDateRange, $allowedAppointmentRanges, true)) $appointmentDateRange = 'all';
 $appointmentDateFrom = $appointmentDateRange === 'all' ? '1900-01-01' : $appointmentToday;
-$appointmentDateTo = $appointmentToday;
+$appointmentDateTo = $appointmentDateRange === 'all' ? '9999-12-31' : $appointmentToday;
 $appointmentRequestedFrom = trim((string) ($_GET['date_from'] ?? ''));
 $appointmentRequestedTo = trim((string) ($_GET['date_to'] ?? ''));
 $appointmentDateError = '';
@@ -179,9 +179,11 @@ $appointmentRangeLabels = [
     'custom' => 'Custom Date Range',
 ];
     $appointmentFilterLabel = $appointmentRangeLabels[$appointmentDateRange] ?? 'All Dates';
-$appointmentPeriodLabel = admin_appointment_valid_date($appointmentDateFrom) && admin_appointment_valid_date($appointmentDateTo)
+$appointmentPeriodLabel = $appointmentDateRange === 'all'
+    ? 'All Dates'
+    : (admin_appointment_valid_date($appointmentDateFrom) && admin_appointment_valid_date($appointmentDateTo)
     ? ($appointmentDateFrom === $appointmentDateTo ? date('F j, Y', strtotime($appointmentDateFrom)) : date('F j, Y', strtotime($appointmentDateFrom)) . ' - ' . date('F j, Y', strtotime($appointmentDateTo)))
-    : 'Selected dates';
+    : 'Selected dates');
 
 function admin_appointment_url(array $overrides = []): string {
     $params = array_merge([
@@ -262,7 +264,7 @@ $reportFilteredAppointmentRecords = $reportType === 'appointments'
 $showAppointmentReport = $userRole === 'admin' && isset($_GET['generate_report']);
 $generatedReport = [
     'title' => 'Appointment History Report',
-    'period' => appointment_report_date_label($reportDateFrom, $reportDateTo),
+    'period' => $appointmentDateRange === 'all' ? 'All Dates' : appointment_report_date_label($reportDateFrom, $reportDateTo),
     'headers' => ['Patient', 'Doctor', 'Schedule', 'Service', 'Status'],
     'rows' => [],
     'summary' => [],
@@ -2293,7 +2295,7 @@ include __DIR__ . '/includes/header.php';
         if (range === 'custom') return {from: dateFromFilter ? dateFromFilter.value : '', to: dateToFilter ? dateToFilter.value : ''};
         var from = new Date(today);
         var to = new Date(today);
-        if (range === 'all') return {from: '1900-01-01', to: formatDate(to)};
+        if (range === 'all') return {from: '1900-01-01', to: '9999-12-31'};
         if (range === 'yesterday') {
             from.setDate(from.getDate() - 1);
             to = new Date(from);
