@@ -1295,10 +1295,116 @@ select:focus {
 
 .doctor-clean-row.requests .doctor-clean-actions {
     justify-content: center;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(92px, 1fr));
+    gap: 7px;
 }
 
 .doctor-clean-actions form {
     margin: 0;
+}
+
+.doctor-clean-row.requests .doctor-clean-actions form,
+.doctor-clean-row.requests .doctor-clean-actions > button {
+    min-width: 0;
+    width: 100%;
+}
+
+.doctor-request-details-btn {
+    border-color: #cfe1ee;
+    background: #f8fbfd;
+    color: #0b4f80;
+}
+
+.doctor-request-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 5100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(7, 59, 76, .45);
+    backdrop-filter: blur(4px);
+}
+
+.doctor-request-modal.is-open {
+    display: flex;
+}
+
+.doctor-request-modal-card {
+    width: min(560px, 100%);
+    max-height: calc(100vh - 36px);
+    overflow: auto;
+    border: 1px solid #cde8f3;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 24px 70px rgba(7, 59, 76, .24);
+}
+
+.doctor-request-modal-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 20px 22px;
+    border-bottom: 1px solid #d8eef7;
+    background: linear-gradient(135deg, #fff 0%, #eefaff 100%);
+}
+
+.doctor-request-modal-head h2 {
+    margin: 0;
+    color: #073b4c;
+    font-size: 1.2rem;
+}
+
+.doctor-request-modal-head p {
+    margin: 6px 0 0;
+    color: #607784;
+    font-size: .88rem;
+}
+
+.doctor-request-modal-close {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 8px;
+    background: #eaf8fc;
+    color: #0077b6;
+    font-size: 1.2rem;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.doctor-request-modal-body {
+    padding: 20px 22px;
+}
+
+.doctor-request-detail-grid {
+    display: grid;
+    grid-template-columns: minmax(110px, .35fr) minmax(0, 1fr);
+    gap: 10px 16px;
+    margin: 0;
+}
+
+.doctor-request-detail-grid dt {
+    color: #607784;
+    font-size: .82rem;
+    font-weight: 900;
+}
+
+.doctor-request-detail-grid dd {
+    margin: 0;
+    color: #073b4c;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
+.doctor-request-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 0 22px 20px;
 }
 
 .btn.confirm-soft {
@@ -2146,6 +2252,46 @@ document.addEventListener("DOMContentLoaded", function () {
     var successText = document.getElementById("doctorSuccessText");
     var successOk = document.getElementById("doctorSuccessOk");
     var pendingForm = null;
+    var requestDetailsModal = document.getElementById("doctorRequestDetailsModal");
+    var requestDetailsSub = document.getElementById("doctorRequestDetailsSub");
+    var requestDetailsGrid = document.getElementById("doctorRequestDetailsGrid");
+
+    function closeRequestDetails() {
+        if (!requestDetailsModal) return;
+        requestDetailsModal.classList.remove("is-open");
+        requestDetailsModal.setAttribute("aria-hidden", "true");
+    }
+
+    document.querySelectorAll("[data-open-doctor-request-details]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            if (!requestDetailsModal || !requestDetailsGrid) return;
+            var values = [
+                ["Patient", button.getAttribute("data-patient") || "N/A"],
+                ["Contact", button.getAttribute("data-contact") || "No contact"],
+                ["Schedule", button.getAttribute("data-schedule") || "N/A"],
+                ["Service", button.getAttribute("data-service") || "Doctor consultation"],
+                ["Status", button.getAttribute("data-status") || "Pending"]
+            ];
+            requestDetailsGrid.innerHTML = values.map(function (item) {
+                return "<dt>" + item[0] + "</dt><dd>" + item[1].replace(/[&<>\"]/g, function (char) {
+                    return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[char] || "&#" + char.charCodeAt(0) + ";";
+                }) + "</dd>";
+            }).join("");
+            if (requestDetailsSub) requestDetailsSub.textContent = (button.getAttribute("data-patient") || "Patient") + " - Appointment request";
+            requestDetailsModal.classList.add("is-open");
+            requestDetailsModal.setAttribute("aria-hidden", "false");
+        });
+    });
+
+    if (requestDetailsModal) {
+        requestDetailsModal.addEventListener("click", function (event) {
+            if (event.target === requestDetailsModal || event.target.closest("[data-close-doctor-request-details]")) closeRequestDetails();
+        });
+    }
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") closeRequestDetails();
+    });
 
     function closeConfirmModal() {
         if (!confirmModal) return;
@@ -3028,6 +3174,25 @@ include 'includes/header.php';
                                     <input type="hidden" name="return_url" value="doctor.php">
                                     <button class="btn decline-soft" type="submit" data-confirm-message="Are you sure you want to cancel this consultation request?">Cancel</button>
                                 </form>
+                                <button
+                                    class="btn doctor-request-details-btn"
+                                    type="button"
+                                    data-open-doctor-request-details
+                                    data-patient="<?php echo htmlspecialchars((string) ($appointment['patient_name'] ?? 'Patient'), ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-contact="<?php echo htmlspecialchars((string) (($appointment['patient_phone'] ?? '') ?: ($appointment['patient_email'] ?? 'No contact')), ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-schedule="<?php echo htmlspecialchars(doctor_date_label($appointment['appointment_date']) . ' at ' . doctor_time_label($appointment['appointment_time']), ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-service="<?php echo htmlspecialchars(doctor_service_detail($appointment), ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-status="Pending"
+                                >Details</button>
+                                <button
+                                    class="btn btn-reschedule"
+                                    type="button"
+                                    data-open-reschedule
+                                    data-appointment-id="<?php echo (int) $appointment['id']; ?>"
+                                    data-reschedule-date="<?php echo htmlspecialchars((string) ($appointment['appointment_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-reschedule-time="<?php echo htmlspecialchars((string) ($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-reschedule-label="Current schedule: <?php echo htmlspecialchars(doctor_date_label($appointment['appointment_date']) . ' at ' . doctor_time_label($appointment['appointment_time']), ENT_QUOTES, 'UTF-8'); ?>"
+                                >Reschedule</button>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -3144,7 +3309,25 @@ include 'includes/header.php';
             <button class="btn confirm-soft" type="button" id="doctorSuccessOk">OK</button>
         </div>
     </div>
+    <div class="doctor-request-modal" id="doctorRequestDetailsModal" aria-hidden="true">
+        <div class="doctor-request-modal-card" role="dialog" aria-modal="true" aria-labelledby="doctorRequestDetailsTitle">
+            <div class="doctor-request-modal-head">
+                <div>
+                    <h2 id="doctorRequestDetailsTitle">Appointment details</h2>
+                    <p id="doctorRequestDetailsSub">Review appointment request</p>
+                </div>
+                <button type="button" class="doctor-request-modal-close" data-close-doctor-request-details aria-label="Close">&times;</button>
+            </div>
+            <div class="doctor-request-modal-body">
+                <dl class="doctor-request-detail-grid" id="doctorRequestDetailsGrid"></dl>
+            </div>
+            <div class="doctor-request-modal-actions">
+                <button type="button" class="btn secondary" data-close-doctor-request-details>Close</button>
+            </div>
+        </div>
+    </div>
 </main>
+<?php $appointmentPage = 'doctor.php'; include __DIR__ . '/includes/appointment_reschedule_ui.php'; ?>
 <?php include 'includes/footer.php'; ?>
 
 
