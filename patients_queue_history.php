@@ -195,6 +195,9 @@ body { background:#f4f8fb; min-height:100vh; color:#1f343d; }
 .appointment-page-btn.active { border-color:#0066cc; background:#0066cc; color:#fff; box-shadow:0 10px 20px rgba(0,102,204,.18); }
 .appointment-page-btn.is-disabled { pointer-events:none; opacity:.45; }
 .appointment-pagination .appointment-page-btn.previous, .appointment-pagination .appointment-page-btn.next { width:auto; }
+.patient-history-tabs { display:flex; gap:8px; margin-bottom:18px; padding:5px; border:1px solid #dce8ef; border-radius:10px; background:#eef7ff; }
+.patient-history-tabs a { flex:1; min-height:40px; display:flex; align-items:center; justify-content:center; border-radius:7px; color:#0b4f80; font-size:.82rem; font-weight:800; text-decoration:none; text-align:center; }
+.patient-history-tabs a.active { background:#0f7cc2; color:#fff; box-shadow:0 8px 16px rgba(15,124,194,.18); }
 @media (max-width:768px) {
     .appointments-container { padding:22px 14px 36px; }
     .appointment-tools.patient-filters { grid-template-columns:1fr; }
@@ -204,12 +207,29 @@ body { background:#f4f8fb; min-height:100vh; color:#1f343d; }
     .appointments-table th, .appointments-table td { padding:10px 8px; }
     .appointment-pagination-footer { align-items:flex-start; flex-direction:column; }
     .appointment-pagination { flex-wrap:wrap; }
+    .patient-history-tabs { gap:5px; margin-bottom:14px; }
+    .patient-history-tabs a { min-height:38px; font-size:.74rem; }
+    .patient-history-page .appointments-scroll { max-height:none; overflow:visible; padding-right:0; }
+    .patient-history-page .appointments-table,
+    .patient-history-page .appointments-table tbody,
+    .patient-history-page .appointments-table tr,
+    .patient-history-page .appointments-table td { display:block; width:100%; box-sizing:border-box; }
+    .patient-history-page .appointments-table { min-width:0; }
+    .patient-history-page .appointments-table thead { display:none; }
+    .patient-history-page .appointments-table tr { margin:0 0 10px; padding:10px 12px; border:1px solid #e4edf2; border-radius:12px; background:#fff; }
+    .patient-history-page .appointments-table td { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid #eef3f6; text-align:right; white-space:normal; overflow-wrap:anywhere; }
+    .patient-history-page .appointments-table td::before { content:attr(data-label); flex:0 0 40%; color:#708792; font-size:.68rem; font-weight:800; letter-spacing:.04em; text-align:left; text-transform:uppercase; }
+    .patient-history-page .appointments-table td:last-child { border-bottom:0; }
 }
 ';
 
 include __DIR__ . '/includes/header.php';
 ?>
-<main class="appointments-container">
+<main class="appointments-container patient-history-page">
+    <nav class="patient-history-tabs" aria-label="Patient history">
+        <a href="patients_view_appointments.php">Appointment History</a>
+        <a class="active" aria-current="page" href="patients_queue_history.php">Queue History</a>
+    </nav>
     <section class="appointments-filter-card" aria-label="Queue history filters">
         <form class="appointment-tools patient-filters" id="queueHistoryFilterForm" method="get" action="patients_queue_history.php">
             <input type="hidden" name="filter_applied" value="1">
@@ -279,16 +299,16 @@ include __DIR__ . '/includes/header.php';
                     <tbody>
                         <?php foreach ($queueHistory as $queueRow): ?>
                             <tr>
-                                <td class="queue-number"><?php echo htmlspecialchars((string) ($queueRow['queue_number'] ?? '--')); ?></td>
-                                <td class="appointment-schedule-cell">
+                                <td class="queue-number" data-label="Queue No."><?php echo htmlspecialchars((string) ($queueRow['queue_number'] ?? '--')); ?></td>
+                                <td class="appointment-schedule-cell" data-label="Schedule">
                                     <strong><?php echo htmlspecialchars(patient_queue_history_date_label($queueRow['queue_date'] ?? null)); ?></strong>
                                     <span>Walk-in visit</span>
                                 </td>
-                                <td class="queue-service"><?php echo htmlspecialchars((string) ($queueRow['service'] ?? 'General Consultation')); ?></td>
-                                <td class="queue-muted"><?php echo htmlspecialchars(patient_queue_history_time_label($queueRow['time_called'] ?? null)); ?></td>
-                                <td class="queue-muted"><?php echo htmlspecialchars(patient_queue_history_time_label($queueRow['completed_at'] ?? null)); ?></td>
-                                <td><span class="status-badge walk-in">Walk-in</span></td>
-                                <td><span class="status-badge completed">Completed</span></td>
+                                <td class="queue-service" data-label="Service"><?php echo htmlspecialchars((string) ($queueRow['service'] ?? 'General Consultation')); ?></td>
+                                <td class="queue-muted" data-label="Time Called"><?php echo htmlspecialchars(patient_queue_history_time_label($queueRow['time_called'] ?? null)); ?></td>
+                                <td class="queue-muted" data-label="Completed At"><?php echo htmlspecialchars(patient_queue_history_time_label($queueRow['completed_at'] ?? null)); ?></td>
+                                <td data-label="Type"><span class="status-badge walk-in">Walk-in</span></td>
+                                <td data-label="Status"><span class="status-badge completed">Completed</span></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>

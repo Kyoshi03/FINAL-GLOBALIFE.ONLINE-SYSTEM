@@ -758,6 +758,9 @@ $additionalStyles = patientAvatarStyles() . '
         background:#0b66a0;
         border-color:#0b66a0;
     }
+    .patient-history-tabs { display:flex; gap:8px; margin-bottom:18px; padding:5px; border:1px solid #dce8ef; border-radius:10px; background:#eef7ff; }
+    .patient-history-tabs a { flex:1; min-height:40px; display:flex; align-items:center; justify-content:center; border-radius:7px; color:#0b4f80; font-size:.82rem; font-weight:800; text-decoration:none; text-align:center; }
+    .patient-history-tabs a.active { background:#0f7cc2; color:#fff; box-shadow:0 8px 16px rgba(15,124,194,.18); }
     .btn-secondary {
         background:#eef7ff;
         color:#0b4f80;
@@ -1079,13 +1082,92 @@ $additionalStyles = patientAvatarStyles() . '
             width: 100%;
             text-align: center;
         }
+        .patient-history-tabs { gap:5px; margin-bottom:14px; }
+        .patient-history-tabs a { min-height:38px; font-size:.74rem; }
+        .patient-history-page .appointments-scroll {
+            max-height: none;
+            overflow: visible;
+            padding-right: 0;
+        }
+        .patient-history-page .appointments-table,
+        .patient-history-page .appointments-table tbody,
+        .patient-history-page .appointments-table tr,
+        .patient-history-page .appointments-table td {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .patient-history-page .appointments-table {
+            min-width: 0;
+        }
+        .patient-history-page .appointments-table thead {
+            display: none;
+        }
+        .patient-history-page .appointments-table tr {
+            margin: 0 0 12px;
+            padding: 10px 12px;
+            border: 1px solid #e4edf2;
+            border-radius: 12px;
+            background: #fff;
+        }
+        .patient-history-page .appointments-table td {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 9px 0;
+            border-bottom: 1px solid #eef3f6;
+            text-align: right;
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+        .patient-history-page .appointments-table td::before {
+            flex: 0 0 34%;
+            color: #708792;
+            font-size: .68rem;
+            font-weight: 800;
+            letter-spacing: .04em;
+            line-height: 1.25;
+            text-align: left;
+            text-transform: uppercase;
+        }
+        .patient-history-page .appointments-table td:nth-child(1)::before { content: "Schedule"; }
+        .patient-history-page .appointments-table td:nth-child(2)::before { content: "Status"; }
+        .patient-history-page .appointments-table td:nth-child(3)::before { content: "Services"; }
+        .patient-history-page .appointments-table td:nth-child(4)::before { content: "Actions"; }
+        .patient-history-page .appointments-table td:last-child {
+            border-bottom: 0;
+        }
+        .patient-history-page .appointment-schedule-cell {
+            min-width: 0;
+            white-space: normal;
+        }
+        .patient-history-page .action-buttons {
+            display: flex;
+            flex: 1 1 auto;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+        .patient-history-page .action-buttons .btn {
+            width: auto;
+            min-height: 36px;
+            padding: 0 10px;
+            font-size: .78rem;
+        }
     }
 ';
 
 include __DIR__ . '/includes/header.php';
 ?>
 
-<div class="appointments-container<?php echo $isClinicalAppointmentsView ? ' clinical-appointments-page' : ''; ?>">
+<div class="appointments-container<?php echo $isClinicalAppointmentsView ? ' clinical-appointments-page' : ''; ?><?php echo $userRole === 'patient' ? ' patient-history-page' : ''; ?>">
+    <?php if ($userRole === 'patient'): ?>
+        <nav class="patient-history-tabs" aria-label="Patient history">
+            <a class="active" aria-current="page" href="patients_view_appointments.php">Appointment History</a>
+            <a href="patients_queue_history.php">Queue History</a>
+        </nav>
+    <?php endif; ?>
     <?php if (isset($_SESSION['success'])): ?>
         <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #28a745;">
             <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?>

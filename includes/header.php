@@ -841,11 +841,10 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             top: auto;
             z-index: 1500;
             display: grid;
-            grid-auto-flow: column;
-            grid-auto-columns: minmax(76px, 1fr);
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             align-items: center;
-            gap: 6px;
-            padding: 8px;
+            gap: 4px;
+            padding: 6px;
             border-radius: 28px;
             background: linear-gradient(135deg, #071c2e 0%, #0b2440 100%);
             border: 1px solid rgba(144, 224, 239, 0.18);
@@ -853,11 +852,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             transform: none;
             opacity: 1;
             visibility: visible;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        body.app-role-patient nav::-webkit-scrollbar {
-            display: none;
+            overflow: hidden;
         }
         body.app-role-patient nav::before,
         body.app-role-patient nav .user-info,
@@ -870,16 +865,17 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             justify-content: center;
             align-items: center;
             gap: 4px;
+            min-width: 0;
             min-height: 62px;
-            padding: 7px 8px;
-            border-radius: 22px;
+            padding: 7px 3px;
+            border-radius: 18px;
             color: #d8e5ef;
-            font-size: 0.74rem;
+            font-size: 0.68rem;
             font-weight: 850;
             line-height: 1.05;
             text-align: center;
             text-decoration: none;
-            white-space: nowrap;
+            white-space: normal;
         }
         body.app-role-patient .nav-ui-icon {
             width: 26px;
@@ -897,6 +893,13 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             background: linear-gradient(135deg, #00a6d6 0%, #0878d8 100%);
             color: #ffffff;
             box-shadow: 0 12px 26px rgba(0, 119, 182, 0.32);
+        }
+        body.app-role-patient nav .patient-history-desktop-toggle,
+        body.app-role-patient nav #patientHistorySubmenu {
+            display: none !important;
+        }
+        body.app-role-patient nav .patient-history-mobile-link {
+            display: flex;
         }
     }
 
@@ -1686,8 +1689,9 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             transform: rotate(180deg);
         }
         body.app-layout.app-role-patient nav a {
-            min-height: 68px;
-            padding: 10px 12px;
+            min-width: 0;
+            min-height: 62px;
+            padding: 7px 3px;
             white-space: normal;
         }
         body.app-layout.app-role-patient nav a .nav-label {
@@ -1976,11 +1980,10 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             top: auto;
             z-index: 1500;
             display: grid;
-            grid-auto-flow: column;
-            grid-auto-columns: minmax(76px, 1fr);
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             align-items: center;
-            gap: 6px;
-            padding: 8px;
+            gap: 4px;
+            padding: 6px;
             border-radius: 28px;
             background: linear-gradient(135deg, var(--app-blue) 0%, var(--app-blue-deep) 100%);
             border: 1px solid rgba(202, 240, 248, 0.40);
@@ -1988,11 +1991,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             transform: none;
             opacity: 1;
             visibility: visible;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        body.app-layout nav::-webkit-scrollbar {
-            display: none;
+            overflow: hidden;
         }
         body.app-layout nav::before,
         body.app-layout nav .user-info,
@@ -2008,16 +2007,17 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             align-items: center;
             gap: 4px;
             min-height: 62px;
-            padding: 7px 8px;
-            border-radius: 22px;
+            min-width: 0;
+            padding: 7px 3px;
+            border-radius: 18px;
             color: rgba(255, 255, 255, 0.82);
-            font-size: 0.74rem;
+            font-size: 0.68rem;
             font-weight: 850;
             line-height: 1.05;
             text-align: center;
             text-decoration: none;
             margin-left: 0;
-            white-space: nowrap;
+            white-space: normal;
         }
         body.app-layout nav .nav-submenu-toggle {
             border: 1px solid transparent;
@@ -2061,16 +2061,23 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             overflow-wrap: anywhere;
         }
         body.app-layout.app-role-patient nav a {
-            min-width: 104px;
+            min-width: 0;
             white-space: normal;
         }
         body.app-layout.app-role-patient nav a .nav-label {
             display: block;
-            max-width: 92px;
+            max-width: 100%;
             overflow: visible;
             text-overflow: clip;
             white-space: normal;
             line-height: 1.05;
+        }
+        body.app-layout.app-role-patient nav .patient-history-desktop-toggle,
+        body.app-layout.app-role-patient nav #patientHistorySubmenu {
+            display: none !important;
+        }
+        body.app-layout.app-role-patient nav .patient-history-mobile-link {
+            display: flex;
         }
         body.app-layout .nav-ui-icon {
             width: 26px;
@@ -2666,7 +2673,11 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                         $isPatientHistoryOpen = in_array(basename($_SERVER['PHP_SELF']), $patientHistoryPages, true);
                         ?>
                         <div class="nav-settings-group <?php echo $isPatientHistoryOpen ? 'is-open' : ''; ?>">
-                            <button type="button" class="has-svg-icon nav-submenu-toggle <?php echo $isPatientHistoryOpen ? 'active' : ''; ?>" data-nav-submenu-toggle aria-expanded="<?php echo $isPatientHistoryOpen ? 'true' : 'false'; ?>" aria-controls="patientHistorySubmenu">
+                            <a href="patients_view_appointments.php" class="has-svg-icon patient-history-mobile-link <?php echo $isPatientHistoryOpen ? 'active' : ''; ?>">
+                                <span class="nav-ui-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 3v3M16 3v3M5 8h14M6 5h12a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="m8.5 14 2 2 5-5"/></svg></span>
+                                <span class="nav-label">History</span>
+                            </a>
+                            <button type="button" class="has-svg-icon nav-submenu-toggle patient-history-desktop-toggle <?php echo $isPatientHistoryOpen ? 'active' : ''; ?>" data-nav-submenu-toggle aria-expanded="<?php echo $isPatientHistoryOpen ? 'true' : 'false'; ?>" aria-controls="patientHistorySubmenu">
                                 <span class="nav-ui-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 3v3M16 3v3M5 8h14M6 5h12a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="m8.5 14 2 2 5-5"/></svg></span>
                                 <span class="nav-label">History</span>
                                 <svg class="nav-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
