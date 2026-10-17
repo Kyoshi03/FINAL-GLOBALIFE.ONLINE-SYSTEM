@@ -1016,6 +1016,8 @@ $additionalStyles = patientAvatarStyles() . '
         text-align: center;
         padding: 60px 20px;
         color: #999;
+        box-sizing: border-box;
+        min-width: 0;
     }
     .empty-state svg {
         width: 100px;
@@ -1026,6 +1028,14 @@ $additionalStyles = patientAvatarStyles() . '
     .empty-state h3 {
         color: #666;
         margin-bottom: 10px;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: normal;
+    }
+    .empty-state p {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: normal;
     }
     .add-appointment-btn {
         display: inline-flex;
@@ -1101,6 +1111,41 @@ $additionalStyles = patientAvatarStyles() . '
         }
         .patient-history-page .appointments-table {
             min-width: 0;
+        }
+        .patient-history-page .patient-empty-state {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            padding: 42px 12px 34px;
+            overflow: hidden;
+        }
+        .patient-history-page .patient-empty-state h3,
+        .patient-history-page .patient-empty-state p {
+            width: 100%;
+            max-width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: normal;
+        }
+        .patient-history-page .patient-empty-state h3 {
+            font-size: 1.3rem;
+            line-height: 1.3;
+        }
+        .patient-history-page .patient-empty-state .add-appointment-btn {
+            display: flex;
+            width: 100%;
+            max-width: 320px;
+            min-width: 0;
+            box-sizing: border-box;
+            justify-content: center;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 12px 16px;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            text-align: center;
         }
         .patient-history-page .appointments-table thead {
             display: none;
@@ -1286,7 +1331,7 @@ include __DIR__ . '/includes/header.php';
             </div>
         <?php endif; ?>
         <?php if (empty($appointments)): ?>
-            <div class="empty-state">
+            <div class="empty-state patient-empty-state">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
