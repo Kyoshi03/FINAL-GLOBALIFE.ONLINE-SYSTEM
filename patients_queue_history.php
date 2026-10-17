@@ -195,9 +195,10 @@ body { background:#f4f8fb; min-height:100vh; color:#1f343d; }
 .appointment-page-btn.active { border-color:#0066cc; background:#0066cc; color:#fff; box-shadow:0 10px 20px rgba(0,102,204,.18); }
 .appointment-page-btn.is-disabled { pointer-events:none; opacity:.45; }
 .appointment-pagination .appointment-page-btn.previous, .appointment-pagination .appointment-page-btn.next { width:auto; }
-.patient-history-switch { display:flex; justify-content:flex-end; margin-bottom:14px; }
-.patient-history-switch a { display:inline-flex; align-items:center; min-height:36px; padding:0 12px; border:1px solid #cfe3ec; border-radius:8px; background:#fff; color:#0b4f80; font-size:.78rem; font-weight:800; text-decoration:none; }
-.patient-history-switch a:hover { border-color:#0f7cc2; color:#0066cc; background:#f3faff; }
+.patient-history-switch { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:14px; }
+.patient-history-switch a { display:inline-flex; align-items:center; justify-content:center; min-height:36px; padding:0 12px; border:1px solid #cfe3ec; border-radius:8px; background:#fff; color:#0b4f80; font-size:.78rem; font-weight:800; text-decoration:none; }
+.patient-history-switch a.active,
+.patient-history-switch a:hover { border-color:#0f7cc2; background:#eaf6ff; color:#0066aa; }
 @media (max-width:768px) {
     .appointments-container { padding:22px 14px 36px; }
     .appointment-tools.patient-filters { grid-template-columns:1fr; }
@@ -224,8 +225,9 @@ body { background:#f4f8fb; min-height:100vh; color:#1f343d; }
 include __DIR__ . '/includes/header.php';
 ?>
 <main class="appointments-container patient-history-page">
-    <div class="patient-history-switch">
-        <a href="patients_view_appointments.php">View Appointment History</a>
+    <div class="patient-history-switch" aria-label="Patient history pages">
+        <a href="patients_view_appointments.php">Appointment History</a>
+        <a href="patients_queue_history.php" class="active">Queue History</a>
     </div>
     <section class="appointments-filter-card" aria-label="Queue history filters">
         <form class="appointment-tools patient-filters" id="queueHistoryFilterForm" method="get" action="patients_queue_history.php">
