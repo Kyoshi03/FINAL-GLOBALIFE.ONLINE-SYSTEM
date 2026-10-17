@@ -252,6 +252,7 @@ include 'includes/header.php';
         <?php endif; ?>
 
         <form method="POST" action="verify_patient_email.php">
+            <?php echo clinic_csrf_field(); ?>
             <input type="hidden" name="action" value="verify">
             <input
                 type="text"
@@ -278,10 +279,12 @@ include 'includes/header.php';
 
         <div class="secondary-actions">
             <form method="POST" action="verify_patient_email.php">
+                <?php echo clinic_csrf_field(); ?>
                 <input type="hidden" name="action" value="resend">
                 <button type="submit" class="link-btn">Resend code</button>
             </form>
             <form method="POST" action="verify_patient_email.php">
+                <?php echo clinic_csrf_field(); ?>
                 <input type="hidden" name="action" value="cancel">
                 <button type="submit" class="link-btn">Change details</button>
             </form>

@@ -1470,6 +1470,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
             
             
             <form method="POST" action="register_patient.php" id="registerForm" novalidate>
+                <?php echo clinic_csrf_field(); ?>
                 <input type="hidden" name="registration_source" value="<?php echo htmlspecialchars($registrationSource); ?>">
                 <!-- Login Information -->
                 <div class="form-section">

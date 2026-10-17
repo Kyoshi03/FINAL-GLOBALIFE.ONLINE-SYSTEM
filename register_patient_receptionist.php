@@ -1069,6 +1069,7 @@ include 'includes/header.php';
                 <?php endif; ?>
 
                 <form method="POST" action="register_patient_receptionist.php" autocomplete="off">
+                    <?php echo clinic_csrf_field(); ?>
                     <div class="form-section">
                         <div class="section-head">
                             <div>

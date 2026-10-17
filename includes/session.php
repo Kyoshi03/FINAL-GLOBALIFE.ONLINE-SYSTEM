@@ -18,6 +18,9 @@ if (session_status() === PHP_SESSION_NONE) {
     $isHttps = (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off')
         || $forwardedProto === 'https';
     ini_set('session.use_strict_mode', '1');
+    // Give users enough time to complete long registration forms before the
+    // server garbage-collects their session and invalidates the CSRF token.
+    ini_set('session.gc_maxlifetime', '7200');
     session_set_cookie_params([
         'lifetime' => 0,
         'path' => '/',
@@ -106,9 +109,21 @@ function clinic_csrf_inject_form(string $html): string {
 
     $field = clinic_csrf_field();
     return preg_replace_callback(
-        '/(<form\b[^>]*\bmethod\s*=\s*["\']?post["\']?[^>]*>)(?![^<]*name\s*=\s*["\']csrf_token["\'])/is',
+        '/<form\b[^>]*\bmethod\s*=\s*["\']?post["\']?[^>]*>.*?<\/form>/is',
         static function (array $match) use ($field): string {
-            return $match[1] . $field;
+            $form = $match[0];
+            if (preg_match('/<input\b[^>]*\bname\s*=\s*["\']csrf_token["\']/i', $form)) {
+                return $form;
+            }
+
+            return preg_replace_callback(
+                '/<form\b[^>]*>/i',
+                static function (array $openingTag) use ($field): string {
+                    return $openingTag[0] . $field;
+                },
+                $form,
+                1
+            ) ?? $form;
         },
         $html
     ) ?? $html;
