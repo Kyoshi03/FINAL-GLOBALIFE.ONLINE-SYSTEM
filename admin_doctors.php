@@ -6,6 +6,7 @@ require_once 'config/database.php';
 require_once __DIR__ . '/includes/name_parts.php';
 require_once __DIR__ . '/includes/doctor_schedule.php';
 require_once __DIR__ . '/includes/admin_notifications.php';
+require_once __DIR__ . '/includes/password_reset.php';
 
 $pageTitle = 'Doctors & clinic hours | Globalife';
 $conn = getDBConnection();
@@ -16,7 +17,6 @@ $message = '';
 $error = '';
 $successTitle = 'Success';
 $successText = '';
-$defaultDoctorPassword = 'password123';
 $dayNames = [
     1 => 'Monday',
     2 => 'Tuesday',
@@ -378,6 +378,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($password === '') {
             $error = 'Password is required.';
             $openAddDoctorModal = true;
+        } elseif (($passwordErrors = pw_reset_validate_password($password)) !== []) {
+            $error = implode(' ', $passwordErrors);
+            $openAddDoctorModal = true;
         } elseif ($spec === '') {
             $error = 'Choose a specialty or enter a custom specialty.';
             $openAddDoctorModal = true;
@@ -463,6 +466,7 @@ if ($result) {
 $activeCount = count(array_filter($doctors, static fn ($doctor) => (int) $doctor['is_active'] === 1));
 $inactiveCount = count($doctors) - $activeCount;
 $addFormData = $openAddDoctorModal ? $_POST : [];
+unset($addFormData['password']);
 $addFormSlots = admin_doctor_form_slots($addFormData);
 
 $conn->close();
@@ -1542,8 +1546,8 @@ include 'includes/header.php';
                         </div>
                         <div class="field">
                             <label for="new_password">Password</label>
-                            <input type="text" id="new_password" name="password" placeholder="e.g. password123" value="<?php echo htmlspecialchars($addFormData['password'] ?? $defaultDoctorPassword); ?>" required>
-                            <p class="field-hint">Doctor can change this after login.</p>
+                            <input type="password" id="new_password" name="password" placeholder="Create a strong password" value="" autocomplete="new-password" required>
+                            <p class="field-hint">Use at least 8 characters with uppercase, lowercase, number, and special character.</p>
                         </div>
                     </div>
                 </section>

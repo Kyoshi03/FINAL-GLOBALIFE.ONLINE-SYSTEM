@@ -211,6 +211,8 @@ function login($username, $password) {
         }
 
         if (password_verify($password, $user['password'])) {
+            // Prevent session fixation by issuing a fresh session ID after authentication.
+            session_regenerate_id(true);
             $sessionRole = normalizeUserRole((string) $user['role']);
             if ($user['role'] === 'receptionist') {
                 $migrateStmt = $conn->prepare("UPDATE users SET role = 'admin' WHERE id = ? AND role = 'receptionist'");
