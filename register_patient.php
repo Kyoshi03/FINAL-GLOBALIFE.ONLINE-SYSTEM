@@ -192,8 +192,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Sex is required.';
     } elseif ($date_of_birth === '') {
         $error = 'Date of birth is required.';
-    } elseif ($phone === '') {
-        $error = 'Mobile number is required.';
     } elseif ($province === '') {
         $error = 'Province is required.';
     } elseif ($province !== 'Cavite') {
@@ -254,7 +252,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please choose where you want to receive the verification code.';
     } elseif ($verification_channel === 'email' && $email === '') {
         $error = 'Enter an email address or choose SMS verification instead.';
-    } elseif (clinic_sms_normalize_phone($phone) === null) {
+    } elseif ($verification_channel === 'sms' && $phone === '') {
+        $error = 'Mobile number is required when SMS verification is selected.';
+    } elseif ($phone !== '' && clinic_sms_normalize_phone($phone) === null) {
         $error = 'Enter a valid Philippine mobile number, such as 09171234567.';
     } else {
         // Validate password requirements
@@ -277,38 +277,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $stmt->close();
             
-            $normalizedPhone = clinic_sms_normalize_phone($phone) ?? '';
-            $phoneLocal = '0' . substr($normalizedPhone, 3);
-            $phoneIntlNoPlus = substr($normalizedPhone, 1);
+            if ($phone !== '') {
+                $normalizedPhone = clinic_sms_normalize_phone($phone) ?? '';
+                $phoneLocal = '0' . substr($normalizedPhone, 3);
+                $phoneIntlNoPlus = substr($normalizedPhone, 1);
 
-            // Check if phone already exists
-            $stmt = $conn->prepare("SELECT id FROM users WHERE phone IN (?, ?, ?, ?) LIMIT 1");
-            $stmt->bind_param("ssss", $phone, $phoneLocal, $normalizedPhone, $phoneIntlNoPlus);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            
-            if ($result->num_rows > 0) {
-                $error = 'Mobile number already registered. Please use a different number or sign in to your existing account.';
-                $stmt->close();
-            } else {
-                $stmt->close();
+                // Check if phone already exists only when the registrant provided one.
+                $stmt = $conn->prepare("SELECT id FROM users WHERE phone IN (?, ?, ?, ?) LIMIT 1");
+                $stmt->bind_param("ssss", $phone, $phoneLocal, $normalizedPhone, $phoneIntlNoPlus);
+                $stmt->execute();
+                $result = $stmt->get_result();
 
-                if ($email !== '') {
-                    // Check if email already exists
-                    $stmt = $conn->prepare("SELECT id FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1");
-                    $stmt->bind_param("s", $email);
-                    $stmt->execute();
-                    $result = $stmt->get_result();
-
-                    if ($result->num_rows > 0) {
-                        $error = 'Email already registered. Please use a different email or leave it blank and verify by SMS.';
-                        $stmt->close();
-                    } else {
-                        $stmt->close();
-                    }
+                if ($result->num_rows > 0) {
+                    $error = 'Mobile number already registered. Please use a different number or sign in to your existing account.';
                 }
+                $stmt->close();
+            }
 
-                if ($error === '') {
+            if ($error === '' && $email !== '') {
+                // Check if email already exists
+                $stmt = $conn->prepare("SELECT id FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1");
+                $stmt->bind_param("s", $email);
+                $stmt->execute();
+                $result = $stmt->get_result();
+
+                if ($result->num_rows > 0) {
+                    $error = 'Email already registered. Please use a different email or leave it blank and verify by SMS.';
+                }
+                $stmt->close();
+            }
+
+            if ($error === '') {
                 
                 // Hash password
                 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
@@ -375,7 +374,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $conn->close();
                     header('Location: verify_patient_email.php?sent=1');
                     exit();
-                }
                 }
             }
         }
@@ -1665,17 +1663,26 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                 <!-- Contact Information -->
                 <div class="form-section">
                     <div class="form-section-title">Contact Information</div>
+
+                    <?php
+                        $postedEmail = trim((string) ($_POST['email'] ?? ''));
+                        $selectedVerificationChannel = strtolower((string) ($_POST['verification_channel'] ?? ($postedEmail === '' ? 'sms' : 'email')));
+                        if ($postedEmail === '') {
+                            $selectedVerificationChannel = 'sms';
+                        }
+                        $phoneRequiredInitially = $selectedVerificationChannel === 'sms';
+                    ?>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="phone">Mobile Number <span class="required-mark">*</span></label>
+                            <label for="phone">Mobile Number <span id="phoneRequiredMark" class="required-mark"<?php echo $phoneRequiredInitially ? '' : ' hidden'; ?>>*</span></label>
                             <div class="input-wrapper">
                                 <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                                 </svg>
-                                <input type="tel" id="phone" name="phone" placeholder="e.g. 09171234567" required pattern="[0-9+\s\-]{10,15}" value="<?php echo (!empty($success) ? '' : (isset($_POST['phone']) ? htmlspecialchars($_POST['phone']) : '')); ?>">
+                                <input type="tel" id="phone" name="phone" placeholder="e.g. 09171234567"<?php echo $phoneRequiredInitially ? ' required' : ''; ?> pattern="[0-9+\s\-]{10,15}" value="<?php echo (!empty($success) ? '' : (isset($_POST['phone']) ? htmlspecialchars($_POST['phone']) : '')); ?>">
                             </div>
-                            <span class="field-hint">For SMS or call about your appointment and lab updates.</span>
+                            <span class="field-hint" id="phoneHint">For SMS or call about your appointment and lab updates. Optional when Email verification is selected.</span>
                             <span class="field-error" id="phoneError" role="alert"></span>
                         </div>
                         
@@ -1691,13 +1698,6 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                         </div>
                     </div>
 
-                    <?php
-                        $postedEmail = trim((string) ($_POST['email'] ?? ''));
-                        $selectedVerificationChannel = strtolower((string) ($_POST['verification_channel'] ?? ($postedEmail === '' ? 'sms' : 'email')));
-                        if ($postedEmail === '') {
-                            $selectedVerificationChannel = 'sms';
-                        }
-                    ?>
                     <div class="verification-choice">
                         <strong>Where should we send your verification code?</strong>
                         <p>Choose one. If you do not add an email, SMS will be used automatically.</p>
@@ -2190,6 +2190,8 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
             const middleNameCounter = document.getElementById('middleNameCounter');
             const lastNameCounter = document.getElementById('lastNameCounter');
             const suffixCounter = document.getElementById('suffixCounter');
+            const phoneInput = document.getElementById('phone');
+            const phoneRequiredMark = document.getElementById('phoneRequiredMark');
             const emailInput = document.getElementById('email');
             const emailVerificationOption = document.getElementById('emailVerificationOption');
             const emailVerificationRadio = document.querySelector('input[name="verification_channel"][value="email"]');
@@ -2303,12 +2305,26 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                 if (!hasEmail) {
                     smsVerificationRadio.checked = true;
                 }
+
+                const emailSelected = emailVerificationRadio.checked;
+                if (phoneInput) {
+                    phoneInput.required = !emailSelected;
+                    if (emailSelected && phoneInput.value.trim() === '') {
+                        clearInlineFieldError(phoneInput, 'phoneError');
+                    }
+                }
+                if (phoneRequiredMark) {
+                    phoneRequiredMark.hidden = emailSelected;
+                }
             }
 
             if (emailInput) {
                 emailInput.addEventListener('input', updateVerificationChoices);
                 updateVerificationChoices();
             }
+            [emailVerificationRadio, smsVerificationRadio].forEach(function (radio) {
+                if (radio) radio.addEventListener('change', updateVerificationChoices);
+            });
 
             function parseYmd(value) {
                 const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
@@ -2728,7 +2744,12 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
 
             function validateRequiredFields() {
                 let firstInvalid = null;
+                const phoneRequired = !emailVerificationRadio || !emailVerificationRadio.checked;
                 inlineRequiredFields.forEach(function (field) {
+                    if (field.input === phoneInput && !phoneRequired) {
+                        clearInlineFieldError(field.input, field.errorId);
+                        return;
+                    }
                     const value = field.input ? field.input.value.trim() : '';
                     if (value === '') {
                         setInlineFieldError(field.input, field.errorId, field.message);
