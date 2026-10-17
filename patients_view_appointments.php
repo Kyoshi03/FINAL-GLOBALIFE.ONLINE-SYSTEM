@@ -1113,21 +1113,24 @@ $additionalStyles = patientAvatarStyles() . '
             min-width: 0;
         }
         .patient-history-page .patient-empty-state {
-            width: 100%;
-            max-width: 100%;
+            display: block;
+            width: 100% !important;
+            max-width: 100% !important;
             min-width: 0;
             padding: 42px 12px 34px;
             overflow: hidden;
+            box-sizing: border-box;
         }
         .patient-history-page .patient-empty-state h3,
         .patient-history-page .patient-empty-state p {
-            width: 100%;
-            max-width: 100%;
+            display: block;
+            width: 100% !important;
+            max-width: 100% !important;
             margin-left: auto;
             margin-right: auto;
-            white-space: normal;
-            overflow-wrap: anywhere;
-            word-break: normal;
+            white-space: normal !important;
+            overflow-wrap: anywhere !important;
+            word-break: normal !important;
         }
         .patient-history-page .patient-empty-state h3 {
             font-size: 1.3rem;
@@ -1135,16 +1138,16 @@ $additionalStyles = patientAvatarStyles() . '
         }
         .patient-history-page .patient-empty-state .add-appointment-btn {
             display: flex;
-            width: 100%;
-            max-width: 320px;
+            width: 100% !important;
+            max-width: 320px !important;
             min-width: 0;
             box-sizing: border-box;
             justify-content: center;
             margin-left: auto;
             margin-right: auto;
             padding: 12px 16px;
-            white-space: normal;
-            overflow-wrap: anywhere;
+            white-space: normal !important;
+            overflow-wrap: anywhere !important;
             text-align: center;
         }
         .patient-history-page .appointments-table thead {
