@@ -793,7 +793,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             height: 34px;
             flex: 0 0 34px;
             border-radius: 50%;
-            overflow: hidden;
+            overflow: visible;
             background: linear-gradient(135deg, #0878d8, #00a6d6);
             color: #fff;
             font-size: 0.86rem;
@@ -894,8 +894,51 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             color: #ffffff;
             box-shadow: 0 12px 26px rgba(0, 119, 182, 0.32);
         }
+        body.app-role-patient nav .nav-settings-group {
+            position: static;
+        }
         body.app-role-patient nav #patientHistorySubmenu {
-            display: none !important;
+            display: block !important;
+            position: absolute;
+            left: 50%;
+            bottom: calc(100% + 10px);
+            width: min(230px, calc(100vw - 40px));
+            padding: 8px;
+            border: 1px solid #d5e9f2;
+            border-radius: 14px;
+            background: #ffffff;
+            box-shadow: 0 16px 34px rgba(7, 59, 76, .22);
+            opacity: 0;
+            pointer-events: none;
+            transform: translate(-50%, 6px);
+            transition: opacity .16s ease, transform .16s ease;
+            visibility: hidden;
+            z-index: 1600;
+        }
+        body.app-role-patient nav .nav-settings-group.mobile-history-open #patientHistorySubmenu {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translate(-50%, 0);
+            visibility: visible;
+        }
+        body.app-role-patient nav #patientHistorySubmenu .nav-submenu-inner {
+            display: grid !important;
+            gap: 4px;
+        }
+        body.app-role-patient nav #patientHistorySubmenu .nav-subitem {
+            display: flex !important;
+            min-height: 42px;
+            padding: 8px 12px;
+            border-radius: 9px;
+            color: #0b4f80;
+            font-size: .78rem;
+            font-weight: 800;
+            text-align: left;
+        }
+        body.app-role-patient nav #patientHistorySubmenu .nav-subitem:hover,
+        body.app-role-patient nav #patientHistorySubmenu .nav-subitem.active {
+            background: #eaf7ff;
+            color: #0066cc;
         }
     }
 
@@ -1625,7 +1668,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             font-family: inherit;
             cursor: pointer;
             margin: 0;
-            overflow: hidden;
+            overflow: visible;
             text-align: left;
         }
         body.app-layout nav .nav-submenu-toggle .nav-label {
@@ -2068,8 +2111,51 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             white-space: normal;
             line-height: 1.05;
         }
+        body.app-layout.app-role-patient nav .nav-settings-group {
+            position: static;
+        }
         body.app-layout.app-role-patient nav #patientHistorySubmenu {
-            display: none !important;
+            display: block !important;
+            position: absolute;
+            left: 50%;
+            bottom: calc(100% + 10px);
+            width: min(230px, calc(100vw - 40px));
+            padding: 8px;
+            border: 1px solid #d5e9f2;
+            border-radius: 14px;
+            background: #ffffff;
+            box-shadow: 0 16px 34px rgba(7, 59, 76, .22);
+            opacity: 0;
+            pointer-events: none;
+            transform: translate(-50%, 6px);
+            transition: opacity .16s ease, transform .16s ease;
+            visibility: hidden;
+            z-index: 1600;
+        }
+        body.app-layout.app-role-patient nav .nav-settings-group.mobile-history-open #patientHistorySubmenu {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translate(-50%, 0);
+            visibility: visible;
+        }
+        body.app-layout.app-role-patient nav #patientHistorySubmenu .nav-submenu-inner {
+            display: grid !important;
+            gap: 4px;
+        }
+        body.app-layout.app-role-patient nav #patientHistorySubmenu .nav-subitem {
+            display: flex !important;
+            min-height: 42px;
+            padding: 8px 12px;
+            border-radius: 9px;
+            color: #0b4f80;
+            font-size: .78rem;
+            font-weight: 800;
+            text-align: left;
+        }
+        body.app-layout.app-role-patient nav #patientHistorySubmenu .nav-subitem:hover,
+        body.app-layout.app-role-patient nav #patientHistorySubmenu .nav-subitem.active {
+            background: #eaf7ff;
+            color: #0066cc;
         }
         body.app-layout .nav-ui-icon {
             width: 26px;
@@ -2934,6 +3020,15 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
         submenuToggles.forEach(function(toggle) {
             toggle.addEventListener('click', function() {
                 const group = toggle.closest('.nav-settings-group');
+                const isMobileHistory = group && group.querySelector('#patientHistorySubmenu') && window.matchMedia('(max-width: 900px)').matches;
+                if (isMobileHistory) {
+                    const willOpen = !group.classList.contains('mobile-history-open');
+                    submenuGroups.forEach(function(otherGroup) {
+                        otherGroup.classList.remove('mobile-history-open');
+                    });
+                    group.classList.toggle('mobile-history-open', willOpen);
+                    return;
+                }
                 const isOpen = group ? !group.classList.contains('is-open') : false;
                 submenuGroups.forEach(function(otherGroup) {
                     if (otherGroup !== group) setSubmenuState(otherGroup, false);
@@ -2945,6 +3040,11 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
     document.addEventListener('click', function(event) {
         const nav = document.getElementById('mainNav');
         const toggle = document.querySelector('.mobile-menu-toggle');
+        document.querySelectorAll('.mobile-history-open').forEach(function(group) {
+            if (!group.contains(event.target)) {
+                group.classList.remove('mobile-history-open');
+            }
+        });
         if (nav && toggle && !nav.contains(event.target) && !toggle.contains(event.target)) {
             nav.classList.remove('active');
         }
