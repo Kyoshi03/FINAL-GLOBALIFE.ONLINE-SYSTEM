@@ -1700,59 +1700,6 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             word-break: normal;
             overflow-wrap: anywhere;
         }
-        body.app-layout.app-role-patient nav .patient-history-group {
-            position: relative;
-            display: block;
-            width: 100%;
-            max-width: 100%;
-            min-width: 0;
-            margin: 0;
-        }
-        body.app-layout.app-role-patient nav .patient-history-group .nav-submenu {
-            display: none;
-            position: fixed;
-            right: 18px;
-            bottom: 96px;
-            z-index: 1600;
-            width: min(220px, calc(100vw - 38px));
-            max-width: none;
-            padding: 8px;
-            border: 1px solid rgba(207, 227, 236, 0.96);
-            border-radius: 16px;
-            background: #ffffff;
-            box-shadow: 0 16px 32px rgba(2, 62, 138, 0.24);
-        }
-        body.app-layout.app-role-patient nav .patient-history-group .nav-submenu.is-open {
-            display: block;
-        }
-        body.app-layout.app-role-patient nav .patient-history-group .nav-submenu-inner {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            padding: 0;
-            overflow: visible;
-        }
-        body.app-layout.app-role-patient nav .patient-history-group a.nav-subitem {
-            display: flex;
-            width: 100%;
-            min-height: 42px;
-            box-sizing: border-box;
-            align-items: center;
-            justify-content: center;
-            padding: 8px 10px;
-            border: 1px solid #dceaf2;
-            border-radius: 10px;
-            background: #f7fbfe;
-            color: #0b4f80;
-            font-size: 0.78rem;
-            white-space: nowrap;
-        }
-        body.app-layout.app-role-patient nav .patient-history-group a.nav-subitem.active,
-        body.app-layout.app-role-patient nav .patient-history-group a.nav-subitem:hover {
-            background: #e9f5ff;
-            border-color: #8bc9ed;
-            color: #0066aa;
-        }
         body.app-layout nav a:hover,
         body.app-layout nav .nav-submenu-toggle:hover {
             transform: none;
@@ -2112,6 +2059,59 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             line-height: 1.18;
             word-break: normal;
             overflow-wrap: anywhere;
+        }
+        body.app-layout.app-role-patient nav .patient-history-group {
+            position: relative;
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            margin: 0;
+        }
+        body.app-layout.app-role-patient nav .patient-history-group .nav-submenu {
+            display: none;
+            position: fixed;
+            right: 18px;
+            bottom: 96px;
+            z-index: 1600;
+            width: min(220px, calc(100vw - 38px));
+            max-width: none;
+            padding: 8px;
+            border: 1px solid rgba(207, 227, 236, 0.96);
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 16px 32px rgba(2, 62, 138, 0.24);
+        }
+        body.app-layout.app-role-patient nav .patient-history-group .nav-submenu.is-open {
+            display: block;
+        }
+        body.app-layout.app-role-patient nav .patient-history-group .nav-submenu-inner {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 0;
+            overflow: visible;
+        }
+        body.app-layout.app-role-patient nav .patient-history-group a.nav-subitem {
+            display: flex;
+            width: 100%;
+            min-height: 42px;
+            box-sizing: border-box;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 10px;
+            border: 1px solid #dceaf2;
+            border-radius: 10px;
+            background: #f7fbfe;
+            color: #0b4f80;
+            font-size: 0.78rem;
+            white-space: nowrap;
+        }
+        body.app-layout.app-role-patient nav .patient-history-group a.nav-subitem.active,
+        body.app-layout.app-role-patient nav .patient-history-group a.nav-subitem:hover {
+            background: #e9f5ff;
+            border-color: #8bc9ed;
+            color: #0066aa;
         }
         body.app-layout.app-role-patient nav a {
             min-width: 104px;
