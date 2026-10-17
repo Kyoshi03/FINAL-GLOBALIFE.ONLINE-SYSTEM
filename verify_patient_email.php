@@ -7,6 +7,7 @@ require_once 'includes/session.php';
 require_once 'config/database.php';
 require_once 'includes/mailer.php';
 require_once 'includes/sms.php';
+require_once 'includes/user_registration.php';
 require_once 'includes/notification_settings.php';
 require_once 'includes/admin_notifications.php';
 
@@ -96,28 +97,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $conn = getDBConnection();
 
             $username = (string) $patient['username'];
-            $email = trim((string) ($patient['email'] ?? ''));
+            $email = strtolower(trim((string) ($patient['email'] ?? '')));
             $emailForInsert = $email === '' ? null : strtolower($email);
             $phoneForCheck = (string) ($patient['phone'] ?? '');
-            $normalizedPhone = clinic_sms_normalize_phone($phoneForCheck) ?? $phoneForCheck;
-            $phoneLocal = str_starts_with($normalizedPhone, '+63') ? '0' . substr($normalizedPhone, 3) : $phoneForCheck;
-            $phoneIntlNoPlus = str_starts_with($normalizedPhone, '+') ? substr($normalizedPhone, 1) : $normalizedPhone;
 
-            if ($emailForInsert === null) {
-                $check = $conn->prepare('SELECT id FROM users WHERE username = ? OR phone IN (?, ?, ?) LIMIT 1');
-                $check->bind_param('ssss', $username, $phoneForCheck, $phoneLocal, $normalizedPhone);
-            } else {
-                $check = $conn->prepare('SELECT id FROM users WHERE username = ? OR LOWER(email) = LOWER(?) OR phone IN (?, ?, ?, ?) LIMIT 1');
-                $check->bind_param('ssssss', $username, $emailForInsert, $phoneForCheck, $phoneLocal, $normalizedPhone, $phoneIntlNoPlus);
-            }
-            $check->execute();
-            $exists = $check->get_result()->fetch_assoc();
-            $check->close();
+            $exists = clinic_find_duplicate_user($conn, $username, $email, $phoneForCheck);
 
             if ($exists) {
                 $conn->close();
                 unset($_SESSION['pending_patient_registration']);
-                $error = 'That username, email, or mobile number is already registered. Please start again.';
+                $error = clinic_duplicate_user_message($exists, $username, $email, $phoneForCheck);
             } else {
                 $passwordHash = (string) $patient['password'];
                 $displayName = (string) $patient['display_name'];
@@ -126,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $lastName = (string) ($patient['last_name'] ?? '');
                 $suffix = (string) ($patient['suffix'] ?? '');
                 $role = (string) $patient['role'];
-                $phone = (string) $patient['phone'];
+                $phone = clinic_sms_normalize_phone((string) $patient['phone']) ?? (string) $patient['phone'];
                 $gender = (string) $patient['gender'];
                 $dateOfBirth = (string) $patient['date_of_birth'];
                 $age = (int) $patient['age'];
@@ -145,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         emergency_contact_number
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
                 );
-                                $bindTypes = str_repeat('s', 11) . 'i' . str_repeat('s', 7);
+                $bindTypes = str_repeat('s', 11) . 'i' . str_repeat('s', 7);
                 $insert->bind_param(
                     $bindTypes,
                     $username,
@@ -169,12 +158,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $emergencyNumber
                 );
                 $created = $insert->execute();
+                $insertError = $insert->errno;
                 $newPatientId = $created ? (int) $insert->insert_id : 0;
                 $insert->close();
 
                 if (!$created) {
+                    $duplicateAfterInsert = $insertError === 1062
+                        ? clinic_find_duplicate_user($conn, $username, $email, $phoneForCheck)
+                        : null;
                     $conn->close();
-                    $error = 'We could not create your account. Please try again.';
+                    if ($insertError === 1062) {
+                        // Re-check after a duplicate-key race so the user sees the actual conflicting field.
+                        $error = $duplicateAfterInsert
+                            ? clinic_duplicate_user_message($duplicateAfterInsert, $username, $email, $phoneForCheck)
+                            : 'These registration details are already registered. Please start again.';
+                    } else {
+                        $error = 'We could not create your account. Please try again.';
+                    }
                 } else {
                     $verifiedColumn = $verificationChannel === 'sms' ? 'phone_verified_at' : 'email_verified_at';
                     $verifiedStmt = $conn->prepare("UPDATE users SET {$verifiedColumn} = NOW() WHERE id = ? AND role = 'patient'");

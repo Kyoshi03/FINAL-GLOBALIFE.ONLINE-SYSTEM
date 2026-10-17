@@ -141,7 +141,7 @@ function clinic_smtp_auth_check(): array {
 
     stream_set_timeout($socket, 20);
     $greeting = clinic_smtp_read($socket);
-    $ehloCommand = 'EHLO ' . preg_replace('/[^A-Za-z0-9.-]/', '', $_SERVER['SERVER_NAME'] ?? 'globalife.online');
+    $ehloCommand = 'EHLO ' . preg_replace('/[^A-Za-z0-9.-]/', '', $_SERVER['SERVER_NAME'] ?? 'globallife.online');
     $ehlo = clinic_smtp_command($socket, $ehloCommand, [250]);
 
     if ($greeting['code'] !== 220 || !$ehlo['ok']) {
@@ -212,7 +212,7 @@ function clinic_send_email(string $toEmail, string $toName, string $subject, str
         return ['ok' => false, 'error' => 'The email server did not accept the connection.'];
     }
 
-    $serverName = $_SERVER['SERVER_NAME'] ?? 'globalife.online';
+    $serverName = $_SERVER['SERVER_NAME'] ?? 'globallife.online';
     $ehlo = 'EHLO ' . preg_replace('/[^A-Za-z0-9.-]/', '', $serverName);
     $result = clinic_smtp_command($socket, $ehlo, [250]);
     if (!$result['ok']) {
@@ -261,7 +261,7 @@ function clinic_send_email(string $toEmail, string $toName, string $subject, str
     $safeFromName = clinic_mail_header_value((string) $config['from_name']);
     $headers = [
         'Date: ' . date(DATE_RFC2822),
-        'Message-ID: <' . bin2hex(random_bytes(12)) . '@globalife.online>',
+        'Message-ID: <' . bin2hex(random_bytes(12)) . '@globallife.online>',
         'From: ' . $safeFromName . ' <' . $config['from_email'] . '>',
         'To: ' . ($safeToName !== '' ? $safeToName . ' ' : '') . '<' . $toEmail . '>',
         'Subject: ' . $safeSubject,

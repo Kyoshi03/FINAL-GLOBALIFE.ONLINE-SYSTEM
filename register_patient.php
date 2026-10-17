@@ -7,6 +7,7 @@ require_once 'includes/session.php';
 require_once 'config/database.php';
 require_once 'includes/mailer.php';
 require_once 'includes/sms.php';
+require_once 'includes/user_registration.php';
 require_once 'includes/notification_settings.php';
 
 $caviteLocationSource = require __DIR__ . '/includes/cavite_locations.php';
@@ -257,6 +258,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($phone !== '' && clinic_sms_normalize_phone($phone) === null) {
         $error = 'Enter a valid Philippine mobile number, such as 09171234567.';
     } else {
+        $phone = $phone === '' ? '' : (clinic_sms_normalize_phone($phone) ?? $phone);
         // Validate password requirements
         $passwordErrors = validatePassword($password);
         if (!empty($passwordErrors)) {
@@ -265,49 +267,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
         $conn = getDBConnection();
         
-        // Check if username already exists
-        $stmt = $conn->prepare("SELECT id FROM users WHERE username = ?");
-        $stmt->bind_param("s", $username);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        if ($result->num_rows > 0) {
-            $error = 'Username already exists. Please choose a different username.';
-            $stmt->close();
+        $duplicate = clinic_find_duplicate_user($conn, $username, $email, $phone);
+        if ($duplicate) {
+            $error = clinic_duplicate_user_message($duplicate, $username, $email, $phone);
         } else {
-            $stmt->close();
-            
-            if ($phone !== '') {
-                $normalizedPhone = clinic_sms_normalize_phone($phone) ?? '';
-                $phoneLocal = '0' . substr($normalizedPhone, 3);
-                $phoneIntlNoPlus = substr($normalizedPhone, 1);
-
-                // Check if phone already exists only when the registrant provided one.
-                $stmt = $conn->prepare("SELECT id FROM users WHERE phone IN (?, ?, ?, ?) LIMIT 1");
-                $stmt->bind_param("ssss", $phone, $phoneLocal, $normalizedPhone, $phoneIntlNoPlus);
-                $stmt->execute();
-                $result = $stmt->get_result();
-
-                if ($result->num_rows > 0) {
-                    $error = 'Mobile number already registered. Please use a different number or sign in to your existing account.';
-                }
-                $stmt->close();
-            }
-
-            if ($error === '' && $email !== '') {
-                // Check if email already exists
-                $stmt = $conn->prepare("SELECT id FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1");
-                $stmt->bind_param("s", $email);
-                $stmt->execute();
-                $result = $stmt->get_result();
-
-                if ($result->num_rows > 0) {
-                    $error = 'Email already registered. Please use a different email or leave it blank and verify by SMS.';
-                }
-                $stmt->close();
-            }
-
-            if ($error === '') {
                 
                 // Hash password
                 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
@@ -376,7 +339,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     exit();
                 }
             }
-        }
         
         $conn->close();
         }

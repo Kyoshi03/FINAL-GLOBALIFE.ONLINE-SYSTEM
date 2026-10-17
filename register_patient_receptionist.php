@@ -5,6 +5,8 @@ checkRole('admin');
 require_once 'config/database.php';
 require_once __DIR__ . '/includes/name_parts.php';
 require_once __DIR__ . '/includes/admin_notifications.php';
+require_once __DIR__ . '/includes/sms.php';
+require_once __DIR__ . '/includes/user_registration.php';
 
 $rprCaviteLocationSource = require __DIR__ . '/includes/cavite_locations.php';
 $rprCaviteLocations = [];
@@ -59,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $date_of_birth = trim($_POST['date_of_birth'] ?? '');
     $civil_status = trim($_POST['civil_status'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
-    $email = trim($_POST['email'] ?? '');
+    $email = strtolower(trim($_POST['email'] ?? ''));
     $province = trim((string) ($_POST['province'] ?? ''));
     $barangay = trim($_POST['barangay'] ?? '');
     $city = trim($_POST['city'] ?? '');
@@ -133,18 +135,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Password must include uppercase, lowercase, number, and special character.';
         } else {
         $conn = getDBConnection();
-        
-        // Check if username already exists
-        $checkStmt = $conn->prepare("SELECT id FROM users WHERE username = ?");
-        $checkStmt->bind_param("s", $username);
-        $checkStmt->execute();
-        $result = $checkStmt->get_result();
-        
-        if ($result->num_rows > 0) {
-            $error = 'Username already exists. Please choose another one.';
-            $checkStmt->close();
+        $duplicate = clinic_find_duplicate_user($conn, $username, $email, $phone);
+
+        if ($duplicate) {
+            $error = clinic_duplicate_user_message($duplicate, $username, $email, $phone);
         } else {
-            $checkStmt->close();
+            $emailForInsert = $email === '' ? null : $email;
+            $normalizedPhone = $phone === '' ? '' : (clinic_sms_normalize_phone($phone) ?? $phone);
             
             // Hash password
             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
@@ -153,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Insert new patient
             $stmt = $conn->prepare("INSERT INTO users (username, password, first_name, middle_name, last_name, suffix, role, email, phone, gender, date_of_birth, age, civil_status, address, barangay, city, emergency_contact_name, emergency_contact_relationship, emergency_contact_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $fullAddress = implode(', ', array_values(array_filter([$address, $barangay, $city, 'Cavite'], static fn (string $part): bool => $part !== '')));
-            $stmt->bind_param("sssssssssssisssssss", $username, $hashed_password, $first_name, $middle_name, $last_name, $suffix, $role, $email, $phone, $gender, $date_of_birth, $age, $civil_status, $fullAddress, $barangay, $city, $emergency_contact_name, $emergency_contact_relationship, $emergency_contact_number);
+            $stmt->bind_param("sssssssssssisssssss", $username, $hashed_password, $first_name, $middle_name, $last_name, $suffix, $role, $emailForInsert, $normalizedPhone, $gender, $date_of_birth, $age, $civil_status, $fullAddress, $barangay, $city, $emergency_contact_name, $emergency_contact_relationship, $emergency_contact_number);
             
             if ($stmt->execute()) {
                 $newPatientId = (int) $stmt->insert_id;
@@ -168,7 +165,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Clear form data on success
                 $_POST = array();
             } else {
-                $error = 'Registration failed. Please try again.';
+                $duplicateAfterInsert = $stmt->errno === 1062
+                    ? clinic_find_duplicate_user($conn, $username, $email, $normalizedPhone)
+                    : null;
+                $error = $stmt->errno === 1062
+                    ? ($duplicateAfterInsert
+                        ? clinic_duplicate_user_message($duplicateAfterInsert, $username, $email, $normalizedPhone)
+                        : 'These registration details are already registered. Please use different details.')
+                    : 'Registration failed. Please try again.';
             }
             
             $stmt->close();
@@ -186,7 +190,7 @@ $rprSelectedBarangays = $rprCaviteLocations[$rprSelectedCity] ?? [];
 
 $pageTitle = "Register New Patient | Globalife Medical Laboratory & Polyclinic";
 $requestScheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-$requestHost = (string) ($_SERVER['HTTP_HOST'] ?? 'globalife.online');
+$requestHost = (string) ($_SERVER['HTTP_HOST'] ?? 'globallife.online');
 $requestDirectory = str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/')));
 $requestDirectory = $requestDirectory === '/' ? '' : rtrim($requestDirectory, '/');
 $walkInRegistrationUrl = $requestScheme . '://' . $requestHost . $requestDirectory . '/register_patient.php?source=walkin_qr';
