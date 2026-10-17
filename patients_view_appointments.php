@@ -758,9 +758,6 @@ $additionalStyles = patientAvatarStyles() . '
         background:#0b66a0;
         border-color:#0b66a0;
     }
-    .patient-history-tabs { display:flex; gap:8px; margin-bottom:18px; padding:5px; border:1px solid #dce8ef; border-radius:10px; background:#eef7ff; }
-    .patient-history-tabs a { flex:1; min-height:40px; display:flex; align-items:center; justify-content:center; border-radius:7px; color:#0b4f80; font-size:.82rem; font-weight:800; text-decoration:none; text-align:center; }
-    .patient-history-tabs a.active { background:#0f7cc2; color:#fff; box-shadow:0 8px 16px rgba(15,124,194,.18); }
     .btn-secondary {
         background:#eef7ff;
         color:#0b4f80;
@@ -1082,8 +1079,6 @@ $additionalStyles = patientAvatarStyles() . '
             width: 100%;
             text-align: center;
         }
-        .patient-history-tabs { gap:5px; margin-bottom:14px; }
-        .patient-history-tabs a { min-height:38px; font-size:.74rem; }
         .patient-history-page .appointments-scroll {
             max-height: none;
             overflow: visible;
@@ -1162,12 +1157,6 @@ include __DIR__ . '/includes/header.php';
 ?>
 
 <div class="appointments-container<?php echo $isClinicalAppointmentsView ? ' clinical-appointments-page' : ''; ?><?php echo $userRole === 'patient' ? ' patient-history-page' : ''; ?>">
-    <?php if ($userRole === 'patient'): ?>
-        <nav class="patient-history-tabs" aria-label="Patient history">
-            <a class="active" aria-current="page" href="patients_view_appointments.php">Appointment History</a>
-            <a href="patients_queue_history.php">Queue History</a>
-        </nav>
-    <?php endif; ?>
     <?php if (isset($_SESSION['success'])): ?>
         <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #28a745;">
             <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?>

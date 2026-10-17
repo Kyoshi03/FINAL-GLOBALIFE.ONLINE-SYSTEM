@@ -195,9 +195,6 @@ body { background:#f4f8fb; min-height:100vh; color:#1f343d; }
 .appointment-page-btn.active { border-color:#0066cc; background:#0066cc; color:#fff; box-shadow:0 10px 20px rgba(0,102,204,.18); }
 .appointment-page-btn.is-disabled { pointer-events:none; opacity:.45; }
 .appointment-pagination .appointment-page-btn.previous, .appointment-pagination .appointment-page-btn.next { width:auto; }
-.patient-history-tabs { display:flex; gap:8px; margin-bottom:18px; padding:5px; border:1px solid #dce8ef; border-radius:10px; background:#eef7ff; }
-.patient-history-tabs a { flex:1; min-height:40px; display:flex; align-items:center; justify-content:center; border-radius:7px; color:#0b4f80; font-size:.82rem; font-weight:800; text-decoration:none; text-align:center; }
-.patient-history-tabs a.active { background:#0f7cc2; color:#fff; box-shadow:0 8px 16px rgba(15,124,194,.18); }
 @media (max-width:768px) {
     .appointments-container { padding:22px 14px 36px; }
     .appointment-tools.patient-filters { grid-template-columns:1fr; }
@@ -207,8 +204,6 @@ body { background:#f4f8fb; min-height:100vh; color:#1f343d; }
     .appointments-table th, .appointments-table td { padding:10px 8px; }
     .appointment-pagination-footer { align-items:flex-start; flex-direction:column; }
     .appointment-pagination { flex-wrap:wrap; }
-    .patient-history-tabs { gap:5px; margin-bottom:14px; }
-    .patient-history-tabs a { min-height:38px; font-size:.74rem; }
     .patient-history-page .appointments-scroll { max-height:none; overflow:visible; padding-right:0; }
     .patient-history-page .appointments-table,
     .patient-history-page .appointments-table tbody,
@@ -226,10 +221,6 @@ body { background:#f4f8fb; min-height:100vh; color:#1f343d; }
 include __DIR__ . '/includes/header.php';
 ?>
 <main class="appointments-container patient-history-page">
-    <nav class="patient-history-tabs" aria-label="Patient history">
-        <a href="patients_view_appointments.php">Appointment History</a>
-        <a class="active" aria-current="page" href="patients_queue_history.php">Queue History</a>
-    </nav>
     <section class="appointments-filter-card" aria-label="Queue history filters">
         <form class="appointment-tools patient-filters" id="queueHistoryFilterForm" method="get" action="patients_queue_history.php">
             <input type="hidden" name="filter_applied" value="1">
