@@ -186,8 +186,8 @@ body { background:#f4f8fb; min-height:100vh; color:#1f343d; }
 .status-badge { display:inline-flex; align-items:center; border-radius:999px; padding:4px 10px; font-size:.68rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; white-space:nowrap; }
 .status-badge.completed { background:#e6f6ec; color:#168a45; }
 .status-badge.walk-in { background:#dcefff; color:#0066cc; }
-.filter-empty { padding:28px 16px; color:#60758a; text-align:center; }
-.filter-empty strong { display:block; margin-bottom:6px; color:#073b4c; }
+.filter-empty { width:100%; box-sizing:border-box; min-width:0; padding:28px 16px; color:#60758a; text-align:center; overflow:hidden; }
+.filter-empty strong { display:block; width:100%; max-width:100%; margin:0 auto 6px; color:#073b4c; white-space:normal; overflow-wrap:anywhere; word-break:normal; }
 .appointment-pagination-footer { display:flex; align-items:center; justify-content:space-between; gap:14px; padding-top:18px; margin-top:4px; border-top:1px solid #eef3f6; color:#708792; font-size:.875rem; font-weight:500; }
 .appointment-pagination { display:flex; align-items:center; gap:8px; }
 .appointment-page-btn { width:36px; min-width:36px; height:36px; border:1px solid #dce8ef; border-radius:7px; padding:0 10px; background:#fff; color:#0b4f80; font:inherit; font-size:.875rem; font-weight:800; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
@@ -195,12 +195,7 @@ body { background:#f4f8fb; min-height:100vh; color:#1f343d; }
 .appointment-page-btn.active { border-color:#0066cc; background:#0066cc; color:#fff; box-shadow:0 10px 20px rgba(0,102,204,.18); }
 .appointment-page-btn.is-disabled { pointer-events:none; opacity:.45; }
 .appointment-pagination .appointment-page-btn.previous, .appointment-pagination .appointment-page-btn.next { width:auto; }
-.patient-history-switch { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:14px; }
-.patient-history-switch a { display:inline-flex; align-items:center; justify-content:center; min-height:36px; padding:0 12px; border:1px solid #cfe3ec; border-radius:8px; background:#fff; color:#0b4f80; font-size:.78rem; font-weight:800; text-decoration:none; }
-.patient-history-switch a.active,
-.patient-history-switch a:hover { border-color:#0f7cc2; background:#eaf6ff; color:#0066aa; }
 @media (max-width:768px) {
-    .patient-history-page .patient-history-switch { margin-top: calc(var(--app-mobile-topbar-height, 68px) - 4px); }
     .appointments-container { padding:22px 14px 36px; }
     .appointment-tools.patient-filters { grid-template-columns:1fr; }
     .appointments-filter-card { padding:16px; }
@@ -215,6 +210,17 @@ body { background:#f4f8fb; min-height:100vh; color:#1f343d; }
     .patient-history-page .appointments-table tr,
     .patient-history-page .appointments-table td { display:block; width:100%; box-sizing:border-box; }
     .patient-history-page .appointments-table { min-width:0; }
+    .patient-history-page .filter-empty {
+        width:100% !important;
+        max-width:100% !important;
+        padding:42px 12px 34px;
+    }
+    .patient-history-page .filter-empty strong {
+        width:100% !important;
+        max-width:100% !important;
+        white-space:normal !important;
+        overflow-wrap:anywhere !important;
+    }
     .patient-history-page .appointments-table thead { display:none; }
     .patient-history-page .appointments-table tr { margin:0 0 10px; padding:10px 12px; border:1px solid #e4edf2; border-radius:12px; background:#fff; }
     .patient-history-page .appointments-table td { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid #eef3f6; text-align:right; white-space:normal; overflow-wrap:anywhere; }
@@ -226,10 +232,6 @@ body { background:#f4f8fb; min-height:100vh; color:#1f343d; }
 include __DIR__ . '/includes/header.php';
 ?>
 <main class="appointments-container patient-history-page">
-    <div class="patient-history-switch" aria-label="Patient history pages">
-        <a href="patients_view_appointments.php">Appointment History</a>
-        <a href="patients_queue_history.php" class="active">Queue History</a>
-    </div>
     <section class="appointments-filter-card" aria-label="Queue history filters">
         <form class="appointment-tools patient-filters" id="queueHistoryFilterForm" method="get" action="patients_queue_history.php">
             <input type="hidden" name="filter_applied" value="1">
