@@ -649,6 +649,26 @@ $additionalStyles = patientAvatarStyles() . '
         color: #073b4c;
         margin-bottom: 6px;
     }
+    .appointment-history-empty {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        padding: 32px 16px;
+        color: #60758a;
+        text-align: center;
+        overflow: hidden;
+    }
+    .appointment-history-empty strong {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+        color: #073b4c;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: normal;
+    }
     .appointments-table-wrapper {
         background:#fff;
         border:1px solid #e4edf2;
@@ -1327,7 +1347,6 @@ include __DIR__ . '/includes/header.php';
         </section>
     <?php endif; ?>
 
-    <?php if ($userRole !== 'patient' || !empty($appointments)): ?>
     <div class="appointments-table-wrapper">
         <?php if ($isClinicalAppointmentsView): ?>
             <div class="clinical-panel-head">
@@ -1336,16 +1355,27 @@ include __DIR__ . '/includes/header.php';
             </div>
         <?php endif; ?>
         <?php if (empty($appointments)): ?>
-            <div class="empty-state patient-empty-state">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <h3><?php echo $userRole === 'patient' ? 'No appointments found for the selected period.' : 'No Appointments Found'; ?></h3>
-                <p><?php echo $isClinicalAppointmentsView ? 'No doctor consultation appointments are assigned to you.' : ($userRole === 'patient' ? 'Try another date range.' : 'There are no appointments in the system.'); ?></p>
-                <?php if ($userRole === 'patient'): ?>
-                    <a href="book_appointment.php?start=1" class="add-appointment-btn" style="margin-top: 20px;">Book Your First Appointment</a>
-                <?php endif; ?>
-            </div>
+            <?php if ($userRole === 'patient'): ?>
+                <div class="appointment-history-empty">
+                    <strong>No appointment records found for the selected period.</strong>
+                </div>
+                <div class="appointment-pagination-footer">
+                    <span>Showing 0 to 0 of 0 appointments.</span>
+                    <div class="appointment-pagination" aria-label="Appointment history pages">
+                        <button type="button" class="appointment-page-btn" disabled>Previous</button>
+                        <button type="button" class="appointment-page-btn active" aria-current="page">1</button>
+                        <button type="button" class="appointment-page-btn" disabled>Next</button>
+                    </div>
+                </div>
+            <?php else: ?>
+                <div class="empty-state">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002-2z" />
+                    </svg>
+                    <h3>No Appointments Found</h3>
+                    <p>There are no appointments in the system.</p>
+                </div>
+            <?php endif; ?>
         <?php else: ?>
             <?php if ($isClinicalAppointmentsView): ?>
                 <div class="appointment-tools" aria-label="Appointment filters">
@@ -1566,7 +1596,6 @@ include __DIR__ . '/includes/header.php';
             </div>
         <?php endif; ?>
     </div>
-    <?php endif; ?>
 </div>
 
 <?php if ($showAppointmentReport): ?>
