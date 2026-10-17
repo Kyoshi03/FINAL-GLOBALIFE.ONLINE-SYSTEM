@@ -1710,9 +1710,9 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
         }
         body.app-layout.app-role-patient nav .patient-history-group .nav-submenu {
             display: none;
-            position: absolute;
-            right: 0;
-            bottom: calc(100% + 10px);
+            position: fixed;
+            right: 18px;
+            bottom: 96px;
             z-index: 1600;
             width: min(220px, calc(100vw - 38px));
             max-width: none;
