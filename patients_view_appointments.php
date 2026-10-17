@@ -1008,6 +1008,7 @@ $additionalStyles = patientAvatarStyles() . '
     }
     .appointment-page-btn {
         width: 36px;
+        min-width: 36px;
         height: 36px;
         border: 1px solid #dce8ef;
         border-radius: 7px;
@@ -1017,6 +1018,13 @@ $additionalStyles = patientAvatarStyles() . '
         font-size: .875rem;
         font-weight: 800;
         cursor: pointer;
+    }
+    .appointment-pagination .appointment-page-btn.previous,
+    .appointment-pagination .appointment-page-btn.next {
+        width: auto;
+        min-width: 78px;
+        padding: 0 12px;
+        white-space: nowrap;
     }
     .appointment-page-btn:hover:not(:disabled) {
         border-color: #0f7cc2;
@@ -1362,9 +1370,9 @@ include __DIR__ . '/includes/header.php';
                 <div class="appointment-pagination-footer">
                     <span>Showing 0 to 0 of 0 appointments.</span>
                     <div class="appointment-pagination" aria-label="Appointment history pages">
-                        <button type="button" class="appointment-page-btn" disabled>Previous</button>
+                        <button type="button" class="appointment-page-btn previous" disabled>Previous</button>
                         <button type="button" class="appointment-page-btn active" aria-current="page">1</button>
-                        <button type="button" class="appointment-page-btn" disabled>Next</button>
+                        <button type="button" class="appointment-page-btn next" disabled>Next</button>
                     </div>
                 </div>
             <?php else: ?>
