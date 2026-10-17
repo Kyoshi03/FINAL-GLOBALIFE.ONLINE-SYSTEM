@@ -393,7 +393,7 @@ $additionalStyles = patientAvatarStyles() . '
         align-items:end;
     }
     .appointment-tools.patient-filters {
-        grid-template-columns:minmax(220px,1fr) 220px auto auto;
+        grid-template-columns:minmax(220px,1fr) minmax(180px,220px) minmax(180px,220px) auto auto;
     }
     .patient-custom-range{grid-column:1 / -1;display:flex;gap:12px;flex-wrap:wrap}
     .patient-custom-range[hidden]{display:none}
@@ -1065,6 +1065,9 @@ $additionalStyles = patientAvatarStyles() . '
         .appointment-tools {
             grid-template-columns: 1fr;
         }
+        .appointment-tools.patient-filters {
+            grid-template-columns: 1fr;
+        }
         .appointment-pagination-footer {
             align-items: flex-start;
             flex-direction: column;
@@ -1280,12 +1283,10 @@ include __DIR__ . '/includes/header.php';
     <?php if (!$isClinicalAppointmentsView): ?>
         <section class="appointments-filter-card" aria-label="Appointment filters">
             <div class="appointment-tools patient-filters" id="patientAppointmentFilterBar">
-                <?php if ($userRole !== 'patient'): ?>
-                    <div class="tool-field">
-                        <label for="appointmentSearch">Search appointments</label>
-                        <input type="search" id="appointmentSearch" placeholder="Search patient, doctor, queue number, notes, or date">
-                    </div>
-                <?php endif; ?>
+                <div class="tool-field">
+                    <label for="appointmentSearch"><?php echo $userRole === 'patient' ? 'Search appointment history' : 'Search appointments'; ?></label>
+                    <input type="search" id="appointmentSearch" placeholder="Search date, service, status, or queue number">
+                </div>
                 <div class="tool-field">
                     <label for="appointmentStatusFilter">Status</label>
                     <select id="appointmentStatusFilter">
@@ -1326,6 +1327,7 @@ include __DIR__ . '/includes/header.php';
         </section>
     <?php endif; ?>
 
+    <?php if ($userRole !== 'patient' || !empty($appointments)): ?>
     <div class="appointments-table-wrapper">
         <?php if ($isClinicalAppointmentsView): ?>
             <div class="clinical-panel-head">
@@ -1564,6 +1566,7 @@ include __DIR__ . '/includes/header.php';
             </div>
         <?php endif; ?>
     </div>
+    <?php endif; ?>
 </div>
 
 <?php if ($showAppointmentReport): ?>
