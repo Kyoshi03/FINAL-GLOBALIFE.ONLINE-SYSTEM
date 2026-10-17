@@ -27,10 +27,9 @@ $userNameSql = dbUsersNameExpression();
 // Get appointments based on user role
 if ($userRole === 'patient') {
     checkRole('patient');
-    $stmt = $conn->prepare("SELECT a.*, {$headerDoctorNameSql} as doctor_name, q.queue_number
+    $stmt = $conn->prepare("SELECT a.*, {$headerDoctorNameSql} as doctor_name
                             FROM appointments a 
                             LEFT JOIN users u ON a.doctor_id = u.id 
-                            LEFT JOIN clinic_queue q ON q.appointment_id = a.id
                             WHERE a.patient_id = ? 
                             ORDER BY a.appointment_date DESC, a.appointment_time DESC");
     $stmt->bind_param("i", $currentUser['id']);
@@ -1300,7 +1299,7 @@ include __DIR__ . '/includes/header.php';
             <div class="appointment-tools patient-filters" id="patientAppointmentFilterBar">
                 <div class="tool-field">
                     <label for="appointmentSearch"><?php echo $userRole === 'patient' ? 'Search appointment history' : 'Search appointments'; ?></label>
-                    <input type="search" id="appointmentSearch" placeholder="Search date, service, status, or queue number">
+                    <input type="search" id="appointmentSearch" placeholder="Search date, service, or status">
                 </div>
                 <div class="tool-field">
                     <label for="appointmentStatusFilter">Status</label>
@@ -1454,8 +1453,7 @@ include __DIR__ . '/includes/header.php';
                         $cancellationReason = trim((string) ($appointment['cancellation_reason'] ?? ''));
                         $queueNumber = trim((string) ($appointment['queue_number'] ?? ''));
                         $queueNumberDisplay = $queueNumber !== '' ? $queueNumber : 'Not generated';
-                        $searchText = trim(implode(' ', [
-                            $queueNumberDisplay,
+                        $searchParts = [
                             $patientDisplay['patient_name'] ?? '',
                             $appointment['doctor_name'] ?? '',
                             $formattedDate,
@@ -1465,9 +1463,12 @@ include __DIR__ . '/includes/header.php';
                             $cancellationReason,
                             $servicesText,
                             $bookingType,
-                        ]));
+                        ];
+                        if ($userRole !== 'patient') {
+                            array_unshift($searchParts, $queueNumberDisplay);
+                        }
+                        $searchText = trim(implode(' ', $searchParts));
                         $detailPayload = [
-                            'queueNumber' => $queueNumberDisplay,
                             'patient' => $userRole === 'patient' ? ($currentUser['full_name'] ?? 'Patient') : ($patientDisplay['patient_name'] ?? 'N/A'),
                             'doctor' => $appointment['doctor_name'] ?? 'Not Assigned',
                             'date' => $formattedDate,
@@ -1482,6 +1483,9 @@ include __DIR__ . '/includes/header.php';
                             'notes' => $notesFull !== '' ? $notesFull : 'None',
                             'cancellationReason' => $cancellationReason !== '' ? $cancellationReason : 'None',
                         ];
+                        if ($userRole !== 'patient') {
+                            $detailPayload['queueNumber'] = $queueNumberDisplay;
+                        }
                         ?>
                         <tr class="appointment-row" tabindex="0"
                             data-appointment='<?php echo htmlspecialchars(json_encode($detailPayload), ENT_QUOTES, 'UTF-8'); ?>'
@@ -1859,11 +1863,14 @@ include __DIR__ . '/includes/header.php';
         var data = {};
         try { data = JSON.parse(row.getAttribute('data-appointment') || '{}'); } catch (e) { data = {}; }
         if (detailSummary) {
-            detailSummary.innerHTML = [
-                ['Queue number', data.queueNumber],
+            var summaryItems = [
                 ['Status', data.status],
                 ['Total', data.totalAmount]
-            ].map(function(item) {
+            ];
+            if (data.queueNumber) {
+                summaryItems.unshift(['Queue number', data.queueNumber]);
+            }
+            detailSummary.innerHTML = summaryItems.map(function(item) {
                 return '<div class="detail-pill"><span>' + item[0] + '</span><strong>' + escapeHtml(item[1]) + '</strong></div>';
             }).join('');
         }
@@ -1890,7 +1897,9 @@ include __DIR__ . '/includes/header.php';
             }
             detailNotes.innerHTML = notesHtml;
         }
-        if (detailSub) detailSub.textContent = text(data.queueNumber) + ' • ' + text(data.status);
+        if (detailSub) detailSub.textContent = data.queueNumber
+            ? text(data.queueNumber) + ' • ' + text(data.status)
+            : text(data.status);
         openModal(detailModal);
     }
 
