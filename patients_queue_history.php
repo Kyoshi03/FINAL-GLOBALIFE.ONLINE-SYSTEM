@@ -200,6 +200,7 @@ body { background:#f4f8fb; min-height:100vh; color:#1f343d; }
 .patient-history-switch a.active,
 .patient-history-switch a:hover { border-color:#0f7cc2; background:#eaf6ff; color:#0066aa; }
 @media (max-width:768px) {
+    .patient-history-page .patient-history-switch { margin-top: calc(var(--app-mobile-topbar-height, 68px) - 4px); }
     .appointments-container { padding:22px 14px 36px; }
     .appointment-tools.patient-filters { grid-template-columns:1fr; }
     .appointments-filter-card { padding:16px; }

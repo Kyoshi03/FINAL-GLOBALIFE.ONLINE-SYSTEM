@@ -1046,6 +1046,9 @@ $additionalStyles = patientAvatarStyles() . '
         box-shadow: 0 6px 20px rgba(0, 119, 182, 0.4);
     }
     @media (max-width: 768px) {
+        .patient-history-page .patient-history-switch {
+            margin-top: calc(var(--app-mobile-topbar-height, 68px) - 4px);
+        }
         .appointment-stats,
         .clinical-stat-grid,
         .appointment-report-summary,
