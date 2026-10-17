@@ -894,12 +894,8 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             color: #ffffff;
             box-shadow: 0 12px 26px rgba(0, 119, 182, 0.32);
         }
-        body.app-role-patient nav .patient-history-desktop-toggle,
         body.app-role-patient nav #patientHistorySubmenu {
             display: none !important;
-        }
-        body.app-role-patient nav .patient-history-mobile-link {
-            display: flex;
         }
     }
 
@@ -2072,12 +2068,8 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             white-space: normal;
             line-height: 1.05;
         }
-        body.app-layout.app-role-patient nav .patient-history-desktop-toggle,
         body.app-layout.app-role-patient nav #patientHistorySubmenu {
             display: none !important;
-        }
-        body.app-layout.app-role-patient nav .patient-history-mobile-link {
-            display: flex;
         }
         body.app-layout .nav-ui-icon {
             width: 26px;
@@ -2673,11 +2665,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                         $isPatientHistoryOpen = in_array(basename($_SERVER['PHP_SELF']), $patientHistoryPages, true);
                         ?>
                         <div class="nav-settings-group <?php echo $isPatientHistoryOpen ? 'is-open' : ''; ?>">
-                            <a href="patients_view_appointments.php" class="has-svg-icon patient-history-mobile-link <?php echo $isPatientHistoryOpen ? 'active' : ''; ?>">
-                                <span class="nav-ui-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 3v3M16 3v3M5 8h14M6 5h12a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="m8.5 14 2 2 5-5"/></svg></span>
-                                <span class="nav-label">History</span>
-                            </a>
-                            <button type="button" class="has-svg-icon nav-submenu-toggle patient-history-desktop-toggle <?php echo $isPatientHistoryOpen ? 'active' : ''; ?>" data-nav-submenu-toggle aria-expanded="<?php echo $isPatientHistoryOpen ? 'true' : 'false'; ?>" aria-controls="patientHistorySubmenu">
+                            <button type="button" class="has-svg-icon nav-submenu-toggle <?php echo $isPatientHistoryOpen ? 'active' : ''; ?>" data-nav-submenu-toggle aria-expanded="<?php echo $isPatientHistoryOpen ? 'true' : 'false'; ?>" aria-controls="patientHistorySubmenu">
                                 <span class="nav-ui-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 3v3M16 3v3M5 8h14M6 5h12a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="m8.5 14 2 2 5-5"/></svg></span>
                                 <span class="nav-label">History</span>
                                 <svg class="nav-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
