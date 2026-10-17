@@ -758,6 +758,9 @@ $additionalStyles = patientAvatarStyles() . '
         background:#0b66a0;
         border-color:#0b66a0;
     }
+    .patient-history-switch { display:flex; justify-content:flex-end; margin-bottom:14px; }
+    .patient-history-switch a { display:inline-flex; align-items:center; min-height:36px; padding:0 12px; border:1px solid #cfe3ec; border-radius:8px; background:#fff; color:#0b4f80; font-size:.78rem; font-weight:800; text-decoration:none; }
+    .patient-history-switch a:hover { border-color:#0f7cc2; color:#0066cc; background:#f3faff; }
     .btn-secondary {
         background:#eef7ff;
         color:#0b4f80;
@@ -1157,6 +1160,11 @@ include __DIR__ . '/includes/header.php';
 ?>
 
 <div class="appointments-container<?php echo $isClinicalAppointmentsView ? ' clinical-appointments-page' : ''; ?><?php echo $userRole === 'patient' ? ' patient-history-page' : ''; ?>">
+    <?php if ($userRole === 'patient'): ?>
+        <div class="patient-history-switch">
+            <a href="patients_queue_history.php">View Queue History</a>
+        </div>
+    <?php endif; ?>
     <?php if (isset($_SESSION['success'])): ?>
         <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #28a745;">
             <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?>
