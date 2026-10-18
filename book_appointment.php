@@ -1212,8 +1212,6 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
 
 <div class="container">
     <div class="booking-container">
-        <a href="patients.php" class="back-link">Back to Dashboard</a>
-
         <?php if ($bookedId > 0): ?>
             <div class="success-banner">
                 <strong>Appointment request successfully submitted.</strong><br>
@@ -2221,7 +2219,6 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     <p>Please add and verify your email address or mobile number in My Profile before booking an appointment. This lets the clinic send your appointment updates and reminders.</p>
                     <div class="contact-verification-actions">
                         <a href="patients.php?profile=1" class="contact-verification-primary">Go to My Profile</a>
-                        <a href="patients.php" class="contact-verification-secondary">Back to Dashboard</a>
                     </div>
                 </div>
             </section>
