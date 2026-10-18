@@ -337,6 +337,10 @@ body {
     top: auto;
     bottom: calc(100% + 5px);
 }
+.availability-day.availability-popover-left > .availability-doctor-popover {
+    left: auto;
+    right: 6px;
+}
 .availability-day:hover {
     z-index: 30;
 }
@@ -732,6 +736,7 @@ body {
             var dayRect = day.getBoundingClientRect();
             var gridRect = calendarGrid.getBoundingClientRect();
             day.classList.toggle('availability-popover-above', dayRect.bottom > gridRect.top + (gridRect.height * 0.58));
+            day.classList.toggle('availability-popover-left', dayRect.right + 250 > gridRect.right);
         }
 
         calendarDays.forEach(function (day) {
@@ -740,6 +745,7 @@ body {
             day.addEventListener('focusin', function () { updatePopoverPosition(day); });
             day.addEventListener('mouseleave', function () {
                 day.classList.remove('availability-popover-above');
+                day.classList.remove('availability-popover-left');
             });
         });
 
