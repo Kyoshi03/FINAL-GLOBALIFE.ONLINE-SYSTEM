@@ -2633,7 +2633,7 @@ include __DIR__ . '/includes/header.php';
     });
 
     function getInitialStatusFromUrl() {
-        var allowed = ['pending', 'confirmed', 'completed', 'cancelled'];
+        var allowed = ['pending', 'confirmed', 'reschedule', 'completed', 'cancelled'];
         var initialStatus = new URLSearchParams(window.location.search).get('status');
         if (initialStatus && allowed.indexOf(initialStatus) !== -1) {
             return initialStatus;
