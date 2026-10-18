@@ -1306,19 +1306,19 @@ body {
 
 .reschedule-request-schedule strong,
 .reschedule-request-schedule span {
-    display: block;
+    display: inline;
 }
 
 .reschedule-request-schedule strong {
     color: #073b4c;
-    font-size: .8rem;
+    font-size: .76rem;
     line-height: 1.25;
 }
 
 .reschedule-request-schedule span {
-    margin-top: 3px;
+    margin-left: 4px;
     color: #60727d;
-    font-size: .78rem;
+    font-size: .74rem;
 }
 
 .reschedule-request-schedule.requested strong {
@@ -1327,12 +1327,13 @@ body {
 
 .reschedule-request-schedule.requested {
     margin-bottom: 8px;
+    white-space: nowrap;
 }
 
 .reschedule-request-actions {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    flex-wrap: nowrap;
+    gap: 5px;
 }
 
 .reschedule-request-actions form {
@@ -1340,10 +1341,11 @@ body {
 }
 
 .reschedule-request-actions .btn {
-    min-width: 76px;
+    min-width: 0;
+    flex: 1 1 0;
     min-height: 32px;
-    padding: 6px 10px;
-    font-size: .72rem;
+    padding: 6px 5px;
+    font-size: .68rem;
     line-height: 1.1;
     white-space: nowrap;
 }
@@ -1413,6 +1415,10 @@ body {
     .appointment-reschedule-table td:nth-child(2)::before { content: "Service"; }
     .appointment-reschedule-table td:nth-child(3)::before { content: "Original Schedule"; }
     .appointment-reschedule-table td:nth-child(4)::before { content: "Requested Schedule"; }
+
+    .reschedule-request-schedule.requested {
+        white-space: normal;
+    }
 }
 
 .queue-table th,
