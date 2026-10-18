@@ -50,7 +50,7 @@ function clinic_name_letter_count(string $value): int {
 
 function clinic_name_build_full_name(array $parts): string {
     $first = clinic_name_title_case_part($parts['first_name'] ?? '', true);
-    $middle = clinic_name_uppercase_part($parts['middle_name'] ?? '', false);
+    $middle = clinic_name_title_case_part($parts['middle_name'] ?? '', true);
     $last = clinic_name_title_case_part($parts['last_name'] ?? '', true);
     $suffix = clinic_name_uppercase_part($parts['suffix'] ?? '', false);
     return trim(implode(' ', array_filter([$first, $middle, $last, $suffix], static fn ($p) => $p !== '')));
@@ -126,7 +126,7 @@ function clinic_name_split_full_name(?string $fullName): array {
 
     return [
         'first_name' => clinic_name_title_case_part($first, true),
-        'middle_name' => clinic_name_uppercase_part($middle, false),
+        'middle_name' => clinic_name_title_case_part($middle, true),
         'last_name' => clinic_name_title_case_part($last, true),
         'suffix' => clinic_name_uppercase_part($suffix, false),
     ];

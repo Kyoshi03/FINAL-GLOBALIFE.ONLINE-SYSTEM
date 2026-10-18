@@ -308,7 +308,7 @@ function initDatabase() {
         username VARCHAR(50) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
         first_name VARCHAR(40) DEFAULT NULL,
-        middle_name VARCHAR(10) DEFAULT NULL,
+        middle_name VARCHAR(40) DEFAULT NULL,
         last_name VARCHAR(40) DEFAULT NULL,
         suffix VARCHAR(10) DEFAULT NULL,
         role ENUM('admin', 'patient', 'doctor') NOT NULL,
@@ -334,7 +334,7 @@ function initDatabase() {
     // Add new columns if they don't exist (for existing databases)
     $columns_to_add = [
         ['first_name', "VARCHAR(40) DEFAULT NULL", 'password'],
-        ['middle_name', "VARCHAR(10) DEFAULT NULL", 'first_name'],
+        ['middle_name', "VARCHAR(40) DEFAULT NULL", 'first_name'],
         ['last_name', "VARCHAR(40) DEFAULT NULL", 'middle_name'],
         ['suffix', "VARCHAR(10) DEFAULT NULL", 'last_name'],
         ['email_verified_at', 'DATETIME DEFAULT NULL', 'email'],
@@ -358,6 +358,7 @@ function initDatabase() {
             $conn->query("ALTER TABLE users ADD COLUMN {$col[0]} {$col[1]} {$after}");
         }
     }
+    $conn->query("ALTER TABLE users MODIFY COLUMN middle_name VARCHAR(40) DEFAULT NULL");
 
     $genderColumn = $conn->query("SHOW COLUMNS FROM users LIKE 'gender'");
     $genderInfo = $genderColumn ? $genderColumn->fetch_assoc() : null;

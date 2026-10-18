@@ -96,10 +96,14 @@ function register_patient_uppercase(string $value): string {
         : strtoupper($value);
 }
 
+function register_patient_middle_name(string $value): string {
+    return register_patient_title_case(register_patient_filter_name_part($value, true));
+}
+
 function register_patient_build_full_name(string $firstName, string $middleName, string $lastName, string $suffix = ''): string {
     $parts = array_filter([
         register_patient_title_case($firstName),
-        register_patient_uppercase($middleName),
+        register_patient_middle_name($middleName),
         register_patient_title_case($lastName),
         register_patient_uppercase($suffix),
     ], static fn ($part) => $part !== '');
@@ -220,10 +224,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'First name must not exceed 15 letters.';
     } elseif (!preg_match('/^[\p{L}\s\'-]+$/u', $first_name)) {
         $error = 'First name may only contain letters, spaces, hyphens, or apostrophes.';
-    } elseif ($middle_name !== '' && register_patient_letter_count($middle_name) !== 1) {
-        $error = 'Middle name must be exactly 1 letter.';
-    } elseif ($middle_name !== '' && !preg_match('/^[\p{L}]$/u', $middle_name)) {
-        $error = 'Middle name must contain letters only.';
+    } elseif ($middle_name !== '' && register_patient_letter_count($middle_name) > 15) {
+        $error = 'Middle name must not exceed 15 letters.';
+    } elseif ($middle_name !== '' && !preg_match('/^[\p{L}\s\'-]+$/u', $middle_name)) {
+        $error = 'Middle name may only contain letters, spaces, hyphens, or apostrophes.';
     } elseif (register_patient_letter_count($last_name) < 1) {
         $error = 'Last name must contain at least 1 letter.';
     } elseif (register_patient_letter_count($last_name) > 15) {
@@ -297,7 +301,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'email' => $email,
                         'phone' => $phone,
                         'first_name' => register_patient_title_case($first_name),
-                        'middle_name' => register_patient_uppercase($middle_name),
+                        'middle_name' => register_patient_middle_name($middle_name),
                         'last_name' => register_patient_title_case($last_name),
                         'suffix' => register_patient_uppercase($suffix),
                         'gender' => $gender,
@@ -1561,14 +1565,14 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                             </div>
 
                             <div class="name-part">
-                                <label for="middle_name">Middle Name / Initial <span class="optional">(Optional)</span></label>
+                                <label for="middle_name">Middle Name <span class="optional">(Optional)</span></label>
                                 <div class="input-wrapper">
                                     <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                     </svg>
-                                    <input type="text" id="middle_name" name="middle_name" placeholder="M" maxlength="1" value="<?php echo (!empty($success) ? '' : (isset($_POST['middle_name']) ? htmlspecialchars($_POST['middle_name']) : '')); ?>" style="text-transform: uppercase;">
+                                    <input type="text" id="middle_name" name="middle_name" placeholder="Maria" maxlength="40" value="<?php echo (!empty($success) ? '' : (isset($_POST['middle_name']) ? htmlspecialchars($_POST['middle_name']) : '')); ?>">
                                 </div>
-                                <span class="field-hint">1 letter only. <span id="middleNameCounter">0/1</span></span>
+                                <span class="field-hint">15 letters max. <span id="middleNameCounter">0/15</span></span>
                             </div>
 
                             <div class="name-part">
@@ -2299,7 +2303,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
 
             const nameFieldConfigs = [
                 [firstNameInput, firstNameCounter, 15, { allowSeparators: true, forceUppercase: false }],
-                [middleNameInput, middleNameCounter, 1, { allowSeparators: false, forceUppercase: true }],
+                [middleNameInput, middleNameCounter, 15, { allowSeparators: true, forceUppercase: false }],
                 [lastNameInput, lastNameCounter, 15, { allowSeparators: true, forceUppercase: false }],
                 [suffixInput, suffixCounter, 3, { allowSeparators: false, forceUppercase: true }]
             ];
