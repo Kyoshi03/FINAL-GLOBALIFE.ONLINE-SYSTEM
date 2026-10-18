@@ -2712,7 +2712,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                         </a>
                         <a href="book_appointment.php?start=1" class="has-svg-icon <?php echo basename($_SERVER['PHP_SELF']) === 'book_appointment.php' ? 'active' : ''; ?>">
                             <span class="nav-ui-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3v3M17 3v3M4.5 9h15M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M12 12v5M9.5 14.5h5"/></svg></span>
-                            <span class="nav-label">Book Appointments</span>
+                            <span class="nav-label"><span>Book</span><span class="nav-booking-label-secondary"> Appointments</span></span>
                         </a>
                         <?php
                         $patientHistoryPages = ['patients_view_appointments.php', 'patients_queue_history.php'];

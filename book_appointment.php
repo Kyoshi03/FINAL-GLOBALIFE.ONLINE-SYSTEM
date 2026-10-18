@@ -1147,21 +1147,10 @@ $additionalStyles = '
          body.page-book-appointment.app-layout nav#mainNav.book-appointment-nav-hidden { transform:translateY(calc(100% + 24px)) !important; opacity:0 !important; pointer-events:none !important; }
      }
      @media (max-width:760px) {
-         body.page-book-appointment .booking-container { font-size:.92rem; }
-         body.page-book-appointment .booking-header h2 { font-size:1.28rem; }
-         body.page-book-appointment .booking-header p { font-size:.78rem; }
-         body.page-book-appointment .clinic-reminder-heading h3 { font-size:.98rem; }
-         body.page-book-appointment .clinic-reminder-heading p { font-size:.76rem; }
-         body.page-book-appointment .clinic-reminder strong { font-size:.8rem; }
-         body.page-book-appointment .clinic-reminder span { font-size:.72rem; }
-         body.page-book-appointment .step-context-box { font-size:.78rem; }
-         body.page-book-appointment.app-layout nav#mainNav a,
-         body.page-book-appointment.app-layout nav#mainNav .nav-submenu-toggle { min-height:58px !important; padding:5px 6px !important; gap:3px; font-size:.64rem !important; }
-         body.page-book-appointment.app-layout nav#mainNav a .nav-label,
-         body.page-book-appointment.app-layout nav#mainNav .nav-submenu-toggle .nav-label { font-size:.64rem !important; line-height:1.05; }
-         body.page-book-appointment.app-layout nav#mainNav .nav-ui-icon { width:22px; height:22px; }
-         body.page-book-appointment.app-layout nav#mainNav .nav-ui-icon svg { width:18px; height:18px; }
+         body.page-book-appointment.app-layout nav#mainNav a[href*="book_appointment.php"] .nav-label { display:block; max-width:100%; overflow:visible !important; text-overflow:clip !important; white-space:normal !important; overflow-wrap:anywhere; line-height:1.12; }
+         body.page-book-appointment.app-layout nav#mainNav a[href*="book_appointment.php"] .nav-booking-label-secondary { display:block; }
      }
+     @media (min-width:761px) { body.page-book-appointment .nav-booking-label-secondary { display:inline; } }
     @media (max-width:520px) { .capacity-dialog-head,.capacity-dialog-body{padding:18px}.capacity-summary{grid-template-columns:1fr}.capacity-doctor-row{align-items:flex-start;flex-direction:column}.capacity-chip{align-self:flex-start} }
 ';
 
