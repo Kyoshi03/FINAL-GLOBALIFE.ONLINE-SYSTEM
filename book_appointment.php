@@ -918,6 +918,10 @@ $additionalStyles = '
         .mobile-calendar-close:hover, .mobile-calendar-close:focus-visible { background:#e5f5fb; }
         .mobile-calendar-dialog-body { min-height:0; overflow:auto; padding:8px; }
         .mobile-calendar-dialog .mini-calendar { overflow:visible; }
+        .mobile-calendar-dialog-actions { flex:0 0 auto; padding:10px 12px 12px; border-top:1px solid #d8eaf3; background:#fff; }
+        .mobile-calendar-confirm { display:block; width:100%; min-height:44px; border:0; border-radius:10px; background:#0878b5; color:#fff; font:inherit; font-size:.9rem; font-weight:900; cursor:pointer; box-shadow:0 6px 14px rgba(8,120,181,.18); }
+        .mobile-calendar-confirm:hover, .mobile-calendar-confirm:focus-visible { background:#056696; }
+        .mobile-calendar-confirm:disabled { background:#b8cad8; color:#f7fbfd; cursor:not-allowed; box-shadow:none; }
         .mini-calendar-head { padding: 12px 10px 10px; gap: 10px; }
         .mini-calendar-title { grid-template-columns: 36px minmax(0, 1fr) 36px; gap: 6px; padding-right: 0; }
         .mini-calendar-title strong { min-width: 0; text-align: center; font-size: 1.05rem; overflow-wrap: anywhere; }
@@ -1916,6 +1920,9 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                             </div>
                         </div>
                                 </div>
+                                <div class="mobile-calendar-dialog-actions">
+                                    <button type="button" class="mobile-calendar-confirm" id="mobileDatePickerConfirm" disabled>Use this date</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1952,6 +1959,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 var mobilePicker = document.getElementById('mobileCalendarModal');
                 var mobilePickerOpen = document.getElementById('mobileDatePickerOpen');
                 var mobilePickerClose = document.getElementById('mobileDatePickerClose');
+                var mobilePickerConfirm = document.getElementById('mobileDatePickerConfirm');
                 var mobileSelectedDateText = document.getElementById('mobileSelectedDateText');
                 var dateRequiredModal = document.getElementById('dateRequiredModal');
                 var dateRequiredClose = document.getElementById('dateRequiredClose');
@@ -1991,6 +1999,9 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     if (mobileSelectedDateText) {
                         mobileSelectedDateText.textContent = formatDateLabel(dateInp.value);
                     }
+                    if (mobilePickerConfirm) {
+                        mobilePickerConfirm.disabled = !dateInp.value;
+                    }
                     var selectedDay = dateInp.value ? calendar.querySelector('.cal-day[data-date="' + dateInp.value + '"]') : null;
                     if (selectedDateStatus) {
                         selectedDateStatus.hidden = !selectedDay;
@@ -2022,7 +2033,6 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         dateInp.value = day.getAttribute('data-date') || '';
                         selectedDateCard.classList.remove('is-invalid');
                         updateView();
-                        setMobilePicker(false);
                     });
                 });
 
@@ -2031,6 +2041,11 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 }
                 if (mobilePickerClose) {
                     mobilePickerClose.addEventListener('click', function() { setMobilePicker(false); });
+                }
+                if (mobilePickerConfirm) {
+                    mobilePickerConfirm.addEventListener('click', function() {
+                        if (dateInp.value) setMobilePicker(false);
+                    });
                 }
                 if (mobilePicker) {
                     mobilePicker.addEventListener('click', function(event) {
