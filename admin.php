@@ -371,6 +371,13 @@ if ($rescheduleRequestStmt) {
     $error = 'Unable to load pending reschedule requests.';
 }
 
+$pendingRescheduleAppointments = admin_count_query($conn, "SELECT COUNT(*) AS total
+    FROM appointment_reschedule_requests r
+    INNER JOIN appointments a ON a.id = r.appointment_id
+    WHERE r.status = 'pending'
+      AND a.status = 'confirmed'
+      AND a.booking_type <> 'consultation'");
+
 $labServicePrices = [];
 if (admin_table_exists($conn, 'lab_services')) {
     $labPriceResult = $conn->query('SELECT name, opd_price FROM lab_services');
@@ -851,6 +858,11 @@ body {
 .metric-card.alert .metric-icon {
     background: #fff7e6;
     color: #b87500;
+}
+
+.metric-card.cancelled .metric-icon {
+    background: #fff0f1;
+    color: #d92d45;
 }
 
 .metric-copy {
@@ -3502,6 +3514,42 @@ include 'includes/header.php';
                 <strong><?php echo $completedAppointments; ?></strong>
                 <small>All dates</small>
                 <a class="metric-link" href="admin_view_appointments.php?date_range=all&amp;status=completed">View completed &rsaquo;</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="metrics-grid" aria-label="Appointment status summary">
+        <div class="metric-card">
+            <span class="metric-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/><path d="M21 12a9 9 0 1 1-9-9 9 9 0 0 1 9 9"/></svg>
+            </span>
+            <div class="metric-copy">
+                <span>Confirmed</span>
+                <strong><?php echo $appointmentStatus['confirmed']; ?></strong>
+                <small>All dates</small>
+                <a class="metric-link" href="admin_view_appointments.php?date_range=all&amp;status=confirmed">View confirmed &rsaquo;</a>
+            </div>
+        </div>
+        <div class="metric-card alert">
+            <span class="metric-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M4 4v6h6"/><path d="M20 20v-6h-6"/><path d="M6.5 14a6 6 0 0 0 10.9 2"/><path d="M17.5 10A6 6 0 0 0 6.6 8"/></svg>
+            </span>
+            <div class="metric-copy">
+                <span>Reschedule</span>
+                <strong><?php echo $pendingRescheduleAppointments; ?></strong>
+                <small>Pending requests</small>
+                <a class="metric-link" href="admin_view_appointments.php?date_range=all&amp;status=reschedule">View reschedule &rsaquo;</a>
+            </div>
+        </div>
+        <div class="metric-card cancelled">
+            <span class="metric-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7 7 17"/><path d="M21 12a9 9 0 1 1-9-9 9 9 0 0 1 9 9"/></svg>
+            </span>
+            <div class="metric-copy">
+                <span>Cancelled</span>
+                <strong><?php echo $appointmentStatus['cancelled']; ?></strong>
+                <small>All dates</small>
+                <a class="metric-link" href="admin_view_appointments.php?date_range=all&amp;status=cancelled">View cancelled &rsaquo;</a>
             </div>
         </div>
     </section>
