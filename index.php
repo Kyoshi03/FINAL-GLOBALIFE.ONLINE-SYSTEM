@@ -904,6 +904,10 @@ $additionalScripts = '
         const registrationFrame = document.getElementById("registration-frame");
         const registrationTriggers = document.querySelectorAll("a[href^=\"register_patient.php\"]");
         const registrationCloseTriggers = document.querySelectorAll("[data-register-close]");
+        const forgotPasswordModal = document.getElementById("forgot-password-modal");
+        const forgotPasswordFrame = document.getElementById("forgot-password-frame");
+        const forgotPasswordTriggers = document.querySelectorAll("a[href^=\"forgot_password.php\"]");
+        const forgotPasswordCloseTriggers = document.querySelectorAll("[data-forgot-close]");
         const shouldOpenPatientLogin = ' . (($loginError !== '' || $loginSuccess !== '') ? 'true' : 'false') . ';
 
         function openPatientLogin(event) {
@@ -988,6 +992,50 @@ $additionalScripts = '
             document.body.style.overflow = "";
         }
 
+        function openForgotPasswordModal(event) {
+            if (event) {
+                event.preventDefault();
+            }
+
+            if (!forgotPasswordModal || !forgotPasswordFrame) {
+                return;
+            }
+
+            if (loginModal && loginModal.classList.contains("is-open")) {
+                closePatientLogin();
+            }
+            if (registrationModal && registrationModal.classList.contains("is-open")) {
+                closeRegistrationModal();
+            }
+
+            if (!forgotPasswordFrame.getAttribute("src")) {
+                forgotPasswordFrame.setAttribute("src", "forgot_password.php?modal=1");
+            }
+            forgotPasswordModal.classList.add("is-open");
+            forgotPasswordModal.setAttribute("aria-hidden", "false");
+            document.body.style.overflow = "hidden";
+            window.setTimeout(function () {
+                const closeButton = forgotPasswordModal.querySelector("[data-forgot-close]");
+                if (closeButton) {
+                    closeButton.focus();
+                }
+            }, 80);
+        }
+
+        function closeForgotPasswordModal(event) {
+            if (event) {
+                event.preventDefault();
+            }
+
+            if (!forgotPasswordModal) {
+                return;
+            }
+
+            forgotPasswordModal.classList.remove("is-open");
+            forgotPasswordModal.setAttribute("aria-hidden", "true");
+            document.body.style.overflow = "";
+        }
+
         loginTriggers.forEach(function (trigger) {
             trigger.addEventListener("click", openPatientLogin);
         });
@@ -1002,6 +1050,14 @@ $additionalScripts = '
 
         registrationCloseTriggers.forEach(function (trigger) {
             trigger.addEventListener("click", closeRegistrationModal);
+        });
+
+        forgotPasswordTriggers.forEach(function (trigger) {
+            trigger.addEventListener("click", openForgotPasswordModal);
+        });
+
+        forgotPasswordCloseTriggers.forEach(function (trigger) {
+            trigger.addEventListener("click", closeForgotPasswordModal);
         });
 
         if (loginModal) {
@@ -1020,9 +1076,19 @@ $additionalScripts = '
             });
         }
 
+        if (forgotPasswordModal) {
+            forgotPasswordModal.addEventListener("click", function (event) {
+                if (event.target === forgotPasswordModal) {
+                    closeForgotPasswordModal(event);
+                }
+            });
+        }
+
         document.addEventListener("keydown", function (event) {
             if (event.key === "Escape" && registrationModal && registrationModal.classList.contains("is-open")) {
                 closeRegistrationModal(event);
+            } else if (event.key === "Escape" && forgotPasswordModal && forgotPasswordModal.classList.contains("is-open")) {
+                closeForgotPasswordModal(event);
             } else if (event.key === "Escape" && loginModal && loginModal.classList.contains("is-open")) {
                 closePatientLogin(event);
             }
@@ -1347,6 +1413,15 @@ include 'includes/header.php';
                 <button type="button" class="registration-modal-close" data-register-close aria-label="Close registration">&times;</button>
             </div>
             <iframe id="registration-frame" class="registration-frame" title="Patient registration form"></iframe>
+        </div>
+    </section>
+    <section id="forgot-password-modal" class="registration-modal" role="dialog" aria-modal="true" aria-labelledby="forgot-password-modal-title" aria-hidden="true">
+        <div class="registration-dialog">
+            <div class="registration-modal-head">
+                <h2 id="forgot-password-modal-title">Forgot Password</h2>
+                <button type="button" class="registration-modal-close" data-forgot-close aria-label="Close forgot password">&times;</button>
+            </div>
+            <iframe id="forgot-password-frame" class="registration-frame" title="Forgot password form"></iframe>
         </div>
     </section>
 <?php include 'includes/footer.php'; ?>

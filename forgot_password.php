@@ -6,6 +6,8 @@ header('Expires: 0');
 require_once 'includes/session.php';
 require_once 'includes/password_reset.php';
 
+$isForgotPasswordModal = (($_GET['modal'] ?? '') === '1') || (($_POST['modal'] ?? '') === '1');
+$forgotPasswordAction = 'forgot_password.php' . ($isForgotPasswordModal ? '?modal=1' : '');
 $step = 'request';
 $error = '';
 $success = '';
@@ -33,14 +35,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $_SESSION['pw_reset_email'] = $result['email'];
                 unset($_SESSION['pw_reset_verified'], $_SESSION['pw_reset_user_id']);
-                header('Location: forgot_password.php?step=verify&sent=1');
+                header('Location: forgot_password.php?step=verify&sent=1' . ($isForgotPasswordModal ? '&modal=1' : ''));
                 exit();
             }
         }
     } elseif ($action === 'resend_code') {
         $email = $_SESSION['pw_reset_email'] ?? '';
         if ($email === '') {
-            header('Location: forgot_password.php');
+            header('Location: ' . $forgotPasswordAction);
             exit();
         }
         $result = pw_reset_issue_code($email);
@@ -54,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email = $_SESSION['pw_reset_email'] ?? '';
         $code = $_POST['code'] ?? '';
         if ($email === '') {
-            header('Location: forgot_password.php');
+            header('Location: ' . $forgotPasswordAction);
             exit();
         }
         $verify = pw_reset_verify_code($email, $code);
@@ -64,14 +66,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $_SESSION['pw_reset_verified'] = true;
             $_SESSION['pw_reset_user_id'] = $verify['user_id'];
-            header('Location: forgot_password.php?step=reset');
+            header('Location: forgot_password.php?step=reset' . ($isForgotPasswordModal ? '&modal=1' : ''));
             exit();
         }
     } elseif ($action === 'reset_password') {
         $userId = (int) ($_SESSION['pw_reset_user_id'] ?? 0);
         $email = $_SESSION['pw_reset_email'] ?? '';
         if ($userId <= 0 || empty($_SESSION['pw_reset_verified'])) {
-            header('Location: forgot_password.php');
+            header('Location: ' . $forgotPasswordAction);
             exit();
         }
         $password = $_POST['password'] ?? '';
@@ -89,7 +91,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $step = 'reset';
             } else {
                 unset($_SESSION['pw_reset_email'], $_SESSION['pw_reset_verified'], $_SESSION['pw_reset_user_id']);
-                header('Location: index.php?reset=1#patient-login');
+                if ($isForgotPasswordModal) {
+                    echo '<script>window.top.location.replace(' . json_encode('index.php?reset=1&login=1#patient-login') . ');</script>';
+                    exit();
+                }
+                header('Location: index.php?reset=1&login=1#patient-login');
                 exit();
             }
         }
@@ -264,6 +270,48 @@ $additionalStyles = '
     }
 ';
 
+if ($isForgotPasswordModal) {
+    $additionalStyles .= '
+        html,
+        body {
+            min-height: 100%;
+            background: #ffffff;
+        }
+
+        body {
+            display: block;
+        }
+
+        #mainHeader,
+        footer {
+            display: none !important;
+        }
+
+        .login-wrapper {
+            display: block;
+            min-height: 100%;
+            padding: 0;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: none;
+            min-height: 100%;
+            margin: 0;
+            padding: 32px clamp(20px, 4vw, 48px) 40px;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        @media (max-width: 560px) {
+            .login-container {
+                padding: 24px 18px 32px;
+            }
+        }
+    ';
+}
+
 include 'includes/header.php';
 ?>
     <div class="login-wrapper">
@@ -285,7 +333,7 @@ include 'includes/header.php';
             <?php endif; ?>
 
             <?php if ($step === 'request'): ?>
-                <form method="POST" action="forgot_password.php">
+                <form method="POST" action="<?php echo htmlspecialchars($forgotPasswordAction); ?>">
                     <input type="hidden" name="action" value="request_code">
                     <div class="form-group">
                         <label for="email">Registered email address</label>
@@ -304,7 +352,7 @@ include 'includes/header.php';
                 </form>
 
             <?php elseif ($step === 'verify'): ?>
-                <form method="POST" action="forgot_password.php">
+                <form method="POST" action="<?php echo htmlspecialchars($forgotPasswordAction); ?>">
                     <input type="hidden" name="action" value="verify_code">
                     <div class="form-group">
                         <label for="code">6-digit code</label>
@@ -327,13 +375,13 @@ include 'includes/header.php';
                     </p>
                     <button type="submit" class="login-btn-form">Verify code</button>
                 </form>
-                <form method="POST" action="forgot_password.php" style="text-align: center; margin-top: 16px;">
+                <form method="POST" action="<?php echo htmlspecialchars($forgotPasswordAction); ?>" style="text-align: center; margin-top: 16px;">
                     <input type="hidden" name="action" value="resend_code">
                     <button type="submit" class="inline-link-btn">Resend code</button>
                 </form>
 
             <?php else: ?>
-                <form method="POST" action="forgot_password.php">
+                <form method="POST" action="<?php echo htmlspecialchars($forgotPasswordAction); ?>">
                     <input type="hidden" name="action" value="reset_password">
                     <div class="form-group">
                         <label for="password">New password</label>
@@ -351,9 +399,9 @@ include 'includes/header.php';
             <?php endif; ?>
 
             <div class="form-footer">
-                <a href="index.php#patient-login" target="_top">← Back to sign in</a>
+                <a href="index.php?login=1#patient-login" target="_top">← Back to sign in</a>
                 &nbsp;·&nbsp;
-                <a href="index.php#patient-login" target="_top">Home login</a>
+                <a href="index.php?login=1#patient-login" target="_top">Home login</a>
             </div>
         </div>
     </div>
