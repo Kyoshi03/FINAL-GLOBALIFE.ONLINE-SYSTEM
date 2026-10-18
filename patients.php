@@ -1829,6 +1829,8 @@ $additionalStyles = '
         width: min(760px, 100%);
         max-height: calc(100vh - 36px);
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
         border: 1px solid #cde8f3;
         border-radius: 20px;
         background: #fff;
@@ -1879,6 +1881,9 @@ $additionalStyles = '
     }
 
     .patient-appointment-body {
+        min-height: 0;
+        flex: 1 1 auto;
+        overflow-y: auto;
         padding: 22px 24px;
     }
 
@@ -1956,7 +1961,32 @@ $additionalStyles = '
         display: flex;
         justify-content: flex-end;
         gap: 10px;
+        flex: 0 0 auto;
         padding: 0 24px 24px;
+        border-top: 1px solid #e6f0f5;
+        background: #fff;
+    }
+
+    .patient-details-cancel {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
+        margin-right: auto;
+        padding: 0 18px;
+        border: 1px solid #ffd0d5;
+        border-radius: 9px;
+        background: #fff5f6;
+        color: #c52035;
+        cursor: pointer;
+        font: inherit;
+        font-size: .9rem;
+        font-weight: 900;
+    }
+
+    .patient-details-cancel:hover {
+        background: #ffe8eb;
+        border-color: #f3aab5;
     }
 
     .patient-cancel-reason {
@@ -3127,6 +3157,34 @@ $additionalStyles = '
             line-height: 1.1;
             white-space: nowrap;
         }
+
+        .patient-appointment-modal {
+            padding: 10px;
+        }
+
+        .patient-appointment-dialog {
+            width: 100%;
+            max-height: calc(100dvh - 20px);
+            border-radius: 16px;
+        }
+
+        .patient-appointment-head {
+            padding: 18px;
+        }
+
+        .patient-appointment-body {
+            padding: 16px;
+        }
+
+        .patient-appointment-actions {
+            padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+        }
+
+        .patient-details-cancel {
+            min-height: 38px;
+            padding: 0 14px;
+            font-size: .82rem;
+        }
     }
 
     @media (max-width: 900px) {
@@ -3759,6 +3817,7 @@ include 'includes/header.php';
                 <div class="patient-detail-notes" id="patientAppointmentNotes"></div>
             </div>
             <div class="patient-appointment-actions">
+                <button type="button" class="patient-details-cancel" id="patientDetailsCancel" hidden>Cancel</button>
                 <button type="button" class="plain-btn" data-patient-modal-close>Close</button>
             </div>
         </section>
@@ -4066,6 +4125,7 @@ include 'includes/header.php';
         const detailSummary = document.getElementById('patientAppointmentSummary');
         const detailGrid = document.getElementById('patientAppointmentGrid');
         const detailNotes = document.getElementById('patientAppointmentNotes');
+        const detailCancel = document.getElementById('patientDetailsCancel');
         const cancelModal = document.getElementById('patientCancelModal');
         const cancelSuccessModal = document.getElementById('patientCancelSuccessModal');
         const cancelSuccessOk = document.getElementById('patientCancelSuccessOk');
@@ -4160,6 +4220,15 @@ include 'includes/header.php';
             }
             if (detailSub) {
                 detailSub.textContent = (data.queueNumber || 'Queue number') + ' • ' + (data.status || 'Pending');
+            }
+            const cancelForm = row.querySelector('[data-patient-cancel-form]');
+            if (detailCancel) {
+                detailCancel.hidden = !cancelForm;
+                detailCancel.onclick = function() {
+                    if (cancelForm && typeof cancelForm.requestSubmit === 'function') {
+                        cancelForm.requestSubmit();
+                    }
+                };
             }
             openPatientModal(detailModal);
         }
