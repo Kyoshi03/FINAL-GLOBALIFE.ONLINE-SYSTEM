@@ -1079,6 +1079,25 @@ $additionalStyles = patientAvatarStyles() . '
         box-shadow: 0 6px 20px rgba(0, 119, 182, 0.4);
     }
     @media (max-width: 768px) {
+        .patient-history-page {
+            width: 100%;
+            max-width: none;
+            margin-left: 0;
+            margin-right: 0;
+            padding: 16px 8px 128px;
+            box-sizing: border-box;
+        }
+        .patient-history-page .appointments-filter-card,
+        .patient-history-page .appointments-table-wrapper {
+            width: 100%;
+            max-width: none;
+            margin-left: 0;
+            margin-right: 0;
+            box-sizing: border-box;
+        }
+        .patient-history-page .appointments-filter-card {
+            padding: 14px 12px;
+        }
         .appointment-stats,
         .clinical-stat-grid,
         .appointment-report-summary,
@@ -1100,6 +1119,9 @@ $additionalStyles = patientAvatarStyles() . '
         }
         .appointments-table-wrapper {
             padding: 15px;
+        }
+        .patient-history-page .appointments-table-wrapper {
+            padding: 12px;
         }
         .appointments-scroll {
             max-height: 560px;
