@@ -268,6 +268,35 @@ $additionalStyles = '
         font-size: inherit;
         text-decoration: underline;
     }
+    .forgot-content {
+        width: min(100%, 560px);
+        margin: 0 auto;
+        text-align: center;
+    }
+    .forgot-logo {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 14px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #48cae4;
+        box-shadow: 0 8px 20px rgba(0, 119, 182, 0.15);
+    }
+    .forgot-content h2 {
+        color: #073b4c;
+        margin: 0 0 8px;
+        font-size: 1.7rem;
+        text-align: center;
+    }
+    .forgot-content .login-subtitle {
+        margin-bottom: 24px;
+    }
+    .forgot-form {
+        text-align: left;
+    }
+    .forgot-form .login-btn-form {
+        margin-top: 4px;
+    }
 ';
 
 if ($isForgotPasswordModal) {
@@ -280,6 +309,7 @@ if ($isForgotPasswordModal) {
 
         body {
             display: block;
+            overflow-x: hidden;
         }
 
         #mainHeader,
@@ -302,6 +332,7 @@ if ($isForgotPasswordModal) {
             border: 0;
             border-radius: 0;
             box-shadow: none;
+            box-sizing: border-box;
         }
 
         @media (max-width: 560px) {
@@ -316,92 +347,93 @@ include 'includes/header.php';
 ?>
     <div class="login-wrapper">
         <div class="login-container">
-            <h2>Forgot Password</h2>
-            <p class="login-subtitle">Reset your password using a secure code sent to your registered email.</p>
+            <div class="forgot-content">
+                <img src="globalife.png" alt="Globalife Medical Laboratory &amp; Polyclinic" class="forgot-logo">
+                <h2>Reset your password</h2>
+                <p class="login-subtitle">Enter your registered email to receive a secure verification code.</p>
 
-            <div class="step-pills">
-                <span class="step-pill<?php echo $step === 'request' ? ' active' : ''; ?>">1. Email</span>
-                <span class="step-pill<?php echo $step === 'verify' ? ' active' : ''; ?>">2. Code</span>
-                <span class="step-pill<?php echo $step === 'reset' ? ' active' : ''; ?>">3. New password</span>
-            </div>
+                <div class="step-pills">
+                    <span class="step-pill<?php echo $step === 'request' ? ' active' : ''; ?>">1. Email</span>
+                    <span class="step-pill<?php echo $step === 'verify' ? ' active' : ''; ?>">2. Code</span>
+                    <span class="step-pill<?php echo $step === 'reset' ? ' active' : ''; ?>">3. New password</span>
+                </div>
 
-            <?php if ($error): ?>
-                <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
-            <?php endif; ?>
-            <?php if ($success): ?>
-                <div class="success-message"><?php echo htmlspecialchars($success); ?></div>
-            <?php endif; ?>
+                <?php if ($error): ?>
+                    <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
+                <?php endif; ?>
+                <?php if ($success): ?>
+                    <div class="success-message"><?php echo htmlspecialchars($success); ?></div>
+                <?php endif; ?>
 
-            <?php if ($step === 'request'): ?>
-                <form method="POST" action="<?php echo htmlspecialchars($forgotPasswordAction); ?>">
-                    <input type="hidden" name="action" value="request_code">
-                    <div class="form-group">
-                        <label for="email">Registered email address</label>
-                        <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            value="<?php echo htmlspecialchars($emailValue); ?>"
-                            placeholder="you@example.com"
-                            autocomplete="email"
-                            required
-                            autofocus
-                        >
-                    </div>
-                    <button type="submit" class="login-btn-form">Send verification code</button>
-                </form>
+                <?php if ($step === 'request'): ?>
+                    <form method="POST" action="<?php echo htmlspecialchars($forgotPasswordAction); ?>" class="forgot-form">
+                        <input type="hidden" name="action" value="request_code">
+                        <div class="form-group">
+                            <label for="email">Registered email address</label>
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                value="<?php echo htmlspecialchars($emailValue); ?>"
+                                placeholder="you@example.com"
+                                autocomplete="email"
+                                required
+                                autofocus
+                            >
+                        </div>
+                        <button type="submit" class="login-btn-form">Continue</button>
+                    </form>
 
-            <?php elseif ($step === 'verify'): ?>
-                <form method="POST" action="<?php echo htmlspecialchars($forgotPasswordAction); ?>">
-                    <input type="hidden" name="action" value="verify_code">
-                    <div class="form-group">
-                        <label for="code">6-digit code</label>
-                        <input
-                            type="text"
-                            id="code"
-                            name="code"
-                            class="code-input"
-                            inputmode="numeric"
-                            pattern="[0-9]{6}"
-                            maxlength="6"
-                            placeholder="000000"
-                            autocomplete="one-time-code"
-                            required
-                            autofocus
-                        >
-                    </div>
-                    <p class="login-subtitle" style="margin-top: -8px; margin-bottom: 20px;">
-                        Code sent to <strong><?php echo htmlspecialchars($maskedEmail); ?></strong>
-                    </p>
-                    <button type="submit" class="login-btn-form">Verify code</button>
-                </form>
-                <form method="POST" action="<?php echo htmlspecialchars($forgotPasswordAction); ?>" style="text-align: center; margin-top: 16px;">
-                    <input type="hidden" name="action" value="resend_code">
-                    <button type="submit" class="inline-link-btn">Resend code</button>
-                </form>
+                <?php elseif ($step === 'verify'): ?>
+                    <form method="POST" action="<?php echo htmlspecialchars($forgotPasswordAction); ?>" class="forgot-form">
+                        <input type="hidden" name="action" value="verify_code">
+                        <div class="form-group">
+                            <label for="code">6-digit code</label>
+                            <input
+                                type="text"
+                                id="code"
+                                name="code"
+                                class="code-input"
+                                inputmode="numeric"
+                                pattern="[0-9]{6}"
+                                maxlength="6"
+                                placeholder="000000"
+                                autocomplete="one-time-code"
+                                required
+                                autofocus
+                            >
+                        </div>
+                        <p class="login-subtitle" style="margin-top: -8px; margin-bottom: 20px;">
+                            Code sent to <strong><?php echo htmlspecialchars($maskedEmail); ?></strong>
+                        </p>
+                        <button type="submit" class="login-btn-form">Verify code</button>
+                    </form>
+                    <form method="POST" action="<?php echo htmlspecialchars($forgotPasswordAction); ?>" style="text-align: center; margin-top: 16px;">
+                        <input type="hidden" name="action" value="resend_code">
+                        <button type="submit" class="inline-link-btn">Resend code</button>
+                    </form>
 
-            <?php else: ?>
-                <form method="POST" action="<?php echo htmlspecialchars($forgotPasswordAction); ?>">
-                    <input type="hidden" name="action" value="reset_password">
-                    <div class="form-group">
-                        <label for="password">New password</label>
-                        <input type="password" id="password" name="password" autocomplete="new-password" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="confirm_password">Confirm new password</label>
-                        <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" required>
-                    </div>
-                    <p class="login-subtitle" style="font-size: 0.82rem; margin-top: -8px;">
-                        At least 8 characters with upper, lower, number, and special character.
-                    </p>
-                    <button type="submit" class="login-btn-form">Update password</button>
-                </form>
-            <?php endif; ?>
+                <?php else: ?>
+                    <form method="POST" action="<?php echo htmlspecialchars($forgotPasswordAction); ?>" class="forgot-form">
+                        <input type="hidden" name="action" value="reset_password">
+                        <div class="form-group">
+                            <label for="password">New password</label>
+                            <input type="password" id="password" name="password" autocomplete="new-password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm_password">Confirm new password</label>
+                            <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" required>
+                        </div>
+                        <p class="login-subtitle" style="font-size: 0.82rem; margin-top: -8px;">
+                            At least 8 characters with upper, lower, number, and special character.
+                        </p>
+                        <button type="submit" class="login-btn-form">Update password</button>
+                    </form>
+                <?php endif; ?>
 
-            <div class="form-footer">
-                <a href="index.php?login=1#patient-login" target="_top">← Back to sign in</a>
-                &nbsp;·&nbsp;
-                <a href="index.php?login=1#patient-login" target="_top">Home login</a>
+                <div class="form-footer">
+                    <a href="index.php?login=1#patient-login" target="_top">← Back to Log In</a>
+                </div>
             </div>
         </div>
     </div>
