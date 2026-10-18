@@ -1284,8 +1284,31 @@ $additionalStyles = patientAvatarStyles() . '
             border-bottom: 0;
         }
         .patient-history-page .appointment-schedule-cell {
+            display: grid !important;
+            grid-template-columns: 34% minmax(0, 1fr);
+            align-items: start;
             min-width: 0;
             white-space: normal;
+            text-align: right;
+        }
+        .patient-history-page .appointment-schedule-cell::before {
+            grid-column: 1;
+            grid-row: 1;
+            flex: none;
+        }
+        .patient-history-page .patient-schedule-primary {
+            grid-column: 2;
+            grid-row: 1;
+            min-width: 0;
+            text-align: right;
+        }
+        .patient-history-page .patient-reschedule-card-note {
+            grid-column: 1 / -1;
+            grid-row: 2;
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 9px;
+            text-align: left;
         }
         .patient-history-page .action-buttons {
             display: flex;
@@ -1661,8 +1684,10 @@ include __DIR__ . '/includes/header.php';
                                 </td>
                             <?php else: ?>
                                 <td class="appointment-schedule-cell appointments-date">
-                                    <strong><?php echo htmlspecialchars($formattedDate); ?></strong>
-                                    <span><?php echo htmlspecialchars($formattedTime); ?></span>
+                                    <div class="patient-schedule-primary">
+                                        <strong><?php echo htmlspecialchars($formattedDate); ?></strong>
+                                        <span><?php echo htmlspecialchars($formattedTime); ?></span>
+                                    </div>
                                     <?php if ($userRole === 'patient' && !empty($appointment['reschedule_request_id'])): ?>
                                         <small class="reschedule-request-note patient-reschedule-card-note"><span class="patient-reschedule-detail"><strong>Original:</strong> <?php echo htmlspecialchars($originalScheduleLabel); ?><br><strong>Requested:</strong> <?php echo htmlspecialchars($requestedScheduleLabel); ?> <span>(Pending approval)</span></span><span class="patient-reschedule-compact"><strong>Reschedule pending</strong><span>Requested: <?php echo htmlspecialchars($requestedScheduleLabel); ?></span></span></small>
                                     <?php endif; ?>
