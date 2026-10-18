@@ -151,7 +151,7 @@ $rescheduleMinTime = $rescheduleNow->modify('+1 minute')->format('H:i');
             <input type="hidden" name="appointment_id" id="appointmentRescheduleId" value="">
             <input type="hidden" name="return_url" value="<?php echo htmlspecialchars((string) $appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
             <div class="reschedule-body">
-                <p class="reschedule-note" id="appointmentRescheduleNotice">Choose an available date and time. Your current Confirmed schedule stays active until the clinic approves this request.</p>
+                <p class="reschedule-note" id="appointmentRescheduleNotice">Your appointment is already confirmed. Your current schedule will remain active until the reschedule request is approved.</p>
                 <p class="reschedule-availability is-loading" id="appointmentRescheduleAvailability" aria-live="polite">Checking the doctor's available dates...</p>
                 <div class="reschedule-calendar-panel" id="appointmentRescheduleCalendarPanel" aria-label="Doctor availability calendar">
                     <div class="reschedule-calendar-head">
@@ -645,8 +645,8 @@ unset($_SESSION['reschedule_error']);
             var editMode = button.getAttribute('data-reschedule-mode') || 'confirmed';
             if (title) title.textContent = 'Reschedule appointment';
             if (notice) notice.textContent = editMode === 'pending'
-                ? 'Your appointment is still pending. Choose a new available schedule and submit the reschedule request.'
-                : 'Choose an available date and time. Your current Confirmed schedule stays active until the clinic approves this request.';
+                ? 'This appointment is not yet confirmed. You can change your schedule before confirmation.'
+                : 'This appointment is already confirmed. Your current schedule will remain active until the reschedule request is approved.';
             if (submitButton) submitButton.textContent = editMode === 'pending' ? 'Save Schedule' : 'Submit Request';
             if (currentText) currentText.textContent = current;
             modal.classList.add('is-open');
