@@ -146,7 +146,7 @@ $headerPatientDisplayName = $headerProfile['full_name'] ?? $currentUser['full_na
 
 $additionalStyles = patientAvatarStyles() . '
 body { background:#f4f8fb; min-height:100vh; color:#1f343d; }
-.appointments-container { max-width:1180px; margin:0 auto; padding:28px 20px 48px; }
+.appointments-container { width:100%; max-width:none; box-sizing:border-box; margin:0 auto; padding:28px 20px 48px; }
 .appointments-filter-card { background:#fff; border:1px solid #e4edf2; border-radius:12px; padding:20px 22px; margin-bottom:18px; box-shadow:0 10px 24px rgba(25,76,110,.05); }
 .appointment-tools { display:grid; gap:14px; align-items:end; }
 .appointment-tools.patient-filters { grid-template-columns:minmax(240px,1fr) 180px auto auto; }

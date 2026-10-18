@@ -352,7 +352,9 @@ $additionalStyles = patientAvatarStyles() . '
         color:#1f343d;
     }
     .appointments-container {
-        max-width:1180px;
+        width:100%;
+        max-width:none;
+        box-sizing:border-box;
         margin:0 auto;
         padding:28px 20px 48px;
     }
