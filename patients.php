@@ -11,6 +11,7 @@ require_once 'includes/patient_notifications.php';
 require_once 'includes/clinic_notifications.php';
 require_once 'includes/admin_notifications.php';
 require_once 'includes/appointment_booking.php';
+require_once 'includes/appointment_reschedule.php';
 require_once 'includes/clinic_info.php';
 
 $patientCaviteLocationSource = require __DIR__ . '/includes/cavite_locations.php';
@@ -755,12 +756,19 @@ if ($profileGender === '' && $profileGenderRaw !== '') {
     $profileGender = $profileGenderRaw;
 }
 appointment_init_queue_schema($conn);
+appointment_reschedule_init_schema($conn);
 
 $doctorNameSql = dbUsersNameExpression('d');
-$stmt = $conn->prepare("SELECT a.*, {$doctorNameSql} AS doctor_name, q.queue_number
+$pendingRescheduleJoin = appointment_reschedule_pending_join_sql();
+$stmt = $conn->prepare("SELECT a.*, {$doctorNameSql} AS doctor_name, q.queue_number, q.status AS queue_status,
+        rr.id AS reschedule_request_id,
+        rr.requested_date AS reschedule_requested_date,
+        rr.requested_time AS reschedule_requested_time,
+        rr.status AS reschedule_request_status
     FROM appointments a
     LEFT JOIN users d ON d.id = a.doctor_id AND d.role = 'doctor'
     LEFT JOIN clinic_queue q ON q.appointment_id = a.id
+    {$pendingRescheduleJoin}
     WHERE a.patient_id = ?
       AND a.status IN ('pending', 'confirmed')
       AND a.appointment_date >= CURDATE()
@@ -775,10 +783,15 @@ $appointmentsPerPage = 5;
 $appointmentsPage = max(1, (int) ($_GET['upcoming_page'] ?? 1));
 $appointmentsOffset = ($appointmentsPage - 1) * $appointmentsPerPage;
 
-$stmt = $conn->prepare("SELECT a.*, {$doctorNameSql} AS doctor_name, q.queue_number
+$stmt = $conn->prepare("SELECT a.*, {$doctorNameSql} AS doctor_name, q.queue_number, q.status AS queue_status,
+        rr.id AS reschedule_request_id,
+        rr.requested_date AS reschedule_requested_date,
+        rr.requested_time AS reschedule_requested_time,
+        rr.status AS reschedule_request_status
     FROM appointments a
     LEFT JOIN users d ON d.id = a.doctor_id AND d.role = 'doctor'
     LEFT JOIN clinic_queue q ON q.appointment_id = a.id
+    {$pendingRescheduleJoin}
     WHERE a.patient_id = ?
       AND a.status IN ('pending', 'confirmed')
       AND a.appointment_date >= CURDATE()
@@ -2062,8 +2075,7 @@ $additionalStyles = '
     .patient-cancel-dialog .patient-appointment-head h3 {
         color: #10233f;
         font-size: 1.28rem;
-        line-height: 1.12;
-        font-weight: 950;
+        line-height: 1.2;
     }
 
     .patient-cancel-dialog .patient-appointment-head p {
@@ -2080,7 +2092,6 @@ $additionalStyles = '
         width: 40px;
         height: 40px;
         font-size: 1.35rem;
-        background: #eaf8fc;
     }
 
     .patient-cancel-dialog .patient-cancel-reason {
@@ -2117,7 +2128,6 @@ $additionalStyles = '
 
     .patient-cancel-dialog .patient-appointment-actions {
         padding: 20px 24px 24px;
-        gap: 10px;
     }
 
     .patient-cancel-back,
@@ -3719,6 +3729,12 @@ include 'includes/header.php';
                                 <span><?php echo htmlspecialchars(patient_booking_label($nextAppointment['booking_type'] ?? null)); ?></span>
                                 <span class="appointment-ref">Queue No. <?php echo htmlspecialchars((string) (($nextAppointment['queue_number'] ?? '') ?: 'Not generated')); ?></span>
                             </div>
+                            <?php if (!empty($nextAppointment['reschedule_request_id'])): ?>
+                                <div class="reschedule-request-note">
+                                    <strong>Original schedule remains active:</strong> <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $nextAppointment['appointment_date'], (string) $nextAppointment['appointment_time'])); ?><br>
+                                    <strong>Requested schedule:</strong> <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $nextAppointment['reschedule_requested_date'], (string) $nextAppointment['reschedule_requested_time'])); ?> <span>(Pending approval)</span>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 <?php endif; ?>
@@ -3777,6 +3793,12 @@ include 'includes/header.php';
                                             <span>Total: PHP <?php echo number_format((float) $appointment['total_display_price'], 2); ?></span>
                                         <?php endif; ?>
                                     </div>
+                                    <?php if (!empty($appointment['reschedule_request_id'])): ?>
+                                        <div class="reschedule-request-note">
+                                            <strong>Original:</strong> <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $appointment['appointment_date'], (string) $appointment['appointment_time'])); ?><br>
+                                            <strong>Requested:</strong> <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $appointment['reschedule_requested_date'], (string) $appointment['reschedule_requested_time'])); ?> <span>(Pending approval)</span>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="appointment-status">
                                     <span class="status-badge <?php echo htmlspecialchars($statusClass); ?>">
@@ -3794,12 +3816,18 @@ include 'includes/header.php';
                                                 </form>
                                             <?php endif; ?>
                                             <button type="button" class="patient-details-inline" data-open-patient-details>Details</button>
-                                            <button type="button" class="btn btn-reschedule patient-reschedule-btn"
-                                                data-open-reschedule
-                                                data-appointment-id="<?php echo (int) $appointment['id']; ?>"
-                                                data-reschedule-date="<?php echo htmlspecialchars((string) ($appointment['appointment_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                                                data-reschedule-time="<?php echo htmlspecialchars((string) ($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                                                data-reschedule-label="Current schedule: <?php echo htmlspecialchars(patient_format_date($appointment['appointment_date'] ?? '') . ' at ' . patient_format_time($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">Reschedule</button>
+                                            <?php if ($statusClass === 'confirmed' && appointment_reschedule_is_eligible($appointment)): ?>
+                                                <?php if (!empty($appointment['reschedule_request_id'])): ?>
+                                                    <span class="request-pending-badge">Request Pending</span>
+                                                <?php else: ?>
+                                                    <button type="button" class="btn btn-reschedule patient-reschedule-btn"
+                                                        data-open-reschedule
+                                                        data-appointment-id="<?php echo (int) $appointment['id']; ?>"
+                                                        data-reschedule-date="<?php echo htmlspecialchars((string) ($appointment['appointment_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-reschedule-time="<?php echo htmlspecialchars((string) ($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-reschedule-label="Current schedule: <?php echo htmlspecialchars(patient_format_date($appointment['appointment_date'] ?? '') . ' at ' . patient_format_time($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">Reschedule</button>
+                                                <?php endif; ?>
+                                            <?php endif; ?>
                                         </div>
                                     <?php endif; ?>
                                 </div>
