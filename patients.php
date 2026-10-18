@@ -3832,7 +3832,7 @@ include 'includes/header.php';
                                                 </form>
                                             <?php endif; ?>
                                             <button type="button" class="patient-details-inline" data-open-patient-details>Details</button>
-                                            <?php if ($statusClass === 'confirmed' && appointment_reschedule_is_eligible($appointment)): ?>
+                                            <?php if (appointment_reschedule_is_patient_editable($appointment)): ?>
                                                 <?php if (!empty($appointment['reschedule_request_id'])): ?>
                                                     <span class="request-pending-badge">Request Pending</span>
                                                 <?php else: ?>
@@ -3841,7 +3841,8 @@ include 'includes/header.php';
                                                         data-appointment-id="<?php echo (int) $appointment['id']; ?>"
                                                         data-reschedule-date="<?php echo htmlspecialchars((string) ($appointment['appointment_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                                         data-reschedule-time="<?php echo htmlspecialchars((string) ($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                                                        data-reschedule-label="Current schedule: <?php echo htmlspecialchars(patient_format_date($appointment['appointment_date'] ?? '') . ' at ' . patient_format_time($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">Reschedule</button>
+                                                        data-reschedule-label="Current schedule: <?php echo htmlspecialchars(patient_format_date($appointment['appointment_date'] ?? '') . ' at ' . patient_format_time($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-reschedule-mode="<?php echo $statusClass === 'pending' ? 'pending' : 'confirmed'; ?>"><?php echo $statusClass === 'pending' ? 'Change Schedule' : 'Reschedule'; ?></button>
                                                 <?php endif; ?>
                                             <?php endif; ?>
                                         </div>
