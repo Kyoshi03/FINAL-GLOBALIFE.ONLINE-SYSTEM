@@ -1325,6 +1325,10 @@ body {
     color: #9a5b00;
 }
 
+.reschedule-request-schedule.requested {
+    margin-bottom: 8px;
+}
+
 .reschedule-request-actions {
     display: flex;
     flex-wrap: wrap;
@@ -3627,6 +3631,10 @@ include 'includes/header.php';
                                             (string) ($request['requested_date'] ?? ''),
                                             (string) ($request['requested_time'] ?? '')
                                         );
+                                        $rescheduleOriginalDate = admin_date_label((string) ($request['original_date'] ?? ''));
+                                        $rescheduleOriginalTime = admin_time_label((string) ($request['original_time'] ?? ''));
+                                        $rescheduleRequestedDate = admin_date_label((string) ($request['requested_date'] ?? ''));
+                                        $rescheduleRequestedTime = admin_time_label((string) ($request['requested_time'] ?? ''));
                                         ?>
                                         <tr>
                                             <td>
@@ -3645,12 +3653,13 @@ include 'includes/header.php';
                                                 <?php endif; ?>
                                             </td>
                                             <td class="reschedule-request-schedule">
-                                                <strong><?php echo htmlspecialchars($rescheduleOriginal); ?></strong>
-                                                <span>Confirmed appointment</span>
+                                                <strong><?php echo htmlspecialchars($rescheduleOriginalDate); ?></strong>
+                                                <span><?php echo htmlspecialchars($rescheduleOriginalTime); ?> · Confirmed appointment</span>
                                             </td>
                                             <td>
                                                 <div class="reschedule-request-schedule requested">
-                                                    <strong><?php echo htmlspecialchars($rescheduleRequested); ?></strong>
+                                                    <strong><?php echo htmlspecialchars($rescheduleRequestedDate); ?></strong>
+                                                    <span><?php echo htmlspecialchars($rescheduleRequestedTime); ?></span>
                                                 </div>
                                                 <div class="reschedule-request-actions" aria-label="Reschedule request actions">
                                                     <button
