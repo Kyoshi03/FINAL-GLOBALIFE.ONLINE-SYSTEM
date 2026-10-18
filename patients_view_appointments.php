@@ -1680,7 +1680,7 @@ include __DIR__ . '/includes/header.php';
                                             data-reschedule-date="<?php echo htmlspecialchars((string) ($appointment['appointment_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                             data-reschedule-time="<?php echo htmlspecialchars((string) ($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                             data-reschedule-label="Current schedule: <?php echo htmlspecialchars($formattedDate . ' at ' . $formattedTime, ENT_QUOTES, 'UTF-8'); ?>"
-                                            data-reschedule-mode="<?php echo ($appointment['status'] ?? '') === 'pending' ? 'pending' : 'confirmed'; ?>"><?php echo ($appointment['status'] ?? '') === 'pending' ? 'Change Schedule' : 'Reschedule'; ?></button>
+                                            data-reschedule-mode="<?php echo ($appointment['status'] ?? '') === 'pending' ? 'pending' : 'confirmed'; ?>">Reschedule</button>
                                         <?php endif; ?>
                                     <?php endif; ?>
                                     <?php if (!empty($appointment['reschedule_request_id']) && (($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation'))): ?>

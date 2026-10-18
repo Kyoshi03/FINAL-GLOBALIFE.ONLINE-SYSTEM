@@ -3842,7 +3842,7 @@ include 'includes/header.php';
                                                         data-reschedule-date="<?php echo htmlspecialchars((string) ($appointment['appointment_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                                         data-reschedule-time="<?php echo htmlspecialchars((string) ($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                                         data-reschedule-label="Current schedule: <?php echo htmlspecialchars(patient_format_date($appointment['appointment_date'] ?? '') . ' at ' . patient_format_time($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                                                        data-reschedule-mode="<?php echo $statusClass === 'pending' ? 'pending' : 'confirmed'; ?>"><?php echo $statusClass === 'pending' ? 'Change Schedule' : 'Reschedule'; ?></button>
+                                                        data-reschedule-mode="<?php echo $statusClass === 'pending' ? 'pending' : 'confirmed'; ?>">Reschedule</button>
                                                 <?php endif; ?>
                                             <?php endif; ?>
                                         </div>

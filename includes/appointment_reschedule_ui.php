@@ -643,9 +643,9 @@ unset($_SESSION['reschedule_error']);
             timeInput.setCustomValidity('');
             var current = button.getAttribute('data-reschedule-label') || 'Current appointment schedule';
             var editMode = button.getAttribute('data-reschedule-mode') || 'confirmed';
-            if (title) title.textContent = editMode === 'pending' ? 'Change appointment schedule' : 'Reschedule appointment';
+            if (title) title.textContent = 'Reschedule appointment';
             if (notice) notice.textContent = editMode === 'pending'
-                ? 'Your appointment is still pending. Choose a new available schedule and save the change.'
+                ? 'Your appointment is still pending. Choose a new available schedule and submit the reschedule request.'
                 : 'Choose an available date and time. Your current Confirmed schedule stays active until the clinic approves this request.';
             if (submitButton) submitButton.textContent = editMode === 'pending' ? 'Save Schedule' : 'Submit Request';
             if (currentText) currentText.textContent = current;
