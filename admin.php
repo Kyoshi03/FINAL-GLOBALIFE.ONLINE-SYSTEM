@@ -2128,18 +2128,41 @@ body {
 
 .admin-detail-grid {
     display: grid;
-    grid-template-columns: 130px minmax(0, 1fr);
-    gap: 10px 14px;
+    grid-template-columns: minmax(170px, 190px) minmax(0, 1fr);
+    gap: 12px 18px;
+    align-items: baseline;
 }
 
 .admin-detail-grid span {
     color: #60727d;
+    font-size: .78rem;
     font-weight: 900;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .admin-detail-grid strong {
     color: #073b4c;
+    font-size: .95rem;
+    line-height: 1.35;
     overflow-wrap: anywhere;
+}
+
+.admin-detail-grid span[data-admin-detail-row="reschedule"],
+.admin-detail-grid strong[data-admin-detail-row="reschedule"] {
+    padding: 9px 11px;
+    background: #fff8e9;
+}
+
+.admin-detail-grid span[data-admin-detail-row="reschedule"] {
+    border-radius: 8px 0 0 8px;
+    color: #9a5b00;
+}
+
+.admin-detail-grid strong[data-admin-detail-row="reschedule"] {
+    border-radius: 0 8px 8px 0;
+    color: #7b4a00;
 }
 
 .admin-modal-actions {
@@ -2385,6 +2408,15 @@ body {
 
     .admin-detail-grid {
         grid-template-columns: 1fr;
+    }
+
+    .admin-detail-grid span {
+        white-space: normal;
+    }
+
+    .admin-detail-grid span[data-admin-detail-row="reschedule"],
+    .admin-detail-grid strong[data-admin-detail-row="reschedule"] {
+        border-radius: 8px;
     }
 
     .trend-panel-head {
@@ -2833,6 +2865,7 @@ document.addEventListener("DOMContentLoaded", function () {
             var bookingType = (data.bookingType || "").toLowerCase();
             var isKnownBookingType = ["consultation", "ultrasound", "package", "individual"].indexOf(bookingType) !== -1;
             setDetailRow("doctor", !isKnownBookingType || bookingType === "consultation");
+            setDetailRow("regular-schedule", data.reschedulePending !== "1");
             setDetailRow("reschedule", data.reschedulePending === "1");
             setDetailRow("type", !isKnownBookingType || bookingType !== "consultation");
             setDetailRow("services", !isKnownBookingType || bookingType === "package" || bookingType === "individual");
@@ -3422,7 +3455,7 @@ include 'includes/header.php';
                                                         data-contact="<?php echo htmlspecialchars($rescheduleContact, ENT_QUOTES, 'UTF-8'); ?>"
                                                         data-doctor="<?php echo htmlspecialchars((string) (($request['doctor_name'] ?? '') ?: 'Not assigned'), ENT_QUOTES, 'UTF-8'); ?>"
                                                         data-schedule="<?php echo htmlspecialchars($rescheduleOriginal, ENT_QUOTES, 'UTF-8'); ?>"
-                                                        data-modal-sub="Reschedule request review"
+                                                        data-modal-sub="Review reschedule request"
                                                         data-type="<?php echo htmlspecialchars(admin_booking_label((string) ($request['booking_type'] ?? '')), ENT_QUOTES, 'UTF-8'); ?>"
                                                         data-booking-type="<?php echo htmlspecialchars((string) ($request['booking_type'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                                         data-services="<?php echo htmlspecialchars($rescheduleService, ENT_QUOTES, 'UTF-8'); ?>"
@@ -3745,7 +3778,7 @@ include 'includes/header.php';
                     <span>Patient</span><strong id="adminDetailPatient">None</strong>
                     <span>Contact</span><strong id="adminDetailContact">None</strong>
                     <span data-admin-detail-row="doctor">Doctor</span><strong data-admin-detail-row="doctor" id="adminDetailDoctor">None</strong>
-                    <span>Schedule</span><strong id="adminDetailSchedule">None</strong>
+                    <span data-admin-detail-row="regular-schedule">Schedule</span><strong data-admin-detail-row="regular-schedule" id="adminDetailSchedule">None</strong>
                     <span data-admin-detail-row="reschedule">Original schedule</span><strong data-admin-detail-row="reschedule" id="adminDetailOriginalSchedule">None</strong>
                     <span data-admin-detail-row="reschedule">Requested schedule</span><strong data-admin-detail-row="reschedule" id="adminDetailRequestedSchedule">None</strong>
                     <span data-admin-detail-row="reschedule">Reschedule request</span><strong data-admin-detail-row="reschedule" id="adminDetailRescheduleStatus">Pending approval</strong>
