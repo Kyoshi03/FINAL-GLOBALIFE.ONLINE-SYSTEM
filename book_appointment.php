@@ -1142,6 +1142,10 @@ $additionalStyles = '
     .contact-verification-actions a { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:0 18px; border-radius:10px; text-decoration:none; font-weight:800; }
     .contact-verification-primary { background:#0878b5; color:#fff; }
     .contact-verification-secondary { border:1px solid #c9e2ef; background:#f5fbff; color:#08618f; }
+     @media (max-width:900px) {
+         body.page-book-appointment.app-layout nav#mainNav { transition:transform .22s ease, opacity .22s ease; }
+         body.page-book-appointment.app-layout nav#mainNav.book-appointment-nav-hidden { transform:translateY(calc(100% + 24px)) !important; opacity:0 !important; pointer-events:none !important; }
+     }
     @media (max-width:520px) { .capacity-dialog-head,.capacity-dialog-body{padding:18px}.capacity-summary{grid-template-columns:1fr}.capacity-doctor-row{align-items:flex-start;flex-direction:column}.capacity-chip{align-self:flex-start} }
 ';
 
@@ -2278,6 +2282,38 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
             document.addEventListener('keydown', function(event) {
                 if (event.key === 'Escape' && modal.classList.contains('open')) closeModal();
             });
+        })();
+        </script>
+        <script>
+        (function() {
+            var nav = document.getElementById('mainNav');
+            if (!nav || !document.body.classList.contains('page-book-appointment')) return;
+
+            var lastScrollY = window.scrollY || 0;
+            var ticking = false;
+
+            function updateBookingNav() {
+                var currentScrollY = window.scrollY || 0;
+                if (window.innerWidth <= 900) {
+                    if (currentScrollY > lastScrollY + 8 && currentScrollY > 120) {
+                        nav.classList.add('book-appointment-nav-hidden');
+                    } else if (currentScrollY < lastScrollY - 8 || currentScrollY <= 80) {
+                        nav.classList.remove('book-appointment-nav-hidden');
+                    }
+                } else {
+                    nav.classList.remove('book-appointment-nav-hidden');
+                }
+                lastScrollY = currentScrollY;
+                ticking = false;
+            }
+
+            window.addEventListener('scroll', function() {
+                if (!ticking) {
+                    window.requestAnimationFrame(updateBookingNav);
+                    ticking = true;
+                }
+            }, { passive: true });
+            window.addEventListener('resize', updateBookingNav);
         })();
         </script>
     </div>
