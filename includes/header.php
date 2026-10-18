@@ -1709,6 +1709,14 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
         body.app-layout.app-role-patient nav a[href*="book_appointment.php"] .nav-booking-label-secondary {
             display: block;
         }
+        body.app-layout.app-role-patient nav#mainNav {
+            transition: transform .22s ease, opacity .22s ease;
+        }
+        body.app-layout.app-role-patient nav#mainNav.patient-nav-hidden {
+            transform: translateY(calc(100% + 24px)) !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
         body.app-layout nav a:hover,
         body.app-layout nav .nav-submenu-toggle:hover {
             transform: none;
@@ -3020,6 +3028,36 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             header.classList.remove('scrolled');
         }
     });
+    (function() {
+        const nav = document.getElementById('mainNav');
+        const body = document.body;
+        if (!nav || !body.classList.contains('app-role-patient')) {
+            return;
+        }
+        let lastScrollY = window.scrollY || 0;
+        let ticking = false;
+        function updatePatientNav() {
+            const currentScrollY = window.scrollY || 0;
+            if (window.innerWidth <= 900) {
+                if (currentScrollY > lastScrollY + 8 && currentScrollY > 120) {
+                    nav.classList.add('patient-nav-hidden');
+                } else if (currentScrollY < lastScrollY - 8 || currentScrollY <= 80) {
+                    nav.classList.remove('patient-nav-hidden');
+                }
+            } else {
+                nav.classList.remove('patient-nav-hidden');
+            }
+            lastScrollY = currentScrollY;
+            ticking = false;
+        }
+        window.addEventListener('scroll', function() {
+            if (!ticking) {
+                window.requestAnimationFrame(updatePatientNav);
+                ticking = true;
+            }
+        }, { passive: true });
+        window.addEventListener('resize', updatePatientNav);
+    })();
     (function() {
         const menuWrap = document.querySelector('[data-profile-menu]');
         if (!menuWrap) {
