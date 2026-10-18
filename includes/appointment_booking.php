@@ -10,10 +10,7 @@ require_once __DIR__ . '/admin_notifications.php';
 require_once __DIR__ . '/patient_notifications.php';
 require_once __DIR__ . '/clinic_notifications.php';
 
-/**
- * Return the configured Philippine clinic closure for a recurring calendar date.
- * Variable-date holidays can be added here when the clinic publishes its annual schedule.
- */
+/** Return the fixed Globalife clinic closure for a recurring calendar date. */
 function appointment_holiday_name(string $date): ?string {
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
         return null;
@@ -21,18 +18,7 @@ function appointment_holiday_name(string $date): ?string {
 
     $recurringHolidays = [
         '01-01' => "New Year's Day",
-        '02-25' => 'EDSA People Power Revolution Anniversary',
-        '04-09' => 'Araw ng Kagitingan',
-        '05-01' => 'Labor Day',
-        '06-12' => 'Independence Day',
-        '08-21' => 'Ninoy Aquino Day',
-        '11-01' => "All Saints' Day",
-        '11-30' => 'Bonifacio Day',
-        '12-08' => 'Feast of the Immaculate Conception',
-        '12-24' => 'Christmas Eve',
         '12-25' => 'Christmas Day',
-        '12-30' => 'Rizal Day',
-        '12-31' => "Last Day of the Year",
     ];
 
     return $recurringHolidays[substr($date, 5)] ?? null;
