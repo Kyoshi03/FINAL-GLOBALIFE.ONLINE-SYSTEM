@@ -964,6 +964,12 @@ $additionalStyles = '
     .clinic-reminder-number { display:inline-grid; grid-row:span 2; place-items:center; width:32px; height:32px; margin:0; border-radius:50%; background:#e5f5fb; color:#006b9f; font-size:.9rem; font-weight:900; }
     .clinic-reminder strong { display:block; color:#0b4f80; margin:1px 0 4px; line-height:1.25; }
     .clinic-reminder span { color:#4a6072; font-size:.86rem; line-height:1.4; }
+    .booking-progress { margin:16px 0 22px; padding:12px 14px; border:1px solid #dce9f4; border-radius:12px; background:#f8fcff; }
+    .booking-progress-copy { display:flex; align-items:center; justify-content:space-between; gap:12px; color:#60727d; font-size:.78rem; }
+    .booking-progress-copy strong { color:#0b4f80; font-size:.88rem; text-align:right; }
+    .booking-progress-track { display:flex; gap:6px; margin-top:10px; }
+    .booking-progress-dot { flex:1 1 0; height:5px; border-radius:999px; background:#dbe8ef; }
+    .booking-progress-dot.is-complete { background:#27a9d6; }
     .review-check { display: flex; align-items: flex-start; gap: 10px; background: #f8fbff; border: 1px solid #dce9f4; border-radius: 10px; padding: 13px 14px; margin-bottom: 14px; color: #26495f; font-weight: 600; }
     .review-check input { margin-top: 3px; width: 18px; height: 18px; accent-color: #0077b6; }
     .review-terms-link { padding: 0; border: 0; background: transparent; color: #086ca5; font: inherit; font-weight: 800; text-align: left; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
@@ -988,6 +994,10 @@ $additionalStyles = '
     @media (max-width: 520px) { .appointment-terms-dialog { max-height: 90vh; } .appointment-terms-head, .appointment-terms-body { padding-left: 18px; padding-right: 18px; } .appointment-terms-actions { padding-left: 18px; padding-right: 18px; flex-direction: column-reverse; } .appointment-terms-actions button { width: 100%; } }
     @media (max-width: 820px) { .clinic-reminder-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     @media (max-width: 520px) {
+        .booking-progress { margin:12px 0 16px; padding:10px 11px; }
+        .booking-progress-copy { display:block; font-size:.72rem; }
+        .booking-progress-copy strong { display:block; margin-top:3px; font-size:.82rem; text-align:left; }
+        .booking-progress-track { margin-top:8px; }
         .clinic-reminder-grid { grid-template-columns:1fr; gap:8px; }
         .clinic-reminder { grid-template-columns:28px minmax(0,1fr); column-gap:9px; padding:10px; }
         .clinic-reminder-number { width:28px; height:28px; font-size:.82rem; }
@@ -1097,6 +1107,14 @@ foreach ($stepLabels as $actualStep => $label) {
         'label' => (string) $label,
     ];
 }
+$currentProgressIndex = 1;
+foreach ($stepperItems as $progressIndex => $progressItem) {
+    if ($progressItem['actual'] === $step) {
+        $currentProgressIndex = $progressIndex + 1;
+        break;
+    }
+}
+$currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
 ?>
 
 <div class="container">
@@ -1129,32 +1147,46 @@ foreach ($stepLabels as $actualStep => $label) {
             <p>Follow the steps below. Payment is made at the clinic after staff confirms your request.</p>
         </div>
 
-        <div class="clinic-reminder-grid" aria-labelledby="bookingProcedureTitle">
-            <div class="clinic-reminder-heading">
-                <h3 id="bookingProcedureTitle">How to book your appointment</h3>
-                <p>Complete these steps to submit and attend your clinic appointment.</p>
+        <?php if ($step === 1): ?>
+            <div class="clinic-reminder-grid" aria-labelledby="bookingProcedureTitle">
+                <div class="clinic-reminder-heading">
+                    <h3 id="bookingProcedureTitle">How to book your appointment</h3>
+                    <p>Complete these steps to submit and attend your clinic appointment.</p>
+                </div>
+                <div class="clinic-reminder">
+                    <span class="clinic-reminder-number" aria-hidden="true">1</span>
+                    <strong>Choose an appointment</strong>
+                    <span>Select a doctor consultation, ultrasound, laboratory package, or individual laboratory tests.</span>
+                </div>
+                <div class="clinic-reminder">
+                    <span class="clinic-reminder-number" aria-hidden="true">2</span>
+                    <strong>Select your schedule</strong>
+                    <span>Choose an open clinic date before continuing.</span>
+                </div>
+                <div class="clinic-reminder">
+                    <span class="clinic-reminder-number" aria-hidden="true">3</span>
+                    <strong>Submit your request</strong>
+                    <span>Review the appointment details, then send the request to the clinic.</span>
+                </div>
+                <div class="clinic-reminder">
+                    <span class="clinic-reminder-number" aria-hidden="true">4</span>
+                    <strong>Visit the clinic</strong>
+                    <span>Arrive 10-15 minutes early, and pay at the front desk.</span>
+                </div>
             </div>
-            <div class="clinic-reminder">
-                <span class="clinic-reminder-number" aria-hidden="true">1</span>
-                <strong>Choose an appointment</strong>
-                <span>Select a doctor consultation, ultrasound, laboratory package, or individual laboratory tests.</span>
+        <?php else: ?>
+            <div class="booking-progress" aria-label="Booking progress">
+                <div class="booking-progress-copy">
+                    <span>Booking progress</span>
+                    <strong>Step <?php echo $currentProgressIndex; ?> of <?php echo count($stepperItems); ?>: <?php echo htmlspecialchars($currentProgressLabel); ?></strong>
+                </div>
+                <div class="booking-progress-track" aria-hidden="true">
+                    <?php foreach ($stepperItems as $progressIndex => $progressItem): ?>
+                        <span class="booking-progress-dot<?php echo $progressIndex + 1 <= $currentProgressIndex ? ' is-complete' : ''; ?>"></span>
+                    <?php endforeach; ?>
+                </div>
             </div>
-            <div class="clinic-reminder">
-                <span class="clinic-reminder-number" aria-hidden="true">2</span>
-                <strong>Select your schedule</strong>
-                <span>Choose an open clinic date before continuing.</span>
-            </div>
-            <div class="clinic-reminder">
-                <span class="clinic-reminder-number" aria-hidden="true">3</span>
-                <strong>Submit your request</strong>
-                <span>Review the appointment details, then send the request to the clinic.</span>
-            </div>
-            <div class="clinic-reminder">
-                <span class="clinic-reminder-number" aria-hidden="true">4</span>
-                <strong>Visit the clinic</strong>
-                <span>Arrive 10-15 minutes early, and pay at the front desk.</span>
-            </div>
-        </div>
+        <?php endif; ?>
         <?php if ($error): ?>
             <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
