@@ -752,6 +752,7 @@ $additionalStyles = patientAvatarStyles() . '
         flex-wrap: wrap;
     }
     .appointment-actions-cell { text-align: center; }
+    .patient-history-page .appointments-table th:last-child { text-align: center; }
     .action-buttons.pending-actions {
         display: grid;
         grid-template-columns: repeat(2, max-content);
