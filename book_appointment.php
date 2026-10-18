@@ -1348,7 +1348,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                             </div>
                         </div>
                         <div class="svc-summary" id="indSummary" aria-live="polite">
-                            <strong>Summary:</strong> <span id="indCount">0</span> test(s) | Subtotal <span id="indSubOpd">PHP 0</span>
+                            <strong>Summary:</strong> <span id="indCount">0</span> test(s) | Estimated total: <span id="indSubOpd">PHP 0</span>
                         </div>
                         <div class="service-list" id="indListWrap">
                             <?php foreach ($groupedIndividual as $catName => $svcs): ?>
