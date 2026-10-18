@@ -274,9 +274,9 @@ $additionalStyles = '
         text-align: center;
     }
     .forgot-logo {
-        width: 64px;
-        height: 64px;
-        margin: 0 auto 14px;
+        width: 54px;
+        height: 54px;
+        margin: 0 auto 8px;
         border-radius: 50%;
         object-fit: cover;
         border: 3px solid #48cae4;
@@ -284,18 +284,20 @@ $additionalStyles = '
     }
     .forgot-content h2 {
         color: #073b4c;
-        margin: 0 0 8px;
-        font-size: 1.7rem;
+        margin: 0 0 4px;
+        font-size: 1.45rem;
         text-align: center;
     }
     .forgot-content .login-subtitle {
-        margin-bottom: 24px;
+        margin-bottom: 14px;
     }
     .forgot-form {
         text-align: left;
     }
     .forgot-form .login-btn-form {
-        margin-top: 4px;
+        margin-top: 0;
+        padding-top: 12px;
+        padding-bottom: 12px;
     }
 ';
 
@@ -328,7 +330,7 @@ if ($isForgotPasswordModal) {
             max-width: none;
             min-height: 100%;
             margin: 0;
-            padding: 32px clamp(20px, 4vw, 48px) 40px;
+            padding: 20px clamp(20px, 4vw, 48px) 24px;
             border: 0;
             border-radius: 0;
             box-shadow: none;
@@ -351,12 +353,6 @@ include 'includes/header.php';
                 <img src="globalife.png" alt="Globalife Medical Laboratory &amp; Polyclinic" class="forgot-logo">
                 <h2>Reset your password</h2>
                 <p class="login-subtitle">Enter your registered email to receive a secure verification code.</p>
-
-                <div class="step-pills">
-                    <span class="step-pill<?php echo $step === 'request' ? ' active' : ''; ?>">1. Email</span>
-                    <span class="step-pill<?php echo $step === 'verify' ? ' active' : ''; ?>">2. Code</span>
-                    <span class="step-pill<?php echo $step === 'reset' ? ' active' : ''; ?>">3. New password</span>
-                </div>
 
                 <?php if ($error): ?>
                     <div class="error-message"><?php echo htmlspecialchars($error); ?></div>

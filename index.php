@@ -872,12 +872,12 @@ $additionalStyles = '
     }
 
     #forgot-password-modal .registration-dialog {
-        width: min(860px, 100%);
-        height: min(700px, calc(100vh - 40px));
+        width: min(700px, 100%);
+        height: min(440px, calc(100vh - 40px));
     }
 
     #forgot-password-modal .registration-modal-head {
-        padding: 16px 24px;
+        padding: 14px 20px;
     }
 
     #forgot-password-modal .registration-modal-head h2 {
