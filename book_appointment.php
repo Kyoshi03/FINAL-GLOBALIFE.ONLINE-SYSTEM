@@ -905,6 +905,54 @@ $additionalStyles = '
     }
     .btn-primary { width: 100%; background: linear-gradient(135deg, #0077b6, #023e8a); color: #fff; padding: 14px; border: none; border-radius: 10px; font-size: 1.05rem; font-weight: 600; cursor: pointer; margin-top: 8px; }
     .btn-secondary { display: inline-block; padding: 10px 18px; border-radius: 8px; background: #e3f2fd; color: #023e8a; text-decoration: none; font-weight: 600; margin-right: 10px; border: none; cursor: pointer; font-size: 1rem; }
+    @media (max-width: 760px) {
+        .booking-container {
+            width: calc(100% - 20px);
+            margin: 14px auto;
+            padding: 18px 12px 132px;
+            border-radius: 14px;
+            box-sizing: border-box;
+        }
+        .booking-container.book-wide { max-width: calc(100% - 20px); }
+        .booking-header { margin-bottom: 16px; }
+        .booking-header h2 { margin-bottom: 4px; font-size: 1.45rem; line-height: 1.2; }
+        .booking-header p { font-size: .84rem; line-height: 1.35; }
+        .choice-grid { gap: 8px; margin-top: 12px; }
+        .choice-card { padding: 16px 12px; border-radius: 12px; }
+        .choice-card h3 { margin-bottom: 5px; font-size: 1rem; line-height: 1.2; }
+        .choice-card p { font-size: .82rem; line-height: 1.35; }
+        .svc-toolbar { gap: 8px; margin-bottom: 12px; }
+        .svc-toolbar input, .svc-toolbar select { min-width: 0; width: 100%; padding: 9px 10px; font-size: .92rem; }
+        .svc-summary { padding: 10px 12px; margin-bottom: 12px; font-size: .84rem; }
+        .cat-block { margin-bottom: 12px; }
+        .cat-heading { margin-bottom: 7px; padding: 6px 0; font-size: .94rem; }
+        .service-list { max-height: 420px; padding: 7px; border-radius: 10px; }
+        .service-row { gap: 8px; padding: 8px; margin-bottom: 4px; }
+        .price-cols { gap: 6px; font-size: .76rem; }
+        .price-cols span { min-width: 58px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { margin-bottom: 4px; font-size: .88rem; }
+        .form-group input, .form-group select { padding: 10px; font-size: .94rem; }
+        .schedule-hero { gap: 10px; padding: 12px; margin-bottom: 14px; border-radius: 10px; }
+        .schedule-hero-icon { width: 44px; height: 44px; flex-basis: 44px; border-radius: 10px; }
+        .schedule-hero strong { margin-bottom: 4px; font-size: 1.05rem; }
+        .schedule-hero p { font-size: .82rem; line-height: 1.35; }
+        .schedule-card, .booking-calendar-panel { border-radius: 12px; margin-bottom: 12px; }
+        .step-context-box, .info-box { padding: 10px 12px; margin-bottom: 12px; font-size: .84rem; }
+        .summary-table { margin: 8px 0; }
+        .summary-table td { padding: 6px 0; font-size: .86rem; }
+        .review-check { gap: 8px; padding: 10px 11px; margin-bottom: 12px; font-size: .84rem; line-height: 1.35; }
+        .review-check input { width: 17px; height: 17px; }
+        .booking-container .btn-primary { padding: 12px; border-radius: 9px; font-size: .95rem; }
+        .booking-container .btn-secondary { padding: 9px 14px; font-size: .9rem; }
+    }
+    @media (max-width: 520px) {
+        .cal-day { min-height: 118px; padding: 9px; gap: 6px; }
+        .cal-date-number { min-width: 26px; height: 26px; font-size: .98rem; }
+        .availability-doctor { font-size: .6rem; }
+        .availability-count { font-size: .56rem; }
+        .capacity-event span { font-size: .7rem; }
+    }
     .error-message { background: #fee; color: #c1121f; padding: 14px; border-radius: 10px; margin-bottom: 18px; border-left: 4px solid #c1121f; }
     .success-banner { background: #d4edda; color: #155724; padding: 20px; border-radius: 12px; margin-bottom: 22px; border-left: 4px solid #28a745; }
     .info-box { background: #e3f2fd; border-left: 4px solid #2196f3; padding: 14px; border-radius: 8px; margin-bottom: 20px; color: #1565c0; font-size: 0.95rem; }
