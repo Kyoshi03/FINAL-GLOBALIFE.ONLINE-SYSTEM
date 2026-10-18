@@ -1674,19 +1674,23 @@ $additionalStyles = patientAvatarStyles() . '
     }
     .appointments-table .action-buttons.reschedule-actions {
         display: grid;
-        grid-template-columns: minmax(0, 1fr);
+        grid-template-columns: minmax(0, 190px);
         gap: 8px;
-        max-width: 250px;
+        max-width: 190px;
         white-space: normal;
-        justify-items: stretch;
+        justify-items: center;
+        justify-content: center;
     }
     .appointments-table .action-buttons.reschedule-actions > .btn-details,
     .appointments-table .action-buttons.reschedule-actions > .reschedule-review-note,
     .appointments-table .action-buttons.reschedule-actions > form {
         grid-column: 1;
-        width: 100%;
+        width: 190px;
         min-width: 0;
         margin: 0;
+    }
+    .appointments-table .action-buttons.reschedule-actions > .btn-details {
+        width: 126px;
     }
     .appointments-table .action-buttons.reschedule-actions > form {
         display: block;
@@ -1694,11 +1698,16 @@ $additionalStyles = patientAvatarStyles() . '
     .appointments-table .action-buttons.reschedule-actions .btn {
         width: 100%;
         min-width: 0;
+        min-height: 34px;
+        padding: 8px 10px;
+        font-size: .78rem;
         white-space: normal;
         line-height: 1.2;
     }
     .appointments-table .reschedule-review-note {
         display: block;
+        width: 190px;
+        box-sizing: border-box;
         padding: 7px 9px;
         border: 1px solid #f1d7a2;
         border-radius: 8px;
