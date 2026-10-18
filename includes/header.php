@@ -1700,6 +1700,15 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             word-break: normal;
             overflow-wrap: anywhere;
         }
+        body.app-layout.app-role-patient nav a[href*="book_appointment.php"] .nav-label {
+            max-width: 100%;
+            overflow: visible;
+            text-overflow: clip;
+            white-space: normal;
+        }
+        body.app-layout.app-role-patient nav a[href*="book_appointment.php"] .nav-booking-label-secondary {
+            display: block;
+        }
         body.app-layout nav a:hover,
         body.app-layout nav .nav-submenu-toggle:hover {
             transform: none;

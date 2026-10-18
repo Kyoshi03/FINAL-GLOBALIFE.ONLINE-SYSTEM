@@ -1146,11 +1146,6 @@ $additionalStyles = '
          body.page-book-appointment.app-layout nav#mainNav { transition:transform .22s ease, opacity .22s ease; }
          body.page-book-appointment.app-layout nav#mainNav.book-appointment-nav-hidden { transform:translateY(calc(100% + 24px)) !important; opacity:0 !important; pointer-events:none !important; }
      }
-     @media (max-width:760px) {
-         body.page-book-appointment.app-layout nav#mainNav a[href*="book_appointment.php"] .nav-label { display:block; max-width:100%; overflow:visible !important; text-overflow:clip !important; white-space:normal !important; overflow-wrap:anywhere; line-height:1.12; }
-         body.page-book-appointment.app-layout nav#mainNav a[href*="book_appointment.php"] .nav-booking-label-secondary { display:block; }
-     }
-     @media (min-width:761px) { body.page-book-appointment .nav-booking-label-secondary { display:inline; } }
     @media (max-width:520px) { .capacity-dialog-head,.capacity-dialog-body{padding:18px}.capacity-summary{grid-template-columns:1fr}.capacity-doctor-row{align-items:flex-start;flex-direction:column}.capacity-chip{align-self:flex-start} }
 ';
 
