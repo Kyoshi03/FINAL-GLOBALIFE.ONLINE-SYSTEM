@@ -2417,11 +2417,11 @@ include __DIR__ . '/includes/header.php';
             if (data.statusKey === 'cancelled') {
                 notesHtml += '<strong style="margin-top:12px;">Cancellation reason</strong><span>' + escapeHtml(data.cancellationReason) + '</span>';
             }
-            if (data.hasRejectedReschedule) {
+            if (data.hasPendingReschedule) {
+                notesHtml += '<strong style="margin-top:12px;">Reschedule reason</strong><span>' + escapeHtml(data.rescheduleReason) + '</span>';
+            } else if (data.hasRejectedReschedule) {
                 notesHtml += '<strong style="margin-top:12px;">Reschedule reason</strong><span>' + escapeHtml(data.rejectedRescheduleReason) + '</span>';
                 notesHtml += '<strong style="margin-top:12px;">Rejection reason</strong><span>' + escapeHtml(data.rejectionReason) + '</span>';
-            } else if (data.hasPendingReschedule) {
-                notesHtml += '<strong style="margin-top:12px;">Reschedule reason</strong><span>' + escapeHtml(data.rescheduleReason) + '</span>';
             }
             detailNotes.innerHTML = notesHtml;
         }
