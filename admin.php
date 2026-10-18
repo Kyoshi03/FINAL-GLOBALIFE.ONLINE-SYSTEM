@@ -3057,15 +3057,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    function setForm(formId, appointmentId, status) {
-        var form = document.getElementById(formId);
-        if (!form) return;
-        var idInput = form.querySelector("[name=appointment_id]");
-        var statusInput = form.querySelector("[name=status]");
-        if (idInput) idInput.value = appointmentId || "";
-        if (statusInput) statusInput.value = status;
-    }
-
     function setDetailRow(rowName, visible) {
         document.querySelectorAll("[data-admin-detail-row=\"" + rowName + "\"]").forEach(function (node) {
             node.style.display = visible ? "" : "none";
@@ -3114,14 +3105,6 @@ document.addEventListener("DOMContentLoaded", function () {
             reasonRows.forEach(function (node) {
                 node.style.display = data.cancelReason && data.cancelReason !== "None" ? "" : "none";
             });
-            setForm("adminConfirmForm", data.id, "confirmed");
-            setForm("adminDeclineForm", data.id, "cancelled");
-
-            var pendingActions = document.getElementById("adminPendingActions");
-            if (pendingActions) {
-                var adminCanRespond = data.status === "pending" && data.bookingType !== "consultation";
-                pendingActions.style.display = adminCanRespond ? "flex" : "none";
-            }
             modal.classList.add("is-open");
             modal.setAttribute("aria-hidden", "false");
         });
@@ -4061,20 +4044,6 @@ include 'includes/header.php';
                 </div>
             </div>
             <div class="appointment-modal-actions">
-                <div id="adminPendingActions" class="admin-modal-actions" style="padding:0">
-                    <form id="adminConfirmForm" method="post" action="update_appointment_status.php">
-                        <input type="hidden" name="appointment_id" value="">
-                        <input type="hidden" name="status" value="confirmed">
-                        <input type="hidden" name="return_url" value="admin.php">
-                        <button class="btn" type="submit" data-confirm-message="Are you sure you want to confirm this appointment request?">Confirm</button>
-                    </form>
-                    <form id="adminDeclineForm" method="post" action="update_appointment_status.php">
-                        <input type="hidden" name="appointment_id" value="">
-                        <input type="hidden" name="status" value="cancelled">
-                        <input type="hidden" name="return_url" value="admin.php">
-                        <button class="btn danger" type="submit" data-confirm-message="Are you sure you want to cancel this appointment request?">Cancel</button>
-                    </form>
-                </div>
                 <button class="btn btn-light" type="button" data-admin-close-modal>Close</button>
             </div>
         </div>
