@@ -124,6 +124,12 @@ if (isset($_GET['sent']) && $step === 'verify' && $success === '') {
 }
 
 $maskedEmail = isset($_SESSION['pw_reset_email']) ? pw_reset_mask_email($_SESSION['pw_reset_email']) : '';
+$stepNumber = ['request' => 1, 'verify' => 2, 'reset' => 3][$step] ?? 1;
+$previousStep = $step === 'verify' ? 'request' : ($step === 'reset' ? 'verify' : '');
+$backHref = $step === 'request'
+    ? 'index.php?login=1#patient-login'
+    : $forgotPasswordAction . '&step=' . $previousStep;
+$backAttributes = $step === 'request' ? 'target="_top" data-forgot-back-login' : '';
 
 $pageTitle = 'Forgot Password | Globalife Medical Laboratory & Polyclinic';
 $headerBrandOnly = true;
@@ -314,6 +320,22 @@ $additionalStyles = '
     .forgot-content .form-footer {
         margin-top: 12px;
     }
+    .forgot-step-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin: 10px 0 8px;
+        font-size: 0.9rem;
+    }
+    .forgot-step-nav a {
+        color: #168c55;
+        text-decoration: underline;
+    }
+    .forgot-step-nav span {
+        color: #5c6f7a;
+        white-space: nowrap;
+    }
 ';
 
 if ($isForgotPasswordModal) {
@@ -392,6 +414,10 @@ include 'includes/header.php';
                                 autofocus
                             >
                         </div>
+                        <div class="forgot-step-nav">
+                            <a href="<?php echo htmlspecialchars($backHref); ?>" <?php echo $backAttributes; ?>>← Back</a>
+                            <span>Step <?php echo $stepNumber; ?> of 3</span>
+                        </div>
                         <button type="submit" class="login-btn-form">Continue</button>
                     </form>
 
@@ -417,6 +443,10 @@ include 'includes/header.php';
                         <p class="login-subtitle" style="margin-top: -8px; margin-bottom: 10px;">
                             Code sent to <strong><?php echo htmlspecialchars($maskedEmail); ?></strong>
                         </p>
+                        <div class="forgot-step-nav">
+                            <a href="<?php echo htmlspecialchars($backHref); ?>" <?php echo $backAttributes; ?>>← Back</a>
+                            <span>Step <?php echo $stepNumber; ?> of 3</span>
+                        </div>
                         <button type="submit" class="login-btn-form">Verify code</button>
                     </form>
                     <form method="POST" action="<?php echo htmlspecialchars($forgotPasswordAction); ?>" style="text-align: center; margin-top: 10px;">
@@ -438,13 +468,14 @@ include 'includes/header.php';
                         <p class="login-subtitle" style="font-size: 0.82rem; margin-top: -8px;">
                             At least 8 characters with upper, lower, number, and special character.
                         </p>
+                        <div class="forgot-step-nav">
+                            <a href="<?php echo htmlspecialchars($backHref); ?>" <?php echo $backAttributes; ?>>← Back</a>
+                            <span>Step <?php echo $stepNumber; ?> of 3</span>
+                        </div>
                         <button type="submit" class="login-btn-form">Update password</button>
                     </form>
                 <?php endif; ?>
 
-                <div class="form-footer">
-                    <a href="index.php?login=1#patient-login" target="_top" data-forgot-back-login>← Back to Log In</a>
-                </div>
             </div>
         </div>
     </div>
