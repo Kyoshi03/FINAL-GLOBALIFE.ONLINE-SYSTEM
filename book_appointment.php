@@ -651,6 +651,7 @@ if (in_array($bk['type'], ['package', 'individual'], true) && !empty($bk['servic
 
 $calendarSelected = trim((string) ($bk['appointment_date'] ?? ''));
 $calendarRequestedMonth = trim($_GET['calendar_month'] ?? '');
+$calendarPickerOpen = isset($_GET['calendar_picker']) && $_GET['calendar_picker'] === '1';
 $calendarBaseDate = preg_match('/^\d{4}-\d{2}$/', $calendarRequestedMonth) ? ($calendarRequestedMonth . '-01') : ($calendarSelected !== '' ? $calendarSelected : date('Y-m-d'));
 try {
     $calendarBase = new DateTime($calendarBaseDate);
@@ -829,6 +830,7 @@ $additionalStyles = '
     .selected-date-pill { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 12px; border-radius: 999px; background: #dff6e9; color: #137342; border: 1px solid #bfe9d0; font-size: .76rem; font-weight: 900; }
     .selected-date-slots { display: inline-flex; color: #45566c; font-size: .86rem; font-weight: 700; }
     .selected-date-card.is-invalid { border-color:#c9303e; box-shadow:0 0 0 3px rgba(201,48,62,.1); }
+    .mobile-date-picker-trigger, .mobile-calendar-modal { display: none; }
     .mini-calendar { border: 0; border-radius: 0; background: #fff; overflow: hidden; box-shadow: none; }
     .mini-calendar-head { display: grid; grid-template-columns: minmax(360px, 1fr) minmax(360px, .9fr); align-items: center; gap: 24px; padding: 22px 28px 14px; background: #fff; color: #073b4c; border-bottom: 1px solid #d8e8f2; }
     .mini-calendar-title { display: grid; grid-template-columns: 42px 1fr 42px; align-items: center; gap: 18px; padding-right: 4px; }
@@ -883,7 +885,21 @@ $additionalStyles = '
         .booking-calendar-panel { padding: 12px; }
         .schedule-hero { align-items:flex-start; padding:16px; }
         .schedule-hero-icon { width:52px; height:52px; flex-basis:52px; }
-        .mini-calendar { overflow: hidden; }
+        .mobile-date-picker-trigger { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-height:66px; padding:12px 14px; border:1px solid #b9d9ea; border-radius:12px; background:#f8fcff; color:#0b4f80; font:inherit; text-align:left; cursor:pointer; box-shadow:0 6px 16px rgba(20,79,123,.06); }
+        .mobile-date-picker-trigger:focus-visible { outline:3px solid rgba(15,124,194,.24); outline-offset:2px; }
+        .mobile-date-picker-copy { min-width:0; display:grid; gap:3px; }
+        .mobile-date-picker-copy small { color:#60727d; font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
+        .mobile-date-picker-copy strong { overflow-wrap:anywhere; font-size:.94rem; line-height:1.25; }
+        .mobile-date-picker-action { flex:0 0 auto; padding:8px 10px; border-radius:8px; background:#e5f5fb; color:#006b9f; font-size:.78rem; font-weight:900; }
+        .mobile-calendar-modal { position:fixed; inset:0; z-index:6500; align-items:center; justify-content:center; padding:12px; background:rgba(3,37,56,.56); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); }
+        .mobile-calendar-modal.is-open { display:flex; }
+        .mobile-calendar-dialog { display:flex; flex-direction:column; width:min(100%, 640px); max-height:92vh; overflow:hidden; border:1px solid #c9e2ef; border-radius:18px; background:#fff; box-shadow:0 24px 70px rgba(4,35,52,.3); }
+        .mobile-calendar-dialog-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px; border-bottom:1px solid #d8eaf3; background:linear-gradient(135deg,#f7fdff,#e8f7ff); color:#073b4c; }
+        .mobile-calendar-dialog-head strong { font-size:1rem; }
+        .mobile-calendar-close { flex:0 0 34px; width:34px; height:34px; border:0; border-radius:50%; background:#fff; color:#0878b5; font-size:1.35rem; line-height:1; cursor:pointer; box-shadow:0 4px 12px rgba(20,79,123,.12); }
+        .mobile-calendar-close:hover, .mobile-calendar-close:focus-visible { background:#e5f5fb; }
+        .mobile-calendar-dialog-body { min-height:0; overflow:auto; padding:8px; }
+        .mobile-calendar-dialog .mini-calendar { overflow:visible; }
         .mini-calendar-head { padding: 16px 14px 14px; gap: 14px; }
         .mini-calendar-title { grid-template-columns: 40px minmax(0, 1fr) 40px; gap: 8px; padding-right: 0; }
         .mini-calendar-title strong { min-width: 0; text-align: center; font-size: 1.12rem; overflow-wrap: anywhere; }
@@ -904,6 +920,8 @@ $additionalStyles = '
         .booking-calendar-panel { padding: 8px; }
         .cal-grid { gap: 8px; padding: 8px; }
         .cal-day { min-height: 136px; padding: 10px; }
+        .mobile-calendar-dialog { max-height:94vh; }
+        .mobile-calendar-dialog-body { padding:4px; }
         .availability-label { font-size: .5rem; }
         .availability-doctor { font-size: .62rem; }
     }
@@ -1586,12 +1604,26 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 <input type="hidden" name="appointment_date" id="appointment_date" value="<?php echo htmlspecialchars($bk['appointment_date']); ?>">
                 <div class="schedule-card">
                     <div class="schedule-layout">
+                        <button type="button" class="mobile-date-picker-trigger" id="mobileDatePickerOpen" aria-controls="mobileCalendarModal" aria-expanded="false">
+                            <span class="mobile-date-picker-copy">
+                                <small>Appointment date</small>
+                                <strong id="mobileSelectedDateText"><?php echo $bk['appointment_date'] !== '' ? date('F j, Y', strtotime($bk['appointment_date'])) : 'Choose a date'; ?></strong>
+                            </span>
+                            <span class="mobile-date-picker-action">Choose date</span>
+                        </button>
+                        <div class="mobile-calendar-modal<?php echo $calendarPickerOpen ? ' is-open' : ''; ?>" id="mobileCalendarModal" aria-hidden="<?php echo $calendarPickerOpen ? 'false' : 'true'; ?>">
+                            <div class="mobile-calendar-dialog" role="dialog" aria-modal="true" aria-labelledby="mobileCalendarTitle">
+                                <div class="mobile-calendar-dialog-head">
+                                    <strong id="mobileCalendarTitle">Choose an appointment date</strong>
+                                    <button type="button" class="mobile-calendar-close" id="mobileDatePickerClose" aria-label="Close calendar">&times;</button>
+                                </div>
+                                <div class="mobile-calendar-dialog-body">
                         <div class="mini-calendar" aria-label="Appointment calendar">
                             <div class="mini-calendar-head">
                                 <div class="mini-calendar-title">
-                                    <a href="book_appointment.php?calendar_month=<?php echo urlencode($calendarPrevMonth); ?>" aria-label="Previous month" class="calendar-nav">&lsaquo;</a>
+                                    <a href="book_appointment.php?calendar_month=<?php echo urlencode($calendarPrevMonth); ?>&amp;calendar_picker=1" aria-label="Previous month" class="calendar-nav">&lsaquo;</a>
                                     <strong><?php echo htmlspecialchars($calendarMonthLabel); ?></strong>
-                                    <a href="book_appointment.php?calendar_month=<?php echo urlencode($calendarNextMonth); ?>" aria-label="Next month" class="calendar-nav">&rsaquo;</a>
+                                    <a href="book_appointment.php?calendar_month=<?php echo urlencode($calendarNextMonth); ?>&amp;calendar_picker=1" aria-label="Next month" class="calendar-nav">&rsaquo;</a>
                                 </div>
                                 <div class="selected-date-card">
                                     <span class="selected-date-icon" aria-hidden="true">□</span>
@@ -1719,6 +1751,9 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                 <?php endfor; ?>
                             </div>
                         </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <button type="submit" class="btn-primary" id="btnScheduleNext"><?php echo $bk['type'] === 'ultrasound' ? 'Next: confirm' : 'Next: review and confirm'; ?></button>
@@ -1735,6 +1770,10 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 var selectedDateText = document.getElementById('selectedDateText');
                 var selectedDateStatus = document.getElementById('selectedDateStatus');
                 var selectedDateSlots = document.getElementById('selectedDateSlots');
+                var mobilePicker = document.getElementById('mobileCalendarModal');
+                var mobilePickerOpen = document.getElementById('mobileDatePickerOpen');
+                var mobilePickerClose = document.getElementById('mobileDatePickerClose');
+                var mobileSelectedDateText = document.getElementById('mobileSelectedDateText');
                 if (!form || !actionField || !dateInp || !calendar) return;
 
                 function formatDateLabel(value) {
@@ -1744,9 +1783,23 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     var dt = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
                     return dt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', weekday: 'short' }).replace(/^([^,]+), (.+)$/, '$2 ($1)');
                 }
+                function setMobilePicker(open) {
+                    if (!mobilePicker) return;
+                    mobilePicker.classList.toggle('is-open', open);
+                    mobilePicker.setAttribute('aria-hidden', open ? 'false' : 'true');
+                    if (mobilePickerOpen) mobilePickerOpen.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    if (open && mobilePickerClose) {
+                        mobilePickerClose.focus();
+                    } else if (!open && mobilePickerOpen) {
+                        mobilePickerOpen.focus();
+                    }
+                }
                 function updateView() {
                     if (selectedDateText) {
                         selectedDateText.textContent = formatDateLabel(dateInp.value);
+                    }
+                    if (mobileSelectedDateText) {
+                        mobileSelectedDateText.textContent = formatDateLabel(dateInp.value);
                     }
                     var selectedDay = dateInp.value ? calendar.querySelector('.cal-day[data-date="' + dateInp.value + '"]') : null;
                     if (selectedDateStatus) {
@@ -1779,8 +1832,29 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         dateInp.value = day.getAttribute('data-date') || '';
                         selectedDateCard.classList.remove('is-invalid');
                         updateView();
+                        setMobilePicker(false);
                     });
                 });
+
+                if (mobilePickerOpen) {
+                    mobilePickerOpen.addEventListener('click', function() { setMobilePicker(true); });
+                }
+                if (mobilePickerClose) {
+                    mobilePickerClose.addEventListener('click', function() { setMobilePicker(false); });
+                }
+                if (mobilePicker) {
+                    mobilePicker.addEventListener('click', function(event) {
+                        if (event.target === mobilePicker) setMobilePicker(false);
+                    });
+                    document.addEventListener('keydown', function(event) {
+                        if (event.key === 'Escape' && mobilePicker.classList.contains('is-open')) {
+                            setMobilePicker(false);
+                        }
+                    });
+                    if (mobilePicker.classList.contains('is-open') && mobilePickerOpen) {
+                        mobilePickerOpen.setAttribute('aria-expanded', 'true');
+                    }
+                }
 
                 if (btnNext) {
                     btnNext.addEventListener('click', function() {
@@ -1793,7 +1867,11 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         event.preventDefault();
                         selectedDateCard.classList.add('is-invalid');
                         selectedDateText.textContent = 'Choose a date';
-                        calendar.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        if (mobilePicker && window.matchMedia && window.matchMedia('(max-width: 760px)').matches) {
+                            setMobilePicker(true);
+                        } else {
+                            calendar.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
                         return;
                     }
                     var selectedDay = calendar.querySelector('.cal-day[data-date="' + dateInp.value + '"]');
