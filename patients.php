@@ -1791,6 +1791,29 @@ $additionalStyles = '
         color: #0066cc;
     }
 
+    @media (min-width: 901px) {
+        .appointment-row {
+            grid-template-columns: 86px minmax(0, 1fr) 96px 230px;
+        }
+
+        .appointment-action-stack {
+            width: 220px;
+            gap: 8px;
+        }
+
+        .appointment-action-stack.no-cancel .patient-details-inline,
+        .appointment-action-stack.no-cancel .patient-reschedule-btn {
+            width: 100%;
+            min-height: 40px;
+            height: 40px;
+            box-sizing: border-box;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 8px;
+        }
+    }
+
     .appointment-pagination {
         display: flex;
         align-items: center;
