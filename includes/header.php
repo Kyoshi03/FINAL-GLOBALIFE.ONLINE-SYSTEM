@@ -2564,6 +2564,15 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             --app-mobile-brand-height: 108px;
             --app-mobile-topbar-height: 72px;
         }
+        body.app-role-patient header {
+            position: static !important;
+        }
+        body.app-role-patient .patient-app-topbar {
+            top: 0 !important;
+        }
+        body.app-role-patient {
+            --app-mobile-brand-height: 0px;
+        }
         body.app-layout .patient-profile-menu,
         body.app-layout .patient-notification-panel {
             position: fixed !important;
@@ -2579,6 +2588,9 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
         body.app-role-patient {
             --app-mobile-brand-height: 106px;
             --app-mobile-topbar-height: 68px;
+        }
+        body.app-role-patient {
+            --app-mobile-brand-height: 0px;
         }
     }
     </style>
