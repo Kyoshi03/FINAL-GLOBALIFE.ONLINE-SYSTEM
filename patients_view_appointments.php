@@ -2102,15 +2102,17 @@ include __DIR__ . '/includes/header.php';
             return '<dt>' + item[0] + '</dt><dd>' + escapeHtml(item[1]) + '</dd>';
         }).join('');
         if (detailNotes) {
-            var notesHtml = '<strong>Notes</strong><span>' + escapeHtml(data.notes) + '</span>';
-            if (data.statusKey === 'cancelled') {
-                notesHtml += '<strong style="margin-top:12px;">Cancellation reason</strong><span>' + escapeHtml(data.cancellationReason) + '</span>';
-            }
+            var notesHtml = '';
             if (data.hasPendingReschedule) {
-                notesHtml += '<strong style="margin-top:12px;">Reschedule reason</strong><span>' + escapeHtml(data.rescheduleReason) + '</span>';
+                notesHtml = '<strong>Reschedule reason</strong><span>' + escapeHtml(data.rescheduleReason) + '</span>';
             } else if (data.hasRejectedReschedule) {
-                notesHtml += '<strong style="margin-top:12px;">Reschedule reason</strong><span>' + escapeHtml(data.rejectedRescheduleReason) + '</span>';
+                notesHtml = '<strong>Reschedule reason</strong><span>' + escapeHtml(data.rejectedRescheduleReason) + '</span>';
                 notesHtml += '<strong style="margin-top:12px;">Rejection reason</strong><span>' + escapeHtml(data.rejectionReason) + '</span>';
+            } else {
+                notesHtml = '<strong>Notes</strong><span>' + escapeHtml(data.notes) + '</span>';
+                if (data.statusKey === 'cancelled') {
+                    notesHtml += '<strong style="margin-top:12px;">Cancellation reason</strong><span>' + escapeHtml(data.cancellationReason) + '</span>';
+                }
             }
             detailNotes.innerHTML = notesHtml;
         }
