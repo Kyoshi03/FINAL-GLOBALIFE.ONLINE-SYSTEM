@@ -1891,7 +1891,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
             </form>
             
             <div class="login-link">
-                Already have an account? <a href="index.php#patient-login" target="_top">Go to Login</a> | <a href="forgot_password.php" target="_top">Forgot password?</a>
+                Already have an account? <a href="index.php?login=1#patient-login" target="_top">Go to Login</a>
             </div>
             
             <div class="back-to-home">
