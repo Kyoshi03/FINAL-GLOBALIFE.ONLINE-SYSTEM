@@ -874,8 +874,35 @@ $additionalStyles = '
     .cal-day:disabled small { opacity: .82; }
     .cal-day.is-closed { background:#f8fafb; }
     @media (max-width: 980px) { .mini-calendar-head { grid-template-columns:1fr; gap:14px; } }
-    @media (max-width: 760px) { .booking-container { margin: 22px auto; padding: 24px 14px; } .booking-calendar-panel { padding: 12px; } .schedule-hero { align-items:flex-start; padding:16px; } .schedule-hero-icon { width:52px; height:52px; flex-basis:52px; } .mini-calendar { overflow-x: auto; } .cal-grid { min-width: 760px; } .cal-day, .cal-empty { min-height: 118px; } .calendar-actions { align-items:stretch; flex-direction:column; position: sticky; bottom: 0; z-index: 5; padding: 10px 0 0; background: linear-gradient(180deg, rgba(255,255,255,.65), #fff 45%); } .calendar-actions .btn-primary{width:100%; min-width:0;} }
-    @media (max-width: 520px) { .cal-grid { min-width: 720px; } .cal-day, .cal-empty { min-height: 110px; } .cal-day { padding: 12px; } .availability-label { font-size: .5rem; } .availability-doctor { font-size: .62rem; } }
+    @media (max-width: 760px) {
+        .booking-container { margin: 22px auto; padding: 24px 14px 148px; }
+        .booking-calendar-panel { padding: 12px; }
+        .schedule-hero { align-items:flex-start; padding:16px; }
+        .schedule-hero-icon { width:52px; height:52px; flex-basis:52px; }
+        .mini-calendar { overflow: hidden; }
+        .mini-calendar-head { padding: 16px 14px 14px; gap: 14px; }
+        .mini-calendar-title { grid-template-columns: 40px minmax(0, 1fr) 40px; gap: 8px; padding-right: 0; }
+        .mini-calendar-title strong { min-width: 0; text-align: center; font-size: 1.12rem; overflow-wrap: anywhere; }
+        .cal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 10px; background: #f4faff; }
+        .cal-dow, .cal-empty { display: none; }
+        .cal-day { min-width: 0; min-height: 142px; border: 1px solid #d8e8f2; border-radius: 12px; padding: 12px; gap: 8px; box-shadow: 0 3px 10px rgba(20,79,123,.06); }
+        .cal-date-number { min-width: 28px; height: 28px; font-size: 1.05rem; }
+        .calendar-events { width: 100%; min-width: 0; gap: 6px; }
+        .cal-day small { overflow-wrap: anywhere; }
+        .capacity-event strong { max-width: 100%; justify-content: center; padding-left: 8px; padding-right: 8px; text-align: center; }
+        .capacity-event span { margin-top: 5px; font-size: .74rem; line-height: 1.25; }
+        .clinic-closed-event { max-width: 100%; padding-left: 8px !important; padding-right: 8px !important; white-space: normal; }
+        .calendar-actions { align-items:stretch; flex-direction:column; position: sticky; bottom: 0; z-index: 5; padding: 10px 0 0; background: linear-gradient(180deg, rgba(255,255,255,.65), #fff 45%); }
+        .calendar-actions .btn-primary { width:100%; min-width:0; }
+    }
+    @media (max-width: 520px) {
+        .booking-container { padding-left: 10px; padding-right: 10px; }
+        .booking-calendar-panel { padding: 8px; }
+        .cal-grid { gap: 8px; padding: 8px; }
+        .cal-day { min-height: 136px; padding: 10px; }
+        .availability-label { font-size: .5rem; }
+        .availability-doctor { font-size: .62rem; }
+    }
     .btn-primary { width: 100%; background: linear-gradient(135deg, #0077b6, #023e8a); color: #fff; padding: 14px; border: none; border-radius: 10px; font-size: 1.05rem; font-weight: 600; cursor: pointer; margin-top: 8px; }
     .btn-secondary { display: inline-block; padding: 10px 18px; border-radius: 8px; background: #e3f2fd; color: #023e8a; text-decoration: none; font-weight: 600; margin-right: 10px; border: none; cursor: pointer; font-size: 1rem; }
     .error-message { background: #fee; color: #c1121f; padding: 14px; border-radius: 10px; margin-bottom: 18px; border-left: 4px solid #c1121f; }
