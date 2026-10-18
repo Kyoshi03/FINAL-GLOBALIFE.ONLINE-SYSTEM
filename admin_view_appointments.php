@@ -28,6 +28,7 @@ $patientNameSql = dbUsersNameExpression('p');
 $doctorNameSql = dbUsersNameExpression('d');
 $headerDoctorNameSql = dbUsersNameExpression('u');
 $userNameSql = dbUsersNameExpression();
+$rejectedRescheduleJoin = appointment_reschedule_rejected_join_sql();
 $reportLogoPath = clinic_info_logo_web_path($clinicInfo);
 $reportLogoFilePath = clinic_info_logo_file_path($clinicInfo);
 
@@ -39,11 +40,15 @@ if ($userRole === 'patient') {
                                    rr.id AS reschedule_request_id, rr.original_date AS reschedule_original_date,
                                    rr.original_time AS reschedule_original_time,
                                    rr.requested_date AS reschedule_requested_date,
-                                   rr.requested_time AS reschedule_requested_time, rr.status AS reschedule_request_status
+                                   rr.requested_time AS reschedule_requested_time, rr.status AS reschedule_request_status,
+                                   rrh.id AS rejected_reschedule_request_id, rrh.original_date AS rejected_reschedule_original_date,
+                                   rrh.original_time AS rejected_reschedule_original_time, rrh.requested_date AS rejected_reschedule_requested_date,
+                                   rrh.requested_time AS rejected_reschedule_requested_time, rrh.rejection_reason AS rejected_reschedule_reason
                             FROM appointments a 
                             LEFT JOIN users u ON a.doctor_id = u.id 
                             LEFT JOIN clinic_queue q ON q.appointment_id = a.id
                             {$pendingRescheduleJoin}
+                            {$rejectedRescheduleJoin}
                             WHERE a.patient_id = ? 
                             ORDER BY a.appointment_date DESC, a.appointment_time DESC");
     $stmt->bind_param("i", $currentUser['id']);
@@ -59,12 +64,16 @@ if ($userRole === 'patient') {
                             rr.id AS reschedule_request_id, rr.original_date AS reschedule_original_date,
                             rr.original_time AS reschedule_original_time,
                             rr.requested_date AS reschedule_requested_date,
-                            rr.requested_time AS reschedule_requested_time, rr.status AS reschedule_request_status
+                            rr.requested_time AS reschedule_requested_time, rr.status AS reschedule_request_status,
+                            rrh.id AS rejected_reschedule_request_id, rrh.original_date AS rejected_reschedule_original_date,
+                            rrh.original_time AS rejected_reschedule_original_time, rrh.requested_date AS rejected_reschedule_requested_date,
+                            rrh.requested_time AS rejected_reschedule_requested_time, rrh.rejection_reason AS rejected_reschedule_reason
                             FROM appointments a 
                             JOIN users p ON a.patient_id = p.id 
                             LEFT JOIN users d ON a.doctor_id = d.id 
                             LEFT JOIN clinic_queue q ON q.appointment_id = a.id
                             {$pendingRescheduleJoin}
+                            {$rejectedRescheduleJoin}
                             ORDER BY a.appointment_date DESC, a.appointment_time DESC");
 } elseif ($userRole === 'doctor') {
     $pendingRescheduleJoin = appointment_reschedule_pending_join_sql();
@@ -78,12 +87,16 @@ if ($userRole === 'patient') {
                             rr.id AS reschedule_request_id, rr.original_date AS reschedule_original_date,
                             rr.original_time AS reschedule_original_time,
                             rr.requested_date AS reschedule_requested_date,
-                            rr.requested_time AS reschedule_requested_time, rr.status AS reschedule_request_status
+                            rr.requested_time AS reschedule_requested_time, rr.status AS reschedule_request_status,
+                            rrh.id AS rejected_reschedule_request_id, rrh.original_date AS rejected_reschedule_original_date,
+                            rrh.original_time AS rejected_reschedule_original_time, rrh.requested_date AS rejected_reschedule_requested_date,
+                            rrh.requested_time AS rejected_reschedule_requested_time, rrh.rejection_reason AS rejected_reschedule_reason
                             FROM appointments a 
                             JOIN users p ON a.patient_id = p.id 
                             LEFT JOIN users d ON a.doctor_id = d.id 
                             LEFT JOIN clinic_queue q ON q.appointment_id = a.id
                             {$pendingRescheduleJoin}
+                            {$rejectedRescheduleJoin}
                             WHERE a.doctor_id = ?
                               AND a.booking_type = 'consultation'
                             ORDER BY a.appointment_date DESC, a.appointment_time DESC");
@@ -1725,6 +1738,14 @@ $additionalStyles = patientAvatarStyles() . '
         text-align: center;
         overflow-wrap: anywhere;
     }
+    .reschedule-rejection-form { display: none !important; width: 150px !important; max-width: 150px !important; box-sizing: border-box; padding: 8px; border: 1px solid #f1d7a2; border-radius: 8px; background: #fffaf0; text-align: left; }
+    .reschedule-rejection-form.is-open { display: grid !important; gap: 6px; }
+    .reschedule-rejection-form label { color: #8a5a00; font-size: .68rem; font-weight: 800; line-height: 1.2; }
+    .reschedule-rejection-form textarea { width: 100%; min-height: 62px; box-sizing: border-box; padding: 7px; border: 1px solid #e6c77e; border-radius: 6px; resize: vertical; font: inherit; font-size: .68rem; line-height: 1.25; }
+    .reschedule-rejection-form .rejection-form-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+    .reschedule-rejection-form .btn { width: 100% !important; min-height: 30px !important; padding: 5px 4px !important; font-size: .66rem !important; white-space: normal !important; }
+    .reschedule-rejection-error { display: none; margin: 0; color: #b42318; font-size: .64rem; line-height: 1.2; }
+    .reschedule-rejection-error.is-visible { display: block; }
     @media (max-width: 760px) {
         .appointments-table td .action-buttons,
         .appointments-table td .action-buttons.pending-actions {
@@ -1961,6 +1982,10 @@ include __DIR__ . '/includes/header.php';
                         $requestedScheduleLabel = $hasPendingReschedule
                             ? appointment_reschedule_request_date_label((string) ($appointment['reschedule_requested_date'] ?? ''), (string) ($appointment['reschedule_requested_time'] ?? ''))
                             : '';
+                        $hasRejectedReschedule = !empty($appointment['rejected_reschedule_request_id']);
+                        $rejectedOriginalScheduleLabel = $hasRejectedReschedule ? appointment_reschedule_request_date_label((string) ($appointment['rejected_reschedule_original_date'] ?? ''), (string) ($appointment['rejected_reschedule_original_time'] ?? '')) : '';
+                        $rejectedRequestedScheduleLabel = $hasRejectedReschedule ? appointment_reschedule_request_date_label((string) ($appointment['rejected_reschedule_requested_date'] ?? ''), (string) ($appointment['rejected_reschedule_requested_time'] ?? '')) : '';
+                        $rejectedRescheduleReason = trim((string) ($appointment['rejected_reschedule_reason'] ?? '')) ?: 'Not provided';
                         $cancellationReason = trim((string) ($appointment['cancellation_reason'] ?? ''));
                         $queueNumber = trim((string) ($appointment['queue_number'] ?? ''));
                         $queueNumberDisplay = $queueNumber !== '' ? $queueNumber : 'Not generated';
@@ -1992,6 +2017,10 @@ include __DIR__ . '/includes/header.php';
                             'hasPendingReschedule' => $hasPendingReschedule,
                             'originalSchedule' => $originalScheduleLabel,
                             'requestedSchedule' => $requestedScheduleLabel,
+                            'hasRejectedReschedule' => $hasRejectedReschedule,
+                            'rejectedOriginalSchedule' => $rejectedOriginalScheduleLabel,
+                            'rejectedRequestedSchedule' => $rejectedRequestedScheduleLabel,
+                            'rejectionReason' => $rejectedRescheduleReason,
                             'notes' => $notesFull !== '' ? $notesFull : 'None',
                             'cancellationReason' => $cancellationReason !== '' ? $cancellationReason : 'None',
                         ];
@@ -2045,7 +2074,16 @@ include __DIR__ . '/includes/header.php';
                                             <input type="hidden" name="request_id" value="<?php echo (int) $appointment['reschedule_request_id']; ?>">
                                             <input type="hidden" name="action" value="reject">
                                             <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
-                                            <button type="submit" class="btn btn-cancel" data-confirm-message="Reject this reschedule request?">Reject</button>
+                                            <button type="button" class="btn btn-cancel" data-open-rejection>Reject</button>
+                                        </form>
+                                        <form method="POST" action="process_reschedule_request.php" class="reschedule-rejection-form" data-rejection-form>
+                                            <input type="hidden" name="request_id" value="<?php echo (int) $appointment['reschedule_request_id']; ?>">
+                                            <input type="hidden" name="action" value="reject">
+                                            <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
+                                            <label>Reason for Rejection</label>
+                                            <textarea name="rejection_reason" maxlength="300" required placeholder="Explain why this reschedule request cannot be approved."></textarea>
+                                            <p class="reschedule-rejection-error" data-rejection-error>Please enter a reason.</p>
+                                            <div class="rejection-form-actions"><button type="button" class="btn btn-light" data-close-rejection>Back</button><button type="submit" class="btn btn-cancel">Confirm Rejection</button></div>
                                         </form>
                                     <?php endif; ?>
                                     <?php if (($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation' && $appointment['status'] === 'pending')): ?>
@@ -2334,6 +2372,9 @@ include __DIR__ . '/includes/header.php';
         if (data.hasPendingReschedule) {
             items.push(['Original schedule', data.originalSchedule]);
             items.push(['Requested schedule', data.requestedSchedule + ' (Pending approval)']);
+        } else if (data.hasRejectedReschedule) {
+            items.push(['Original schedule', data.rejectedOriginalSchedule]);
+            items.push(['Requested schedule', data.rejectedRequestedSchedule + ' (Rejected)']);
         } else {
             items.push(['Date', data.date]);
         }
@@ -2350,6 +2391,9 @@ include __DIR__ . '/includes/header.php';
             var notesHtml = '<strong>Notes</strong><span>' + escapeHtml(data.notes) + '</span>';
             if (data.statusKey === 'cancelled') {
                 notesHtml += '<strong style="margin-top:12px;">Cancellation reason</strong><span>' + escapeHtml(data.cancellationReason) + '</span>';
+            }
+            if (data.hasRejectedReschedule) {
+                notesHtml += '<strong style="margin-top:12px;">Rejection reason</strong><span>' + escapeHtml(data.rejectionReason) + '</span>';
             }
             detailNotes.innerHTML = notesHtml;
         }
@@ -2593,6 +2637,32 @@ include __DIR__ . '/includes/header.php';
             }, 250);
         }
     }
+    document.querySelectorAll('[data-open-rejection]').forEach(function(button) {
+        button.addEventListener('click', function() {
+            var form = button.parentElement ? button.parentElement.parentElement.querySelector('[data-rejection-form]') : null;
+            if (!form) return;
+            form.classList.add('is-open'); button.hidden = true;
+            var textarea = form.querySelector('textarea[name="rejection_reason"]');
+            if (textarea) textarea.focus();
+        });
+    });
+    document.querySelectorAll('[data-close-rejection]').forEach(function(button) {
+        button.addEventListener('click', function() {
+            var form = button.closest('[data-rejection-form]');
+            var trigger = form ? form.parentElement.querySelector('[data-open-rejection]') : null;
+            if (form) { form.classList.remove('is-open'); form.reset(); var error = form.querySelector('[data-rejection-error]'); if (error) error.classList.remove('is-visible'); }
+            if (trigger) trigger.hidden = false;
+        });
+    });
+    document.querySelectorAll('[data-rejection-form]').forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            var textarea = form.querySelector('textarea[name="rejection_reason"]');
+            var error = form.querySelector('[data-rejection-error]');
+            var value = textarea ? textarea.value.trim() : '';
+            if (!value) { event.preventDefault(); if (error) error.classList.add('is-visible'); if (textarea) textarea.focus(); return; }
+            if (textarea) textarea.value = value;
+        });
+    });
     document.querySelectorAll('button[data-confirm-message]').forEach(function(button) {
         button.addEventListener('click', function(event) {
             event.preventDefault();

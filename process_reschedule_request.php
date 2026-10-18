@@ -33,6 +33,17 @@ if ($requestId <= 0 || !in_array($action, ['approve', 'reject'], true)) {
     reschedule_request_finish(null, $returnUrl, false, 'Invalid reschedule request.');
 }
 
+$rejectionReason = trim((string) ($_POST['rejection_reason'] ?? ''));
+if ($action === 'reject') {
+    $reasonLength = function_exists('mb_strlen') ? mb_strlen($rejectionReason, 'UTF-8') : strlen($rejectionReason);
+    if ($rejectionReason === '') {
+        reschedule_request_finish(null, $returnUrl, false, 'A reason is required before rejecting the reschedule request.');
+    }
+    if ($reasonLength > 300) {
+        reschedule_request_finish(null, $returnUrl, false, 'The rejection reason must be 300 characters or fewer.');
+    }
+}
+
 $conn = getDBConnection();
 appointment_reschedule_init_schema($conn);
 appointment_init_queue_schema($conn);
@@ -109,13 +120,14 @@ try {
     $reviewerId = (int) ($currentUser['id'] ?? 0);
     $reviewedAt = (new DateTimeImmutable('now', new DateTimeZone('Asia/Manila')))->format('Y-m-d H:i:s');
     if ($action === 'reject') {
-        $update = $conn->prepare("UPDATE appointment_reschedule_requests SET status = 'rejected', reviewed_by = ?, reviewed_at = ? WHERE id = ? AND status = 'pending'");
-        $update->bind_param('isi', $reviewerId, $reviewedAt, $requestId);
+        $update = $conn->prepare("UPDATE appointment_reschedule_requests SET status = 'rejected', reviewed_by = ?, reviewed_at = ?, rejection_reason = ? WHERE id = ? AND status = 'pending'");
+        $update->bind_param('issi', $reviewerId, $reviewedAt, $rejectionReason, $requestId);
         if (!$update->execute() || $update->affected_rows !== 1) {
             $update->close();
             throw new RuntimeException('The reschedule request changed before it could be rejected.');
         }
         $update->close();
+        $request['rejection_reason'] = $rejectionReason;
         $conn->commit();
         $message = 'Reschedule request rejected. The original Confirmed appointment remains unchanged.';
     } else {

@@ -34,6 +34,9 @@ function appointment_reschedule_init_schema(mysqli $conn): void {
     if (!dbColumnExists($conn, 'appointment_reschedule_requests', 'reason')) {
         $conn->query("ALTER TABLE appointment_reschedule_requests ADD COLUMN reason VARCHAR(300) DEFAULT NULL AFTER requested_time");
     }
+    if (!dbColumnExists($conn, 'appointment_reschedule_requests', 'rejection_reason')) {
+        $conn->query("ALTER TABLE appointment_reschedule_requests ADD COLUMN rejection_reason VARCHAR(500) DEFAULT NULL AFTER reviewed_at");
+    }
     $conn->query("UPDATE appointment_reschedule_requests r
         INNER JOIN appointments a ON a.id = r.appointment_id
         SET r.original_date = COALESCE(r.original_date, a.appointment_date),
@@ -52,6 +55,19 @@ function appointment_reschedule_pending_join_sql(): string {
             GROUP BY appointment_id
         ) latest ON latest.id = r.id
     ) rr ON rr.appointment_id = a.id";
+}
+
+function appointment_reschedule_rejected_join_sql(): string {
+    return "LEFT JOIN (
+        SELECT r.*
+        FROM appointment_reschedule_requests r
+        INNER JOIN (
+            SELECT appointment_id, MAX(id) AS id
+            FROM appointment_reschedule_requests
+            WHERE status = 'rejected'
+            GROUP BY appointment_id
+        ) latest ON latest.id = r.id
+    ) rrh ON rrh.appointment_id = a.id";
 }
 
 function appointment_reschedule_normalize_time(string $time): string {
@@ -229,7 +245,9 @@ function appointment_reschedule_notify_patient(mysqli $conn, array $request, str
         $message = "Your reschedule request was approved. Your confirmed appointment is now scheduled for {$requested}.";
     } else {
         $title = 'Reschedule request rejected';
-        $message = "Your reschedule request to {$requested} was rejected. Your original confirmed appointment on {$original} remains active.";
+        $rejectionReason = trim((string) ($request['rejection_reason'] ?? ''));
+        $rejectionReason = $rejectionReason !== '' ? $rejectionReason : 'Not provided';
+        $message = "Your reschedule request to {$requested} was rejected. Your original confirmed appointment on {$original} remains active. Reason: {$rejectionReason}.";
     }
     create_patient_notification($conn, $patientId, 'appointment_reschedule_' . $event, $title, $message, $appointmentId, 'patients_view_appointments.php?highlight=' . $appointmentId);
 }
