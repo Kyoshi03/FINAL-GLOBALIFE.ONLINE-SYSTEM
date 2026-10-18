@@ -181,7 +181,9 @@ body { background:#f4f8fb; min-height:100vh; color:#1f343d; }
 .appointment-schedule-cell strong { color:#1a3342; font-size:.86rem; }
 .appointment-schedule-cell span { margin-top:2px; color:#60758a; font-size:.82rem; }
 .queue-number { color:#0066cc; font-weight:800; }
-.queue-service { color:#1f343d; font-weight:700; }
+.queue-service { color:#1f343d; font-weight:700; text-align:center; }
+.queue-status-cell { text-align:center; }
+.queue-service-column, .queue-status-column { text-align:center; }
 .queue-muted { color:#60758a; }
 .status-badge { display:inline-flex; align-items:center; border-radius:999px; padding:4px 10px; font-size:.68rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; white-space:nowrap; }
 .status-badge.completed { background:#e6f6ec; color:#168a45; }
@@ -291,11 +293,11 @@ include __DIR__ . '/includes/header.php';
                         <tr>
                             <th>Queue No.</th>
                             <th>Schedule</th>
-                            <th>Service</th>
+                            <th class="queue-service-column">Service</th>
                             <th>Time Called</th>
                             <th>Completed At</th>
                             <th>Type</th>
-                            <th>Status</th>
+                            <th class="queue-status-column">Status</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -310,7 +312,7 @@ include __DIR__ . '/includes/header.php';
                                 <td class="queue-muted" data-label="Time Called"><?php echo htmlspecialchars(patient_queue_history_time_label($queueRow['time_called'] ?? null)); ?></td>
                                 <td class="queue-muted" data-label="Completed At"><?php echo htmlspecialchars(patient_queue_history_time_label($queueRow['completed_at'] ?? null)); ?></td>
                                 <td data-label="Type"><span class="status-badge walk-in">Walk-in</span></td>
-                                <td data-label="Status"><span class="status-badge completed">Completed</span></td>
+                                <td class="queue-status-cell" data-label="Status"><span class="status-badge completed">Completed</span></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>

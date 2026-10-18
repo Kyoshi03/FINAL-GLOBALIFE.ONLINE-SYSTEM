@@ -753,6 +753,8 @@ $additionalStyles = patientAvatarStyles() . '
     }
     .appointment-actions-cell { text-align: center; }
     .patient-history-page .appointments-table th:last-child { text-align: center; }
+    .patient-history-page .status-column,
+    .patient-history-page .services-column { text-align: center; }
     .action-buttons.pending-actions {
         display: grid;
         grid-template-columns: repeat(2, max-content);
@@ -1472,9 +1474,9 @@ include __DIR__ . '/includes/header.php';
                             <?php else: ?>
                                 <th>Schedule</th>
                             <?php endif; ?>
-                            <th>Status</th>
+                            <th class="status-column">Status</th>
                             <?php if (!$isClinicalAppointmentsView): ?>
-                                <th>Services</th>
+                                <th class="services-column">Services</th>
                             <?php endif; ?>
                             <th>Actions</th>
                         </tr>
@@ -1589,15 +1591,15 @@ include __DIR__ . '/includes/header.php';
                                     <span><?php echo htmlspecialchars($formattedTime); ?></span>
                                 </td>
                             <?php endif; ?>
-                            <td class="appointment-actions-cell">
+                            <td class="status-column">
                                 <span class="status-badge <?php echo htmlspecialchars($statusValue); ?>">
                                     <?php echo htmlspecialchars($statusLabel); ?>
                                 </span>
                             </td>
                             <?php if (!$isClinicalAppointmentsView): ?>
-                                <td class="appointments-services"><?php echo htmlspecialchars($servicesText !== 'Not listed' ? $servicesText : ($notesFull !== '' ? substr($notesFull, 0, 50) : 'Not listed')); ?><?php echo strlen($servicesText !== 'Not listed' ? $servicesText : $notesFull) > 50 ? '...' : ''; ?></td>
+                                <td class="appointments-services services-column"><?php echo htmlspecialchars($servicesText !== 'Not listed' ? $servicesText : ($notesFull !== '' ? substr($notesFull, 0, 50) : 'Not listed')); ?><?php echo strlen($servicesText !== 'Not listed' ? $servicesText : $notesFull) > 50 ? '...' : ''; ?></td>
                             <?php endif; ?>
-                            <td>
+                            <td class="appointment-actions-cell">
                                 <div class="action-buttons <?php echo (($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation')) && $appointment['status'] === 'pending' ? 'pending-actions' : ''; ?>">
                                     <button type="button" class="btn btn-details" data-open-details>Details</button>
                                     <?php if (in_array($statusValue, ['pending', 'confirmed'], true)): ?>
