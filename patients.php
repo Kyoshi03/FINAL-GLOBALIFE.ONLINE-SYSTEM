@@ -766,6 +766,7 @@ $stmt = $conn->prepare("SELECT a.*, {$doctorNameSql} AS doctor_name, q.queue_num
         rr.original_time AS reschedule_original_time,
         rr.requested_date AS reschedule_requested_date,
         rr.requested_time AS reschedule_requested_time,
+        rr.reason AS reschedule_reason,
         rr.status AS reschedule_request_status
     FROM appointments a
     LEFT JOIN users d ON d.id = a.doctor_id AND d.role = 'doctor'
@@ -791,6 +792,7 @@ $stmt = $conn->prepare("SELECT a.*, {$doctorNameSql} AS doctor_name, q.queue_num
         rr.original_time AS reschedule_original_time,
         rr.requested_date AS reschedule_requested_date,
         rr.requested_time AS reschedule_requested_time,
+        rr.reason AS reschedule_reason,
         rr.status AS reschedule_request_status
     FROM appointments a
     LEFT JOIN users d ON d.id = a.doctor_id AND d.role = 'doctor'
@@ -3789,6 +3791,7 @@ include 'includes/header.php';
                                 'hasPendingReschedule' => $hasPendingReschedule,
                                 'originalSchedule' => $originalScheduleLabel,
                                 'requestedSchedule' => $requestedScheduleLabel,
+                                'rescheduleReason' => trim((string) ($appointment['reschedule_reason'] ?? '')) ?: 'Not provided',
                                 'notes' => $notesText !== '' ? $notesText : 'None',
                                 'cancellationReason' => $cancellationReason !== '' ? $cancellationReason : 'None',
                             ];
@@ -4347,7 +4350,10 @@ include 'includes/header.php';
                 return '<dt>' + item[0] + '</dt><dd>' + escapeHtml(item[1] || 'N/A') + '</dd>';
             }).join('');
             if (detailNotes) {
-                if (data.statusKey === 'cancelled') {
+                if (data.hasPendingReschedule) {
+                    detailNotes.style.display = '';
+                    detailNotes.innerHTML = '<strong>Reschedule reason</strong><span>' + escapeHtml(data.rescheduleReason || 'Not provided') + '</span>';
+                } else if (data.statusKey === 'cancelled') {
                     detailNotes.style.display = '';
                     detailNotes.innerHTML = '<strong>Cancellation reason</strong><span>' + escapeHtml(data.cancellationReason || 'None') + '</span>';
                 } else {

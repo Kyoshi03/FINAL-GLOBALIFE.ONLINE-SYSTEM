@@ -16,6 +16,11 @@
 .reschedule-field input, .reschedule-field select { width:100%; box-sizing:border-box; min-height:46px; padding:10px 12px; border:1px solid #cfe3f2; border-radius:10px; color:#10233f; background:#fff; font:inherit; }
 .reschedule-field input:focus, .reschedule-field select:focus { outline:none; border-color:#0f7cc2; box-shadow:0 0 0 4px rgba(15,124,194,.1); }
 .reschedule-note { margin:0 0 8px; color:#60758a; line-height:1.45; font-size:.88rem; }
+.reschedule-reason-field { margin:0 0 12px; }
+.reschedule-reason-field[hidden] { display:none !important; }
+.reschedule-reason-field label { display:block; margin:0 0 6px; color:#315c70; font-weight:800; font-size:.9rem; }
+.reschedule-reason-field textarea { width:100%; min-height:72px; box-sizing:border-box; padding:10px 12px; border:1px solid #cfe3f2; border-radius:10px; color:#10233f; background:#fff; font:inherit; resize:vertical; }
+.reschedule-reason-field textarea:focus { outline:none; border-color:#0f7cc2; box-shadow:0 0 0 4px rgba(15,124,194,.1); }
 .reschedule-availability { min-height:18px; margin:0 0 11px; padding:7px 10px; border-radius:8px; background:#f2f8fc; color:#42657a; font-size:.78rem; line-height:1.35; }
 .reschedule-availability.is-loading { color:#6e7d87; }
 .reschedule-availability.is-error { background:#fff3f3; color:#a52835; }
@@ -152,6 +157,10 @@ $rescheduleMinTime = $rescheduleNow->modify('+1 minute')->format('H:i');
             <input type="hidden" name="return_url" value="<?php echo htmlspecialchars((string) $appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
             <div class="reschedule-body">
                 <p class="reschedule-note" id="appointmentRescheduleNotice">Your appointment is already confirmed. Your current schedule will remain active until the reschedule request is approved.</p>
+                <div class="reschedule-reason-field" id="appointmentRescheduleReasonField">
+                    <label for="appointmentRescheduleReason">Reason for rescheduling (Optional)</label>
+                    <textarea id="appointmentRescheduleReason" name="reason" maxlength="300" placeholder="Briefly explain why you need to change your schedule."></textarea>
+                </div>
                 <p class="reschedule-availability is-loading" id="appointmentRescheduleAvailability" aria-live="polite">Checking the doctor's available dates...</p>
                 <div class="reschedule-calendar-panel" id="appointmentRescheduleCalendarPanel" aria-label="Doctor availability calendar">
                     <div class="reschedule-calendar-head">
@@ -236,6 +245,8 @@ unset($_SESSION['reschedule_error']);
     var timeChoices = document.getElementById('appointmentRescheduleTimeChoices');
     var availabilityNote = document.getElementById('appointmentRescheduleAvailability');
     var submitButton = document.getElementById('appointmentRescheduleSubmit');
+    var reasonField = document.getElementById('appointmentRescheduleReasonField');
+    var reasonInput = document.getElementById('appointmentRescheduleReason');
     var calendarPanel = document.getElementById('appointmentRescheduleCalendarPanel');
     var calendarGrid = document.getElementById('appointmentRescheduleCalendarGrid');
     var monthLabel = document.getElementById('appointmentRescheduleMonthLabel');
@@ -623,6 +634,7 @@ unset($_SESSION['reschedule_error']);
     function closeModal() {
         modal.classList.remove('is-open');
         modal.setAttribute('aria-hidden', 'true');
+        if (reasonInput) reasonInput.value = '';
     }
     document.querySelectorAll('[data-open-reschedule]').forEach(function (button) {
         button.addEventListener('click', function (event) {
@@ -644,6 +656,8 @@ unset($_SESSION['reschedule_error']);
             var current = button.getAttribute('data-reschedule-label') || 'Current appointment schedule';
             var editMode = button.getAttribute('data-reschedule-mode') || 'confirmed';
             if (title) title.textContent = 'Reschedule appointment';
+            if (reasonField) reasonField.hidden = editMode === 'pending';
+            if (reasonInput) reasonInput.value = '';
             if (notice) notice.textContent = editMode === 'pending'
                 ? 'This appointment is not yet confirmed. You can change your schedule before confirmation.'
                 : 'This appointment is already confirmed. Your current schedule will remain active until the reschedule request is approved.';

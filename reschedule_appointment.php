@@ -40,6 +40,7 @@ if ($userRole !== 'patient') {
 $appointmentId = (int) ($_POST['appointment_id'] ?? 0);
 $requestedDate = trim((string) ($_POST['appointment_date'] ?? ''));
 $requestedTime = trim((string) ($_POST['appointment_time'] ?? ''));
+$rescheduleReason = trim((string) ($_POST['reason'] ?? ''));
 if ($appointmentId <= 0) {
     reschedule_finish(null, $returnUrl, false, 'Invalid appointment selected.');
 }
@@ -71,6 +72,14 @@ $isConfirmedReschedule = appointment_reschedule_is_eligible($appointment);
 $isPendingScheduleChange = appointment_reschedule_is_pending_editable($appointment);
 if (!$isConfirmedReschedule && !$isPendingScheduleChange) {
     reschedule_finish($conn, $returnUrl, false, 'Only upcoming Pending or Confirmed appointments that have not started can be changed.');
+}
+if ($isPendingScheduleChange) {
+    $rescheduleReason = '';
+} else {
+    $reasonLength = function_exists('mb_strlen') ? mb_strlen($rescheduleReason, 'UTF-8') : strlen($rescheduleReason);
+    if ($reasonLength > 300) {
+        reschedule_finish($conn, $returnUrl, false, 'The reschedule reason must be 300 characters or fewer.');
+    }
 }
 
 $normalizedTime = appointment_reschedule_normalize_time($requestedTime);
@@ -163,12 +172,12 @@ try {
 
     $insert = $conn->prepare(
         "INSERT INTO appointment_reschedule_requests
-            (appointment_id, patient_id, requested_by, original_date, original_time, requested_date, requested_time, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')"
+            (appointment_id, patient_id, requested_by, original_date, original_time, requested_date, requested_time, reason, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')"
     );
     $originalDate = (string) ($lockedAppointment['appointment_date'] ?? '');
     $originalTime = appointment_reschedule_normalize_time((string) ($lockedAppointment['appointment_time'] ?? ''));
-    $insert->bind_param('iiissss', $appointmentId, $patientId, $patientId, $originalDate, $originalTime, $requestedDate, $normalizedTime);
+    $insert->bind_param('iiisssss', $appointmentId, $patientId, $patientId, $originalDate, $originalTime, $requestedDate, $normalizedTime, $rescheduleReason);
     if (!$insert->execute()) {
         $insert->close();
         throw new RuntimeException('The reschedule request could not be saved. Please try again.');
@@ -188,6 +197,7 @@ $request['id'] = $requestId;
 $request['appointment_id'] = $appointmentId;
 $request['requested_date'] = $requestedDate;
 $request['requested_time'] = $normalizedTime;
+$request['reason'] = $rescheduleReason !== '' ? $rescheduleReason : 'Not provided';
 appointment_reschedule_notify_patient($conn, $request, 'requested');
 appointment_reschedule_notify_reviewer($conn, $request, 'requested');
 reschedule_finish($conn, $returnUrl, true, 'Reschedule request submitted. Your original Confirmed appointment remains active until the clinic approves the new schedule.');
