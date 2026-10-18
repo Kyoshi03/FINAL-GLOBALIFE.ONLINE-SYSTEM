@@ -1054,6 +1054,11 @@ $additionalStyles = patientAvatarStyles() . '
     .modal-close { border: 0; background: #eaf8fc; color: #0077b6; width: 40px; height: 40px; border-radius: 13px; cursor: pointer; font-size: 1.35rem; line-height: 1; font-weight: 900; }
     .modal-close:hover { background: #d8f2fb; }
     .appointment-modal-body { padding: 22px 24px; }
+    #rescheduleRejectionForm label { display: block; margin-bottom: 7px; color: #536b78; font-size: .82rem; font-weight: 850; }
+    #rescheduleRejectionReason { width: 100%; min-height: 120px; box-sizing: border-box; padding: 11px 12px; border: 1px solid #cfe1ee; border-radius: 10px; color: #17384a; background: #fff; font: inherit; font-size: .9rem; line-height: 1.45; resize: vertical; }
+    #rescheduleRejectionReason:focus { outline: 2px solid rgba(15,124,194,.22); border-color: #0f7cc2; }
+    .reschedule-modal-error { display: none; margin: 8px 0 0; color: #b42318; font-size: .78rem; font-weight: 700; }
+    .reschedule-modal-error.is-visible { display: block; }
     .detail-summary-strip { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin-bottom: 18px; }
     .detail-pill { background:#f8fdff; border:1px solid #d8eef7; border-radius:14px; padding:14px; }
     .detail-pill span { display:block; color:#60758a; font-size:.75rem; font-weight:800; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
@@ -1667,21 +1672,7 @@ include __DIR__ . '/includes/header.php';
                                             <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
                                             <button type="submit" class="btn btn-confirm" data-confirm-message="Approve this reschedule request?">Approve Reschedule</button>
                                         </form>
-                                        <form method="POST" action="process_reschedule_request.php">
-                                            <input type="hidden" name="request_id" value="<?php echo (int) $appointment['reschedule_request_id']; ?>">
-                                            <input type="hidden" name="action" value="reject">
-                                            <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
-                                            <button type="button" class="btn btn-cancel" data-open-rejection>Reject Request</button>
-                                        </form>
-                                        <form method="POST" action="process_reschedule_request.php" class="reschedule-rejection-form" data-rejection-form>
-                                            <input type="hidden" name="request_id" value="<?php echo (int) $appointment['reschedule_request_id']; ?>">
-                                            <input type="hidden" name="action" value="reject">
-                                            <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
-                                            <label>Reason for Rejection</label>
-                                            <textarea name="rejection_reason" maxlength="300" required placeholder="Explain why this reschedule request cannot be approved."></textarea>
-                                            <p class="reschedule-rejection-error" data-rejection-error>Please enter a reason.</p>
-                                            <div class="rejection-form-actions"><button type="button" class="btn btn-light" data-close-rejection>Back</button><button type="submit" class="btn btn-cancel">Confirm Rejection</button></div>
-                                        </form>
+                                        <button type="button" class="btn btn-cancel" data-open-rejection data-request-id="<?php echo (int) $appointment['reschedule_request_id']; ?>" data-return-url="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">Reject Request</button>
                                     <?php endif; ?>
                                     <?php if (($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation' && in_array($appointment['status'], ['pending', 'confirmed'], true))): ?>
                                         <?php if ($appointment['status'] === 'pending'): ?>
@@ -1804,6 +1795,26 @@ include __DIR__ . '/includes/header.php';
     </div>
 </div>
 
+<div class="appointment-modal" id="rescheduleRejectionModal" aria-hidden="true">
+    <div class="appointment-modal-card" role="dialog" aria-modal="true" aria-labelledby="rescheduleRejectionTitle">
+        <div class="appointment-modal-head">
+            <div><h3 id="rescheduleRejectionTitle">Reject reschedule request</h3><p>Explain why the requested schedule cannot be approved.</p></div>
+            <button type="button" class="modal-close" data-close-rejection-modal aria-label="Close">&times;</button>
+        </div>
+        <form method="POST" action="process_reschedule_request.php" id="rescheduleRejectionForm">
+            <div class="appointment-modal-body">
+                <input type="hidden" name="request_id" id="rescheduleRejectionRequestId">
+                <input type="hidden" name="action" value="reject">
+                <input type="hidden" name="return_url" id="rescheduleRejectionReturnUrl">
+                <label for="rescheduleRejectionReason">Reason for Rejection</label>
+                <textarea id="rescheduleRejectionReason" name="rejection_reason" maxlength="300" required placeholder="Explain why this reschedule request cannot be approved."></textarea>
+                <p class="reschedule-modal-error" id="rescheduleRejectionError">Please enter a reason.</p>
+            </div>
+            <div class="appointment-modal-actions"><button type="button" class="btn btn-light" data-close-rejection-modal>Back</button><button type="submit" class="btn btn-cancel">Confirm Rejection</button></div>
+        </form>
+    </div>
+</div>
+
 <div class="appointment-modal" id="statusConfirmModal" aria-hidden="true">
     <div class="appointment-modal-card" role="dialog" aria-modal="true" aria-labelledby="statusConfirmTitle">
         <div class="appointment-modal-head">
@@ -1857,6 +1868,12 @@ include __DIR__ . '/includes/header.php';
     var detailNotes = document.getElementById('appointmentDetailNotes');
     var detailSub = document.getElementById('appointmentDetailsSub');
     var confirmModal = document.getElementById('statusConfirmModal');
+    var rejectionModal = document.getElementById('rescheduleRejectionModal');
+    var rejectionForm = document.getElementById('rescheduleRejectionForm');
+    var rejectionRequestId = document.getElementById('rescheduleRejectionRequestId');
+    var rejectionReturnUrl = document.getElementById('rescheduleRejectionReturnUrl');
+    var rejectionReason = document.getElementById('rescheduleRejectionReason');
+    var rejectionError = document.getElementById('rescheduleRejectionError');
     var confirmText = document.getElementById('statusConfirmText');
     var confirmYes = document.getElementById('statusConfirmYes');
     var successModal = document.getElementById('statusSuccessModal');
@@ -1905,6 +1922,7 @@ include __DIR__ . '/includes/header.php';
     function closeAll() {
         closeModal(detailModal);
         closeModal(confirmModal);
+        closeModal(rejectionModal);
         closeModal(successModal);
         closeModal(filterSuccessModal);
         closeModal(reportResultModal);
@@ -2307,29 +2325,22 @@ include __DIR__ . '/includes/header.php';
     }
     document.querySelectorAll('[data-open-rejection]').forEach(function(button) {
         button.addEventListener('click', function() {
-            var form = button.parentElement ? button.parentElement.parentElement.querySelector('[data-rejection-form]') : null;
-            if (!form) return;
-            form.classList.add('is-open'); button.hidden = true;
-            var textarea = form.querySelector('textarea[name="rejection_reason"]');
-            if (textarea) textarea.focus();
+            if (rejectionRequestId) rejectionRequestId.value = button.getAttribute('data-request-id') || '';
+            if (rejectionReturnUrl) rejectionReturnUrl.value = button.getAttribute('data-return-url') || '';
+            if (rejectionReason) rejectionReason.value = '';
+            if (rejectionError) rejectionError.classList.remove('is-visible');
+            openModal(rejectionModal);
+            if (rejectionReason) window.setTimeout(function() { rejectionReason.focus(); }, 80);
         });
     });
-    document.querySelectorAll('[data-close-rejection]').forEach(function(button) {
-        button.addEventListener('click', function() {
-            var form = button.closest('[data-rejection-form]');
-            var trigger = form ? form.parentElement.querySelector('[data-open-rejection]') : null;
-            if (form) { form.classList.remove('is-open'); form.reset(); var error = form.querySelector('[data-rejection-error]'); if (error) error.classList.remove('is-visible'); }
-            if (trigger) trigger.hidden = false;
-        });
+    document.querySelectorAll('[data-close-rejection-modal]').forEach(function(button) {
+        button.addEventListener('click', function() { closeModal(rejectionModal); });
     });
-    document.querySelectorAll('[data-rejection-form]').forEach(function(form) {
-        form.addEventListener('submit', function(event) {
-            var textarea = form.querySelector('textarea[name="rejection_reason"]');
-            var error = form.querySelector('[data-rejection-error]');
-            var value = textarea ? textarea.value.trim() : '';
-            if (!value) { event.preventDefault(); if (error) error.classList.add('is-visible'); if (textarea) textarea.focus(); return; }
-            if (textarea) textarea.value = value;
-        });
+    if (rejectionModal) rejectionModal.addEventListener('click', function(event) { if (event.target === rejectionModal) closeModal(rejectionModal); });
+    if (rejectionForm) rejectionForm.addEventListener('submit', function(event) {
+        var value = rejectionReason ? rejectionReason.value.trim() : '';
+        if (!value) { event.preventDefault(); if (rejectionError) rejectionError.classList.add('is-visible'); if (rejectionReason) rejectionReason.focus(); return; }
+        if (rejectionReason) rejectionReason.value = value;
     });
     document.querySelectorAll('button[data-confirm-message]').forEach(function(button) {
         button.addEventListener('click', function(event) {

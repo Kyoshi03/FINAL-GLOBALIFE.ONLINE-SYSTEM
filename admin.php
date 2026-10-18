@@ -1375,6 +1375,12 @@ body {
 .reschedule-rejection-form .btn { min-height: 30px; padding: 5px 6px; font-size: .7rem; white-space: normal; }
 .reschedule-rejection-error { display: none; margin: 0; color: #b42318; font-size: .68rem; }
 .reschedule-rejection-error.is-visible { display: block; }
+.admin-rejection-reason { padding: 0 22px 18px; }
+.admin-rejection-reason label { display: block; margin-bottom: 8px; color: #073b4c; font-weight: 900; }
+.admin-rejection-reason textarea { width: 100%; min-height: 120px; box-sizing: border-box; padding: 12px; border: 1px solid #d4e6f5; border-radius: 8px; resize: vertical; color: #1f343d; background: #fbfdff; font: inherit; line-height: 1.45; }
+.admin-rejection-reason textarea:focus { border-color: #0f7cc2; box-shadow: 0 0 0 4px rgba(15,124,194,.1); outline: none; }
+.admin-rejection-error { display: none; margin: 7px 0 0; color: #9d1c2c; font-weight: 800; }
+.admin-rejection-error.is-open { display: block; }
 
 @media (max-width: 760px) {
     .appointment-reschedule-table {
@@ -3023,6 +3029,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
 document.addEventListener("DOMContentLoaded", function () {
     var modal = document.getElementById("adminAppointmentModal");
+    var rejectionModal = document.getElementById("rescheduleRejectionModal");
+    var rejectionForm = document.getElementById("rescheduleRejectionForm");
+    var rejectionRequestId = document.getElementById("rescheduleRejectionRequestId");
+    var rejectionReturnUrl = document.getElementById("rescheduleRejectionReturnUrl");
+    var rejectionReason = document.getElementById("rescheduleRejectionReason");
+    var rejectionError = document.getElementById("rescheduleRejectionError");
     if (!modal) return;
 
     function setText(id, value) {
@@ -3127,29 +3139,31 @@ document.addEventListener("DOMContentLoaded", function () {
 
     document.querySelectorAll("[data-open-rejection]").forEach(function (button) {
         button.addEventListener("click", function () {
-            var form = button.parentElement ? button.parentElement.parentElement.querySelector("[data-rejection-form]") : null;
-            if (!form) return;
-            form.classList.add("is-open"); button.hidden = true;
-            var textarea = form.querySelector("textarea[name=rejection_reason]");
-            if (textarea) textarea.focus();
+            if (rejectionRequestId) rejectionRequestId.value = button.getAttribute("data-request-id") || "";
+            if (rejectionReturnUrl) rejectionReturnUrl.value = button.getAttribute("data-return-url") || "";
+            if (rejectionReason) rejectionReason.value = "";
+            if (rejectionError) rejectionError.classList.remove("is-open");
+            if (rejectionModal) { rejectionModal.classList.add("is-open"); rejectionModal.setAttribute("aria-hidden", "false"); }
+            if (rejectionReason) window.setTimeout(function () { rejectionReason.focus(); }, 80);
         });
     });
-    document.querySelectorAll("[data-close-rejection]").forEach(function (button) {
+    document.querySelectorAll("[data-close-rejection-modal]").forEach(function (button) {
         button.addEventListener("click", function () {
-            var form = button.closest("[data-rejection-form]");
-            var trigger = form ? form.parentElement.querySelector("[data-open-rejection]") : null;
-            if (form) { form.classList.remove("is-open"); form.reset(); var error = form.querySelector("[data-rejection-error]"); if (error) error.classList.remove("is-visible"); }
-            if (trigger) trigger.hidden = false;
+            if (rejectionModal) { rejectionModal.classList.remove("is-open"); rejectionModal.setAttribute("aria-hidden", "true"); }
         });
     });
-    document.querySelectorAll("[data-rejection-form]").forEach(function (form) {
-        form.addEventListener("submit", function (event) {
-            var textarea = form.querySelector("textarea[name=rejection_reason]");
-            var error = form.querySelector("[data-rejection-error]");
-            var value = textarea ? textarea.value.trim() : "";
-            if (!value) { event.preventDefault(); if (error) error.classList.add("is-visible"); if (textarea) textarea.focus(); return; }
-            if (textarea) textarea.value = value;
-        });
+    if (rejectionModal) rejectionModal.addEventListener("click", function (event) {
+        if (event.target === rejectionModal) { rejectionModal.classList.remove("is-open"); rejectionModal.setAttribute("aria-hidden", "true"); }
+    });
+    if (rejectionForm) rejectionForm.addEventListener("submit", function (event) {
+        var value = rejectionReason ? rejectionReason.value.trim() : "";
+        if (!value) {
+            event.preventDefault();
+            if (rejectionError) rejectionError.classList.add("is-open");
+            if (rejectionReason) rejectionReason.focus();
+            return;
+        }
+        if (rejectionReason) rejectionReason.value = value;
     });
     document.querySelectorAll("[data-confirm-message]").forEach(function (button) {
         button.addEventListener("click", function (event) {
@@ -3729,21 +3743,7 @@ include 'includes/header.php';
                                                         <input type="hidden" name="return_url" value="admin.php#appointment-requests">
                                                         <button type="submit" class="btn btn-confirm" data-confirm-message="Approve this reschedule request?">Approve</button>
                                                     </form>
-                                                    <form method="post" action="process_reschedule_request.php">
-                                                        <input type="hidden" name="request_id" value="<?php echo (int) ($request['reschedule_request_id'] ?? 0); ?>">
-                                                        <input type="hidden" name="action" value="reject">
-                                                        <input type="hidden" name="return_url" value="admin.php#appointment-requests">
-                                                        <button type="button" class="btn btn-cancel" data-open-rejection>Reject</button>
-                                                    </form>
-                                                    <form method="post" action="process_reschedule_request.php" class="reschedule-rejection-form" data-rejection-form>
-                                                        <input type="hidden" name="request_id" value="<?php echo (int) ($request['reschedule_request_id'] ?? 0); ?>">
-                                                        <input type="hidden" name="action" value="reject">
-                                                        <input type="hidden" name="return_url" value="admin.php#appointment-requests">
-                                                        <label>Reason for Rejection</label>
-                                                        <textarea name="rejection_reason" maxlength="300" required placeholder="Explain why this reschedule request cannot be approved."></textarea>
-                                                        <p class="reschedule-rejection-error" data-rejection-error>Please enter a reason.</p>
-                                                        <div class="rejection-form-actions"><button type="button" class="btn" data-close-rejection>Back</button><button type="submit" class="btn btn-cancel">Confirm Rejection</button></div>
-                                                    </form>
+                                                    <button type="button" class="btn btn-cancel" data-open-rejection data-request-id="<?php echo (int) ($request['reschedule_request_id'] ?? 0); ?>" data-return-url="admin.php#appointment-requests">Reject</button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -4079,6 +4079,26 @@ include 'includes/header.php';
     </div>
 
     <?php $appointmentPage = 'admin.php'; include __DIR__ . '/includes/appointment_reschedule_ui.php'; ?>
+
+    <div class="admin-modal" id="rescheduleRejectionModal" aria-hidden="true">
+        <div class="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="rescheduleRejectionTitle">
+            <div class="admin-modal-head">
+                <div><h2 id="rescheduleRejectionTitle">Reject reschedule request</h2><p>Explain why the requested schedule cannot be approved.</p></div>
+                <button class="admin-modal-close" type="button" data-close-rejection-modal aria-label="Close">&times;</button>
+            </div>
+            <form method="post" action="process_reschedule_request.php" id="rescheduleRejectionForm">
+                <div class="admin-rejection-reason">
+                    <input type="hidden" name="request_id" id="rescheduleRejectionRequestId">
+                    <input type="hidden" name="action" value="reject">
+                    <input type="hidden" name="return_url" id="rescheduleRejectionReturnUrl">
+                    <label for="rescheduleRejectionReason">Reason for Rejection</label>
+                    <textarea id="rescheduleRejectionReason" name="rejection_reason" maxlength="300" required placeholder="Explain why this reschedule request cannot be approved."></textarea>
+                    <small class="admin-rejection-error" id="rescheduleRejectionError">Please enter a reason.</small>
+                </div>
+                <div class="admin-modal-actions"><button class="btn secondary" type="button" data-close-rejection-modal>Back</button><button class="btn danger" type="submit">Confirm Rejection</button></div>
+            </form>
+        </div>
+    </div>
 
     <div class="admin-modal" id="adminConfirmActionModal" aria-hidden="true">
         <div class="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="adminConfirmActionTitle">
