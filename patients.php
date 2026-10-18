@@ -3098,6 +3098,35 @@ $additionalStyles = '
         .status-badge {
             width: fit-content;
         }
+
+        .appointment-action-stack {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            width: 100%;
+            gap: 8px;
+        }
+
+        .appointment-action-stack form,
+        .appointment-action-stack .patient-details-inline,
+        .appointment-action-stack .patient-reschedule-btn,
+        .appointment-action-stack.no-cancel .patient-reschedule-btn {
+            grid-column: auto;
+            grid-row: auto;
+            width: 100%;
+            min-width: 0;
+            min-height: 36px;
+            box-sizing: border-box;
+            justify-self: stretch;
+        }
+
+        .appointment-action-stack .cancel-inline,
+        .appointment-action-stack .patient-details-inline,
+        .appointment-action-stack .patient-reschedule-btn {
+            padding: 0 8px;
+            border-radius: 9px;
+            font-size: .74rem;
+            line-height: 1.1;
+            white-space: nowrap;
+        }
     }
 
     @media (max-width: 900px) {
