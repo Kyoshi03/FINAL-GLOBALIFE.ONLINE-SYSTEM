@@ -3193,14 +3193,26 @@ $additionalStyles = '
             grid-row: auto;
             width: 100%;
             min-width: 0;
-            min-height: 36px;
+            height: 40px;
+            min-height: 40px;
             box-sizing: border-box;
             justify-self: stretch;
+        }
+
+        .appointment-action-stack form {
+            display: flex;
+            align-items: stretch;
         }
 
         .appointment-action-stack .cancel-inline,
         .appointment-action-stack .patient-details-inline,
         .appointment-action-stack .patient-reschedule-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 40px;
+            min-height: 40px;
+            box-sizing: border-box;
             padding: 0 8px;
             border-radius: 9px;
             font-size: .74rem;
