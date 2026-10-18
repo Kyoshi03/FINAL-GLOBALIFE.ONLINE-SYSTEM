@@ -1985,6 +1985,36 @@ $additionalStyles = '
         padding: 0 24px 24px;
     }
 
+    .patient-appointment-actions .plain-btn {
+        min-height: 42px;
+        padding: 10px 18px;
+        border: 1px solid #cfe3f2;
+        border-radius: 9px;
+        background: #fff;
+        color: #0b4f80;
+        font-size: .86rem;
+        font-weight: 800;
+        cursor: pointer;
+        transition: background .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+
+    .patient-appointment-actions .plain-btn:hover {
+        background: #eef8ff;
+        border-color: #8ec7e2;
+        box-shadow: 0 4px 10px rgba(15, 124, 194, .10);
+        transform: translateY(-1px);
+    }
+
+    .patient-appointment-actions .plain-btn:focus-visible {
+        outline: 3px solid rgba(15, 124, 194, .24);
+        outline-offset: 2px;
+    }
+
+    .patient-appointment-actions .plain-btn:active {
+        transform: translateY(0);
+        box-shadow: none;
+    }
+
     .patient-cancel-reason {
         display: none;
         padding: 0 22px 4px;
