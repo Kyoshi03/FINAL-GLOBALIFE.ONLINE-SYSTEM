@@ -329,8 +329,11 @@ $additionalStyles = '
         font-size: 0.9rem;
     }
     .forgot-step-nav a {
-        color: #168c55;
+        color: #0077b6;
         text-decoration: underline;
+    }
+    .forgot-step-nav a:hover {
+        color: #023e8a;
     }
     .forgot-step-nav span {
         color: #5c6f7a;
