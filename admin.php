@@ -3689,10 +3689,12 @@ include 'includes/header.php';
                     </div>
                 <?php endif; ?>
 
-                <?php if (!empty($rescheduleRequests)): ?>
-                    <section class="appointment-reschedule-request-section" aria-labelledby="pendingRescheduleRequestsTitle">
-                        <h3 id="pendingRescheduleRequestsTitle">Pending Reschedule Requests</h3>
-                        <p>Review the request before approving or rejecting the schedule change.</p>
+                <section class="appointment-reschedule-request-section" aria-labelledby="pendingRescheduleRequestsTitle">
+                    <h3 id="pendingRescheduleRequestsTitle">Pending Reschedule Requests</h3>
+                    <p>Review the request before approving or rejecting the schedule change.</p>
+                    <?php if (empty($rescheduleRequests)): ?>
+                        <div class="empty-state">No pending reschedule requests.</div>
+                    <?php else: ?>
                         <div class="queue-table-wrap appointment-request-table-wrap">
                             <table class="queue-table appointment-request-table appointment-reschedule-table">
                                 <thead>
@@ -3784,8 +3786,8 @@ include 'includes/header.php';
                                 </tbody>
                             </table>
                         </div>
-                    </section>
-                <?php endif; ?>
+                    <?php endif; ?>
+                </section>
             </div>
         </div>
 
