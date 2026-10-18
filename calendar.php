@@ -372,13 +372,146 @@ body {
 .availability-scroll {
     overflow-x: auto;
 }
+.availability-mobile-list {
+    display: none;
+}
 @media (max-width: 760px) {
+    .patient-calendar-page {
+        padding: 12px 8px 118px;
+    }
     .patient-calendar-head {
         align-items: stretch;
         flex-direction: column;
+        gap: 12px;
+        padding: 14px;
+    }
+    .patient-calendar-head h1 {
+        font-size: 1.2rem;
+    }
+    .patient-calendar-head p {
+        font-size: .78rem;
+        line-height: 1.35;
     }
     .patient-calendar-nav {
         justify-content: space-between;
+        gap: 8px;
+    }
+    .patient-calendar-month {
+        min-width: 0;
+        flex: 1;
+        font-size: 1rem;
+    }
+    .patient-calendar-nav a,
+    .patient-calendar-nav-disabled {
+        width: 38px;
+        height: 38px;
+    }
+    .availability-scroll {
+        display: none;
+    }
+    .availability-mobile-list {
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+        background: #f8fcff;
+    }
+    .availability-mobile-day {
+        border: 1px solid #d7eaf4;
+        border-radius: 10px;
+        padding: 12px;
+        background: #fff;
+        box-shadow: 0 5px 14px rgba(25, 76, 110, .06);
+    }
+    .availability-mobile-day.is-today {
+        border-color: #66d0bd;
+        box-shadow: inset 3px 0 0 #66d0bd, 0 5px 14px rgba(25, 76, 110, .06);
+    }
+    .availability-mobile-day-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    .availability-mobile-date {
+        color: #073b4c;
+        font-size: 1rem;
+        font-weight: 950;
+    }
+    .availability-mobile-weekday {
+        margin-left: 5px;
+        color: #728693;
+        font-size: .78rem;
+        font-weight: 800;
+    }
+    .availability-mobile-status {
+        flex: 0 0 auto;
+        border-radius: 999px;
+        padding: 5px 9px;
+        background: #e8f8f5;
+        color: #08786f;
+        font-size: .68rem;
+        font-weight: 950;
+        text-transform: uppercase;
+    }
+    .availability-mobile-status.is-closed {
+        background: #f1f5f7;
+        color: #6f8290;
+    }
+    .availability-mobile-doctors {
+        display: grid;
+        gap: 7px;
+    }
+    .availability-mobile-doctor {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        border: 1px solid #cce9e3;
+        border-left: 3px solid #0ea58e;
+        border-radius: 8px;
+        padding: 9px 10px;
+        background: #eafaf6;
+    }
+    .availability-mobile-doctor.is-full {
+        border-color: #f0b5bd;
+        border-left-color: #d94150;
+        background: #fff4f5;
+    }
+    .availability-mobile-doctor strong,
+    .availability-mobile-doctor span {
+        display: block;
+    }
+    .availability-mobile-doctor strong {
+        color: #073b4c;
+        font-size: .72rem;
+        text-transform: uppercase;
+    }
+    .availability-mobile-doctor .doctor-name {
+        margin-top: 2px;
+        color: #28596b;
+        font-size: .82rem;
+        font-weight: 800;
+    }
+    .availability-mobile-doctor .doctor-count {
+        flex: 0 0 auto;
+        color: #0b5d5a;
+        font-size: .7rem;
+        font-weight: 950;
+        text-align: right;
+    }
+    .availability-mobile-doctor.is-full .doctor-count {
+        color: #b3263a;
+    }
+    .availability-mobile-closed {
+        color: #6f8290;
+        font-size: .82rem;
+    }
+    .availability-mobile-empty {
+        padding: 24px 14px;
+        color: #60727d;
+        text-align: center;
+        font-size: .85rem;
     }
 }
 ';
@@ -456,6 +589,59 @@ body {
                         </div>
                     <?php endfor; ?>
                 </div>
+            </div>
+            <div class="availability-mobile-list" aria-label="Mobile doctor availability list">
+                <?php $mobileAvailabilityCount = 0; ?>
+                <?php for ($cursor = $calendarMonthStart; $cursor < $calendarMonthEnd; $cursor = $cursor->modify('+1 day')): ?>
+                    <?php
+                    $dateValue = $cursor->format('Y-m-d');
+                    $dateDayOfWeek = (int) $cursor->format('N');
+                    $clinicOpen = $dateDayOfWeek >= 1 && $dateDayOfWeek <= 6;
+                    $doctorSlots = $calendarDoctorSlotsByDow[$dateDayOfWeek] ?? [];
+                    $isPastDate = $dateValue < $calendarToday;
+                    if ($isPastDate) {
+                        continue;
+                    }
+                    $mobileAvailabilityCount++;
+                    ?>
+                    <article class="availability-mobile-day <?php echo $dateValue === $calendarToday ? 'is-today' : ''; ?>">
+                        <div class="availability-mobile-day-head">
+                            <div>
+                                <span class="availability-mobile-date"><?php echo htmlspecialchars($cursor->format('M j, Y')); ?></span>
+                                <span class="availability-mobile-weekday"><?php echo htmlspecialchars($cursor->format('l')); ?></span>
+                            </div>
+                            <?php if (!$clinicOpen): ?>
+                                <span class="availability-mobile-status is-closed">Closed</span>
+                            <?php else: ?>
+                                <span class="availability-mobile-status">Available</span>
+                            <?php endif; ?>
+                        </div>
+                        <?php if (!$clinicOpen): ?>
+                            <div class="availability-mobile-closed">Clinic is closed on this day.</div>
+                        <?php elseif (empty($doctorSlots)): ?>
+                            <div class="availability-mobile-closed">No doctor schedule for this day.</div>
+                        <?php else: ?>
+                            <div class="availability-mobile-doctors">
+                                <?php foreach ($doctorSlots as $slot): ?>
+                                    <?php
+                                    $booked = (int) ($calendarDoctorDayCounts[(int) $slot['id']][$dateValue] ?? 0);
+                                    $isFull = $booked >= $doctorDailyLimit;
+                                    ?>
+                                    <div class="availability-mobile-doctor <?php echo $isFull ? 'is-full' : ''; ?>">
+                                        <div>
+                                            <strong><?php echo htmlspecialchars((string) $slot['specialty']); ?></strong>
+                                            <span class="doctor-name"><?php echo htmlspecialchars((string) $slot['doctor']); ?></span>
+                                        </div>
+                                        <span class="doctor-count"><?php echo $isFull ? 'Fully booked' : $booked . '/' . $doctorDailyLimit . ' booked'; ?></span>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </article>
+                <?php endfor; ?>
+                <?php if ($mobileAvailabilityCount === 0): ?>
+                    <div class="availability-mobile-empty">No upcoming clinic dates this month.</div>
+                <?php endif; ?>
             </div>
         </section>
     </main>
