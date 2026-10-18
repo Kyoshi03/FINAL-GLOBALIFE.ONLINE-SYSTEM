@@ -395,11 +395,11 @@ body {
     display: none;
 }
 .availability-mobile-pagination {
-    display: none;
+    display: none !important;
 }
 @media (max-width: 760px) {
     .patient-calendar-page {
-        padding: 12px 8px 118px;
+        padding: 12px 8px 220px;
     }
     .patient-calendar-head {
         align-items: stretch;
@@ -536,12 +536,18 @@ body {
         font-size: .85rem;
     }
     .availability-mobile-pagination {
-        display: flex;
+        display: flex !important;
+        position: sticky;
+        bottom: 174px;
+        z-index: 10;
         align-items: center;
         justify-content: space-between;
         gap: 10px;
-        padding: 2px 12px 14px;
+        margin-top: 2px;
+        padding: 10px 12px 14px;
+        border-top: 1px solid #d7eaf4;
         background: #f8fcff;
+        box-shadow: 0 -8px 16px rgba(25, 76, 110, .08);
     }
     .availability-mobile-pagination a,
     .availability-mobile-pagination span {
