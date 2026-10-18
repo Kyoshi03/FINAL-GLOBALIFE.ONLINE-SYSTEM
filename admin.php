@@ -3443,7 +3443,6 @@ include 'includes/header.php';
                                             <td>
                                                 <div class="reschedule-request-schedule requested">
                                                     <strong><?php echo htmlspecialchars($rescheduleRequested); ?></strong>
-                                                    <span>Pending approval</span>
                                                 </div>
                                                 <div class="reschedule-request-actions" aria-label="Reschedule request actions">
                                                     <button
