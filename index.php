@@ -871,6 +871,19 @@ $additionalStyles = '
         background: #fff;
     }
 
+    #forgot-password-modal .registration-dialog {
+        width: min(860px, 100%);
+        height: min(700px, calc(100vh - 40px));
+    }
+
+    #forgot-password-modal .registration-modal-head {
+        padding: 16px 24px;
+    }
+
+    #forgot-password-modal .registration-modal-head h2 {
+        font-size: 1.35rem;
+    }
+
     @media (max-width: 560px) {
         .registration-modal {
             align-items: stretch;
@@ -889,6 +902,11 @@ $additionalStyles = '
 
         .registration-modal-head h2 {
             font-size: 1.08rem;
+        }
+
+        #forgot-password-modal .registration-dialog {
+            width: 100%;
+            height: 100dvh;
         }
     }
 ';
