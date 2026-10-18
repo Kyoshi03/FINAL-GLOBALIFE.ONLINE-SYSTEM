@@ -441,7 +441,28 @@ include 'includes/header.php';
         document.querySelectorAll('[data-forgot-back-login]').forEach(function (link) {
             link.addEventListener('click', function (event) {
                 event.preventDefault();
-                window.top.location.assign('index.php?login=1#patient-login');
+                var topWindow = window.top;
+                var forgotModal = topWindow.document.getElementById('forgot-password-modal');
+                var loginModal = topWindow.document.getElementById('patient-login');
+
+                if (forgotModal && loginModal) {
+                    forgotModal.classList.remove('is-open');
+                    forgotModal.setAttribute('aria-hidden', 'true');
+                    loginModal.classList.add('is-open');
+                    loginModal.setAttribute('aria-hidden', 'false');
+                    topWindow.document.body.style.overflow = 'hidden';
+                    topWindow.history.replaceState(null, '', 'index.php?login=1#patient-login');
+
+                    var usernameInput = topWindow.document.getElementById('patient-username');
+                    if (usernameInput) {
+                        topWindow.setTimeout(function () {
+                            usernameInput.focus();
+                        }, 80);
+                    }
+                    return;
+                }
+
+                topWindow.location.assign('index.php?login=1#patient-login');
             });
         });
     </script>
