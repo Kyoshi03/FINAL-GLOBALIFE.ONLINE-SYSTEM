@@ -2539,6 +2539,42 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             max-width: 38px !important;
             max-height: 38px !important;
         }
+        body.app-role-patient .patient-notification-panel {
+            left: 12px;
+            right: 12px;
+            width: auto;
+            max-width: none;
+            padding: 12px;
+            border-radius: 16px;
+        }
+        body.app-role-patient .notification-panel-head {
+            padding: 2px 2px 10px;
+        }
+        body.app-role-patient .notification-panel-title {
+            font-size: 1rem;
+        }
+        body.app-role-patient .notification-list {
+            max-height: min(360px, calc(100dvh - 220px));
+            padding-top: 8px;
+        }
+        body.app-role-patient .notification-item {
+            gap: 9px;
+            padding: 9px 6px;
+            border-radius: 12px;
+        }
+        body.app-role-patient .notification-item strong {
+            font-size: .84rem;
+            line-height: 1.25;
+        }
+        body.app-role-patient .notification-item span:not(.notification-item-icon) {
+            font-size: .76rem;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+        }
+        body.app-role-patient .notification-time {
+            margin-top: 4px;
+            font-size: .68rem;
+        }
     }
     /* Final mobile sticky header: keep the clinic bar and page toolbar visible while scrolling. */
     @media (max-width: 900px) {
