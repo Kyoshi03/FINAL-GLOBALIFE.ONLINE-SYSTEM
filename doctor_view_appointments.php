@@ -39,7 +39,7 @@ if ($userRole === 'patient') {
                                    rr.id AS reschedule_request_id, rr.original_date AS reschedule_original_date,
                                    rr.original_time AS reschedule_original_time,
                                    rr.requested_date AS reschedule_requested_date,
-                                   rr.requested_time AS reschedule_requested_time, rr.status AS reschedule_request_status
+                                   rr.requested_time AS reschedule_requested_time, rr.reason AS reschedule_reason, rr.status AS reschedule_request_status
                             FROM appointments a 
                             LEFT JOIN users u ON a.doctor_id = u.id 
                             LEFT JOIN clinic_queue q ON q.appointment_id = a.id
@@ -59,7 +59,7 @@ if ($userRole === 'patient') {
                             rr.id AS reschedule_request_id, rr.original_date AS reschedule_original_date,
                             rr.original_time AS reschedule_original_time,
                             rr.requested_date AS reschedule_requested_date,
-                            rr.requested_time AS reschedule_requested_time, rr.status AS reschedule_request_status
+                            rr.requested_time AS reschedule_requested_time, rr.reason AS reschedule_reason, rr.status AS reschedule_request_status
                             FROM appointments a 
                             JOIN users p ON a.patient_id = p.id 
                             LEFT JOIN users d ON a.doctor_id = d.id 
@@ -78,7 +78,7 @@ if ($userRole === 'patient') {
                             rr.id AS reschedule_request_id, rr.original_date AS reschedule_original_date,
                             rr.original_time AS reschedule_original_time,
                             rr.requested_date AS reschedule_requested_date,
-                            rr.requested_time AS reschedule_requested_time, rr.status AS reschedule_request_status
+                            rr.requested_time AS reschedule_requested_time, rr.reason AS reschedule_reason, rr.status AS reschedule_request_status
                             FROM appointments a 
                             JOIN users p ON a.patient_id = p.id 
                             LEFT JOIN users d ON a.doctor_id = d.id 
@@ -1536,6 +1536,7 @@ include __DIR__ . '/includes/header.php';
                         $requestedScheduleLabel = $hasPendingReschedule
                             ? appointment_reschedule_request_date_label((string) ($appointment['reschedule_requested_date'] ?? ''), (string) ($appointment['reschedule_requested_time'] ?? ''))
                             : '';
+                        $rescheduleReason = trim((string) ($appointment['reschedule_reason'] ?? ''));
                         $cancellationReason = trim((string) ($appointment['cancellation_reason'] ?? ''));
                         $queueNumber = trim((string) ($appointment['queue_number'] ?? ''));
                         $queueNumberDisplay = $queueNumber !== '' ? $queueNumber : 'Not generated';
@@ -1567,6 +1568,7 @@ include __DIR__ . '/includes/header.php';
                             'hasPendingReschedule' => $hasPendingReschedule,
                             'originalSchedule' => $originalScheduleLabel,
                             'requestedSchedule' => $requestedScheduleLabel,
+                            'rescheduleReason' => $rescheduleReason !== '' ? $rescheduleReason : 'Not provided',
                             'notes' => $notesFull !== '' ? $notesFull : 'None',
                             'cancellationReason' => $cancellationReason !== '' ? $cancellationReason : 'None',
                         ];
@@ -1973,6 +1975,7 @@ include __DIR__ . '/includes/header.php';
         if (data.hasPendingReschedule) {
             items.push(['Original schedule', data.originalSchedule]);
             items.push(['Requested schedule', data.requestedSchedule + ' (Pending approval)']);
+            items.push(['Reschedule reason', data.rescheduleReason || 'Not provided']);
         } else {
             items.push(['Date', data.date]);
         }

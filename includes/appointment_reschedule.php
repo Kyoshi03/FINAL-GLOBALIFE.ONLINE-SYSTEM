@@ -11,6 +11,7 @@ function appointment_reschedule_init_schema(mysqli $conn): void {
         original_time TIME DEFAULT NULL,
         requested_date DATE NOT NULL,
         requested_time TIME NOT NULL,
+        reason VARCHAR(300) DEFAULT NULL,
         status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
         reviewed_by INT DEFAULT NULL,
         reviewed_at DATETIME DEFAULT NULL,
@@ -29,6 +30,9 @@ function appointment_reschedule_init_schema(mysqli $conn): void {
     }
     if (!dbColumnExists($conn, 'appointment_reschedule_requests', 'original_time')) {
         $conn->query("ALTER TABLE appointment_reschedule_requests ADD COLUMN original_time TIME DEFAULT NULL AFTER original_date");
+    }
+    if (!dbColumnExists($conn, 'appointment_reschedule_requests', 'reason')) {
+        $conn->query("ALTER TABLE appointment_reschedule_requests ADD COLUMN reason VARCHAR(300) DEFAULT NULL AFTER requested_time");
     }
     $conn->query("UPDATE appointment_reschedule_requests r
         INNER JOIN appointments a ON a.id = r.appointment_id
