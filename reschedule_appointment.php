@@ -118,10 +118,12 @@ try {
 
     $insert = $conn->prepare(
         "INSERT INTO appointment_reschedule_requests
-            (appointment_id, patient_id, requested_by, requested_date, requested_time, status)
-         VALUES (?, ?, ?, ?, ?, 'pending')"
+            (appointment_id, patient_id, requested_by, original_date, original_time, requested_date, requested_time, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')"
     );
-    $insert->bind_param('iiiss', $appointmentId, $patientId, $patientId, $requestedDate, $normalizedTime);
+    $originalDate = (string) ($lockedAppointment['appointment_date'] ?? '');
+    $originalTime = appointment_reschedule_normalize_time((string) ($lockedAppointment['appointment_time'] ?? ''));
+    $insert->bind_param('iiissss', $appointmentId, $patientId, $patientId, $originalDate, $originalTime, $requestedDate, $normalizedTime);
     if (!$insert->execute()) {
         $insert->close();
         throw new RuntimeException('The reschedule request could not be saved. Please try again.');

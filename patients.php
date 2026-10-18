@@ -762,6 +762,8 @@ $doctorNameSql = dbUsersNameExpression('d');
 $pendingRescheduleJoin = appointment_reschedule_pending_join_sql();
 $stmt = $conn->prepare("SELECT a.*, {$doctorNameSql} AS doctor_name, q.queue_number, q.status AS queue_status,
         rr.id AS reschedule_request_id,
+        rr.original_date AS reschedule_original_date,
+        rr.original_time AS reschedule_original_time,
         rr.requested_date AS reschedule_requested_date,
         rr.requested_time AS reschedule_requested_time,
         rr.status AS reschedule_request_status
@@ -785,6 +787,8 @@ $appointmentsOffset = ($appointmentsPage - 1) * $appointmentsPerPage;
 
 $stmt = $conn->prepare("SELECT a.*, {$doctorNameSql} AS doctor_name, q.queue_number, q.status AS queue_status,
         rr.id AS reschedule_request_id,
+        rr.original_date AS reschedule_original_date,
+        rr.original_time AS reschedule_original_time,
         rr.requested_date AS reschedule_requested_date,
         rr.requested_time AS reschedule_requested_time,
         rr.status AS reschedule_request_status
@@ -3731,7 +3735,7 @@ include 'includes/header.php';
                             </div>
                             <?php if (!empty($nextAppointment['reschedule_request_id'])): ?>
                                 <div class="reschedule-request-note">
-                                    <strong>Original schedule remains active:</strong> <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $nextAppointment['appointment_date'], (string) $nextAppointment['appointment_time'])); ?><br>
+                                    <strong>Original schedule remains active:</strong> <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) ($nextAppointment['reschedule_original_date'] ?: $nextAppointment['appointment_date']), (string) ($nextAppointment['reschedule_original_time'] ?: $nextAppointment['appointment_time']))); ?><br>
                                     <strong>Requested schedule:</strong> <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $nextAppointment['reschedule_requested_date'], (string) $nextAppointment['reschedule_requested_time'])); ?> <span>(Pending approval)</span>
                                 </div>
                             <?php endif; ?>
@@ -3795,7 +3799,7 @@ include 'includes/header.php';
                                     </div>
                                     <?php if (!empty($appointment['reschedule_request_id'])): ?>
                                         <div class="reschedule-request-note">
-                                            <strong>Original:</strong> <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $appointment['appointment_date'], (string) $appointment['appointment_time'])); ?><br>
+                                            <strong>Original:</strong> <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) ($appointment['reschedule_original_date'] ?: $appointment['appointment_date']), (string) ($appointment['reschedule_original_time'] ?: $appointment['appointment_time']))); ?><br>
                                             <strong>Requested:</strong> <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $appointment['reschedule_requested_date'], (string) $appointment['reschedule_requested_time'])); ?> <span>(Pending approval)</span>
                                         </div>
                                     <?php endif; ?>

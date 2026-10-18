@@ -7,6 +7,8 @@ function appointment_reschedule_init_schema(mysqli $conn): void {
         appointment_id INT NOT NULL,
         patient_id INT NOT NULL,
         requested_by INT NOT NULL,
+        original_date DATE DEFAULT NULL,
+        original_time TIME DEFAULT NULL,
         requested_date DATE NOT NULL,
         requested_time TIME NOT NULL,
         status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
@@ -22,6 +24,17 @@ function appointment_reschedule_init_schema(mysqli $conn): void {
         INDEX idx_reschedule_request_appointment (appointment_id, status, id),
         INDEX idx_reschedule_request_patient (patient_id, status, created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    if (!dbColumnExists($conn, 'appointment_reschedule_requests', 'original_date')) {
+        $conn->query("ALTER TABLE appointment_reschedule_requests ADD COLUMN original_date DATE DEFAULT NULL AFTER requested_by");
+    }
+    if (!dbColumnExists($conn, 'appointment_reschedule_requests', 'original_time')) {
+        $conn->query("ALTER TABLE appointment_reschedule_requests ADD COLUMN original_time TIME DEFAULT NULL AFTER original_date");
+    }
+    $conn->query("UPDATE appointment_reschedule_requests r
+        INNER JOIN appointments a ON a.id = r.appointment_id
+        SET r.original_date = COALESCE(r.original_date, a.appointment_date),
+            r.original_time = COALESCE(r.original_time, a.appointment_time)
+        WHERE r.original_date IS NULL OR r.original_time IS NULL");
 }
 
 function appointment_reschedule_pending_join_sql(): string {
