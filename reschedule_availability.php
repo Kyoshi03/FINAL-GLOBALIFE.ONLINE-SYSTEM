@@ -52,10 +52,10 @@ $status = strtolower((string) ($appointment['status'] ?? ''));
 $bookingType = strtolower((string) ($appointment['booking_type'] ?? ''));
 $hasPermission = $userRole === 'patient'
     && (int) ($appointment['patient_id'] ?? 0) === (int) ($currentUser['id'] ?? 0)
-    && appointment_reschedule_is_eligible($appointment);
+    && appointment_reschedule_is_patient_editable($appointment);
 if (!$hasPermission) {
     $conn->close();
-    reschedule_availability_response(['ok' => false, 'error' => 'Only your upcoming Confirmed appointments can be rescheduled.'], 403);
+    reschedule_availability_response(['ok' => false, 'error' => 'Only your upcoming Pending or Confirmed appointments can be changed.'], 403);
 }
 
 $pendingStmt = $conn->prepare("SELECT id FROM appointment_reschedule_requests WHERE appointment_id = ? AND status = 'pending' LIMIT 1");
@@ -71,6 +71,7 @@ if ($hasPendingRequest) {
 $baseResponse = [
     'ok' => true,
     'booking_type' => $bookingType,
+    'edit_mode' => $status === 'pending' ? 'pending' : 'confirmed',
     'current_date' => (string) ($appointment['appointment_date'] ?? ''),
     'current_time' => substr((string) ($appointment['appointment_time'] ?? ''), 0, 5),
 ];

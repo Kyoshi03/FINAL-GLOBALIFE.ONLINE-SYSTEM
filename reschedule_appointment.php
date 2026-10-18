@@ -72,8 +72,10 @@ $stmt->close();
 if (!$appointment) {
     reschedule_finish($conn, $returnUrl, false, 'Appointment not found or it does not belong to your account.');
 }
-if (!appointment_reschedule_is_eligible($appointment)) {
-    reschedule_finish($conn, $returnUrl, false, 'Only upcoming Confirmed appointments that have not started can be rescheduled.');
+$isConfirmedReschedule = appointment_reschedule_is_eligible($appointment);
+$isPendingScheduleChange = appointment_reschedule_is_pending_editable($appointment);
+if (!$isConfirmedReschedule && !$isPendingScheduleChange) {
+    reschedule_finish($conn, $returnUrl, false, 'Only upcoming Pending or Confirmed appointments that have not started can be changed.');
 }
 
 $normalizedTime = appointment_reschedule_normalize_time($requestedTime);
@@ -103,7 +105,9 @@ try {
     $appointmentLock->execute();
     $lockedAppointment = $appointmentLock->get_result()->fetch_assoc();
     $appointmentLock->close();
-    if (!$lockedAppointment || (int) $lockedAppointment['patient_id'] !== $patientId || !appointment_reschedule_is_eligible($lockedAppointment)) {
+    $lockedIsConfirmedReschedule = $lockedAppointment && appointment_reschedule_is_eligible($lockedAppointment);
+    $lockedIsPendingScheduleChange = $lockedAppointment && appointment_reschedule_is_pending_editable($lockedAppointment);
+    if (!$lockedAppointment || (int) $lockedAppointment['patient_id'] !== $patientId || (!$lockedIsConfirmedReschedule && !$lockedIsPendingScheduleChange)) {
         throw new RuntimeException('The appointment is no longer eligible for rescheduling. Please refresh the page.');
     }
 
@@ -119,6 +123,47 @@ try {
     $slotError = appointment_reschedule_slot_message($conn, $lockedAppointment, $requestedDate, $normalizedTime, true);
     if ($slotError !== null) {
         throw new RuntimeException($slotError);
+    }
+
+    if ($lockedIsPendingScheduleChange) {
+        $updateAppointment = $conn->prepare("UPDATE appointments
+            SET appointment_date = ?, appointment_time = ?
+            WHERE id = ? AND patient_id = ? AND status = 'pending'");
+        $updateAppointment->bind_param('ssii', $requestedDate, $normalizedTime, $appointmentId, $patientId);
+        if (!$updateAppointment->execute() || $updateAppointment->affected_rows !== 1) {
+            $updateAppointment->close();
+            throw new RuntimeException('The pending appointment schedule could not be changed. Please refresh and try again.');
+        }
+        $updateAppointment->close();
+
+        $queueUpdate = $conn->prepare("UPDATE clinic_queue
+            SET queue_date = ?
+            WHERE appointment_id = ? AND status NOT IN ('completed', 'cancelled')");
+        if ($queueUpdate) {
+            $queueUpdate->bind_param('si', $requestedDate, $appointmentId);
+            $queueUpdate->execute();
+            $queueUpdate->close();
+        }
+
+        $reminderAt = new DateTimeImmutable($requestedDate . ' ' . $normalizedTime, new DateTimeZone('Asia/Manila'));
+        $reminderAt = $reminderAt->modify('-' . clinic_notification_reminder_days() . ' days');
+        $now = new DateTimeImmutable('now', new DateTimeZone('Asia/Manila'));
+        if ($reminderAt < $now) {
+            $reminderAt = $now;
+        }
+        $scheduledFor = $reminderAt->format('Y-m-d H:i:s');
+        $reminderUpdate = $conn->prepare("UPDATE appointment_email_reminders
+            SET scheduled_for = ?, email_sent_at = NULL, sms_sent_at = NULL, sent_at = NULL, attempts = 0, last_error = NULL
+            WHERE appointment_id = ?");
+        if ($reminderUpdate) {
+            $reminderUpdate->bind_param('si', $scheduledFor, $appointmentId);
+            $reminderUpdate->execute();
+            $reminderUpdate->close();
+        }
+
+        $conn->commit();
+        appointment_reschedule_release_lock($conn, $lockName);
+        reschedule_finish($conn, $returnUrl, true, 'Your pending appointment schedule was changed successfully. It remains Pending for clinic review.');
     }
 
     $insert = $conn->prepare(

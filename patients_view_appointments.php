@@ -1654,7 +1654,7 @@ include __DIR__ . '/includes/header.php';
                             <td class="appointment-actions-cell">
                                 <div class="action-buttons <?php echo (($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation')) && $appointment['status'] === 'pending' ? 'pending-actions' : ''; ?>">
                                     <button type="button" class="btn btn-details" data-open-details>Details</button>
-                                    <?php if ($userRole === 'patient' && appointment_reschedule_is_eligible($appointment)): ?>
+                                    <?php if ($userRole === 'patient' && appointment_reschedule_is_patient_editable($appointment)): ?>
                                         <?php if (!empty($appointment['reschedule_request_id'])): ?>
                                             <span class="request-pending-badge">Request Pending</span>
                                         <?php else: ?>
@@ -1663,7 +1663,8 @@ include __DIR__ . '/includes/header.php';
                                             data-appointment-id="<?php echo (int) ($appointment['id'] ?? 0); ?>"
                                             data-reschedule-date="<?php echo htmlspecialchars((string) ($appointment['appointment_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                             data-reschedule-time="<?php echo htmlspecialchars((string) ($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                                            data-reschedule-label="Current schedule: <?php echo htmlspecialchars($formattedDate . ' at ' . $formattedTime, ENT_QUOTES, 'UTF-8'); ?>">Reschedule</button>
+                                            data-reschedule-label="Current schedule: <?php echo htmlspecialchars($formattedDate . ' at ' . $formattedTime, ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-reschedule-mode="<?php echo ($appointment['status'] ?? '') === 'pending' ? 'pending' : 'confirmed'; ?>"><?php echo ($appointment['status'] ?? '') === 'pending' ? 'Change Schedule' : 'Reschedule'; ?></button>
                                         <?php endif; ?>
                                     <?php endif; ?>
                                     <?php if (!empty($appointment['reschedule_request_id']) && (($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation'))): ?>

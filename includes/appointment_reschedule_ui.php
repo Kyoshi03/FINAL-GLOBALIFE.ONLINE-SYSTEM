@@ -256,6 +256,8 @@ unset($_SESSION['reschedule_error']);
     var nextMonthButton = document.getElementById('appointmentRescheduleNextMonth');
     var dateLabel = document.getElementById('appointmentRescheduleDateLabel');
     var currentText = document.getElementById('appointmentRescheduleCurrent');
+    var title = document.getElementById('appointmentRescheduleTitle');
+    var notice = document.getElementById('appointmentRescheduleNotice');
     var successModal = document.getElementById('rescheduleSuccessModal');
     var successOk = document.getElementById('rescheduleSuccessOk');
     var errorModal = document.getElementById('rescheduleErrorModal');
@@ -659,6 +661,12 @@ unset($_SESSION['reschedule_error']);
             if (reasonInput) reasonInput.value = '';
             updateReasonCount();
             var current = button.getAttribute('data-reschedule-label') || 'Current appointment schedule';
+            var editMode = button.getAttribute('data-reschedule-mode') || 'confirmed';
+            if (title) title.textContent = editMode === 'pending' ? 'Change appointment schedule' : 'Reschedule appointment';
+            if (notice) notice.textContent = editMode === 'pending'
+                ? 'Your appointment is still pending. Choose a new available schedule and save the change.'
+                : 'Choose an available date and time. Your current Confirmed schedule stays active until the clinic approves this request.';
+            if (submitButton) submitButton.textContent = editMode === 'pending' ? 'Save Schedule' : 'Submit Request';
             if (currentText) currentText.textContent = current;
             modal.classList.add('is-open');
             modal.setAttribute('aria-hidden', 'false');

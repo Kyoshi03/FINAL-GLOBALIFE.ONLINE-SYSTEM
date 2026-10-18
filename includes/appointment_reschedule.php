@@ -88,6 +88,26 @@ function appointment_reschedule_is_eligible(array $appointment, ?DateTimeImmutab
     return $appointmentAt instanceof DateTimeImmutable && $appointmentAt > $now;
 }
 
+function appointment_reschedule_is_pending_editable(array $appointment, ?DateTimeImmutable $now = null): bool {
+    if (strtolower((string) ($appointment['status'] ?? '')) !== 'pending') {
+        return false;
+    }
+    if (in_array(strtolower((string) ($appointment['queue_status'] ?? '')), ['serving', 'completed'], true)) {
+        return false;
+    }
+    $appointmentAt = appointment_reschedule_at(
+        (string) ($appointment['appointment_date'] ?? ''),
+        (string) ($appointment['appointment_time'] ?? '')
+    );
+    $now = $now ?: new DateTimeImmutable('now', new DateTimeZone('Asia/Manila'));
+    return $appointmentAt instanceof DateTimeImmutable && $appointmentAt > $now;
+}
+
+function appointment_reschedule_is_patient_editable(array $appointment, ?DateTimeImmutable $now = null): bool {
+    return appointment_reschedule_is_eligible($appointment, $now)
+        || appointment_reschedule_is_pending_editable($appointment, $now);
+}
+
 function appointment_reschedule_slot_message(mysqli $conn, array $appointment, string $date, string $time, bool $checkCapacity = true): ?string {
     $date = trim($date);
     $time = appointment_reschedule_normalize_time($time);
