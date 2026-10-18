@@ -1740,8 +1740,9 @@ $additionalStyles = '
         padding: 3px 2px;
         border: 1px solid #cbd5e1;
         border-radius: 8px;
-        background: #f1f5f9;
-        color: #475569;
+        background: #fff;
+        border-color: #cde1ed;
+        color: #0066cc;
         cursor: pointer;
         font: inherit;
         font-size: .6rem;
@@ -1751,9 +1752,9 @@ $additionalStyles = '
     }
 
     .patient-details-inline:hover {
-        background: #e2e8f0;
-        border-color: #94a3b8;
-        color: #1e3a5f;
+        background: #f3faff;
+        border-color: #0f7cc2;
+        color: #0066cc;
     }
 
     .appointment-pagination {
@@ -1815,8 +1816,8 @@ $additionalStyles = '
         display: none;
         align-items: center;
         justify-content: center;
-        padding: 22px;
-        background: rgba(3, 18, 30, .48);
+        padding: 18px;
+        background: rgba(3, 18, 30, .50);
         backdrop-filter: blur(4px);
         box-sizing: border-box;
     }
@@ -1826,13 +1827,13 @@ $additionalStyles = '
     }
 
     .patient-appointment-dialog {
-        width: min(760px, 100%);
+        width: min(720px, 100%);
         max-height: calc(100vh - 36px);
         overflow: hidden;
         display: flex;
         flex-direction: column;
         border: 1px solid #cde8f3;
-        border-radius: 20px;
+        border-radius: 22px;
         background: #fff;
         box-shadow: 0 24px 70px rgba(2, 62, 138, .2);
         box-sizing: border-box;
@@ -1850,26 +1851,28 @@ $additionalStyles = '
 
     .patient-appointment-head h3 {
         margin: 0;
-        color: #073b4c;
-        font-size: 1.35rem;
+        color: #10233f;
+        font-size: 1.28rem;
+        line-height: 1.2;
     }
 
     .patient-appointment-head p {
         display: inline-flex;
-        margin: 9px 0 0;
-        padding: 7px 12px;
+        align-items: center;
+        margin: 8px 0 0;
+        padding: 7px 11px;
         border-radius: 999px;
         background: #eaf8fc;
         color: #0077b6;
-        font-size: .88rem;
-        font-weight: 900;
+        font-size: .86rem;
+        font-weight: 850;
     }
 
     .patient-modal-close {
         display: inline-grid;
         place-items: center;
-        width: 42px;
-        height: 42px;
+        width: 40px;
+        height: 40px;
         border: 0;
         border-radius: 13px;
         background: #eaf8fc;
@@ -1878,6 +1881,10 @@ $additionalStyles = '
         font-size: 1.45rem;
         font-weight: 950;
         line-height: 1;
+    }
+
+    .patient-modal-close:hover {
+        background: #d8f2fb;
     }
 
     .patient-appointment-body {
@@ -1890,49 +1897,54 @@ $additionalStyles = '
     .patient-detail-summary {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12px;
+        gap: 10px;
         margin-bottom: 18px;
     }
 
     .patient-detail-pill,
     .patient-detail-grid,
     .patient-detail-notes {
-        border: 1px solid #cde8f3;
-        border-radius: 12px;
-        background: #fafdff;
+        border: 1px solid #d8eef7;
+        border-radius: 14px;
+        background: #f8fdff;
     }
 
     .patient-detail-pill {
-        padding: 14px 16px;
+        padding: 14px;
     }
 
     .patient-detail-pill span,
     .patient-detail-grid dt {
-        color: #60727d;
-        font-weight: 900;
+        color: #60758a;
+        font-size: .75rem;
+        font-weight: 800;
         text-transform: uppercase;
+        letter-spacing: .04em;
     }
 
     .patient-detail-pill strong {
         display: block;
-        margin-top: 8px;
+        margin-top: 4px;
         color: #10233f;
-        font-size: 1.05rem;
+        font-size: 1rem;
+        overflow-wrap: anywhere;
     }
 
     .patient-detail-grid {
         display: grid;
-        grid-template-columns: 180px minmax(0, 1fr);
-        gap: 0;
-        padding: 18px 20px;
-        margin: 0 0 16px;
+        grid-template-columns: 150px minmax(0, 1fr);
+        gap: 12px 16px;
+        padding: 16px;
+        margin: 0;
+        background: #fff;
     }
 
     .patient-detail-grid dt,
     .patient-detail-grid dd {
         margin: 0;
-        padding: 8px 0;
+        padding: 0;
         color: #315f75;
+        line-height: 1.45;
     }
 
     .patient-detail-grid dd {
@@ -1940,16 +1952,18 @@ $additionalStyles = '
     }
 
     .patient-detail-notes {
-        padding: 18px 20px;
+        margin-top: 16px;
+        padding: 16px;
         color: #315f75;
+        line-height: 1.55;
     }
 
     .patient-detail-notes strong,
     .patient-cancel-reason label {
         display: block;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
         color: #10233f;
-        font-weight: 900;
+        font-weight: 800;
     }
 
     .patient-detail-notes span {
@@ -1963,23 +1977,29 @@ $additionalStyles = '
         gap: 10px;
         flex: 0 0 auto;
         padding: 0 24px 24px;
-        border-top: 1px solid #e6f0f5;
-        background: #fff;
     }
 
     .patient-cancel-reason {
-        padding: 0 24px 10px;
+        display: none;
+        padding: 0 22px 4px;
+    }
+
+    .patient-cancel-dialog .patient-cancel-reason {
+        display: block;
     }
 
     .patient-cancel-reason textarea {
         width: 100%;
-        min-height: 110px;
+        min-height: 96px;
         resize: vertical;
-        border: 1px solid #cde8f3;
-        border-radius: 12px;
-        padding: 13px 14px;
-        color: #10233f;
+        border: 1px solid #d4e6f5;
+        border-radius: 8px;
+        padding: 12px;
+        color: #203b4a;
         font: inherit;
+        line-height: 1.45;
+        box-sizing: border-box;
+        background: #fbfdff;
     }
 
     .patient-cancel-error {
@@ -1995,83 +2015,72 @@ $additionalStyles = '
     }
 
     .patient-cancel-dialog {
-        width: min(640px, calc(100vw - 44px));
-        border-radius: 18px;
-        box-shadow: 0 22px 58px rgba(3, 18, 30, .28);
+        width: min(720px, 100%);
     }
 
     .patient-cancel-dialog .patient-appointment-head {
-        min-height: 116px;
-        padding: 24px 26px 22px;
-        background:
-            radial-gradient(circle at 88% 22%, rgba(72, 202, 228, .30), transparent 32%),
-            linear-gradient(135deg, #ffffff 0%, #f6fdff 56%, #dff8ff 100%);
+        min-height: 0;
+        padding: 24px 26px;
     }
 
     .patient-cancel-dialog .patient-appointment-head h3 {
-        color: #073b4c;
+        color: #10233f;
         font-size: 1.28rem;
         line-height: 1.12;
         font-weight: 950;
     }
 
     .patient-cancel-dialog .patient-appointment-head p {
-        margin-top: 11px;
-        padding: 7px 12px;
+        margin-top: 8px;
+        padding: 7px 11px;
         background: #eaf8fc;
         color: #0077b6;
-        font-size: .94rem;
-        line-height: 1.15;
-        font-weight: 950;
+        font-size: .86rem;
+        line-height: normal;
+        font-weight: 850;
     }
 
     .patient-cancel-dialog .patient-modal-close {
-        width: 44px;
-        height: 44px;
-        border-radius: 13px;
+        width: 40px;
+        height: 40px;
         font-size: 1.35rem;
         background: #eaf8fc;
     }
 
     .patient-cancel-dialog .patient-cancel-reason {
-        padding: 18px 26px 10px;
-        margin-top: 0;
+        padding: 0 22px 4px;
     }
 
     .patient-cancel-dialog .patient-cancel-reason label {
-        margin: 0 0 10px;
+        margin: 0 0 8px;
         color: #10233f;
         font-size: 1rem;
-        line-height: 1.15;
-        font-weight: 950;
+        line-height: normal;
+        font-weight: 800;
     }
 
     .patient-cancel-dialog .patient-cancel-reason textarea {
-        min-height: 118px;
-        border-color: #c9e3f1;
-        border-radius: 10px;
-        background: #fbfdff;
-        padding: 14px 15px;
-        color: #10233f;
-        font-size: .95rem;
+        min-height: 96px;
+        border-color: #d4e6f5;
+        border-radius: 8px;
+        padding: 12px;
+        color: #203b4a;
+        font-size: inherit;
         line-height: 1.45;
-        font-weight: 500;
-        outline: none;
-        box-sizing: border-box;
+        font-weight: 400;
     }
 
     .patient-cancel-dialog .patient-cancel-reason textarea:focus {
         border-color: #0f7cc2;
-        box-shadow: 0 0 0 4px rgba(15, 124, 194, .10);
+        box-shadow: 0 0 0 4px rgba(15, 124, 194, .1);
     }
 
     .patient-cancel-dialog .patient-cancel-reason textarea::placeholder {
         color: #707b83;
-        opacity: 1;
     }
 
     .patient-cancel-dialog .patient-appointment-actions {
-        padding: 14px 26px 24px;
+        padding: 20px 24px 24px;
         gap: 10px;
     }
 
@@ -2080,25 +2089,38 @@ $additionalStyles = '
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 40px;
-        border: 0;
-        border-radius: 9px;
-        padding: 0 18px;
+        min-height: 0;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        padding: 8px 14px;
         cursor: pointer;
         font: inherit;
-        font-size: .9rem;
-        font-weight: 950;
+        font-size: .82rem;
+        font-weight: 700;
+        transition: background .15s ease, border-color .15s ease, color .15s ease;
     }
 
     .patient-cancel-back {
         background: #eef5fb;
         color: #023e8a;
+        border-color: #cfe3f2;
+    }
+
+    .patient-cancel-back:hover {
+        background: #e1f1fc;
+        border-color: #afd2e8;
     }
 
     .patient-cancel-continue {
         background: #28a745;
         color: #fff;
+        border-color: #28a745;
         min-width: 118px;
+    }
+
+    .patient-cancel-continue:hover {
+        background: #218838;
+        border-color: #218838;
     }
 
     .patient-cancel-success-dialog {
