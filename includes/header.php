@@ -3014,6 +3014,14 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                 setSubmenuState(group, isOpen);
             });
         });
+        const patientHistoryGroup = document.querySelector('.patient-history-group');
+        if (patientHistoryGroup) {
+            document.addEventListener('click', function(event) {
+                if (!patientHistoryGroup.contains(event.target)) {
+                    setSubmenuState(patientHistoryGroup, false);
+                }
+            });
+        }
     });
     document.addEventListener('click', function(event) {
         const nav = document.getElementById('mainNav');
