@@ -2177,6 +2177,167 @@ body {
     margin: 0;
 }
 
+.appointment-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 4000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(3, 18, 30, .50);
+    backdrop-filter: blur(4px);
+}
+
+.appointment-modal.is-open {
+    display: flex;
+}
+
+.appointment-modal-card {
+    width: min(720px, 100%);
+    max-height: calc(100vh - 36px);
+    overflow: auto;
+    border: 1px solid #cde8f3;
+    border-radius: 22px;
+    background: #fff;
+    box-shadow: 0 24px 70px rgba(2, 62, 138, .20);
+}
+
+.appointment-modal-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 24px 26px;
+    background: linear-gradient(135deg, #fff 0%, #eefaff 100%);
+    border-bottom: 1px solid #d8eef7;
+}
+
+.appointment-modal-head h3 {
+    margin: 0;
+    color: #10233f;
+    font-size: 1.28rem;
+    line-height: 1.2;
+}
+
+.appointment-modal-head p {
+    display: inline-flex;
+    align-items: center;
+    margin: 8px 0 0;
+    padding: 7px 11px;
+    border-radius: 999px;
+    background: #eaf8fc;
+    color: #0077b6;
+    font-size: .86rem;
+    font-weight: 850;
+}
+
+.modal-close {
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 13px;
+    background: #eaf8fc;
+    color: #0077b6;
+    font-size: 1.35rem;
+    font-weight: 900;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.modal-close:hover {
+    background: #d8f2fb;
+}
+
+.appointment-modal-body {
+    padding: 22px 24px;
+}
+
+.detail-summary-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.detail-pill {
+    padding: 14px;
+    border: 1px solid #d8eef7;
+    border-radius: 14px;
+    background: #f8fdff;
+}
+
+.detail-pill span {
+    display: block;
+    margin-bottom: 4px;
+    color: #60758a;
+    font-size: .75rem;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.detail-pill strong {
+    color: #10233f;
+    font-size: 1rem;
+    overflow-wrap: anywhere;
+}
+
+.appointment-detail-grid {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 12px 16px;
+    padding: 16px;
+    border: 1px solid #d8eef7;
+    border-radius: 16px;
+    background: #fff;
+}
+
+.appointment-detail-grid dt {
+    color: #60758a;
+    font-weight: 850;
+}
+
+.appointment-detail-grid dd {
+    margin: 0;
+    color: #315c70;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+
+.detail-notes-box {
+    margin-top: 16px;
+    padding: 16px;
+    border: 1px solid #d8eef7;
+    border-radius: 16px;
+    background: #f8fdff;
+    color: #315c70;
+    line-height: 1.55;
+}
+
+.detail-notes-box strong {
+    display: block;
+    margin-bottom: 6px;
+    color: #10233f;
+}
+
+.appointment-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 0 24px 24px;
+}
+
+.appointment-modal-actions .btn-light {
+    background: #eef5fb;
+    color: #023e8a;
+    border-color: #cfe3f2;
+}
+
+.appointment-modal-actions .btn-light:hover {
+    background: #dcecf8;
+}
+
 .admin-cancel-reason {
     display: none;
     padding: 0 22px 18px;
@@ -2417,6 +2578,31 @@ body {
     .admin-detail-grid span[data-admin-detail-row="reschedule"],
     .admin-detail-grid strong[data-admin-detail-row="reschedule"] {
         border-radius: 8px;
+    }
+
+    .appointment-modal-card {
+        max-height: calc(100vh - 24px);
+        border-radius: 18px;
+    }
+
+    .appointment-modal-head {
+        padding: 18px;
+    }
+
+    .appointment-modal-body {
+        padding: 18px;
+    }
+
+    .detail-summary-strip {
+        grid-template-columns: 1fr;
+    }
+
+    .appointment-detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .appointment-modal-actions {
+        padding: 0 18px 18px;
     }
 
     .trend-panel-head {
@@ -2826,6 +3012,23 @@ document.addEventListener("DOMContentLoaded", function () {
         if (node) node.textContent = value || "None";
     }
 
+    function setSummary(items) {
+        var summary = document.getElementById("adminDetailSummary");
+        if (!summary) return;
+        summary.innerHTML = "";
+        items.forEach(function (item) {
+            var pill = document.createElement("div");
+            pill.className = "detail-pill";
+            var label = document.createElement("span");
+            label.textContent = item[0];
+            var value = document.createElement("strong");
+            value.textContent = item[1] || "None";
+            pill.appendChild(label);
+            pill.appendChild(value);
+            summary.appendChild(pill);
+        });
+    }
+
     function setForm(formId, appointmentId, status) {
         var form = document.getElementById(formId);
         if (!form) return;
@@ -2851,6 +3054,11 @@ document.addEventListener("DOMContentLoaded", function () {
             var data = button.dataset;
             setText("adminModalPatient", data.patient);
             setText("adminModalSub", data.modalSub || data.schedule);
+            setSummary([
+                ["Status", data.statusLabel],
+                ["Booking type", data.type],
+                ["Request", data.reschedulePending === "1" ? "Reschedule" : "Appointment"]
+            ]);
             setText("adminDetailPatient", data.patient);
             setText("adminDetailContact", data.contact);
             setText("adminDetailDoctor", data.doctor);
@@ -3763,32 +3971,36 @@ include 'includes/header.php';
     </section>
     <?php endif; ?>
 
-    <div class="admin-modal" id="adminAppointmentModal" aria-hidden="true">
-        <div class="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="adminModalPatient">
-            <div class="admin-modal-head">
+    <div class="appointment-modal" id="adminAppointmentModal" aria-hidden="true">
+        <div class="appointment-modal-card" role="dialog" aria-modal="true" aria-labelledby="adminModalPatient">
+            <div class="appointment-modal-head">
                 <div>
-                    <h2 id="adminModalPatient">Appointment request</h2>
+                    <h3 id="adminModalPatient">Appointment details</h3>
                     <p id="adminModalSub">Review appointment details</p>
                 </div>
-                <button class="admin-modal-close" type="button" data-admin-close-modal aria-label="Close appointment details">&times;</button>
+                <button class="modal-close" type="button" data-admin-close-modal aria-label="Close appointment details">&times;</button>
             </div>
-            <div class="admin-modal-body">
-                <div class="admin-detail-grid">
-                    <span>Patient</span><strong id="adminDetailPatient">None</strong>
-                    <span>Contact</span><strong id="adminDetailContact">None</strong>
-                    <span data-admin-detail-row="doctor">Doctor</span><strong data-admin-detail-row="doctor" id="adminDetailDoctor">None</strong>
-                    <span data-admin-detail-row="regular-schedule">Schedule</span><strong data-admin-detail-row="regular-schedule" id="adminDetailSchedule">None</strong>
-                    <span data-admin-detail-row="reschedule">Original schedule</span><strong data-admin-detail-row="reschedule" id="adminDetailOriginalSchedule">None</strong>
-                    <span data-admin-detail-row="reschedule">Requested schedule</span><strong data-admin-detail-row="reschedule" id="adminDetailRequestedSchedule">None</strong>
-                    <span data-admin-detail-row="reschedule">Reschedule request</span><strong data-admin-detail-row="reschedule" id="adminDetailRescheduleStatus">Pending approval</strong>
-                    <span data-admin-detail-row="type">Type</span><strong data-admin-detail-row="type" id="adminDetailType">None</strong>
-                    <span data-admin-detail-row="services">Services</span><strong data-admin-detail-row="services" id="adminDetailServices">None</strong>
-                    <span>Status</span><strong id="adminDetailStatus">None</strong>
-                    <span>Notes</span><strong id="adminDetailNotes">None</strong>
-                    <span data-admin-cancel-reason-detail>Cancellation reason</span><strong data-admin-cancel-reason-detail id="adminDetailCancelReason">None</strong>
+            <div class="appointment-modal-body">
+                <div class="detail-summary-strip" id="adminDetailSummary"></div>
+                <dl class="appointment-detail-grid" id="adminAppointmentDetailGrid">
+                    <dt>Patient</dt><dd id="adminDetailPatient">None</dd>
+                    <dt>Contact</dt><dd id="adminDetailContact">None</dd>
+                    <dt data-admin-detail-row="doctor">Doctor</dt><dd data-admin-detail-row="doctor" id="adminDetailDoctor">None</dd>
+                    <dt data-admin-detail-row="regular-schedule">Schedule</dt><dd data-admin-detail-row="regular-schedule" id="adminDetailSchedule">None</dd>
+                    <dt data-admin-detail-row="reschedule">Original schedule</dt><dd data-admin-detail-row="reschedule" id="adminDetailOriginalSchedule">None</dd>
+                    <dt data-admin-detail-row="reschedule">Requested schedule</dt><dd data-admin-detail-row="reschedule" id="adminDetailRequestedSchedule">None</dd>
+                    <dt data-admin-detail-row="reschedule">Reschedule request</dt><dd data-admin-detail-row="reschedule" id="adminDetailRescheduleStatus">Pending approval</dd>
+                    <dt data-admin-detail-row="type">Booking type</dt><dd data-admin-detail-row="type" id="adminDetailType">None</dd>
+                    <dt data-admin-detail-row="services">Services</dt><dd data-admin-detail-row="services" id="adminDetailServices">None</dd>
+                    <dt>Status</dt><dd id="adminDetailStatus">None</dd>
+                    <dt data-admin-cancel-reason-detail>Cancellation reason</dt><dd data-admin-cancel-reason-detail id="adminDetailCancelReason">None</dd>
+                </dl>
+                <div class="detail-notes-box">
+                    <strong>Notes</strong>
+                    <span id="adminDetailNotes">None</span>
                 </div>
             </div>
-            <div class="admin-modal-actions">
+            <div class="appointment-modal-actions">
                 <div id="adminPendingActions" class="admin-modal-actions" style="padding:0">
                     <form id="adminConfirmForm" method="post" action="update_appointment_status.php">
                         <input type="hidden" name="appointment_id" value="">
@@ -3803,7 +4015,7 @@ include 'includes/header.php';
                         <button class="btn danger" type="submit" data-confirm-message="Are you sure you want to cancel this appointment request?">Cancel</button>
                     </form>
                 </div>
-                <button class="btn secondary" type="button" data-admin-close-modal>Close</button>
+                <button class="btn btn-light" type="button" data-admin-close-modal>Close</button>
             </div>
         </div>
     </div>
