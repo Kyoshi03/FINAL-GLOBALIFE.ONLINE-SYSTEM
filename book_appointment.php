@@ -957,6 +957,20 @@ $additionalStyles = '
     .date-required-choose { border:0; background:#0878b5; color:#fff; }
     .date-required-choose:hover, .date-required-choose:focus-visible { background:#056696; }
     @media (max-width:520px) { .date-required-dialog { width:100%; } .date-required-head, .date-required-body { padding-left:18px; padding-right:18px; } .date-required-actions { padding-left:18px; padding-right:18px; flex-direction:column-reverse; } .date-required-actions button { width:100%; } }
+    .doctor-required-modal { position:fixed; inset:0; z-index:6700; display:none; place-items:center; padding:20px; background:rgba(3,37,56,.56); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); }
+    .doctor-required-modal.is-open { display:grid; }
+    .doctor-required-dialog { width:min(440px,100%); border:1px solid #c9e2ef; border-radius:18px; background:#fff; box-shadow:0 24px 70px rgba(4,35,52,.3); overflow:hidden; }
+    .doctor-required-head { padding:22px 24px 16px; background:linear-gradient(135deg,#f7fdff,#e8f7ff); color:#073b4c; }
+    .doctor-required-icon { display:grid; place-items:center; width:46px; height:46px; margin-bottom:12px; border-radius:50%; background:#e5f5fb; color:#0878b5; font-size:1.35rem; font-weight:900; }
+    .doctor-required-head h3 { margin:0; font-size:1.28rem; }
+    .doctor-required-body { padding:18px 24px 6px; color:#587180; line-height:1.5; }
+    .doctor-required-body p { margin:0; }
+    .doctor-required-actions { display:flex; justify-content:flex-end; gap:10px; padding:16px 24px 22px; }
+    .doctor-required-actions button { min-height:44px; padding:0 16px; border-radius:10px; font:inherit; font-weight:800; cursor:pointer; }
+    .doctor-required-close { border:1px solid #c9e2ef; background:#f5fbff; color:#08618f; }
+    .doctor-required-choose { border:0; background:#0878b5; color:#fff; }
+    .doctor-required-choose:hover, .doctor-required-choose:focus-visible { background:#056696; }
+    @media (max-width:520px) { .doctor-required-dialog { width:100%; } .doctor-required-head, .doctor-required-body { padding-left:18px; padding-right:18px; } .doctor-required-actions { padding-left:18px; padding-right:18px; flex-direction:column-reverse; } .doctor-required-actions button { width:100%; } }
     .btn-primary { width: 100%; background: linear-gradient(135deg, #0077b6, #023e8a); color: #fff; padding: 14px; border: none; border-radius: 10px; font-size: 1.05rem; font-weight: 600; cursor: pointer; margin-top: 8px; }
     .btn-secondary { display: inline-block; padding: 10px 18px; border-radius: 8px; background: #e3f2fd; color: #023e8a; text-decoration: none; font-weight: 600; margin-right: 10px; border: none; cursor: pointer; font-size: 1rem; }
     @media (max-width: 760px) {
@@ -1516,7 +1530,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     : 'Review the selected services and prices. Payment is made at the clinic.'; ?>
             </div>
             <?php if ($bk['type'] === 'consultation'): ?>
-                <form method="post" action="book_appointment.php">
+                <form method="post" action="book_appointment.php" id="doctorSelectionForm" novalidate>
                     <input type="hidden" name="booking_action" value="choose_doctor">
                     <?php if (empty($consultationDoctorsForSpecialty)): ?>
                         <p>No doctors are available for this specialization yet. Please choose another specialization.</p>
@@ -1565,6 +1579,53 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         </div>
                     <?php endif; ?>
                 </form>
+                <div class="doctor-required-modal" id="doctorRequiredModal" aria-hidden="true">
+                    <div class="doctor-required-dialog" role="dialog" aria-modal="true" aria-labelledby="doctorRequiredTitle">
+                        <div class="doctor-required-head">
+                            <div class="doctor-required-icon" aria-hidden="true">!</div>
+                            <h3 id="doctorRequiredTitle">Choose a doctor first</h3>
+                        </div>
+                        <div class="doctor-required-body">
+                            <p>Please select your preferred doctor before continuing to choose an appointment schedule.</p>
+                        </div>
+                        <div class="doctor-required-actions">
+                            <button type="button" class="doctor-required-close" id="doctorRequiredClose">Close</button>
+                            <button type="button" class="doctor-required-choose" id="doctorRequiredChoose">Choose a doctor</button>
+                        </div>
+                    </div>
+                </div>
+                <script>
+                (function() {
+                    var form = document.getElementById('doctorSelectionForm');
+                    var modal = document.getElementById('doctorRequiredModal');
+                    var closeButton = document.getElementById('doctorRequiredClose');
+                    var chooseButton = document.getElementById('doctorRequiredChoose');
+                    if (!form || !modal) return;
+                    function setDoctorModal(open) {
+                        modal.classList.toggle('is-open', open);
+                        modal.setAttribute('aria-hidden', open ? 'false' : 'true');
+                        if (open && chooseButton) chooseButton.focus();
+                    }
+                    form.addEventListener('submit', function(event) {
+                        if (!form.querySelector('input[name="doctor_id"]:checked')) {
+                            event.preventDefault();
+                            setDoctorModal(true);
+                        }
+                    });
+                    if (closeButton) closeButton.addEventListener('click', function() { setDoctorModal(false); });
+                    if (chooseButton) chooseButton.addEventListener('click', function() {
+                        setDoctorModal(false);
+                        var firstDoctor = form.querySelector('input[name="doctor_id"]');
+                        if (firstDoctor) firstDoctor.focus();
+                    });
+                    modal.addEventListener('click', function(event) {
+                        if (event.target === modal) setDoctorModal(false);
+                    });
+                    document.addEventListener('keydown', function(event) {
+                        if (event.key === 'Escape' && modal.classList.contains('is-open')) setDoctorModal(false);
+                    });
+                })();
+                </script>
             <?php else: ?>
                 <?php foreach ($selectedServices as $svc): ?>
                     <div class="detail-block">
