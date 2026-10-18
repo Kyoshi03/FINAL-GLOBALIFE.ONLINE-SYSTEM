@@ -1698,10 +1698,10 @@ $additionalStyles = '
     }
 
     .cancel-inline {
-        border: 1px solid #ffd0d5;
+        border: 1px solid #f1b8bf;
         border-radius: 8px;
-        background: #fff;
-        color: #c52035;
+        background: #fff5f5;
+        color: #b42335;
         cursor: pointer;
         font-weight: 800;
         min-width: 0;
@@ -1711,6 +1711,7 @@ $additionalStyles = '
         line-height: 1.05;
         white-space: nowrap;
         width: 100%;
+        transition: background .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease, transform .15s ease;
     }
 
     .patient-reschedule-btn {
@@ -2161,15 +2162,21 @@ $additionalStyles = '
     }
 
     .cancel-inline:hover {
-        background: #ffe1e5;
-        border-color: #f3aab5;
-        box-shadow: 0 4px 10px rgba(197, 32, 53, .14);
+        background: #dc3545;
+        border-color: #dc3545;
+        color: #fff;
+        box-shadow: 0 4px 10px rgba(197, 32, 53, .20);
         transform: translateY(-1px);
     }
 
     .cancel-inline:focus-visible {
         outline: 3px solid rgba(197, 32, 53, .24);
         outline-offset: 2px;
+    }
+
+    .cancel-inline:active {
+        transform: translateY(0);
+        box-shadow: none;
     }
 
     .status-badge {
