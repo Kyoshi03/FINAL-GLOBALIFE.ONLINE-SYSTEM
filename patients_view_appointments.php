@@ -790,6 +790,16 @@ $additionalStyles = patientAvatarStyles() . '
         background:#fdecef;
         color:#b42318;
     }
+    .status-badge.reschedule {
+        background:#fff6df;
+        color:#9a5b00;
+    }
+    .status-stack {
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:6px;
+    }
     .action-buttons {
         display: flex;
         justify-content: center;
@@ -1291,6 +1301,9 @@ $additionalStyles = patientAvatarStyles() . '
             white-space: normal;
             text-align: right;
         }
+        .patient-history-page .status-stack {
+            align-items: flex-end;
+        }
         .patient-history-page .appointment-schedule-cell::before {
             grid-column: 1;
             grid-row: 1;
@@ -1694,9 +1707,14 @@ include __DIR__ . '/includes/header.php';
                                 </td>
                             <?php endif; ?>
                             <td class="status-column">
-                                <span class="status-badge <?php echo htmlspecialchars($statusValue); ?>">
-                                    <?php echo htmlspecialchars($statusLabel); ?>
-                                </span>
+                                <div class="status-stack">
+                                    <span class="status-badge <?php echo htmlspecialchars($statusValue); ?>">
+                                        <?php echo htmlspecialchars($statusLabel); ?>
+                                    </span>
+                                    <?php if ($userRole === 'patient' && $hasPendingReschedule): ?>
+                                        <span class="status-badge reschedule">Reschedule</span>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                             <?php if (!$isClinicalAppointmentsView): ?>
                                 <td class="appointments-services services-column"><?php echo htmlspecialchars($servicesText !== 'Not listed' ? $servicesText : ($notesFull !== '' ? substr($notesFull, 0, 50) : 'Not listed')); ?><?php echo strlen($servicesText !== 'Not listed' ? $servicesText : $notesFull) > 50 ? '...' : ''; ?></td>
