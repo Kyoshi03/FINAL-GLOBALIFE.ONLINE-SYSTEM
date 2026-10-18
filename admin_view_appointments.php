@@ -98,7 +98,7 @@ $appointments = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
 $initialStatusFilter = strtolower(trim((string) ($_GET['status'] ?? '')));
-$allowedStatusFilters = ['pending', 'confirmed', 'completed', 'cancelled'];
+$allowedStatusFilters = ['pending', 'confirmed', 'reschedule', 'completed', 'cancelled'];
 if (!in_array($initialStatusFilter, $allowedStatusFilters, true)) {
     $initialStatusFilter = '';
 }
@@ -122,6 +122,13 @@ function admin_appointment_service_label(array $appointment): string {
     return $service !== '' ? $service : 'Not listed';
 }
 
+function admin_appointment_filter_status(array $appointment): string {
+    if (!empty($appointment['reschedule_request_id'])) {
+        return 'reschedule';
+    }
+    return strtolower((string) ($appointment['status'] ?? 'pending'));
+}
+
 function admin_appointment_doctor_label(array $appointment): string {
     if (strtolower((string) ($appointment['booking_type'] ?? '')) !== 'consultation') return '—';
     $doctor = trim((string) ($appointment['doctor_name'] ?? ''));
@@ -133,7 +140,7 @@ function admin_appointment_filter_rows(array $appointments, string $from, string
     $filtered = [];
     foreach ($appointments as $appointment) {
         $date = (string) ($appointment['appointment_date'] ?? '');
-        $appointmentStatus = strtolower((string) ($appointment['status'] ?? 'pending'));
+        $appointmentStatus = admin_appointment_filter_status($appointment);
         if (!admin_appointment_valid_date($from) || !admin_appointment_valid_date($to) || $date < $from || $date > $to) continue;
         if ($status !== '' && $appointmentStatus !== $status) continue;
         if ($search !== '') {
@@ -265,7 +272,7 @@ if ($reportDateFrom > $reportDateTo) {
     [$reportDateFrom, $reportDateTo] = [$reportDateTo, $reportDateFrom];
 }
 $reportStatus = strtolower(trim((string) ($_GET['report_status'] ?? '')));
-$allowedReportStatusFilters = ['pending', 'confirmed', 'completed', 'cancelled'];
+$allowedReportStatusFilters = ['pending', 'confirmed', 'reschedule', 'completed', 'cancelled'];
 if (!in_array($reportStatus, $allowedReportStatusFilters, true)) {
     $reportStatus = '';
 }
@@ -289,7 +296,7 @@ $generatedReport = [
     'rows' => [],
     'summary' => [],
 ];
-$appointmentReportCounts = ['total' => 0, 'completed' => 0, 'pending' => 0, 'cancelled' => 0, 'confirmed' => 0];
+$appointmentReportCounts = ['total' => 0, 'completed' => 0, 'pending' => 0, 'cancelled' => 0, 'confirmed' => 0, 'reschedule' => 0];
 if ($showAppointmentReport) {
     if ($reportType === 'patients') {
         $patientWhere = ["DATE(created_at) >= '" . $conn->real_escape_string($reportDateFrom) . "'", "DATE(created_at) <= '" . $conn->real_escape_string($reportDateTo) . "'", "role = 'patient'"];
@@ -313,7 +320,7 @@ if ($showAppointmentReport) {
     } else {
         foreach ($reportFilteredAppointmentRecords as $appointment) {
             $appointmentDate = (string) ($appointment['appointment_date'] ?? '');
-            $appointmentStatus = strtolower((string) ($appointment['status'] ?? 'pending'));
+            $appointmentStatus = admin_appointment_filter_status($appointment);
             $generatedReport['rows'][] = [
                 (string) ($appointment['patient_name'] ?? 'Patient'),
                 admin_appointment_doctor_label($appointment),
@@ -444,6 +451,7 @@ $statusCounts = [
     'all' => count($appointments),
     'pending' => 0,
     'confirmed' => 0,
+    'reschedule' => 0,
     'completed' => 0,
     'cancelled' => 0,
 ];
@@ -455,8 +463,9 @@ $todayYmd = $now->format('Y-m-d');
 
 foreach ($appointments as $appointment) {
     $status = strtolower((string) ($appointment['status'] ?? 'pending'));
-    if (isset($statusCounts[$status])) {
-        $statusCounts[$status]++;
+    $filterStatus = admin_appointment_filter_status($appointment);
+    if (isset($statusCounts[$filterStatus])) {
+        $statusCounts[$filterStatus]++;
     }
 
     $date = (string) ($appointment['appointment_date'] ?? '');
@@ -939,6 +948,16 @@ $additionalStyles = patientAvatarStyles() . '
     .status-badge.cancelled {
         background:#fdecef;
         color:#b42318;
+    }
+    .status-badge.reschedule {
+        background:#fff4d6;
+        color:#9a6700;
+    }
+    .status-stack {
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:6px;
     }
     .action-buttons {
         display: flex;
@@ -1800,6 +1819,7 @@ include __DIR__ . '/includes/header.php';
                         <option value="">All statuses</option>
                         <option value="pending"<?php echo $initialStatusFilter === 'pending' ? ' selected' : ''; ?>>Pending (<?php echo (int) $statusCounts['pending']; ?>)</option>
                         <option value="confirmed"<?php echo $initialStatusFilter === 'confirmed' ? ' selected' : ''; ?>>Confirmed (<?php echo (int) $statusCounts['confirmed']; ?>)</option>
+                        <option value="reschedule"<?php echo $initialStatusFilter === 'reschedule' ? ' selected' : ''; ?>>Reschedule (<?php echo (int) $statusCounts['reschedule']; ?>)</option>
                         <option value="completed"<?php echo $initialStatusFilter === 'completed' ? ' selected' : ''; ?>>Completed (<?php echo (int) $statusCounts['completed']; ?>)</option>
                         <option value="cancelled"<?php echo $initialStatusFilter === 'cancelled' ? ' selected' : ''; ?>>Cancelled (<?php echo (int) $statusCounts['cancelled']; ?>)</option>
                     </select>
@@ -1857,6 +1877,7 @@ include __DIR__ . '/includes/header.php';
                             <option value="">All statuses</option>
                             <option value="pending">Pending (<?php echo (int) $statusCounts['pending']; ?>)</option>
                             <option value="confirmed">Confirmed (<?php echo (int) $statusCounts['confirmed']; ?>)</option>
+                            <option value="reschedule">Reschedule (<?php echo (int) $statusCounts['reschedule']; ?>)</option>
                             <option value="completed">Completed (<?php echo (int) $statusCounts['completed']; ?>)</option>
                             <option value="cancelled">Cancelled (<?php echo (int) $statusCounts['cancelled']; ?>)</option>
                         </select>
@@ -1909,6 +1930,7 @@ include __DIR__ . '/includes/header.php';
                             $servicesText = 'Ultra sound';
                         }
                         $statusValue = strtolower((string) ($appointment['status'] ?? 'pending'));
+                        $filterStatusValue = admin_appointment_filter_status($appointment);
                         $statusLabel = $statusValue === 'cancelled' ? 'Cancelled' : ucfirst($statusValue);
                         $canReviewReschedule = !empty($appointment['reschedule_request_id']) && (
                             ($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation')
@@ -1961,7 +1983,7 @@ include __DIR__ . '/includes/header.php';
                         <tr class="appointment-row" tabindex="0"
                             data-appointment='<?php echo htmlspecialchars(json_encode($detailPayload), ENT_QUOTES, 'UTF-8'); ?>'
                             data-appointment-id="<?php echo (int) ($appointment['id'] ?? 0); ?>"
-                            data-status="<?php echo htmlspecialchars($statusValue); ?>"
+                            data-status="<?php echo htmlspecialchars($filterStatusValue); ?>"
                             data-date="<?php echo htmlspecialchars((string) ($appointment['appointment_date'] ?? '')); ?>"
                             data-search="<?php echo htmlspecialchars($searchText, ENT_QUOTES); ?>">
                             <td data-label="Patient">
@@ -1983,9 +2005,14 @@ include __DIR__ . '/includes/header.php';
                             </td>
                             <td data-label="Service" class="appointments-services"><?php echo htmlspecialchars($servicesText); ?></td>
                             <td data-label="Status">
-                                <span class="status-badge <?php echo htmlspecialchars($statusValue); ?>">
-                                    <?php echo htmlspecialchars($statusLabel); ?>
-                                </span>
+                                <div class="status-stack">
+                                    <span class="status-badge <?php echo htmlspecialchars($statusValue); ?>">
+                                        <?php echo htmlspecialchars($statusLabel); ?>
+                                    </span>
+                                    <?php if ($hasPendingReschedule): ?>
+                                        <span class="status-badge reschedule">Reschedule</span>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                             <td data-label="Actions">
                                 <div class="action-buttons <?php echo $canReviewReschedule ? 'reschedule-actions' : (((($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation')) && $appointment['status'] === 'pending') ? 'pending-actions' : ''); ?>">
