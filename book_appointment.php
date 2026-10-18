@@ -918,15 +918,30 @@ $additionalStyles = '
         .mobile-calendar-close:hover, .mobile-calendar-close:focus-visible { background:#e5f5fb; }
         .mobile-calendar-dialog-body { min-height:0; overflow:auto; padding:8px; }
         .mobile-calendar-dialog .mini-calendar { overflow:visible; }
-        .mini-calendar-head { padding: 16px 14px 14px; gap: 14px; }
-        .mini-calendar-title { grid-template-columns: 40px minmax(0, 1fr) 40px; gap: 8px; padding-right: 0; }
-        .mini-calendar-title strong { min-width: 0; text-align: center; font-size: 1.12rem; overflow-wrap: anywhere; }
-        .cal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 10px; background: #f4faff; }
-        .cal-dow, .cal-empty { display: none; }
-        .cal-day { min-width: 0; min-height: 142px; border: 1px solid #d8e8f2; border-radius: 12px; padding: 12px; gap: 8px; box-shadow: 0 3px 10px rgba(20,79,123,.06); }
-        .cal-date-number { min-width: 28px; height: 28px; font-size: 1.05rem; }
-        .calendar-events { width: 100%; min-width: 0; gap: 6px; }
-        .cal-day small { overflow-wrap: anywhere; }
+        .mini-calendar-head { padding: 12px 10px 10px; gap: 10px; }
+        .mini-calendar-title { grid-template-columns: 36px minmax(0, 1fr) 36px; gap: 6px; padding-right: 0; }
+        .mini-calendar-title strong { min-width: 0; text-align: center; font-size: 1.05rem; overflow-wrap: anywhere; }
+        .mobile-calendar-dialog .selected-date-card { min-height: 64px; gap: 10px; padding: 9px 12px; border-radius: 10px; }
+        .mobile-calendar-dialog .selected-date-icon { width: 40px; height: 40px; flex-basis: 40px; border-radius: 10px; }
+        .mobile-calendar-dialog .selected-date-icon::before { width: 24px; height: 21px; border-width: 2px; }
+        .mobile-calendar-dialog .selected-date-icon::after { width: 23px; height: 2px; top: 19px; box-shadow: -6px -6px 0 -1px currentColor, 6px -6px 0 -1px currentColor; }
+        .mobile-calendar-dialog .selected-date-copy { gap: 4px 8px; }
+        .mobile-calendar-dialog .selected-date-copy > span:first-child { font-size: .8rem; }
+        .mobile-calendar-dialog .selected-date-card strong { font-size: .78rem; }
+        .mobile-calendar-dialog .selected-date-pill { min-height: 20px; padding: 1px 8px; font-size: .66rem; }
+        .mobile-calendar-dialog .selected-date-slots { font-size: .7rem; }
+        .mobile-calendar-dialog .cal-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1px; padding: 6px; background: #dcebf3; }
+        .mobile-calendar-dialog .cal-dow { display:block; padding: 7px 1px; font-size: .58rem; }
+        .mobile-calendar-dialog .cal-empty { display:block; min-height: 52px; background:#fff; border-top:1px solid #d8e8f2; }
+        .mobile-calendar-dialog .cal-day { min-width: 0; min-height: 52px; height: 52px; border: 0; border-top: 1px solid #d8e8f2; border-radius: 0; padding: 5px 2px; gap: 2px; align-items: center; justify-content: flex-start; box-shadow: none; text-align: center; }
+        .mobile-calendar-dialog .cal-date-number { min-width: 26px; height: 26px; font-size: .84rem; }
+        .mobile-calendar-dialog .calendar-events { display: none; }
+        .mobile-calendar-dialog .cal-day::after { content: ""; width: 5px; height: 5px; flex: 0 0 5px; border-radius: 50%; background: #a8b7c4; }
+        .mobile-calendar-dialog .cal-day.is-clinic-open::after,
+        .mobile-calendar-dialog .cal-day.has-doctor::after { background: #16a085; }
+        .mobile-calendar-dialog .cal-day.is-fully-booked::after { background: #d99b2b; }
+        .mobile-calendar-dialog .cal-day.is-selected::after { background: #0572d4; }
+        .mobile-calendar-dialog .cal-day:disabled { opacity: .78; }
         .capacity-event strong { max-width: 100%; justify-content: center; padding-left: 8px; padding-right: 8px; text-align: center; }
         .capacity-event span { margin-top: 5px; font-size: .74rem; line-height: 1.25; }
         .clinic-closed-event { max-width: 100%; padding-left: 8px !important; padding-right: 8px !important; white-space: normal; }
@@ -936,8 +951,10 @@ $additionalStyles = '
     @media (max-width: 520px) {
         .booking-container { padding-left: 10px; padding-right: 10px; }
         .booking-calendar-panel { padding: 8px; }
-        .cal-grid { gap: 8px; padding: 8px; }
-        .cal-day { min-height: 136px; padding: 10px; }
+        .mobile-calendar-dialog .cal-grid { gap: 1px; padding: 5px; }
+        .mobile-calendar-dialog .cal-day { min-height: 48px; height: 48px; padding: 4px 1px; }
+        .mobile-calendar-dialog .cal-empty { min-height: 48px; }
+        .mobile-calendar-dialog .cal-date-number { min-width: 24px; height: 24px; font-size: .8rem; }
         .mobile-calendar-dialog { max-height:94vh; }
         .mobile-calendar-dialog-body { padding:4px; }
         .availability-label { font-size: .5rem; }
