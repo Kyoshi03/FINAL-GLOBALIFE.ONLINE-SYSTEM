@@ -1697,6 +1697,16 @@ $additionalStyles = '
         font-size: .68rem;
         white-space: nowrap;
     }
+    .appointment-status .status-stack {
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:6px;
+    }
+    .appointment-status .status-badge.reschedule {
+        background:#fff6df;
+        color:#9a5b00;
+    }
 
     .appointment-action-stack {
         display: grid;
@@ -1758,13 +1768,6 @@ $additionalStyles = '
         grid-column: 2;
         grid-row: 1;
         justify-self: center;
-    }
-
-    .appointment-action-stack.has-request-pending .request-pending-badge {
-        grid-column: 1 / -1;
-        grid-row: 2;
-        width: 100%;
-        box-sizing: border-box;
     }
 
     .patient-details-inline {
@@ -3229,8 +3232,7 @@ $additionalStyles = '
 
         .appointment-action-stack .cancel-inline,
         .appointment-action-stack .patient-details-inline,
-        .appointment-action-stack .patient-reschedule-btn,
-        .appointment-action-stack .request-pending-badge {
+        .appointment-action-stack .patient-reschedule-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -3242,14 +3244,6 @@ $additionalStyles = '
             font-size: .74rem;
             line-height: 1.1;
             white-space: nowrap;
-        }
-
-        .appointment-action-stack.has-request-pending .request-pending-badge {
-            grid-column: auto;
-            grid-row: auto;
-            width: 100%;
-            padding-inline: 5px;
-            font-size: .68rem;
         }
 
         .patient-appointment-modal {
@@ -3848,13 +3842,18 @@ include 'includes/header.php';
                                     <?php endif; ?>
                                 </div>
                                 <div class="appointment-status">
-                                    <span class="status-badge <?php echo htmlspecialchars($statusClass); ?>">
-                                        <?php echo htmlspecialchars($statusLabel); ?>
-                                    </span>
+                                    <div class="status-stack">
+                                        <span class="status-badge <?php echo htmlspecialchars($statusClass); ?>">
+                                            <?php echo htmlspecialchars($statusLabel); ?>
+                                        </span>
+                                        <?php if ($hasPendingReschedule): ?>
+                                            <span class="status-badge reschedule">Reschedule</span>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                                 <div class="appointment-side">
                                     <?php if (in_array($statusClass, ['pending', 'confirmed'], true)): ?>
-                                        <div class="appointment-action-stack <?php echo $statusClass === 'pending' ? 'has-cancel' : 'no-cancel'; ?><?php echo $hasPendingReschedule ? ' has-request-pending' : ''; ?>">
+                                        <div class="appointment-action-stack <?php echo $statusClass === 'pending' ? 'has-cancel' : 'no-cancel'; ?>">
                                             <?php if ($statusClass === 'pending'): ?>
                                                 <form method="post" action="patients.php" data-patient-cancel-form>
                                                     <input type="hidden" name="patient_action" value="cancel_appointment">
@@ -3863,10 +3862,7 @@ include 'includes/header.php';
                                                 </form>
                                             <?php endif; ?>
                                             <button type="button" class="patient-details-inline" data-open-patient-details>Details</button>
-                                            <?php if (appointment_reschedule_is_patient_editable($appointment)): ?>
-                                                <?php if (!empty($appointment['reschedule_request_id'])): ?>
-                                                    <span class="request-pending-badge">Request Pending</span>
-                                                <?php else: ?>
+                                            <?php if (appointment_reschedule_is_patient_editable($appointment) && empty($appointment['reschedule_request_id'])): ?>
                                                     <button type="button" class="btn btn-reschedule patient-reschedule-btn"
                                                         data-open-reschedule
                                                         data-appointment-id="<?php echo (int) $appointment['id']; ?>"
@@ -3874,7 +3870,6 @@ include 'includes/header.php';
                                                         data-reschedule-time="<?php echo htmlspecialchars((string) ($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                                         data-reschedule-label="Current schedule: <?php echo htmlspecialchars(patient_format_date($appointment['appointment_date'] ?? '') . ' at ' . patient_format_time($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                                         data-reschedule-mode="<?php echo $statusClass === 'pending' ? 'pending' : 'confirmed'; ?>">Reschedule</button>
-                                                <?php endif; ?>
                                             <?php endif; ?>
                                         </div>
                                     <?php endif; ?>

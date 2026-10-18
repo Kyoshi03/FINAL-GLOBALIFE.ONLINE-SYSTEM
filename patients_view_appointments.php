@@ -818,27 +818,6 @@ $additionalStyles = patientAvatarStyles() . '
     .action-buttons.pending-actions .decline-action {
         grid-column: 2;
     }
-    .patient-history-page .action-buttons.has-request-pending {
-        display:grid;
-        grid-template-columns:116px;
-        justify-content:center;
-        align-items:center;
-        gap:6px;
-    }
-    .patient-history-page .action-buttons.has-request-pending .request-pending-badge {
-        grid-column:1;
-        grid-row:2;
-        width:116px;
-        min-width:0;
-        box-sizing:border-box;
-        padding:7px 5px;
-        font-size:.72rem;
-        white-space:nowrap;
-    }
-    .patient-history-page .action-buttons.has-request-pending .btn-details {
-        width:116px;
-        box-sizing:border-box;
-    }
     .btn {
         padding:8px 14px;
         border-radius:8px;
@@ -1364,25 +1343,6 @@ $additionalStyles = patientAvatarStyles() . '
             gap: 8px;
             align-items: stretch;
         }
-        .patient-history-page .action-buttons.has-request-pending {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            justify-content: initial;
-            gap: 8px;
-        }
-        .patient-history-page .action-buttons.has-request-pending .request-pending-badge {
-            grid-column: auto;
-            grid-row: auto;
-            width: 100%;
-            min-width: 0;
-            min-height: 36px;
-            box-sizing: border-box;
-            padding: 0 5px;
-            font-size: .68rem;
-            white-space: nowrap;
-        }
-        .patient-history-page .action-buttons.has-request-pending .btn-details {
-            width: 100%;
-        }
         .patient-history-page .appointment-actions-cell {
             display: block !important;
             text-align: center !important;
@@ -1760,12 +1720,9 @@ include __DIR__ . '/includes/header.php';
                                 <td class="appointments-services services-column"><?php echo htmlspecialchars($servicesText !== 'Not listed' ? $servicesText : ($notesFull !== '' ? substr($notesFull, 0, 50) : 'Not listed')); ?><?php echo strlen($servicesText !== 'Not listed' ? $servicesText : $notesFull) > 50 ? '...' : ''; ?></td>
                             <?php endif; ?>
                             <td class="appointment-actions-cell">
-                                <div class="action-buttons <?php echo (($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation')) && $appointment['status'] === 'pending' ? 'pending-actions' : ''; ?><?php echo ($userRole === 'patient' && $hasPendingReschedule) ? ' has-request-pending' : ''; ?>">
+                                <div class="action-buttons <?php echo (($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation')) && $appointment['status'] === 'pending' ? 'pending-actions' : ''; ?>">
                                     <button type="button" class="btn btn-details" data-open-details>Details</button>
-                                    <?php if ($userRole === 'patient' && appointment_reschedule_is_patient_editable($appointment)): ?>
-                                        <?php if (!empty($appointment['reschedule_request_id'])): ?>
-                                            <span class="request-pending-badge">Request Pending</span>
-                                        <?php else: ?>
+                                    <?php if ($userRole === 'patient' && appointment_reschedule_is_patient_editable($appointment) && empty($appointment['reschedule_request_id'])): ?>
                                         <button type="button" class="btn btn-reschedule"
                                             data-open-reschedule
                                             data-appointment-id="<?php echo (int) ($appointment['id'] ?? 0); ?>"
@@ -1773,7 +1730,6 @@ include __DIR__ . '/includes/header.php';
                                             data-reschedule-time="<?php echo htmlspecialchars((string) ($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                             data-reschedule-label="Current schedule: <?php echo htmlspecialchars($formattedDate . ' at ' . $formattedTime, ENT_QUOTES, 'UTF-8'); ?>"
                                             data-reschedule-mode="<?php echo ($appointment['status'] ?? '') === 'pending' ? 'pending' : 'confirmed'; ?>">Reschedule</button>
-                                        <?php endif; ?>
                                     <?php endif; ?>
                                     <?php if (!empty($appointment['reschedule_request_id']) && (($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation'))): ?>
                                         <small class="reschedule-request-note"><strong>Pending reschedule</strong><br><?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $appointment['reschedule_requested_date'], (string) $appointment['reschedule_requested_time'])); ?></small>
