@@ -977,7 +977,7 @@ $additionalStyles = '
         .booking-container {
             width: calc(100% - 20px);
             margin: 14px auto;
-            padding: 18px 12px 120px;
+            padding: 18px 12px 32px;
             border-radius: 14px;
             box-sizing: border-box;
         }
