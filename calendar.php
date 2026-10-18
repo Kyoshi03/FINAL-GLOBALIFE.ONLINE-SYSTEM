@@ -224,11 +224,13 @@ body {
 }
 .availability-grid {
     display: grid;
-    grid-template-columns: repeat(7, minmax(150px, 1fr));
-    min-width: 980px;
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 .availability-dow,
 .availability-day {
+    min-width: 0;
     border-right: 1px solid #e0edf5;
     border-bottom: 1px solid #e0edf5;
 }
@@ -272,6 +274,7 @@ body {
 .availability-more,
 .availability-closed {
     display: block;
+    min-width: 0;
     width: 100%;
     margin-top: 4px;
     border-radius: 7px;
@@ -389,7 +392,7 @@ body {
     background: #f8fafc;
 }
 .availability-scroll {
-    overflow-x: auto;
+    overflow-x: hidden;
 }
 .availability-mobile-list {
     display: none;
