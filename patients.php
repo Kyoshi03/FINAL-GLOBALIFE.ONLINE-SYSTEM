@@ -3736,9 +3736,15 @@ include 'includes/header.php';
                                 <span class="appointment-ref">Queue No. <?php echo htmlspecialchars((string) (($nextAppointment['queue_number'] ?? '') ?: 'Not generated')); ?></span>
                             </div>
                             <?php if (!empty($nextAppointment['reschedule_request_id'])): ?>
-                                <div class="reschedule-request-note">
-                                    <strong>Original schedule remains active:</strong> <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) ($nextAppointment['reschedule_original_date'] ?: $nextAppointment['appointment_date']), (string) ($nextAppointment['reschedule_original_time'] ?: $nextAppointment['appointment_time']))); ?><br>
-                                    <strong>Requested schedule:</strong> <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $nextAppointment['reschedule_requested_date'], (string) $nextAppointment['reschedule_requested_time'])); ?> <span>(Pending approval)</span>
+                                <div class="reschedule-request-note patient-reschedule-card-note">
+                                    <div class="patient-reschedule-detail">
+                                        <strong>Original schedule remains active:</strong> <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) ($nextAppointment['reschedule_original_date'] ?: $nextAppointment['appointment_date']), (string) ($nextAppointment['reschedule_original_time'] ?: $nextAppointment['appointment_time']))); ?><br>
+                                        <strong>Requested schedule:</strong> <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $nextAppointment['reschedule_requested_date'], (string) $nextAppointment['reschedule_requested_time'])); ?> <span>(Pending approval)</span>
+                                    </div>
+                                    <div class="patient-reschedule-compact">
+                                        <strong>Reschedule pending</strong>
+                                        <span>Requested: <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $nextAppointment['reschedule_requested_date'], (string) $nextAppointment['reschedule_requested_time'])); ?></span>
+                                    </div>
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -3813,9 +3819,15 @@ include 'includes/header.php';
                                         <?php endif; ?>
                                     </div>
                                     <?php if (!empty($appointment['reschedule_request_id'])): ?>
-                                        <div class="reschedule-request-note">
-                                            <strong>Original:</strong> <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) ($appointment['reschedule_original_date'] ?: $appointment['appointment_date']), (string) ($appointment['reschedule_original_time'] ?: $appointment['appointment_time']))); ?><br>
-                                            <strong>Requested:</strong> <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $appointment['reschedule_requested_date'], (string) $appointment['reschedule_requested_time'])); ?> <span>(Pending approval)</span>
+                                        <div class="reschedule-request-note patient-reschedule-card-note">
+                                            <div class="patient-reschedule-detail">
+                                                <strong>Original:</strong> <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) ($appointment['reschedule_original_date'] ?: $appointment['appointment_date']), (string) ($appointment['reschedule_original_time'] ?: $appointment['appointment_time']))); ?><br>
+                                                <strong>Requested:</strong> <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $appointment['reschedule_requested_date'], (string) $appointment['reschedule_requested_time'])); ?> <span>(Pending approval)</span>
+                                            </div>
+                                            <div class="patient-reschedule-compact">
+                                                <strong>Reschedule pending</strong>
+                                                <span>Requested: <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $appointment['reschedule_requested_date'], (string) $appointment['reschedule_requested_time'])); ?></span>
+                                            </div>
                                         </div>
                                     <?php endif; ?>
                                 </div>

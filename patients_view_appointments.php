@@ -1647,7 +1647,7 @@ include __DIR__ . '/includes/header.php';
                                     <strong><?php echo htmlspecialchars($formattedDate); ?></strong>
                                     <span><?php echo htmlspecialchars($formattedTime); ?></span>
                                     <?php if (!empty($appointment['reschedule_request_id'])): ?>
-                                        <small class="reschedule-request-note"><strong>Original:</strong> <?php echo htmlspecialchars($originalScheduleLabel); ?><br><strong>Requested:</strong> <?php echo htmlspecialchars($requestedScheduleLabel); ?> <span>(Pending approval)</span></small>
+                                        <small class="reschedule-request-note patient-reschedule-card-note"><span class="patient-reschedule-detail"><strong>Original:</strong> <?php echo htmlspecialchars($originalScheduleLabel); ?><br><strong>Requested:</strong> <?php echo htmlspecialchars($requestedScheduleLabel); ?> <span>(Pending approval)</span></span><span class="patient-reschedule-compact"><strong>Reschedule pending</strong><span>Requested: <?php echo htmlspecialchars($requestedScheduleLabel); ?></span></span></small>
                                     <?php endif; ?>
                                 </td>
                             <?php elseif ($userRole === 'admin'): ?>
@@ -1656,7 +1656,7 @@ include __DIR__ . '/includes/header.php';
                                     <strong><?php echo htmlspecialchars($formattedDate); ?></strong>
                                     <span><?php echo htmlspecialchars($formattedTime); ?></span>
                                 <?php if (!empty($appointment['reschedule_request_id'])): ?>
-                                    <small class="reschedule-request-note"><strong>Original:</strong> <?php echo htmlspecialchars($originalScheduleLabel); ?><br><strong>Requested:</strong> <?php echo htmlspecialchars($requestedScheduleLabel); ?> <span>(Pending approval)</span></small>
+                                    <small class="reschedule-request-note patient-reschedule-card-note"><span class="patient-reschedule-detail"><strong>Original:</strong> <?php echo htmlspecialchars($originalScheduleLabel); ?><br><strong>Requested:</strong> <?php echo htmlspecialchars($requestedScheduleLabel); ?> <span>(Pending approval)</span></span><span class="patient-reschedule-compact"><strong>Reschedule pending</strong><span>Requested: <?php echo htmlspecialchars($requestedScheduleLabel); ?></span></span></small>
                                 <?php endif; ?>
                                 </td>
                             <?php else: ?>
@@ -1664,7 +1664,7 @@ include __DIR__ . '/includes/header.php';
                                     <strong><?php echo htmlspecialchars($formattedDate); ?></strong>
                                     <span><?php echo htmlspecialchars($formattedTime); ?></span>
                                     <?php if ($userRole === 'patient' && !empty($appointment['reschedule_request_id'])): ?>
-                                        <small class="reschedule-request-note"><strong>Original:</strong> <?php echo htmlspecialchars($originalScheduleLabel); ?><br><strong>Requested:</strong> <?php echo htmlspecialchars($requestedScheduleLabel); ?> <span>(Pending approval)</span></small>
+                                        <small class="reschedule-request-note patient-reschedule-card-note"><span class="patient-reschedule-detail"><strong>Original:</strong> <?php echo htmlspecialchars($originalScheduleLabel); ?><br><strong>Requested:</strong> <?php echo htmlspecialchars($requestedScheduleLabel); ?> <span>(Pending approval)</span></span><span class="patient-reschedule-compact"><strong>Reschedule pending</strong><span>Requested: <?php echo htmlspecialchars($requestedScheduleLabel); ?></span></span></small>
                                     <?php endif; ?>
                                 </td>
                             <?php endif; ?>
