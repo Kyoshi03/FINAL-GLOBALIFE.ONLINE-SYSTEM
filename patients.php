@@ -1092,7 +1092,7 @@ $additionalStyles = '
     .clinic-tips-bar {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 12px;
+        gap: 10px;
         margin-bottom: 18px;
     }
 
@@ -1119,31 +1119,36 @@ $additionalStyles = '
     }
 
     .clinic-tip-card {
-        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 58px;
         background: #fff;
         border: 1px solid #dceef2;
         border-radius: 10px;
-        padding: 16px;
+        padding: 12px;
         box-shadow: 0 8px 18px rgba(7, 59, 76, 0.05);
     }
 
     .clinic-step-number {
         display: inline-grid;
         place-items: center;
-        width: 32px;
-        height: 32px;
-        margin-bottom: 10px;
+        flex: 0 0 30px;
+        width: 30px;
+        height: 30px;
+        margin-bottom: 0;
         border-radius: 50%;
         background: #e5f5fb;
         color: #006b9f;
-        font-size: 0.9rem;
+        font-size: 0.86rem;
         font-weight: 900;
     }
 
     .clinic-tip-card strong {
         display: block;
         color: #073b4c;
-        font-size: 0.95rem;
+        font-size: 0.88rem;
+        line-height: 1.25;
         margin-bottom: 0;
     }
 
