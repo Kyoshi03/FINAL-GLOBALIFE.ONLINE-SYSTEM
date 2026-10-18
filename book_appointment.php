@@ -1741,11 +1741,12 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                     $dateDayOfWeek = (int) date('N', strtotime($dateValue));
                                     $isConsultationSchedule = $bk['type'] === 'consultation';
                                     $isUltrasoundSchedule = $bk['type'] === 'ultrasound';
-                                    $doctorSlots = $calendarDoctorSlotsByDow[$dateDayOfWeek] ?? [];
-                                    $doctorAvailable = $isConsultationSchedule && $selectedDoctor && !empty($doctorSlots);
-                                    $clinicOpen = $isConsultationSchedule
+                                    $holidayName = appointment_holiday_name($dateValue);
+                                    $doctorSlots = $holidayName === null ? ($calendarDoctorSlotsByDow[$dateDayOfWeek] ?? []) : [];
+                                    $doctorAvailable = $holidayName === null && $isConsultationSchedule && $selectedDoctor && !empty($doctorSlots);
+                                    $clinicOpen = $holidayName === null && ($isConsultationSchedule
                                         ? $doctorAvailable
-                                        : ($isUltrasoundSchedule ? appointment_ultrasound_is_available_date($dateValue) : ($dateDayOfWeek >= 1 && $dateDayOfWeek <= 6));
+                                        : ($isUltrasoundSchedule ? appointment_ultrasound_is_available_date($dateValue) : ($dateDayOfWeek >= 1 && $dateDayOfWeek <= 6)));
                                     $selectedDoctorIdForCalendar = $selectedDoctor ? (int) $selectedDoctor['id'] : 0;
                                     $consultationBooked = $selectedDoctorIdForCalendar > 0
                                         ? (int) ($calendarDoctorDayCounts[$selectedDoctorIdForCalendar][$dateValue] ?? 0)
@@ -1837,7 +1838,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                                 </small>
                                                 <?php endif; ?>
                                             <?php elseif (!$clinicOpen && $dateValue >= $calendarToday): ?>
-                                                <small class="clinic-closed-event"><?php echo $bk['type'] === 'consultation' ? 'Doctor not available' : ($bk['type'] === 'ultrasound' ? 'Ultra sound unavailable' : 'Clinic closed'); ?></small>
+                                                <small class="clinic-closed-event"><?php echo $holidayName !== null ? 'Holiday: ' . htmlspecialchars($holidayName) : ($bk['type'] === 'consultation' ? 'Doctor not available' : ($bk['type'] === 'ultrasound' ? 'Ultra sound unavailable' : 'Clinic closed')); ?></small>
                                             <?php endif; ?>
                                         </div>
                                     </button>

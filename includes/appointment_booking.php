@@ -10,6 +10,34 @@ require_once __DIR__ . '/admin_notifications.php';
 require_once __DIR__ . '/patient_notifications.php';
 require_once __DIR__ . '/clinic_notifications.php';
 
+/**
+ * Return the configured Philippine clinic closure for a recurring calendar date.
+ * Variable-date holidays can be added here when the clinic publishes its annual schedule.
+ */
+function appointment_holiday_name(string $date): ?string {
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        return null;
+    }
+
+    $recurringHolidays = [
+        '01-01' => "New Year's Day",
+        '02-25' => 'EDSA People Power Revolution Anniversary',
+        '04-09' => 'Araw ng Kagitingan',
+        '05-01' => 'Labor Day',
+        '06-12' => 'Independence Day',
+        '08-21' => 'Ninoy Aquino Day',
+        '11-01' => "All Saints' Day",
+        '11-30' => 'Bonifacio Day',
+        '12-08' => 'Feast of the Immaculate Conception',
+        '12-24' => 'Christmas Eve',
+        '12-25' => 'Christmas Day',
+        '12-30' => 'Rizal Day',
+        '12-31' => "Last Day of the Year",
+    ];
+
+    return $recurringHolidays[substr($date, 5)] ?? null;
+}
+
 function appointment_doctor_daily_limit(): int {
     return (int) appointment_capacity_settings()['doctor_limit'];
 }
@@ -401,6 +429,10 @@ function appointment_clinic_is_open_at(string $date, string $time): bool {
         return false;
     }
 
+    if (appointment_holiday_name($date) !== null) {
+        return false;
+    }
+
     $dayOfWeek = (int) date('N', $timestamp);
     if ($dayOfWeek < 1 || $dayOfWeek > 6) {
         return false;
@@ -413,6 +445,10 @@ function appointment_clinic_is_open_at(string $date, string $time): bool {
 function appointment_ultrasound_is_available_date(string $date): bool {
     $timestamp = strtotime($date);
     if ($timestamp === false) {
+        return false;
+    }
+
+    if (appointment_holiday_name($date) !== null) {
         return false;
     }
 
@@ -452,6 +488,10 @@ function appointment_validate_payload(mysqli $conn, int $patientId, array $paylo
 
     if ($appointmentAt <= $now) {
         return ['ok' => false, 'error' => 'The selected appointment time has already passed. Please choose a future schedule.'];
+    }
+    $holidayName = appointment_holiday_name($date);
+    if ($holidayName !== null) {
+        return ['ok' => false, 'error' => 'The clinic is closed on ' . $holidayName . '. Please choose another date.'];
     }
     if ($type === 'ultrasound' && !appointment_ultrasound_is_available_date($date)) {
         return ['ok' => false, 'error' => 'Ultra sound appointments are available on Wednesday and Saturday only. Please choose another date.'];

@@ -614,8 +614,9 @@ body {
                         <?php
                         $dateValue = $cursor->format('Y-m-d');
                         $dateDayOfWeek = (int) $cursor->format('N');
-                        $clinicOpen = $dateDayOfWeek >= 1 && $dateDayOfWeek <= 6;
-                        $doctorSlots = $calendarDoctorSlotsByDow[$dateDayOfWeek] ?? [];
+                        $holidayName = appointment_holiday_name($dateValue);
+                        $clinicOpen = $holidayName === null && $dateDayOfWeek >= 1 && $dateDayOfWeek <= 6;
+                        $doctorSlots = $holidayName === null ? ($calendarDoctorSlotsByDow[$dateDayOfWeek] ?? []) : [];
                         $isCurrentMonth = $cursor->format('m') === $calendarMonthStart->format('m');
                         $isPastDate = $dateValue < $calendarToday;
                         ?>
@@ -623,7 +624,7 @@ body {
                             <?php if ($isCurrentMonth && !$isPastDate): ?>
                             <span class="availability-date"><?php echo htmlspecialchars($cursor->format('j')); ?></span>
                             <?php if (!$clinicOpen): ?>
-                                <span class="availability-closed">Clinic closed</span>
+                                <span class="availability-closed"><?php echo $holidayName !== null ? 'Holiday: ' . htmlspecialchars($holidayName) : 'Clinic closed'; ?></span>
                             <?php else: ?>
                                 <?php foreach (array_slice($doctorSlots, 0, 1) as $slot): ?>
                                     <?php
@@ -665,8 +666,9 @@ body {
                     <?php
                     $dateValue = $cursor->format('Y-m-d');
                     $dateDayOfWeek = (int) $cursor->format('N');
-                    $clinicOpen = $dateDayOfWeek >= 1 && $dateDayOfWeek <= 6;
-                    $doctorSlots = $calendarDoctorSlotsByDow[$dateDayOfWeek] ?? [];
+                    $holidayName = appointment_holiday_name($dateValue);
+                    $clinicOpen = $holidayName === null && $dateDayOfWeek >= 1 && $dateDayOfWeek <= 6;
+                    $doctorSlots = $holidayName === null ? ($calendarDoctorSlotsByDow[$dateDayOfWeek] ?? []) : [];
                     ?>
                     <article class="availability-mobile-day <?php echo $dateValue === $calendarToday ? 'is-today' : ''; ?>">
                         <div class="availability-mobile-day-head">
@@ -681,7 +683,7 @@ body {
                             <?php endif; ?>
                         </div>
                         <?php if (!$clinicOpen): ?>
-                            <div class="availability-mobile-closed">Clinic is closed on this day.</div>
+                            <div class="availability-mobile-closed"><?php echo $holidayName !== null ? 'Holiday: ' . htmlspecialchars($holidayName) : 'Clinic is closed on this day.'; ?></div>
                         <?php elseif (empty($doctorSlots)): ?>
                             <div class="availability-mobile-closed">No doctor schedule for this day.</div>
                         <?php else: ?>
