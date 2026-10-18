@@ -4,6 +4,27 @@
 .reschedule-request-note { margin-top:6px; color:#9a5b00; font-size:.78rem; line-height:1.35; }
 .reschedule-request-note strong { color:#7b4a00; }
 .patient-reschedule-compact { display:none; }
+.patient-reschedule-card-note .patient-reschedule-detail { display:none; }
+.patient-reschedule-card-note .patient-reschedule-compact {
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+    margin-top:7px;
+    padding:7px 10px;
+    border:1px solid #f1d49c;
+    border-radius:9px;
+    background:#fffaf0;
+    color:#9a5b00;
+    line-height:1.3;
+}
+.patient-reschedule-card-note .patient-reschedule-compact strong {
+    color:#7b4a00;
+    font-size:.76rem;
+    white-space:nowrap;
+}
+.patient-reschedule-card-note .patient-reschedule-compact span {
+    font-size:.74rem;
+}
 .request-pending-badge { display:inline-flex; align-items:center; justify-content:center; min-height:34px; padding:7px 12px; border:1px solid #f1d49c; border-radius:9px; background:#fff7e8; color:#9a5b00; font:inherit; font-size:.78rem; font-weight:800; }
 .reschedule-modal { position:fixed; inset:0; z-index:3200; display:none; align-items:center; justify-content:center; padding:18px; background:rgba(3,18,30,.5); backdrop-filter:blur(4px); }
 .reschedule-modal.is-open { display:flex; }
