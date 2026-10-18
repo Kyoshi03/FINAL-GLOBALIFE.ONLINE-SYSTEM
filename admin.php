@@ -6,6 +6,7 @@ require_once 'config/database.php';
 require_once __DIR__ . '/includes/patient_profile_photo.php';
 require_once __DIR__ . '/includes/admin_notifications.php';
 require_once __DIR__ . '/includes/doctor_schedule.php';
+require_once __DIR__ . '/includes/appointment_reschedule.php';
 
 $pageTitle = 'Administrator Dashboard | Globalife Medical Laboratory & Polyclinic';
 $currentUser = getCurrentUser();
@@ -211,6 +212,7 @@ function admin_appointment_total_text(array $appointment): string {
 $conn = getDBConnection();
 init_admin_notifications($conn);
 init_doctor_schema_and_accounts($conn);
+appointment_reschedule_init_schema($conn);
 if (
     function_exists('initLabBookingSchema') &&
     (
@@ -326,6 +328,44 @@ if ($requestStmt) {
     $requestStmt->close();
 } else {
     $error = 'Unable to load appointment requests. Please check the appointment table configuration.';
+}
+
+$rescheduleRequests = [];
+$rescheduleRequestStmt = $conn->prepare("SELECT r.id AS reschedule_request_id,
+                                r.appointment_id,
+                                r.original_date,
+                                r.original_time,
+                                r.requested_date,
+                                r.requested_time,
+                                r.created_at,
+                                a.patient_id,
+                                a.booking_type,
+                                a.notes,
+                                {$patientNameSql} AS patient_name,
+                                p.phone AS patient_phone,
+                                p.email AS patient_email,
+                                p.profile_photo,
+                                p.profile_updated_at,
+                                {$doctorNameSql} AS doctor_name
+                                FROM appointment_reschedule_requests r
+                                INNER JOIN appointments a ON a.id = r.appointment_id
+                                INNER JOIN users p ON p.id = a.patient_id
+                                LEFT JOIN users d ON d.id = a.doctor_id
+                                WHERE r.status = 'pending'
+                                  AND a.status = 'confirmed'
+                                  AND a.booking_type <> 'consultation'
+                                ORDER BY r.created_at ASC, r.id ASC
+                                LIMIT 20");
+if ($rescheduleRequestStmt) {
+    if ($rescheduleRequestStmt->execute()) {
+        $rescheduleRequestResult = $rescheduleRequestStmt->get_result();
+        if ($rescheduleRequestResult) {
+            $rescheduleRequests = $rescheduleRequestResult->fetch_all(MYSQLI_ASSOC);
+        }
+    }
+    $rescheduleRequestStmt->close();
+} else {
+    $error = 'Unable to load pending reschedule requests.';
 }
 
 $labServicePrices = [];
@@ -1225,6 +1265,144 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.appointment-reschedule-request-section {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid #e0ebf3;
+}
+
+.appointment-reschedule-request-section h3 {
+    margin: 0;
+    color: #073b4c;
+    font-size: 1rem;
+}
+
+.appointment-reschedule-request-section > p {
+    margin: 5px 0 12px;
+    color: #60727d;
+    font-size: .86rem;
+}
+
+.appointment-reschedule-table {
+    table-layout: fixed;
+    min-width: 0;
+}
+
+.appointment-reschedule-table th:nth-child(1),
+.appointment-reschedule-table td:nth-child(1) { width: 24%; }
+.appointment-reschedule-table th:nth-child(2),
+.appointment-reschedule-table td:nth-child(2) { width: 20%; }
+.appointment-reschedule-table th:nth-child(3),
+.appointment-reschedule-table td:nth-child(3) { width: 28%; }
+.appointment-reschedule-table th:nth-child(4),
+.appointment-reschedule-table td:nth-child(4) { width: 28%; }
+
+.appointment-reschedule-table .queue-patient strong,
+.appointment-reschedule-table .queue-service strong {
+    overflow-wrap: anywhere;
+}
+
+.reschedule-request-schedule strong,
+.reschedule-request-schedule span {
+    display: block;
+}
+
+.reschedule-request-schedule strong {
+    color: #073b4c;
+    font-size: .8rem;
+    line-height: 1.25;
+}
+
+.reschedule-request-schedule span {
+    margin-top: 3px;
+    color: #60727d;
+    font-size: .78rem;
+}
+
+.reschedule-request-schedule.requested strong {
+    color: #9a5b00;
+}
+
+.reschedule-request-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.reschedule-request-actions form {
+    margin: 0;
+}
+
+.reschedule-request-actions .btn {
+    min-width: 76px;
+    min-height: 32px;
+    padding: 6px 10px;
+    font-size: .72rem;
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+.reschedule-request-actions .btn-confirm {
+    background: #20a346;
+    border-color: #20a346;
+    color: #fff;
+}
+
+.reschedule-request-actions .btn-cancel {
+    background: #e3344a;
+    border-color: #e3344a;
+    color: #fff;
+}
+
+@media (max-width: 760px) {
+    .appointment-reschedule-table {
+        display: block;
+        overflow: visible;
+    }
+
+    .appointment-reschedule-table thead {
+        display: none;
+    }
+
+    .appointment-reschedule-table,
+    .appointment-reschedule-table tbody,
+    .appointment-reschedule-table tr,
+    .appointment-reschedule-table td {
+        width: 100%;
+        display: block;
+        box-sizing: border-box;
+    }
+
+    .appointment-reschedule-table tr {
+        padding: 12px;
+        border-bottom: 1px solid #e6eef4;
+    }
+
+    .appointment-reschedule-table tr:last-child {
+        border-bottom: 0;
+    }
+
+    .appointment-reschedule-table td {
+        width: 100% !important;
+        padding: 6px 0;
+        border-bottom: 0;
+    }
+
+    .appointment-reschedule-table td::before {
+        display: block;
+        margin-bottom: 3px;
+        color: #466779;
+        font-size: .7rem;
+        font-weight: 950;
+        text-transform: uppercase;
+    }
+
+    .appointment-reschedule-table td:nth-child(1)::before { content: "Patient"; }
+    .appointment-reschedule-table td:nth-child(2)::before { content: "Service"; }
+    .appointment-reschedule-table td:nth-child(3)::before { content: "Original schedule"; }
+    .appointment-reschedule-table td:nth-child(4)::before { content: "Requested schedule and action"; }
 }
 
 .queue-table th,
@@ -3035,9 +3213,9 @@ include 'includes/header.php';
                         <p>Review and respond to new appointment requests.</p>
                     </div>
                 </div>
-                <?php if (empty($appointmentRequests)): ?>
+                <?php if (empty($appointmentRequests) && empty($rescheduleRequests)): ?>
                     <div class="empty-state">No pending appointment requests.</div>
-                <?php else: ?>
+                <?php elseif (!empty($appointmentRequests)): ?>
                     <div class="queue-table-wrap appointment-request-table-wrap">
                         <table class="queue-table appointment-request-table">
                             <thead>
@@ -3168,6 +3346,83 @@ include 'includes/header.php';
                             <?php endif; ?>
                         </div>
                     </div>
+                <?php endif; ?>
+
+                <?php if (!empty($rescheduleRequests)): ?>
+                    <section class="appointment-reschedule-request-section" aria-labelledby="pendingRescheduleRequestsTitle">
+                        <h3 id="pendingRescheduleRequestsTitle">Pending reschedule</h3>
+                        <p>Review the original and requested schedule before approving the change.</p>
+                        <div class="queue-table-wrap appointment-request-table-wrap">
+                            <table class="queue-table appointment-request-table appointment-reschedule-table">
+                                <thead>
+                                    <tr>
+                                        <th>Patient</th>
+                                        <th>Service</th>
+                                        <th>Original schedule</th>
+                                        <th>Requested schedule and action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($rescheduleRequests as $request): ?>
+                                        <?php
+                                        $rescheduleContact = trim((string) (($request['patient_phone'] ?? '') ?: ($request['patient_email'] ?? '')));
+                                        $rescheduleContact = $rescheduleContact !== '' ? $rescheduleContact : 'No contact saved';
+                                        $rescheduleService = admin_appointment_services_text($request);
+                                        $rescheduleOriginal = appointment_reschedule_request_date_label(
+                                            (string) ($request['original_date'] ?? ''),
+                                            (string) ($request['original_time'] ?? '')
+                                        );
+                                        $rescheduleRequested = appointment_reschedule_request_date_label(
+                                            (string) ($request['requested_date'] ?? ''),
+                                            (string) ($request['requested_time'] ?? '')
+                                        );
+                                        ?>
+                                        <tr>
+                                            <td>
+                                                <div class="queue-patient">
+                                                    <?php echo renderPatientAvatar($request, ['size' => 'sm', 'link' => true, 'patient_id' => (int) ($request['patient_id'] ?? 0)]); ?>
+                                                    <div>
+                                                        <strong><?php echo htmlspecialchars((string) ($request['patient_name'] ?? 'Patient')); ?></strong>
+                                                        <small title="<?php echo htmlspecialchars($rescheduleContact, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($rescheduleContact); ?></small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="queue-service">
+                                                <strong><?php echo htmlspecialchars(admin_booking_label((string) ($request['booking_type'] ?? ''))); ?></strong>
+                                                <?php if ($rescheduleService !== admin_booking_label((string) ($request['booking_type'] ?? ''))): ?>
+                                                    <small><?php echo htmlspecialchars($rescheduleService); ?></small>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="reschedule-request-schedule">
+                                                <strong><?php echo htmlspecialchars($rescheduleOriginal); ?></strong>
+                                                <span>Current Confirmed schedule</span>
+                                            </td>
+                                            <td>
+                                                <div class="reschedule-request-schedule requested">
+                                                    <strong><?php echo htmlspecialchars($rescheduleRequested); ?></strong>
+                                                    <span>Pending approval</span>
+                                                </div>
+                                                <div class="reschedule-request-actions" aria-label="Reschedule request actions">
+                                                    <form method="post" action="process_reschedule_request.php">
+                                                        <input type="hidden" name="request_id" value="<?php echo (int) ($request['reschedule_request_id'] ?? 0); ?>">
+                                                        <input type="hidden" name="action" value="approve">
+                                                        <input type="hidden" name="return_url" value="admin.php#appointment-requests">
+                                                        <button type="submit" class="btn btn-confirm" data-confirm-message="Approve this reschedule request?">Approve</button>
+                                                    </form>
+                                                    <form method="post" action="process_reschedule_request.php">
+                                                        <input type="hidden" name="request_id" value="<?php echo (int) ($request['reschedule_request_id'] ?? 0); ?>">
+                                                        <input type="hidden" name="action" value="reject">
+                                                        <input type="hidden" name="return_url" value="admin.php#appointment-requests">
+                                                        <button type="submit" class="btn btn-cancel" data-confirm-message="Reject this reschedule request?">Reject</button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
                 <?php endif; ?>
             </div>
         </div>
