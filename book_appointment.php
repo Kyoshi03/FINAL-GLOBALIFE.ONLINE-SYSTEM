@@ -335,7 +335,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $specialty = trim((string) ($_POST['consultation_specialty'] ?? ''));
             $availableSpecialties = consultationSpecialties(consultationDoctorDirectory($conn));
             if ($specialty === '' || !in_array($specialty, $availableSpecialties, true)) {
-                $error = 'Please choose a doctor specialization.';
+                $error = 'Please select a doctor specialization before continuing.';
             } else {
                 $bk['consultation_specialty'] = $specialty;
                 $bk['doctor_id'] = null;
@@ -1298,7 +1298,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 }
                 ?>
             </div>
-            <form method="post" action="book_appointment.php" id="formChooseServices">
+            <form method="post" action="book_appointment.php" id="formChooseServices"<?php echo $bk['type'] === 'consultation' ? ' novalidate' : ''; ?>>
                 <input type="hidden" name="booking_action" value="choose_services">
                 <?php if ($bk['type'] === 'consultation'): ?>
                     <?php if (empty($consultationSpecialties)): ?>
@@ -1447,6 +1447,59 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     <button type="submit" class="btn-primary">Next: view details</button>
                 <?php endif; ?>
             </form>
+            <?php if ($bk['type'] === 'consultation'): ?>
+                <div class="doctor-required-modal" id="specializationRequiredModal" aria-hidden="true">
+                    <div class="doctor-required-dialog" role="dialog" aria-modal="true" aria-labelledby="specializationRequiredTitle">
+                        <div class="doctor-required-head">
+                            <div class="doctor-required-icon" aria-hidden="true">!</div>
+                            <h3 id="specializationRequiredTitle">Choose a specialization first</h3>
+                        </div>
+                        <div class="doctor-required-body">
+                            <p>Please select a doctor specialization before continuing to choose a doctor.</p>
+                        </div>
+                        <div class="doctor-required-actions">
+                            <button type="button" class="doctor-required-close" id="specializationRequiredClose">Close</button>
+                            <button type="button" class="doctor-required-choose" id="specializationRequiredChoose">Choose specialization</button>
+                        </div>
+                    </div>
+                </div>
+                <script>
+                (function() {
+                    var form = document.getElementById('formChooseServices');
+                    var modal = document.getElementById('specializationRequiredModal');
+                    var closeButton = document.getElementById('specializationRequiredClose');
+                    var chooseButton = document.getElementById('specializationRequiredChoose');
+                    if (!form || !modal) return;
+                    function setSpecializationModal(open) {
+                        modal.classList.toggle('is-open', open);
+                        modal.setAttribute('aria-hidden', open ? 'false' : 'true');
+                        document.body.style.overflow = open ? 'hidden' : '';
+                        if (open && chooseButton) chooseButton.focus();
+                    }
+                    form.addEventListener('submit', function(event) {
+                        if (!form.querySelector('input[name="consultation_specialty"]:checked')) {
+                            event.preventDefault();
+                            setSpecializationModal(true);
+                        }
+                    });
+                    if (closeButton) closeButton.addEventListener('click', function() { setSpecializationModal(false); });
+                    if (chooseButton) chooseButton.addEventListener('click', function() {
+                        setSpecializationModal(false);
+                        var firstSpecialty = form.querySelector('input[name="consultation_specialty"]');
+                        if (firstSpecialty) {
+                            firstSpecialty.closest('div').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            firstSpecialty.focus();
+                        }
+                    });
+                    modal.addEventListener('click', function(event) {
+                        if (event.target === modal) setSpecializationModal(false);
+                    });
+                    document.addEventListener('keydown', function(event) {
+                        if (event.key === 'Escape' && modal.classList.contains('is-open')) setSpecializationModal(false);
+                    });
+                })();
+                </script>
+            <?php endif; ?>
             <script>
             (function() {
                 function norm(s) { return (s || '').toLowerCase().trim(); }
