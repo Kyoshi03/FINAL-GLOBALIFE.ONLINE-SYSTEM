@@ -15,10 +15,6 @@
 .reschedule-field label { color:#315c70; font-weight:800; font-size:.9rem; }
 .reschedule-field input, .reschedule-field select { width:100%; box-sizing:border-box; min-height:46px; padding:10px 12px; border:1px solid #cfe3f2; border-radius:10px; color:#10233f; background:#fff; font:inherit; }
 .reschedule-field input:focus, .reschedule-field select:focus { outline:none; border-color:#0f7cc2; box-shadow:0 0 0 4px rgba(15,124,194,.1); }
-.reschedule-reason-field { margin-top:4px; margin-bottom:10px; }
-.reschedule-reason-field textarea { width:100%; box-sizing:border-box; min-height:72px; padding:10px 12px; border:1px solid #cfe3f2; border-radius:10px; color:#10233f; background:#fff; font:inherit; line-height:1.4; resize:vertical; }
-.reschedule-reason-field textarea:focus { outline:none; border-color:#0f7cc2; box-shadow:0 0 0 4px rgba(15,124,194,.1); }
-.reschedule-reason-meta { display:flex; justify-content:space-between; gap:10px; color:#6b8090; font-size:.72rem; line-height:1.25; }
 .reschedule-note { margin:0 0 8px; color:#60758a; line-height:1.45; font-size:.88rem; }
 .reschedule-availability { min-height:18px; margin:0 0 11px; padding:7px 10px; border-radius:8px; background:#f2f8fc; color:#42657a; font-size:.78rem; line-height:1.35; }
 .reschedule-availability.is-loading { color:#6e7d87; }
@@ -189,11 +185,6 @@ $rescheduleMinTime = $rescheduleNow->modify('+1 minute')->format('H:i');
                     <input type="time" name="appointment_time" id="appointmentRescheduleTime" required>
                     <select id="appointmentRescheduleTimeChoices" aria-label="Available appointment times" hidden></select>
                 </div>
-                <div class="reschedule-field reschedule-reason-field">
-                    <label for="appointmentRescheduleReason">Reason for Rescheduling (Optional)</label>
-                    <textarea name="reason" id="appointmentRescheduleReason" maxlength="300" rows="3" placeholder="Briefly explain why you need to change your schedule." aria-describedby="appointmentRescheduleReasonMeta"></textarea>
-                    <div class="reschedule-reason-meta" id="appointmentRescheduleReasonMeta"><span>Optional</span><span id="appointmentRescheduleReasonCount">0/300</span></div>
-                </div>
             </div>
             <div class="reschedule-actions">
                 <button type="button" class="btn btn-light" data-close-reschedule>Cancel</button>
@@ -243,8 +234,6 @@ unset($_SESSION['reschedule_error']);
     var dateChoices = document.getElementById('appointmentRescheduleDateChoices');
     var timeInput = document.getElementById('appointmentRescheduleTime');
     var timeChoices = document.getElementById('appointmentRescheduleTimeChoices');
-    var reasonInput = document.getElementById('appointmentRescheduleReason');
-    var reasonCount = document.getElementById('appointmentRescheduleReasonCount');
     var availabilityNote = document.getElementById('appointmentRescheduleAvailability');
     var submitButton = document.getElementById('appointmentRescheduleSubmit');
     var calendarPanel = document.getElementById('appointmentRescheduleCalendarPanel');
@@ -313,12 +302,6 @@ unset($_SESSION['reschedule_error']);
 
     function setSubmitEnabled(enabled) {
         if (submitButton) submitButton.disabled = !enabled;
-    }
-
-    function updateReasonCount() {
-        if (!reasonInput || !reasonCount) return;
-        var length = Array.from(reasonInput.value || '').length;
-        reasonCount.textContent = length + '/300';
     }
 
     function dateIsAvailable(date) {
@@ -658,8 +641,6 @@ unset($_SESSION['reschedule_error']);
             dateInput.removeAttribute('max');
             dateInput.setCustomValidity('');
             timeInput.setCustomValidity('');
-            if (reasonInput) reasonInput.value = '';
-            updateReasonCount();
             var current = button.getAttribute('data-reschedule-label') || 'Current appointment schedule';
             var editMode = button.getAttribute('data-reschedule-mode') || 'confirmed';
             if (title) title.textContent = editMode === 'pending' ? 'Change appointment schedule' : 'Reschedule appointment';
@@ -710,26 +691,12 @@ unset($_SESSION['reschedule_error']);
         if (availability && availability.booking_type === 'consultation') setSubmitEnabled(updateAvailabilityForSelection());
     });
     form.addEventListener('submit', function (event) {
-        if (reasonInput && Array.from(reasonInput.value || '').length > 300) {
-            event.preventDefault();
-            reasonInput.setCustomValidity('The reason must be 300 characters or fewer.');
-            reasonInput.reportValidity();
-            return;
-        }
-        if (reasonInput) reasonInput.setCustomValidity('');
         if (availability && availability.booking_type === 'consultation' && !updateAvailabilityForSelection()) {
             event.preventDefault();
             dateInput.reportValidity();
             timeInput.reportValidity();
         }
     });
-    if (reasonInput) {
-        reasonInput.addEventListener('input', function () {
-            if (Array.from(reasonInput.value || '').length <= 300) reasonInput.setCustomValidity('');
-            updateReasonCount();
-        });
-        updateReasonCount();
-    }
     modal.querySelectorAll('[data-close-reschedule]').forEach(function (button) {
         button.addEventListener('click', closeModal);
     });
