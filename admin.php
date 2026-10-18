@@ -2361,6 +2361,10 @@ body {
     color: #10233f;
 }
 
+.detail-notes-box span {
+    white-space: pre-line;
+}
+
 .appointment-modal-actions {
     display: flex;
     justify-content: flex-end;
@@ -3112,11 +3116,14 @@ document.addEventListener("DOMContentLoaded", function () {
             setText("adminDetailOriginalSchedule", data.originalSchedule);
             setText("adminDetailRequestedSchedule", data.requestedSchedule);
             setText("adminDetailRescheduleStatus", data.reschedulePending === "1" ? "Pending approval" : "None");
-            setText("adminDetailRescheduleReason", data.rescheduleReason || "Not provided");
             setText("adminDetailType", data.type);
             setText("adminDetailServices", data.services);
             setText("adminDetailStatus", data.statusLabel);
-            setText("adminDetailNotes", data.notes);
+            var detailNotes = data.notes || "None";
+            if (data.reschedulePending === "1") {
+                detailNotes += "\n\nReschedule reason: " + (data.rescheduleReason || "Not provided");
+            }
+            setText("adminDetailNotes", detailNotes);
             var bookingType = (data.bookingType || "").toLowerCase();
             var isKnownBookingType = ["consultation", "ultrasound", "package", "individual"].indexOf(bookingType) !== -1;
             setDetailRow("doctor", !isKnownBookingType || bookingType === "consultation");
@@ -4079,7 +4086,6 @@ include 'includes/header.php';
                     <dt data-admin-detail-row="reschedule">Original schedule</dt><dd data-admin-detail-row="reschedule" id="adminDetailOriginalSchedule">None</dd>
                     <dt data-admin-detail-row="reschedule">Requested schedule</dt><dd data-admin-detail-row="reschedule" id="adminDetailRequestedSchedule">None</dd>
                     <dt data-admin-detail-row="reschedule">Reschedule request</dt><dd data-admin-detail-row="reschedule" id="adminDetailRescheduleStatus">Pending approval</dd>
-                    <dt data-admin-detail-row="reschedule">Reschedule reason</dt><dd data-admin-detail-row="reschedule" id="adminDetailRescheduleReason">Not provided</dd>
                     <dt data-admin-detail-row="type">Booking type</dt><dd data-admin-detail-row="type" id="adminDetailType">None</dd>
                     <dt data-admin-detail-row="services">Services</dt><dd data-admin-detail-row="services" id="adminDetailServices">None</dd>
                     <dt>Status</dt><dd id="adminDetailStatus">None</dd>
