@@ -1680,20 +1680,9 @@ $additionalStyles = '
         justify-content: center;
         min-width: 0;
     }
-    .appointment-status-actions {
-        display: contents;
-    }
-    .appointment-status-actions.is-reschedule-pending {
+    .appointment-side.reschedule-pending-side {
         grid-column: 2 / 5;
-        grid-row: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 18px;
-        min-width: 0;
-    }
-    .appointment-status-actions.is-reschedule-pending .appointment-side {
-        width: auto;
+        grid-row: 2;
     }
 
     .appointment-status {
@@ -3207,14 +3196,9 @@ $additionalStyles = '
             align-items: center;
             width: 100%;
         }
-        .appointment-status-actions.is-reschedule-pending {
+        .appointment-side.reschedule-pending-side {
             grid-column: 1;
             grid-row: auto;
-            width: 100%;
-            gap: 12px;
-        }
-        .appointment-status-actions.is-reschedule-pending .appointment-side {
-            width: auto;
         }
 
         .patient-detail-summary {
@@ -3865,7 +3849,6 @@ include 'includes/header.php';
                                         </div>
                                     <?php endif; ?>
                                 </div>
-                                <div class="appointment-status-actions<?php echo $hasPendingReschedule ? ' is-reschedule-pending' : ''; ?>">
                                 <div class="appointment-status">
                                     <div class="status-stack">
                                         <span class="status-badge <?php echo htmlspecialchars($statusClass); ?>">
@@ -3876,7 +3859,7 @@ include 'includes/header.php';
                                         <?php endif; ?>
                                     </div>
                                 </div>
-                                <div class="appointment-side">
+                                <div class="appointment-side<?php echo $hasPendingReschedule ? ' reschedule-pending-side' : ''; ?>">
                                     <?php if (in_array($statusClass, ['pending', 'confirmed'], true)): ?>
                                         <div class="appointment-action-stack <?php echo $statusClass === 'pending' ? 'has-cancel' : 'no-cancel'; ?>">
                                             <?php if ($statusClass === 'pending'): ?>
@@ -3898,7 +3881,6 @@ include 'includes/header.php';
                                             <?php endif; ?>
                                         </div>
                                     <?php endif; ?>
-                                </div>
                                 </div>
                             </article>
                         <?php endforeach; ?>
