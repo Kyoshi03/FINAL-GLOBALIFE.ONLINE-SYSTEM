@@ -1250,6 +1250,32 @@ $additionalStyles = patientAvatarStyles() . '
             padding: 0 10px;
             font-size: .78rem;
         }
+        .patient-history-page .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            width: 100%;
+            gap: 8px;
+            align-items: stretch;
+        }
+        .patient-history-page .action-buttons > form {
+            display: block !important;
+            min-width: 0;
+        }
+        .patient-history-page .action-buttons > .btn,
+        .patient-history-page .action-buttons > form > .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-width: 0;
+            min-height: 36px;
+            box-sizing: border-box;
+            padding: 0 8px;
+            border-radius: 9px;
+            font-size: .76rem;
+            line-height: 1.1;
+            white-space: nowrap;
+        }
     }
 ';
 
