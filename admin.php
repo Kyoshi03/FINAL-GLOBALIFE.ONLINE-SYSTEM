@@ -1324,6 +1324,19 @@ body {
     font-size: .74rem;
 }
 
+.reschedule-request-reason {
+    display: grid;
+    gap: 2px;
+    margin: 7px 0 8px;
+    color: #60727d;
+    font-size: .74rem;
+    line-height: 1.3;
+}
+
+.reschedule-request-reason strong {
+    color: #315c70;
+}
+
 .reschedule-request-schedule.requested strong {
     color: #9a5b00;
 }
@@ -3701,6 +3714,7 @@ include 'includes/header.php';
                                         $rescheduleOriginalTime = admin_time_label((string) ($request['original_time'] ?? ''));
                                         $rescheduleRequestedDate = admin_date_label((string) ($request['requested_date'] ?? ''));
                                         $rescheduleRequestedTime = admin_time_label((string) ($request['requested_time'] ?? ''));
+                                        $rescheduleReason = trim((string) ($request['reschedule_reason'] ?? '')) ?: 'Not provided';
                                         ?>
                                         <tr>
                                             <td>
@@ -3726,6 +3740,10 @@ include 'includes/header.php';
                                                 <div class="reschedule-request-schedule requested">
                                                     <strong><?php echo htmlspecialchars($rescheduleRequestedDate); ?></strong>
                                                     <span><?php echo htmlspecialchars($rescheduleRequestedTime); ?></span>
+                                                </div>
+                                                <div class="reschedule-request-reason">
+                                                    <strong>Reschedule reason:</strong>
+                                                    <span><?php echo htmlspecialchars($rescheduleReason); ?></span>
                                                 </div>
                                                 <div class="reschedule-request-actions" aria-label="Reschedule request actions">
                                                     <button
@@ -4061,7 +4079,7 @@ include 'includes/header.php';
                     <dt data-admin-detail-row="reschedule">Original schedule</dt><dd data-admin-detail-row="reschedule" id="adminDetailOriginalSchedule">None</dd>
                     <dt data-admin-detail-row="reschedule">Requested schedule</dt><dd data-admin-detail-row="reschedule" id="adminDetailRequestedSchedule">None</dd>
                     <dt data-admin-detail-row="reschedule">Reschedule request</dt><dd data-admin-detail-row="reschedule" id="adminDetailRescheduleStatus">Pending approval</dd>
-                    <dt data-admin-detail-row="reschedule">Patient note</dt><dd data-admin-detail-row="reschedule" id="adminDetailRescheduleReason">Not provided</dd>
+                    <dt data-admin-detail-row="reschedule">Reschedule reason</dt><dd data-admin-detail-row="reschedule" id="adminDetailRescheduleReason">Not provided</dd>
                     <dt data-admin-detail-row="type">Booking type</dt><dd data-admin-detail-row="type" id="adminDetailType">None</dd>
                     <dt data-admin-detail-row="services">Services</dt><dd data-admin-detail-row="services" id="adminDetailServices">None</dd>
                     <dt>Status</dt><dd id="adminDetailStatus">None</dd>
