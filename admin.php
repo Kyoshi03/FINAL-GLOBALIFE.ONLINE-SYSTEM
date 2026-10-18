@@ -1344,6 +1344,12 @@ body {
     white-space: nowrap;
 }
 
+.reschedule-request-actions .btn.details {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #075da7;
+}
+
 .reschedule-request-actions .btn-confirm {
     background: #20a346;
     border-color: #20a346;
@@ -1401,8 +1407,8 @@ body {
 
     .appointment-reschedule-table td:nth-child(1)::before { content: "Patient"; }
     .appointment-reschedule-table td:nth-child(2)::before { content: "Service"; }
-    .appointment-reschedule-table td:nth-child(3)::before { content: "Original schedule"; }
-    .appointment-reschedule-table td:nth-child(4)::before { content: "Requested schedule and action"; }
+    .appointment-reschedule-table td:nth-child(3)::before { content: "Original Schedule"; }
+    .appointment-reschedule-table td:nth-child(4)::before { content: "Requested Schedule"; }
 }
 
 .queue-table th,
@@ -2812,11 +2818,14 @@ document.addEventListener("DOMContentLoaded", function () {
         button.addEventListener("click", function () {
             var data = button.dataset;
             setText("adminModalPatient", data.patient);
-            setText("adminModalSub", data.schedule);
+            setText("adminModalSub", data.modalSub || data.schedule);
             setText("adminDetailPatient", data.patient);
             setText("adminDetailContact", data.contact);
             setText("adminDetailDoctor", data.doctor);
             setText("adminDetailSchedule", data.schedule);
+            setText("adminDetailOriginalSchedule", data.originalSchedule);
+            setText("adminDetailRequestedSchedule", data.requestedSchedule);
+            setText("adminDetailRescheduleStatus", data.reschedulePending === "1" ? "Pending approval" : "None");
             setText("adminDetailType", data.type);
             setText("adminDetailServices", data.services);
             setText("adminDetailStatus", data.statusLabel);
@@ -2824,6 +2833,7 @@ document.addEventListener("DOMContentLoaded", function () {
             var bookingType = (data.bookingType || "").toLowerCase();
             var isKnownBookingType = ["consultation", "ultrasound", "package", "individual"].indexOf(bookingType) !== -1;
             setDetailRow("doctor", !isKnownBookingType || bookingType === "consultation");
+            setDetailRow("reschedule", data.reschedulePending === "1");
             setDetailRow("type", !isKnownBookingType || bookingType !== "consultation");
             setDetailRow("services", !isKnownBookingType || bookingType === "package" || bookingType === "individual");
             var reasonRows = document.querySelectorAll("[data-admin-cancel-reason-detail]");
@@ -3350,16 +3360,16 @@ include 'includes/header.php';
 
                 <?php if (!empty($rescheduleRequests)): ?>
                     <section class="appointment-reschedule-request-section" aria-labelledby="pendingRescheduleRequestsTitle">
-                        <h3 id="pendingRescheduleRequestsTitle">Pending reschedule</h3>
-                        <p>Review the original and requested schedule before approving the change.</p>
+                        <h3 id="pendingRescheduleRequestsTitle">Pending Reschedule Requests</h3>
+                        <p>Review the request before approving or rejecting the schedule change.</p>
                         <div class="queue-table-wrap appointment-request-table-wrap">
                             <table class="queue-table appointment-request-table appointment-reschedule-table">
                                 <thead>
                                     <tr>
                                         <th>Patient</th>
                                         <th>Service</th>
-                                        <th>Original schedule</th>
-                                        <th>Requested schedule and action</th>
+                                        <th>Original Schedule</th>
+                                        <th>Requested Schedule</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -3395,7 +3405,7 @@ include 'includes/header.php';
                                             </td>
                                             <td class="reschedule-request-schedule">
                                                 <strong><?php echo htmlspecialchars($rescheduleOriginal); ?></strong>
-                                                <span>Current Confirmed schedule</span>
+                                                <span>Confirmed appointment</span>
                                             </td>
                                             <td>
                                                 <div class="reschedule-request-schedule requested">
@@ -3403,6 +3413,27 @@ include 'includes/header.php';
                                                     <span>Pending approval</span>
                                                 </div>
                                                 <div class="reschedule-request-actions" aria-label="Reschedule request actions">
+                                                    <button
+                                                        type="button"
+                                                        class="btn details"
+                                                        data-admin-appointment
+                                                        data-id="<?php echo (int) ($request['appointment_id'] ?? 0); ?>"
+                                                        data-patient="<?php echo htmlspecialchars((string) ($request['patient_name'] ?? 'Patient'), ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-contact="<?php echo htmlspecialchars($rescheduleContact, ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-doctor="<?php echo htmlspecialchars((string) (($request['doctor_name'] ?? '') ?: 'Not assigned'), ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-schedule="<?php echo htmlspecialchars($rescheduleOriginal, ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-modal-sub="Reschedule request review"
+                                                        data-type="<?php echo htmlspecialchars(admin_booking_label((string) ($request['booking_type'] ?? '')), ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-booking-type="<?php echo htmlspecialchars((string) ($request['booking_type'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-services="<?php echo htmlspecialchars($rescheduleService, ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-status="confirmed"
+                                                        data-status-label="Confirmed"
+                                                        data-notes="Reschedule request pending approval."
+                                                        data-cancel-reason="None"
+                                                        data-reschedule-pending="1"
+                                                        data-original-schedule="<?php echo htmlspecialchars($rescheduleOriginal, ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-requested-schedule="<?php echo htmlspecialchars($rescheduleRequested, ENT_QUOTES, 'UTF-8'); ?>"
+                                                    >Details</button>
                                                     <form method="post" action="process_reschedule_request.php">
                                                         <input type="hidden" name="request_id" value="<?php echo (int) ($request['reschedule_request_id'] ?? 0); ?>">
                                                         <input type="hidden" name="action" value="approve">
@@ -3715,6 +3746,9 @@ include 'includes/header.php';
                     <span>Contact</span><strong id="adminDetailContact">None</strong>
                     <span data-admin-detail-row="doctor">Doctor</span><strong data-admin-detail-row="doctor" id="adminDetailDoctor">None</strong>
                     <span>Schedule</span><strong id="adminDetailSchedule">None</strong>
+                    <span data-admin-detail-row="reschedule">Original schedule</span><strong data-admin-detail-row="reschedule" id="adminDetailOriginalSchedule">None</strong>
+                    <span data-admin-detail-row="reschedule">Requested schedule</span><strong data-admin-detail-row="reschedule" id="adminDetailRequestedSchedule">None</strong>
+                    <span data-admin-detail-row="reschedule">Reschedule request</span><strong data-admin-detail-row="reschedule" id="adminDetailRescheduleStatus">Pending approval</strong>
                     <span data-admin-detail-row="type">Type</span><strong data-admin-detail-row="type" id="adminDetailType">None</strong>
                     <span data-admin-detail-row="services">Services</span><strong data-admin-detail-row="services" id="adminDetailServices">None</strong>
                     <span>Status</span><strong id="adminDetailStatus">None</strong>
