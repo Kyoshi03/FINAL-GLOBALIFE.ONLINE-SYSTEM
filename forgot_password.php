@@ -432,9 +432,17 @@ include 'includes/header.php';
                 <?php endif; ?>
 
                 <div class="form-footer">
-                    <a href="index.php?login=1#patient-login" target="_top">← Back to Log In</a>
+                    <a href="index.php?login=1#patient-login" target="_top" data-forgot-back-login>← Back to Log In</a>
                 </div>
             </div>
         </div>
     </div>
+    <script>
+        document.querySelectorAll('[data-forgot-back-login]').forEach(function (link) {
+            link.addEventListener('click', function (event) {
+                event.preventDefault();
+                window.top.location.assign('index.php?login=1#patient-login');
+            });
+        });
+    </script>
 <?php include 'includes/footer.php'; ?>
