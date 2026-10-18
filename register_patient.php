@@ -1891,9 +1891,9 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
             </form>
             
             <div class="login-link">
-                Already have an account? <a href="index.php?login=1#patient-login" target="_top">Go to Login</a>
+                Already have an account? <a href="index.php?login=1#patient-login" target="_top" data-registration-go-login>Go to Login</a>
             </div>
-            
+            <?php if (!$isRegistrationModal): ?>
             <div class="back-to-home">
                 <a href="index.php" target="_top">
                     <svg class="back-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1902,6 +1902,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                     Back to Home
                 </a>
             </div>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -2949,5 +2950,36 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
             }
         });
     </script>
+    <?php if ($isRegistrationModal): ?>
+    <script>
+        document.querySelectorAll('[data-registration-go-login]').forEach(function (link) {
+            link.addEventListener('click', function (event) {
+                event.preventDefault();
+                var topWindow = window.top;
+                var registrationModal = topWindow.document.getElementById('registration-modal');
+                var loginModal = topWindow.document.getElementById('patient-login');
+
+                if (registrationModal && loginModal) {
+                    registrationModal.classList.remove('is-open');
+                    registrationModal.setAttribute('aria-hidden', 'true');
+                    loginModal.classList.add('is-open');
+                    loginModal.setAttribute('aria-hidden', 'false');
+                    topWindow.document.body.style.overflow = 'hidden';
+                    topWindow.history.replaceState(null, '', 'index.php?login=1#patient-login');
+
+                    var usernameInput = topWindow.document.getElementById('patient-username');
+                    if (usernameInput) {
+                        topWindow.setTimeout(function () {
+                            usernameInput.focus();
+                        }, 80);
+                    }
+                    return;
+                }
+
+                topWindow.location.assign('index.php?login=1#patient-login');
+            });
+        });
+    </script>
+    <?php endif; ?>
 </body>
 </html>
