@@ -214,4 +214,10 @@ try {
 appointment_reschedule_release_lock($conn, $lockName);
 appointment_reschedule_notify_patient($conn, $request, $approved ? 'approved' : 'rejected');
 appointment_reschedule_notify_reviewer($conn, $request, $approved ? 'approved' : 'rejected');
+if (!$approved) {
+    $_SESSION['reschedule_rejection_success'] = [
+        'title' => 'Reschedule request rejected',
+        'message' => 'The original Confirmed appointment remains unchanged.',
+    ];
+}
 reschedule_request_finish($conn, $returnUrl, true, $message);

@@ -210,6 +210,8 @@ function admin_appointment_total_text(array $appointment): string {
 }
 
 $conn = getDBConnection();
+$rescheduleRejectionSuccess = $_SESSION['reschedule_rejection_success'] ?? null;
+unset($_SESSION['reschedule_rejection_success']);
 init_admin_notifications($conn);
 init_doctor_schema_and_accounts($conn);
 appointment_reschedule_init_schema($conn);
@@ -3208,6 +3210,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var actionSuccessTitle = document.getElementById("adminActionSuccessTitle");
     var actionSuccessText = document.getElementById("adminActionSuccessText");
     var actionSuccessOk = document.getElementById("adminActionSuccessOk");
+    var rejectionSuccess = window.__rescheduleRejectionSuccess || null;
 
     function closeConfirmActionModal() {
         if (!confirmActionModal) return;
@@ -3291,6 +3294,13 @@ document.addEventListener("DOMContentLoaded", function () {
         actionSuccessOk.addEventListener("click", function () {
             window.location.href = "admin.php";
         });
+    }
+
+    if (rejectionSuccess && actionSuccessModal) {
+        if (actionSuccessTitle) actionSuccessTitle.textContent = rejectionSuccess.title || "Reschedule request rejected";
+        if (actionSuccessText) actionSuccessText.textContent = rejectionSuccess.message || "The original Confirmed appointment remains unchanged.";
+        actionSuccessModal.classList.add("is-open");
+        actionSuccessModal.setAttribute("aria-hidden", "false");
     }
 
     document.querySelectorAll("[data-admin-confirm-close]").forEach(function (button) {
@@ -4131,6 +4141,10 @@ include 'includes/header.php';
             </div>
         </div>
     </div>
+
+    <script>
+        window.__rescheduleRejectionSuccess = <?php echo json_encode($rescheduleRejectionSuccess, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
+    </script>
 
 </main>
 <?php include 'includes/footer.php'; ?>

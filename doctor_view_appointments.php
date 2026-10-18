@@ -21,6 +21,8 @@ $appointmentPage = [
 $pageTitle = "Appointments | Globalife Medical Laboratory & Polyclinic";
 
 $conn = getDBConnection();
+$rescheduleRejectionSuccess = $_SESSION['reschedule_rejection_success'] ?? null;
+unset($_SESSION['reschedule_rejection_success']);
 appointment_init_queue_schema($conn);
 appointment_reschedule_init_schema($conn);
 $clinicInfo = clinic_info_get($conn);
@@ -1880,6 +1882,7 @@ include __DIR__ . '/includes/header.php';
     var successTitle = document.getElementById('statusSuccessTitle');
     var successText = document.getElementById('statusSuccessText');
     var successOk = document.getElementById('statusSuccessOk');
+    var rejectionSuccess = <?php echo json_encode($rescheduleRejectionSuccess, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
     var filterSuccessModal = document.getElementById('filterSuccessModal');
     var filterSuccessOk = document.getElementById('filterSuccessOk');
     var cancelReasonWrap = document.getElementById('statusCancelReasonWrap');
@@ -2005,6 +2008,11 @@ include __DIR__ . '/includes/header.php';
                 ? 'Appointment cancelled successfully.'
                 : (status === 'completed' ? 'Appointment completed successfully.' : 'Appointment confirmed successfully.'));
         }
+        openModal(successModal);
+    }
+    if (rejectionSuccess) {
+        if (successTitle) successTitle.textContent = rejectionSuccess.title || 'Reschedule request rejected';
+        if (successText) successText.textContent = rejectionSuccess.message || 'The original Confirmed appointment remains unchanged.';
         openModal(successModal);
     }
     function showDetails(row) {
