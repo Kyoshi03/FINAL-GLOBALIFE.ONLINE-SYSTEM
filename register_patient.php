@@ -31,6 +31,7 @@ $registrationSource = trim((string) ($_POST['registration_source'] ?? $_GET['sou
 if ($registrationSource !== 'walkin_qr') {
     $registrationSource = '';
 }
+$isRegistrationModal = (($_GET['modal'] ?? '') === '1') || (($_POST['registration_modal'] ?? '') === '1');
 
 $error = '';
 $success = '';
@@ -335,7 +336,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     $_SESSION['pending_patient_registration']['data']['verification_channel'] = $sent['channel'] ?? $verification_channel;
                     $conn->close();
-                    header('Location: verify_patient_email.php?sent=1');
+                    header('Location: verify_patient_email.php?sent=1' . ($isRegistrationModal ? '&modal=1' : ''));
                     exit();
                 }
             }
@@ -1424,6 +1425,54 @@ $additionalStyles = '
     }
 ';
 
+if ($isRegistrationModal) {
+    $additionalStyles .= '
+        html,
+        body {
+            min-height: 100%;
+            background: #ffffff;
+        }
+
+        body {
+            display: block;
+        }
+
+        .login-wrapper {
+            display: block;
+            min-height: 100%;
+            padding: 0;
+            overflow: visible;
+        }
+
+        .login-wrapper::before,
+        .login-header {
+            display: none;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: none;
+            min-height: 100%;
+            margin: 0;
+            padding: 26px clamp(20px, 3vw, 42px) 36px;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+            animation: none;
+        }
+
+        .reg-guide {
+            margin-top: 0;
+        }
+
+        @media (max-width: 560px) {
+            .login-container {
+                padding: 20px 16px 30px;
+            }
+        }
+    ';
+}
+
 $selectedProvince = !empty($success) ? '' : trim((string) ($_POST['province'] ?? 'Cavite'));
 $selectedCity = !empty($success) ? '' : trim((string) ($_POST['city'] ?? ''));
 $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ?? ''));
@@ -1469,9 +1518,12 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
             <?php endif; ?>
             
             
-            <form method="POST" action="register_patient.php" id="registerForm" novalidate>
+            <form method="POST" action="register_patient.php<?php echo $isRegistrationModal ? '?modal=1' : ''; ?>" id="registerForm" novalidate>
                 <?php echo clinic_csrf_field(); ?>
                 <input type="hidden" name="registration_source" value="<?php echo htmlspecialchars($registrationSource); ?>">
+                <?php if ($isRegistrationModal): ?>
+                    <input type="hidden" name="registration_modal" value="1">
+                <?php endif; ?>
                 <!-- Login Information -->
                 <div class="form-section">
                     <div class="form-section-title">Login Information</div>

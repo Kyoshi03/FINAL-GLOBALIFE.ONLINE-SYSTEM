@@ -792,6 +792,105 @@ $additionalStyles = '
             grid-template-columns: 1fr;
         }
     }
+
+    .registration-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 2200;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        background: rgba(7, 59, 76, 0.68);
+        opacity: 0;
+        pointer-events: none;
+        visibility: hidden;
+        transition: opacity .2s ease, visibility .2s ease;
+    }
+
+    .registration-modal.is-open {
+        opacity: 1;
+        pointer-events: auto;
+        visibility: visible;
+    }
+
+    .registration-dialog {
+        display: flex;
+        flex-direction: column;
+        width: min(1180px, 100%);
+        height: min(880px, calc(100vh - 40px));
+        overflow: hidden;
+        border: 1px solid rgba(216, 237, 241, .95);
+        border-radius: 20px;
+        background: #fff;
+        box-shadow: 0 28px 70px rgba(0, 0, 0, .28);
+    }
+
+    .registration-modal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 24px;
+        background: linear-gradient(135deg, #eaf9fd 0%, #f4fbf4 100%);
+        border-bottom: 1px solid #d8edf1;
+    }
+
+    .registration-modal-head h2 {
+        margin: 0;
+        color: #0077b6;
+        font-size: 1.45rem;
+        line-height: 1.2;
+    }
+
+    .registration-modal-close {
+        display: inline-grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        flex: 0 0 40px;
+        border: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, .78);
+        color: #47616b;
+        cursor: pointer;
+        font-size: 1.7rem;
+        line-height: 1;
+    }
+
+    .registration-modal-close:hover {
+        background: #fff;
+        color: #023e8a;
+    }
+
+    .registration-frame {
+        display: block;
+        width: 100%;
+        flex: 1 1 auto;
+        min-height: 0;
+        border: 0;
+        background: #fff;
+    }
+
+    @media (max-width: 560px) {
+        .registration-modal {
+            align-items: stretch;
+            padding: 0;
+        }
+
+        .registration-dialog {
+            width: 100%;
+            height: 100dvh;
+            border-radius: 0;
+        }
+
+        .registration-modal-head {
+            padding: 14px 16px;
+        }
+
+        .registration-modal-head h2 {
+            font-size: 1.08rem;
+        }
+    }
 ';
 
 $additionalScripts = '
@@ -801,6 +900,10 @@ $additionalScripts = '
         const closeTriggers = document.querySelectorAll("[data-login-close]");
         const passwordInput = document.getElementById("patient-password");
         const passwordToggle = document.querySelector("[data-password-toggle]");
+        const registrationModal = document.getElementById("registration-modal");
+        const registrationFrame = document.getElementById("registration-frame");
+        const registrationTriggers = document.querySelectorAll("a[href^=\"register_patient.php\"]");
+        const registrationCloseTriggers = document.querySelectorAll("[data-register-close]");
         const shouldOpenPatientLogin = ' . (($loginError !== '' || $loginSuccess !== '') ? 'true' : 'false') . ';
 
         function openPatientLogin(event) {
@@ -844,12 +947,61 @@ $additionalScripts = '
             }
         }
 
+        function openRegistrationModal(event) {
+            if (event) {
+                event.preventDefault();
+            }
+
+            if (!registrationModal || !registrationFrame) {
+                return;
+            }
+
+            if (loginModal && loginModal.classList.contains("is-open")) {
+                closePatientLogin();
+            }
+
+            if (!registrationFrame.getAttribute("src")) {
+                registrationFrame.setAttribute("src", "register_patient.php?modal=1");
+            }
+            registrationModal.classList.add("is-open");
+            registrationModal.setAttribute("aria-hidden", "false");
+            document.body.style.overflow = "hidden";
+            window.setTimeout(function () {
+                const closeButton = registrationModal.querySelector("[data-register-close]");
+                if (closeButton) {
+                    closeButton.focus();
+                }
+            }, 80);
+        }
+
+        function closeRegistrationModal(event) {
+            if (event) {
+                event.preventDefault();
+            }
+
+            if (!registrationModal) {
+                return;
+            }
+
+            registrationModal.classList.remove("is-open");
+            registrationModal.setAttribute("aria-hidden", "true");
+            document.body.style.overflow = "";
+        }
+
         loginTriggers.forEach(function (trigger) {
             trigger.addEventListener("click", openPatientLogin);
         });
 
         closeTriggers.forEach(function (trigger) {
             trigger.addEventListener("click", closePatientLogin);
+        });
+
+        registrationTriggers.forEach(function (trigger) {
+            trigger.addEventListener("click", openRegistrationModal);
+        });
+
+        registrationCloseTriggers.forEach(function (trigger) {
+            trigger.addEventListener("click", closeRegistrationModal);
         });
 
         if (loginModal) {
@@ -860,8 +1012,18 @@ $additionalScripts = '
             });
         }
 
+        if (registrationModal) {
+            registrationModal.addEventListener("click", function (event) {
+                if (event.target === registrationModal) {
+                    closeRegistrationModal(event);
+                }
+            });
+        }
+
         document.addEventListener("keydown", function (event) {
-            if (event.key === "Escape" && loginModal && loginModal.classList.contains("is-open")) {
+            if (event.key === "Escape" && registrationModal && registrationModal.classList.contains("is-open")) {
+                closeRegistrationModal(event);
+            } else if (event.key === "Escape" && loginModal && loginModal.classList.contains("is-open")) {
                 closePatientLogin(event);
             }
         });
@@ -1176,6 +1338,15 @@ include 'includes/header.php';
                     </div>
                 </div>
             <?php endif; ?>
+        </div>
+    </section>
+    <section id="registration-modal" class="registration-modal" role="dialog" aria-modal="true" aria-labelledby="registration-modal-title" aria-hidden="true">
+        <div class="registration-dialog">
+            <div class="registration-modal-head">
+                <h2 id="registration-modal-title">Register for Globalife Medical Laboratory &amp; Polyclinic</h2>
+                <button type="button" class="registration-modal-close" data-register-close aria-label="Close registration">&times;</button>
+            </div>
+            <iframe id="registration-frame" class="registration-frame" title="Patient registration form"></iframe>
         </div>
     </section>
 <?php include 'includes/footer.php'; ?>
