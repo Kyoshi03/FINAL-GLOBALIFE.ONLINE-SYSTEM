@@ -1089,7 +1089,7 @@ $additionalStyles = patientAvatarStyles() . '
             max-width: none;
             margin-left: 0;
             margin-right: 0;
-            padding: 16px 8px 128px;
+            padding: 16px 8px 32px;
             box-sizing: border-box;
         }
         .patient-history-page .appointments-filter-card,

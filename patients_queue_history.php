@@ -198,7 +198,7 @@ body { background:#f4f8fb; min-height:100vh; color:#1f343d; }
 .appointment-page-btn.is-disabled { pointer-events:none; opacity:.45; }
 .appointment-pagination .appointment-page-btn.previous, .appointment-pagination .appointment-page-btn.next { width:auto; }
 @media (max-width:768px) {
-    .appointments-container { padding:22px 14px 36px; }
+    .appointments-container { padding:22px 14px 32px; }
     .appointment-tools.patient-filters { grid-template-columns:1fr; }
     .appointments-filter-card { padding:16px; }
     .appointments-table-wrapper { padding:15px; }

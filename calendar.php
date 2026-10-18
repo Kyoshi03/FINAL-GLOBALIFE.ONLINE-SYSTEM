@@ -406,7 +406,7 @@ body {
 }
 @media (max-width: 760px) {
     .patient-calendar-page {
-        padding: 12px 8px 220px;
+        padding: 12px 8px 32px;
     }
     .patient-calendar-head {
         align-items: stretch;
