@@ -3758,6 +3758,15 @@ include 'includes/header.php';
                             $doctorText = $doctorName !== '' ? $doctorName : 'Clinic staff';
                             $bookingType = strtolower((string) ($appointment['booking_type'] ?? ''));
                             $statusLabel = $statusClass === 'cancelled' ? 'Cancelled' : ucfirst($statusClass);
+                            $hasPendingReschedule = !empty($appointment['reschedule_request_id']);
+                            $originalScheduleDate = (string) ($appointment['reschedule_original_date'] ?? '') ?: (string) ($appointment['appointment_date'] ?? '');
+                            $originalScheduleTime = (string) ($appointment['reschedule_original_time'] ?? '') ?: (string) ($appointment['appointment_time'] ?? '');
+                            $originalScheduleLabel = $hasPendingReschedule
+                                ? appointment_reschedule_request_date_label($originalScheduleDate, $originalScheduleTime)
+                                : '';
+                            $requestedScheduleLabel = $hasPendingReschedule
+                                ? appointment_reschedule_request_date_label((string) ($appointment['reschedule_requested_date'] ?? ''), (string) ($appointment['reschedule_requested_time'] ?? ''))
+                                : '';
                             $servicesText = patient_appointment_services_text($appointment);
                             $totalAmount = in_array($bookingType, ['consultation', 'ultrasound'], true)
                                 ? 'PHP 0.00'
@@ -3777,6 +3786,9 @@ include 'includes/header.php';
                                 'bookingTypeKey' => $bookingType,
                                 'totalAmount' => $totalAmount,
                                 'services' => $servicesText,
+                                'hasPendingReschedule' => $hasPendingReschedule,
+                                'originalSchedule' => $originalScheduleLabel,
+                                'requestedSchedule' => $requestedScheduleLabel,
                                 'notes' => $notesText !== '' ? $notesText : 'None',
                                 'cancellationReason' => $cancellationReason !== '' ? $cancellationReason : 'None',
                             ];
@@ -4318,7 +4330,12 @@ include 'includes/header.php';
             if (!isKnownBookingType || bookingType === 'consultation') {
                 detailItems.push(['Doctor', data.doctor]);
             }
-            detailItems.push(['Date', data.date], ['Time', data.time]);
+            if (data.hasPendingReschedule) {
+                detailItems.push(['Original schedule', data.originalSchedule]);
+                detailItems.push(['Requested schedule', data.requestedSchedule + ' (Pending approval)']);
+            } else {
+                detailItems.push(['Date', data.date], ['Time', data.time]);
+            }
             if (!isKnownBookingType || bookingType !== 'consultation') {
                 detailItems.push(['Booking type', data.bookingType]);
             }

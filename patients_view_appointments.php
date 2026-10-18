@@ -32,6 +32,8 @@ if ($userRole === 'patient') {
     $pendingRescheduleJoin = appointment_reschedule_pending_join_sql();
     $stmt = $conn->prepare("SELECT a.*, {$headerDoctorNameSql} as doctor_name,
                                    rr.id AS reschedule_request_id,
+                                   rr.original_date AS reschedule_original_date,
+                                   rr.original_time AS reschedule_original_time,
                                    rr.requested_date AS reschedule_requested_date,
                                    rr.requested_time AS reschedule_requested_time,
                                    rr.status AS reschedule_request_status
@@ -51,6 +53,8 @@ if ($userRole === 'patient') {
                             {$doctorNameSql} as doctor_name,
                             q.queue_number,
                             rr.id AS reschedule_request_id,
+                            rr.original_date AS reschedule_original_date,
+                            rr.original_time AS reschedule_original_time,
                             rr.requested_date AS reschedule_requested_date,
                             rr.requested_time AS reschedule_requested_time,
                             rr.status AS reschedule_request_status
@@ -70,6 +74,8 @@ if ($userRole === 'patient') {
                             {$doctorNameSql} as doctor_name,
                             q.queue_number,
                             rr.id AS reschedule_request_id,
+                            rr.original_date AS reschedule_original_date,
+                            rr.original_time AS reschedule_original_time,
                             rr.requested_date AS reschedule_requested_date,
                             rr.requested_time AS reschedule_requested_time,
                             rr.status AS reschedule_request_status
@@ -1533,6 +1539,15 @@ include __DIR__ . '/includes/header.php';
                         }
                         $statusValue = strtolower((string) ($appointment['status'] ?? 'pending'));
                         $statusLabel = $statusValue === 'cancelled' ? 'Cancelled' : ucfirst($statusValue);
+                        $hasPendingReschedule = !empty($appointment['reschedule_request_id']);
+                        $originalScheduleDate = (string) ($appointment['reschedule_original_date'] ?? '') ?: (string) ($appointment['appointment_date'] ?? '');
+                        $originalScheduleTime = (string) ($appointment['reschedule_original_time'] ?? '') ?: (string) ($appointment['appointment_time'] ?? '');
+                        $originalScheduleLabel = $hasPendingReschedule
+                            ? appointment_reschedule_request_date_label($originalScheduleDate, $originalScheduleTime)
+                            : '';
+                        $requestedScheduleLabel = $hasPendingReschedule
+                            ? appointment_reschedule_request_date_label((string) ($appointment['reschedule_requested_date'] ?? ''), (string) ($appointment['reschedule_requested_time'] ?? ''))
+                            : '';
                         $cancellationReason = trim((string) ($appointment['cancellation_reason'] ?? ''));
                         $queueNumber = trim((string) ($appointment['queue_number'] ?? ''));
                         $queueNumberDisplay = $queueNumber !== '' ? $queueNumber : 'Not generated';
@@ -1563,6 +1578,9 @@ include __DIR__ . '/includes/header.php';
                             'bookingTypeKey' => strtolower((string) ($appointment['booking_type'] ?? '')),
                             'totalAmount' => $totalAmount,
                             'services' => $servicesText,
+                            'hasPendingReschedule' => $hasPendingReschedule,
+                            'originalSchedule' => $originalScheduleLabel,
+                            'requestedSchedule' => $requestedScheduleLabel,
                             'notes' => $notesFull !== '' ? $notesFull : 'None',
                             'cancellationReason' => $cancellationReason !== '' ? $cancellationReason : 'None',
                         ];
@@ -1599,7 +1617,7 @@ include __DIR__ . '/includes/header.php';
                                     <strong><?php echo htmlspecialchars($formattedDate); ?></strong>
                                     <span><?php echo htmlspecialchars($formattedTime); ?></span>
                                     <?php if (!empty($appointment['reschedule_request_id'])): ?>
-                                        <small class="reschedule-request-note"><strong>Reschedule Request: Pending</strong><br>Requested: <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $appointment['reschedule_requested_date'], (string) $appointment['reschedule_requested_time'])); ?></small>
+                                        <small class="reschedule-request-note"><strong>Original:</strong> <?php echo htmlspecialchars($originalScheduleLabel); ?><br><strong>Requested:</strong> <?php echo htmlspecialchars($requestedScheduleLabel); ?> <span>(Pending approval)</span></small>
                                     <?php endif; ?>
                                 </td>
                             <?php elseif ($userRole === 'admin'): ?>
@@ -1608,7 +1626,7 @@ include __DIR__ . '/includes/header.php';
                                     <strong><?php echo htmlspecialchars($formattedDate); ?></strong>
                                     <span><?php echo htmlspecialchars($formattedTime); ?></span>
                                 <?php if (!empty($appointment['reschedule_request_id'])): ?>
-                                    <small class="reschedule-request-note"><strong>Reschedule Request: Pending</strong><br>Requested: <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $appointment['reschedule_requested_date'], (string) $appointment['reschedule_requested_time'])); ?></small>
+                                    <small class="reschedule-request-note"><strong>Original:</strong> <?php echo htmlspecialchars($originalScheduleLabel); ?><br><strong>Requested:</strong> <?php echo htmlspecialchars($requestedScheduleLabel); ?> <span>(Pending approval)</span></small>
                                 <?php endif; ?>
                                 </td>
                             <?php else: ?>
@@ -1616,7 +1634,7 @@ include __DIR__ . '/includes/header.php';
                                     <strong><?php echo htmlspecialchars($formattedDate); ?></strong>
                                     <span><?php echo htmlspecialchars($formattedTime); ?></span>
                                     <?php if ($userRole === 'patient' && !empty($appointment['reschedule_request_id'])): ?>
-                                        <small class="reschedule-request-note"><strong>Reschedule Request: Pending</strong><br>Requested: <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $appointment['reschedule_requested_date'], (string) $appointment['reschedule_requested_time'])); ?></small>
+                                        <small class="reschedule-request-note"><strong>Original:</strong> <?php echo htmlspecialchars($originalScheduleLabel); ?><br><strong>Requested:</strong> <?php echo htmlspecialchars($requestedScheduleLabel); ?> <span>(Pending approval)</span></small>
                                     <?php endif; ?>
                                 </td>
                             <?php endif; ?>
@@ -1991,7 +2009,12 @@ include __DIR__ . '/includes/header.php';
         if (!isKnownBookingType || bookingType === 'consultation') {
             items.push(['Doctor', data.doctor]);
         }
-        items.push(['Date', data.date]);
+        if (data.hasPendingReschedule) {
+            items.push(['Original schedule', data.originalSchedule]);
+            items.push(['Requested schedule', data.requestedSchedule + ' (Pending approval)']);
+        } else {
+            items.push(['Date', data.date]);
+        }
         if (!isKnownBookingType || bookingType !== 'consultation') {
             items.push(['Booking type', data.bookingType]);
         }
