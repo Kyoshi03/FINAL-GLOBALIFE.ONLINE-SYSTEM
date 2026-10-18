@@ -943,6 +943,20 @@ $additionalStyles = '
         .availability-label { font-size: .5rem; }
         .availability-doctor { font-size: .62rem; }
     }
+    .date-required-modal { position:fixed; inset:0; z-index:6700; display:none; place-items:center; padding:20px; background:rgba(3,37,56,.56); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); }
+    .date-required-modal.is-open { display:grid; }
+    .date-required-dialog { width:min(440px,100%); border:1px solid #c9e2ef; border-radius:18px; background:#fff; box-shadow:0 24px 70px rgba(4,35,52,.3); overflow:hidden; }
+    .date-required-head { padding:22px 24px 16px; background:linear-gradient(135deg,#f7fdff,#e8f7ff); color:#073b4c; }
+    .date-required-icon { display:grid; place-items:center; width:46px; height:46px; margin-bottom:12px; border-radius:50%; background:#e5f5fb; color:#0878b5; font-size:1.35rem; font-weight:900; }
+    .date-required-head h3 { margin:0; font-size:1.28rem; }
+    .date-required-body { padding:18px 24px 6px; color:#587180; line-height:1.5; }
+    .date-required-body p { margin:0; }
+    .date-required-actions { display:flex; justify-content:flex-end; gap:10px; padding:16px 24px 22px; }
+    .date-required-actions button { min-height:44px; padding:0 16px; border-radius:10px; font:inherit; font-weight:800; cursor:pointer; }
+    .date-required-close { border:1px solid #c9e2ef; background:#f5fbff; color:#08618f; }
+    .date-required-choose { border:0; background:#0878b5; color:#fff; }
+    .date-required-choose:hover, .date-required-choose:focus-visible { background:#056696; }
+    @media (max-width:520px) { .date-required-dialog { width:100%; } .date-required-head, .date-required-body { padding-left:18px; padding-right:18px; } .date-required-actions { padding-left:18px; padding-right:18px; flex-direction:column-reverse; } .date-required-actions button { width:100%; } }
     .btn-primary { width: 100%; background: linear-gradient(135deg, #0077b6, #023e8a); color: #fff; padding: 14px; border: none; border-radius: 10px; font-size: 1.05rem; font-weight: 600; cursor: pointer; margin-top: 8px; }
     .btn-secondary { display: inline-block; padding: 10px 18px; border-radius: 8px; background: #e3f2fd; color: #023e8a; text-decoration: none; font-weight: 600; margin-right: 10px; border: none; cursor: pointer; font-size: 1rem; }
     @media (max-width: 760px) {
@@ -1776,6 +1790,21 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 </div>
                 <button type="submit" class="btn-primary" id="btnScheduleNext"><?php echo $bk['type'] === 'ultrasound' ? 'Next: confirm' : 'Next: review and confirm'; ?></button>
             </form>
+            <div class="date-required-modal" id="dateRequiredModal" aria-hidden="true">
+                <div class="date-required-dialog" role="dialog" aria-modal="true" aria-labelledby="dateRequiredTitle">
+                    <div class="date-required-head">
+                        <div class="date-required-icon" aria-hidden="true">!</div>
+                        <h3 id="dateRequiredTitle">Choose a date first</h3>
+                    </div>
+                    <div class="date-required-body">
+                        <p>Please select an available appointment date before continuing to review and confirm your request.</p>
+                    </div>
+                    <div class="date-required-actions">
+                        <button type="button" class="date-required-close" id="dateRequiredClose">Close</button>
+                        <button type="button" class="date-required-choose" id="dateRequiredChoose">Choose a date</button>
+                    </div>
+                </div>
+            </div>
 
             <script>
             (function() {
@@ -1792,6 +1821,9 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 var mobilePickerOpen = document.getElementById('mobileDatePickerOpen');
                 var mobilePickerClose = document.getElementById('mobileDatePickerClose');
                 var mobileSelectedDateText = document.getElementById('mobileSelectedDateText');
+                var dateRequiredModal = document.getElementById('dateRequiredModal');
+                var dateRequiredClose = document.getElementById('dateRequiredClose');
+                var dateRequiredChoose = document.getElementById('dateRequiredChoose');
                 if (!form || !actionField || !dateInp || !calendar) return;
 
                 function formatDateLabel(value) {
@@ -1810,6 +1842,14 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         mobilePickerClose.focus();
                     } else if (!open && mobilePickerOpen) {
                         mobilePickerOpen.focus();
+                    }
+                }
+                function setDateRequiredModal(open) {
+                    if (!dateRequiredModal) return;
+                    dateRequiredModal.classList.toggle('is-open', open);
+                    dateRequiredModal.setAttribute('aria-hidden', open ? 'false' : 'true');
+                    if (open && dateRequiredChoose) {
+                        dateRequiredChoose.focus();
                     }
                 }
                 function updateView() {
@@ -1873,6 +1913,25 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         mobilePickerOpen.setAttribute('aria-expanded', 'true');
                     }
                 }
+                if (dateRequiredClose) {
+                    dateRequiredClose.addEventListener('click', function() { setDateRequiredModal(false); });
+                }
+                if (dateRequiredChoose) {
+                    dateRequiredChoose.addEventListener('click', function() {
+                        setDateRequiredModal(false);
+                        setMobilePicker(true);
+                    });
+                }
+                if (dateRequiredModal) {
+                    dateRequiredModal.addEventListener('click', function(event) {
+                        if (event.target === dateRequiredModal) setDateRequiredModal(false);
+                    });
+                    document.addEventListener('keydown', function(event) {
+                        if (event.key === 'Escape' && dateRequiredModal.classList.contains('is-open')) {
+                            setDateRequiredModal(false);
+                        }
+                    });
+                }
 
                 if (btnNext) {
                     btnNext.addEventListener('click', function() {
@@ -1885,11 +1944,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         event.preventDefault();
                         selectedDateCard.classList.add('is-invalid');
                         selectedDateText.textContent = 'Choose a date';
-                        if (mobilePicker && window.matchMedia && window.matchMedia('(max-width: 760px)').matches) {
-                            setMobilePicker(true);
-                        } else {
-                            calendar.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }
+                        setDateRequiredModal(true);
                         return;
                     }
                     var selectedDay = calendar.querySelector('.cal-day[data-date="' + dateInp.value + '"]');
