@@ -820,7 +820,7 @@ $additionalStyles = patientAvatarStyles() . '
     }
     .patient-history-page .action-buttons.has-request-pending {
         display:grid;
-        grid-template-columns:max-content;
+        grid-template-columns:116px;
         justify-content:center;
         align-items:center;
         gap:6px;
@@ -828,9 +828,16 @@ $additionalStyles = patientAvatarStyles() . '
     .patient-history-page .action-buttons.has-request-pending .request-pending-badge {
         grid-column:1;
         grid-row:2;
-        width:100%;
+        width:116px;
+        min-width:0;
         box-sizing:border-box;
+        padding:7px 5px;
+        font-size:.72rem;
         white-space:nowrap;
+    }
+    .patient-history-page .action-buttons.has-request-pending .btn-details {
+        width:116px;
+        box-sizing:border-box;
     }
     .btn {
         padding:8px 14px;
@@ -1372,6 +1379,9 @@ $additionalStyles = patientAvatarStyles() . '
             padding: 0 5px;
             font-size: .68rem;
             white-space: nowrap;
+        }
+        .patient-history-page .action-buttons.has-request-pending .btn-details {
+            width: 100%;
         }
         .patient-history-page .appointment-actions-cell {
             display: block !important;
