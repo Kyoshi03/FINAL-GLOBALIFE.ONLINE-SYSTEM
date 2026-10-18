@@ -1559,15 +1559,6 @@ body {
     color: #1e3a5f;
 }
 
-.request-actions .request-reschedule-btn {
-    grid-column: 2;
-    grid-row: 2;
-    padding-right: 2px;
-    padding-left: 2px;
-    font-size: 0.6rem;
-    font-weight: 800;
-}
-
 @media (max-width: 760px) {
     .request-actions .btn {
         white-space: normal;
@@ -3616,15 +3607,6 @@ include 'includes/header.php';
                                                     data-notes="<?php echo htmlspecialchars($requestPriceDetails, ENT_QUOTES, 'UTF-8'); ?>"
                                                     data-cancel-reason="<?php echo htmlspecialchars((string) (($appointment['cancellation_reason'] ?? '') ?: 'None'), ENT_QUOTES, 'UTF-8'); ?>"
                                                 >Details</button>
-                                                <button
-                                                    type="button"
-                                                    class="btn btn-reschedule request-reschedule-btn"
-                                                    data-open-reschedule
-                                                    data-appointment-id="<?php echo (int) $appointment['id']; ?>"
-                                                    data-reschedule-date="<?php echo htmlspecialchars((string) ($appointment['appointment_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                                                    data-reschedule-time="<?php echo htmlspecialchars((string) ($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                                                    data-reschedule-label="Current schedule: <?php echo htmlspecialchars($requestSchedule, ENT_QUOTES, 'UTF-8'); ?>"
-                                                >Reschedule</button>
                                                 <?php if ($adminCanRespond): ?>
                                                     <form method="post" action="update_appointment_status.php" class="request-confirm-action">
                                                         <input type="hidden" name="appointment_id" value="<?php echo (int) $appointment['id']; ?>">
