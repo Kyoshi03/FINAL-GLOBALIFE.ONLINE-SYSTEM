@@ -912,10 +912,10 @@ $additionalStyles = '
     .clinic-reminder-heading { grid-column:1 / -1; margin-bottom:2px; }
     .clinic-reminder-heading h3 { margin:0 0 4px; color:#073b4c; font-size:1.15rem; }
     .clinic-reminder-heading p { margin:0; color:#60727d; font-size:.88rem; line-height:1.45; }
-    .clinic-reminder { background: #fff; border: 1px solid #dce9f4; border-radius: 10px; padding: 15px; box-shadow: 0 8px 18px rgba(20,79,123,.07); }
-    .clinic-reminder-number { display:inline-grid; place-items:center; width:32px; height:32px; margin-bottom:10px; border-radius:50%; background:#e5f5fb; color:#006b9f; font-size:.9rem; font-weight:900; }
-    .clinic-reminder strong { display: block; color: #0b4f80; margin-bottom: 5px; }
-    .clinic-reminder span { color: #4a6072; font-size: .9rem; line-height: 1.45; }
+    .clinic-reminder { display:grid; grid-template-columns:32px minmax(0,1fr); column-gap:10px; align-items:start; background:#fff; border:1px solid #dce9f4; border-radius:10px; padding:12px; box-shadow:0 8px 18px rgba(20,79,123,.07); }
+    .clinic-reminder-number { display:inline-grid; grid-row:span 2; place-items:center; width:32px; height:32px; margin:0; border-radius:50%; background:#e5f5fb; color:#006b9f; font-size:.9rem; font-weight:900; }
+    .clinic-reminder strong { display:block; color:#0b4f80; margin:1px 0 4px; line-height:1.25; }
+    .clinic-reminder span { color:#4a6072; font-size:.86rem; line-height:1.4; }
     .review-check { display: flex; align-items: flex-start; gap: 10px; background: #f8fbff; border: 1px solid #dce9f4; border-radius: 10px; padding: 13px 14px; margin-bottom: 14px; color: #26495f; font-weight: 600; }
     .review-check input { margin-top: 3px; width: 18px; height: 18px; accent-color: #0077b6; }
     .review-terms-link { padding: 0; border: 0; background: transparent; color: #086ca5; font: inherit; font-weight: 800; text-align: left; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
@@ -939,7 +939,13 @@ $additionalStyles = '
     .appointment-terms-confirm:hover, .appointment-terms-confirm:focus-visible { background: #056696; }
     @media (max-width: 520px) { .appointment-terms-dialog { max-height: 90vh; } .appointment-terms-head, .appointment-terms-body { padding-left: 18px; padding-right: 18px; } .appointment-terms-actions { padding-left: 18px; padding-right: 18px; flex-direction: column-reverse; } .appointment-terms-actions button { width: 100%; } }
     @media (max-width: 820px) { .clinic-reminder-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    @media (max-width: 520px) { .clinic-reminder-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 520px) {
+        .clinic-reminder-grid { grid-template-columns:1fr; gap:8px; }
+        .clinic-reminder { grid-template-columns:28px minmax(0,1fr); column-gap:9px; padding:10px; }
+        .clinic-reminder-number { width:28px; height:28px; font-size:.82rem; }
+        .clinic-reminder strong { font-size:.86rem; }
+        .clinic-reminder span { font-size:.78rem; line-height:1.35; }
+    }
     .detail-block { background: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 14px; }
     .detail-block h4 { margin: 0 0 8px; color: #0077b6; font-size: 1rem; }
     .detail-block p { margin: 0; color: #444; line-height: 1.5; }
