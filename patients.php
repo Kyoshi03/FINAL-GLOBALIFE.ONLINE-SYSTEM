@@ -3266,7 +3266,39 @@ $additionalStyles = '
         }
 
         .clinic-tips-bar {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .clinic-procedure-head h3 {
+            font-size: 1rem;
+            line-height: 1.25;
+        }
+
+        .clinic-procedure-head p {
+            font-size: .78rem;
+            line-height: 1.35;
+        }
+
+        .clinic-tip-card {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 52px;
+            padding: 10px;
+        }
+
+        .clinic-step-number {
+            flex: 0 0 28px;
+            width: 28px;
+            height: 28px;
+            margin-bottom: 0;
+            font-size: .82rem;
+        }
+
+        .clinic-tip-card strong {
+            font-size: .8rem;
+            line-height: 1.2;
         }
 
         .patient-hero,
