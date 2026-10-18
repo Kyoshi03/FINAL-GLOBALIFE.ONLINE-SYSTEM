@@ -19,6 +19,7 @@ function appointment_holiday_name(string $date): ?string {
     $recurringHolidays = [
         '01-01' => "New Year's Day",
         '12-25' => 'Christmas Day',
+        '12-31' => "Last Day of the Year",
     ];
 
     return $recurringHolidays[substr($date, 5)] ?? null;
