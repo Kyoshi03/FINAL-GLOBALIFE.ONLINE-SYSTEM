@@ -2735,15 +2735,15 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                         </a>
                         <?php
                         $patientHistoryPages = ['patients_view_appointments.php', 'patients_queue_history.php'];
-                        $isPatientHistoryOpen = in_array(basename($_SERVER['PHP_SELF']), $patientHistoryPages, true);
+                        $isPatientHistoryPage = in_array(basename($_SERVER['PHP_SELF']), $patientHistoryPages, true);
                         ?>
-                        <div class="nav-settings-group patient-history-group <?php echo $isPatientHistoryOpen ? 'is-open' : ''; ?>">
-                            <button type="button" class="has-svg-icon nav-submenu-toggle patient-history-toggle <?php echo $isPatientHistoryOpen ? 'active' : ''; ?>" data-nav-submenu-toggle aria-expanded="<?php echo $isPatientHistoryOpen ? 'true' : 'false'; ?>" aria-controls="patientHistorySubmenu">
+                        <div class="nav-settings-group patient-history-group <?php echo $isPatientHistoryPage ? 'is-current' : ''; ?>">
+                            <button type="button" class="has-svg-icon nav-submenu-toggle patient-history-toggle <?php echo $isPatientHistoryPage ? 'active' : ''; ?>" data-nav-submenu-toggle aria-expanded="false" aria-controls="patientHistorySubmenu">
                                 <span class="nav-ui-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 3v3M16 3v3M5 8h14M6 5h12a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="m8.5 14 2 2 5-5"/></svg></span>
                                 <span class="nav-label">History</span>
                                 <svg class="nav-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
                             </button>
-                            <div class="nav-submenu <?php echo $isPatientHistoryOpen ? 'is-open' : ''; ?>" id="patientHistorySubmenu">
+                            <div class="nav-submenu" id="patientHistorySubmenu">
                                 <div class="nav-submenu-inner">
                                     <a href="patients_view_appointments.php" class="nav-subitem <?php echo basename($_SERVER['PHP_SELF']) === 'patients_view_appointments.php' ? 'active' : ''; ?>">Appointment History</a>
                                     <a href="patients_queue_history.php" class="nav-subitem <?php echo basename($_SERVER['PHP_SELF']) === 'patients_queue_history.php' ? 'active' : ''; ?>">Queue History</a>
