@@ -36,7 +36,9 @@ if ($userRole === 'patient') {
     checkRole('patient');
     $pendingRescheduleJoin = appointment_reschedule_pending_join_sql();
     $stmt = $conn->prepare("SELECT a.*, {$headerDoctorNameSql} as doctor_name, q.queue_number,
-                                   rr.id AS reschedule_request_id, rr.requested_date AS reschedule_requested_date,
+                                   rr.id AS reschedule_request_id, rr.original_date AS reschedule_original_date,
+                                   rr.original_time AS reschedule_original_time,
+                                   rr.requested_date AS reschedule_requested_date,
                                    rr.requested_time AS reschedule_requested_time, rr.status AS reschedule_request_status
                             FROM appointments a 
                             LEFT JOIN users u ON a.doctor_id = u.id 
@@ -54,7 +56,9 @@ if ($userRole === 'patient') {
                             p.profile_updated_at,
                             {$doctorNameSql} as doctor_name,
                             q.queue_number,
-                            rr.id AS reschedule_request_id, rr.requested_date AS reschedule_requested_date,
+                            rr.id AS reschedule_request_id, rr.original_date AS reschedule_original_date,
+                            rr.original_time AS reschedule_original_time,
+                            rr.requested_date AS reschedule_requested_date,
                             rr.requested_time AS reschedule_requested_time, rr.status AS reschedule_request_status
                             FROM appointments a 
                             JOIN users p ON a.patient_id = p.id 
@@ -71,7 +75,9 @@ if ($userRole === 'patient') {
                             p.profile_updated_at,
                             {$doctorNameSql} as doctor_name,
                             q.queue_number,
-                            rr.id AS reschedule_request_id, rr.requested_date AS reschedule_requested_date,
+                            rr.id AS reschedule_request_id, rr.original_date AS reschedule_original_date,
+                            rr.original_time AS reschedule_original_time,
+                            rr.requested_date AS reschedule_requested_date,
                             rr.requested_time AS reschedule_requested_time, rr.status AS reschedule_request_status
                             FROM appointments a 
                             JOIN users p ON a.patient_id = p.id 
@@ -1647,6 +1653,43 @@ $additionalStyles = patientAvatarStyles() . '
         min-width: 0;
         justify-self: stretch;
     }
+    .appointments-table .action-buttons.reschedule-actions {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+        max-width: 250px;
+        white-space: normal;
+        justify-items: stretch;
+    }
+    .appointments-table .action-buttons.reschedule-actions > .btn-details,
+    .appointments-table .action-buttons.reschedule-actions > .reschedule-review-note,
+    .appointments-table .action-buttons.reschedule-actions > form {
+        grid-column: 1;
+        width: 100%;
+        min-width: 0;
+        margin: 0;
+    }
+    .appointments-table .action-buttons.reschedule-actions > form {
+        display: block;
+    }
+    .appointments-table .action-buttons.reschedule-actions .btn {
+        width: 100%;
+        min-width: 0;
+        white-space: normal;
+        line-height: 1.2;
+    }
+    .appointments-table .reschedule-review-note {
+        display: block;
+        padding: 7px 9px;
+        border: 1px solid #f1d7a2;
+        border-radius: 8px;
+        background: #fffaf0;
+        color: #8a5a00;
+        font-size: .72rem;
+        line-height: 1.35;
+        text-align: left;
+        overflow-wrap: anywhere;
+    }
     @media (max-width: 760px) {
         .appointments-table td .action-buttons,
         .appointments-table td .action-buttons.pending-actions {
@@ -1867,6 +1910,13 @@ include __DIR__ . '/includes/header.php';
                         }
                         $statusValue = strtolower((string) ($appointment['status'] ?? 'pending'));
                         $statusLabel = $statusValue === 'cancelled' ? 'Cancelled' : ucfirst($statusValue);
+                        $canReviewReschedule = !empty($appointment['reschedule_request_id']) && (
+                            ($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation')
+                            || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation')
+                        );
+                        $hasPendingReschedule = !empty($appointment['reschedule_request_id']);
+                        $originalScheduleDate = (string) ($appointment['reschedule_original_date'] ?? '') ?: (string) ($appointment['appointment_date'] ?? '');
+                        $originalScheduleTime = (string) ($appointment['reschedule_original_time'] ?? '') ?: (string) ($appointment['appointment_time'] ?? '');
                         $cancellationReason = trim((string) ($appointment['cancellation_reason'] ?? ''));
                         $queueNumber = trim((string) ($appointment['queue_number'] ?? ''));
                         $queueNumberDisplay = $queueNumber !== '' ? $queueNumber : 'Not generated';
@@ -1915,8 +1965,11 @@ include __DIR__ . '/includes/header.php';
                             <td data-label="Schedule" class="appointment-schedule-cell appointments-date">
                                 <strong><?php echo htmlspecialchars($formattedDate); ?></strong>
                                 <span><?php echo htmlspecialchars($formattedTime); ?></span>
-                                <?php if (!empty($appointment['reschedule_request_id'])): ?>
-                                    <small class="reschedule-request-note"><strong>Reschedule Request: Pending</strong><br>Requested: <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $appointment['reschedule_requested_date'], (string) $appointment['reschedule_requested_time'])); ?></small>
+                                <?php if ($hasPendingReschedule): ?>
+                                    <small class="reschedule-request-note">
+                                        <strong>Original:</strong> <?php echo htmlspecialchars(appointment_reschedule_request_date_label($originalScheduleDate, $originalScheduleTime)); ?><br>
+                                        <strong>Requested:</strong> <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $appointment['reschedule_requested_date'], (string) $appointment['reschedule_requested_time'])); ?>
+                                    </small>
                                 <?php endif; ?>
                             </td>
                             <td data-label="Service" class="appointments-services"><?php echo htmlspecialchars($servicesText); ?></td>
@@ -1926,17 +1979,17 @@ include __DIR__ . '/includes/header.php';
                                 </span>
                             </td>
                             <td data-label="Actions">
-                                <div class="action-buttons <?php echo (($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation')) && $appointment['status'] === 'pending' ? 'pending-actions' : ''; ?>">
+                                <div class="action-buttons <?php echo $canReviewReschedule ? 'reschedule-actions' : (((($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation')) && $appointment['status'] === 'pending') ? 'pending-actions' : ''); ?>">
                                     <button type="button" class="btn btn-details" data-open-details>Details</button>
-                                    <?php if (!empty($appointment['reschedule_request_id']) && (($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation'))): ?>
-                                        <small class="reschedule-request-note"><strong>Pending reschedule</strong><br><?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $appointment['reschedule_requested_date'], (string) $appointment['reschedule_requested_time'])); ?></small>
-                                        <form method="POST" action="process_reschedule_request.php" style="display:inline;">
+                                    <?php if ($canReviewReschedule): ?>
+                                        <small class="reschedule-review-note"><strong>Pending reschedule approval</strong></small>
+                                        <form method="POST" action="process_reschedule_request.php">
                                             <input type="hidden" name="request_id" value="<?php echo (int) $appointment['reschedule_request_id']; ?>">
                                             <input type="hidden" name="action" value="approve">
                                             <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
                                             <button type="submit" class="btn btn-confirm" data-confirm-message="Approve this reschedule request?">Approve Reschedule</button>
                                         </form>
-                                        <form method="POST" action="process_reschedule_request.php" style="display:inline;">
+                                        <form method="POST" action="process_reschedule_request.php">
                                             <input type="hidden" name="request_id" value="<?php echo (int) $appointment['reschedule_request_id']; ?>">
                                             <input type="hidden" name="action" value="reject">
                                             <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
