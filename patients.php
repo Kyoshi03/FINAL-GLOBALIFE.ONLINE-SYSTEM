@@ -1680,6 +1680,10 @@ $additionalStyles = '
         justify-content: center;
         min-width: 0;
     }
+    .appointment-side.reschedule-pending-side {
+        grid-column: 2 / 5;
+        grid-row: 2;
+    }
 
     .appointment-status {
         display: flex;
@@ -3192,6 +3196,10 @@ $additionalStyles = '
             align-items: center;
             width: 100%;
         }
+        .appointment-side.reschedule-pending-side {
+            grid-column: 1;
+            grid-row: auto;
+        }
 
         .patient-detail-summary {
             grid-template-columns: 1fr;
@@ -3851,7 +3859,7 @@ include 'includes/header.php';
                                         <?php endif; ?>
                                     </div>
                                 </div>
-                                <div class="appointment-side">
+                                <div class="appointment-side<?php echo $hasPendingReschedule ? ' reschedule-pending-side' : ''; ?>">
                                     <?php if (in_array($statusClass, ['pending', 'confirmed'], true)): ?>
                                         <div class="appointment-action-stack <?php echo $statusClass === 'pending' ? 'has-cancel' : 'no-cancel'; ?>">
                                             <?php if ($statusClass === 'pending'): ?>
