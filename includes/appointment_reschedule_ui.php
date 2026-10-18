@@ -1,6 +1,9 @@
 <style>
 .btn-reschedule { background:#fff7e8; color:#9a5b00; border:1px solid #f1d49c; }
 .btn-reschedule:hover { background:#fff0cf; border-color:#e6bd69; }
+.reschedule-request-note { margin-top:6px; color:#9a5b00; font-size:.78rem; line-height:1.35; }
+.reschedule-request-note strong { color:#7b4a00; }
+.request-pending-badge { display:inline-flex; align-items:center; justify-content:center; min-height:34px; padding:7px 12px; border:1px solid #f1d49c; border-radius:9px; background:#fff7e8; color:#9a5b00; font:inherit; font-size:.78rem; font-weight:800; }
 .reschedule-modal { position:fixed; inset:0; z-index:3200; display:none; align-items:center; justify-content:center; padding:18px; background:rgba(3,18,30,.5); backdrop-filter:blur(4px); }
 .reschedule-modal.is-open { display:flex; }
 .reschedule-card { width:min(520px,100%); background:#fff; border:1px solid #cde8f3; border-radius:22px; box-shadow:0 24px 70px rgba(2,62,138,.2); overflow:hidden; }
@@ -148,7 +151,7 @@ $rescheduleMinTime = $rescheduleNow->modify('+1 minute')->format('H:i');
             <input type="hidden" name="appointment_id" id="appointmentRescheduleId" value="">
             <input type="hidden" name="return_url" value="<?php echo htmlspecialchars((string) $appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
             <div class="reschedule-body">
-                <p class="reschedule-note" id="appointmentRescheduleNotice">Choose an available date and time.</p>
+                <p class="reschedule-note" id="appointmentRescheduleNotice">Choose an available date and time. Your current Confirmed schedule stays active until the clinic approves this request.</p>
                 <p class="reschedule-availability is-loading" id="appointmentRescheduleAvailability" aria-live="polite">Checking the doctor's available dates...</p>
                 <div class="reschedule-calendar-panel" id="appointmentRescheduleCalendarPanel" aria-label="Doctor availability calendar">
                     <div class="reschedule-calendar-head">
@@ -185,7 +188,7 @@ $rescheduleMinTime = $rescheduleNow->modify('+1 minute')->format('H:i');
             </div>
             <div class="reschedule-actions">
                 <button type="button" class="btn btn-light" data-close-reschedule>Cancel</button>
-                <button type="submit" class="btn btn-primary" id="appointmentRescheduleSubmit" disabled>Save new schedule</button>
+                <button type="submit" class="btn btn-primary" id="appointmentRescheduleSubmit" disabled>Submit Request</button>
             </div>
         </form>
     </div>
@@ -202,8 +205,8 @@ unset($_SESSION['reschedule_error']);
     <div class="reschedule-success-card">
         <div class="reschedule-success-body">
             <span class="reschedule-success-icon" aria-hidden="true">&#10003;</span>
-            <h3 id="rescheduleSuccessTitle">Successfully rescheduled</h3>
-            <p id="rescheduleSuccessText">You have successfully rescheduled your appointment.</p>
+            <h3 id="rescheduleSuccessTitle">Request submitted</h3>
+            <p id="rescheduleSuccessText">Your original Confirmed appointment remains active while the clinic reviews your requested schedule.</p>
             <button type="button" class="btn btn-primary" id="rescheduleSuccessOk">OK</button>
         </div>
     </div>

@@ -568,6 +568,27 @@ function initDoctorClinicalSchema(mysqli $conn): void {
     if (!dbColumnExists($conn, 'appointment_email_reminders', 'sms_sent_at')) {
         $conn->query("ALTER TABLE appointment_email_reminders ADD COLUMN sms_sent_at DATETIME DEFAULT NULL AFTER email_sent_at");
     }
+
+    $conn->query("CREATE TABLE IF NOT EXISTS appointment_reschedule_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        appointment_id INT NOT NULL,
+        patient_id INT NOT NULL,
+        requested_by INT NOT NULL,
+        requested_date DATE NOT NULL,
+        requested_time TIME NOT NULL,
+        status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+        reviewed_by INT DEFAULT NULL,
+        reviewed_at DATETIME DEFAULT NULL,
+        rejection_reason VARCHAR(500) DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE,
+        FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (requested_by) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL,
+        INDEX idx_reschedule_request_appointment (appointment_id, status, id),
+        INDEX idx_reschedule_request_patient (patient_id, status, created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 }
 
 function seedDefaultLabServices($conn) {

@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/session.php';
 require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/includes/appointment_booking.php';
+require_once __DIR__ . '/includes/appointment_reschedule.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -24,11 +24,14 @@ if ($appointmentId <= 0) {
 $currentUser = getCurrentUser();
 $userRole = (string) ($currentUser['role'] ?? '');
 $conn = getDBConnection();
+appointment_reschedule_init_schema($conn);
 
 $stmt = $conn->prepare(
-    "SELECT id, patient_id, doctor_id, appointment_date, appointment_time, status, booking_type
-     FROM appointments
-     WHERE id = ?
+    "SELECT a.id, a.patient_id, a.doctor_id, a.appointment_date, a.appointment_time, a.status, a.booking_type,
+            q.status AS queue_status
+     FROM appointments a
+     LEFT JOIN clinic_queue q ON q.appointment_id = a.id
+     WHERE a.id = ?
      LIMIT 1"
 );
 if (!$stmt) {
@@ -47,22 +50,22 @@ if (!$appointment) {
 
 $status = strtolower((string) ($appointment['status'] ?? ''));
 $bookingType = strtolower((string) ($appointment['booking_type'] ?? ''));
-$isOpenStatus = in_array($status, ['pending', 'confirmed'], true);
-$hasPermission = false;
-if ($userRole === 'admin') {
-    $hasPermission = $isOpenStatus;
-} elseif ($userRole === 'doctor') {
-    $hasPermission = $isOpenStatus
-        && $bookingType === 'consultation'
-        && (int) ($appointment['doctor_id'] ?? 0) === (int) ($currentUser['id'] ?? 0);
-} elseif ($userRole === 'patient') {
-    $hasPermission = $isOpenStatus
-        && (int) ($appointment['patient_id'] ?? 0) === (int) ($currentUser['id'] ?? 0);
-}
-
+$hasPermission = $userRole === 'patient'
+    && (int) ($appointment['patient_id'] ?? 0) === (int) ($currentUser['id'] ?? 0)
+    && appointment_reschedule_is_eligible($appointment);
 if (!$hasPermission) {
     $conn->close();
-    reschedule_availability_response(['ok' => false, 'error' => 'You do not have permission to reschedule this appointment.'], 403);
+    reschedule_availability_response(['ok' => false, 'error' => 'Only your upcoming Confirmed appointments can be rescheduled.'], 403);
+}
+
+$pendingStmt = $conn->prepare("SELECT id FROM appointment_reschedule_requests WHERE appointment_id = ? AND status = 'pending' LIMIT 1");
+$pendingStmt->bind_param('i', $appointmentId);
+$pendingStmt->execute();
+$hasPendingRequest = (bool) $pendingStmt->get_result()->fetch_assoc();
+$pendingStmt->close();
+if ($hasPendingRequest) {
+    $conn->close();
+    reschedule_availability_response(['ok' => false, 'error' => 'A reschedule request is already pending for this appointment.'], 409);
 }
 
 $baseResponse = [

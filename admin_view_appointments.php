@@ -4,6 +4,7 @@ checkRole('admin');
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/patient_profile_photo.php';
 require_once __DIR__ . '/includes/appointment_booking.php';
+require_once __DIR__ . '/includes/appointment_reschedule.php';
 require_once __DIR__ . '/includes/doctor_pdf_export.php';
 require_once __DIR__ . '/includes/clinic_info.php';
 
@@ -21,6 +22,7 @@ $pageTitle = "Appointments | Globalife Medical Laboratory & Polyclinic";
 
 $conn = getDBConnection();
 appointment_init_queue_schema($conn);
+appointment_reschedule_init_schema($conn);
 $clinicInfo = clinic_info_get($conn);
 $patientNameSql = dbUsersNameExpression('p');
 $doctorNameSql = dbUsersNameExpression('d');
@@ -32,38 +34,50 @@ $reportLogoFilePath = clinic_info_logo_file_path($clinicInfo);
 // Get appointments based on user role
 if ($userRole === 'patient') {
     checkRole('patient');
-    $stmt = $conn->prepare("SELECT a.*, {$headerDoctorNameSql} as doctor_name, q.queue_number
+    $pendingRescheduleJoin = appointment_reschedule_pending_join_sql();
+    $stmt = $conn->prepare("SELECT a.*, {$headerDoctorNameSql} as doctor_name, q.queue_number,
+                                   rr.id AS reschedule_request_id, rr.requested_date AS reschedule_requested_date,
+                                   rr.requested_time AS reschedule_requested_time, rr.status AS reschedule_request_status
                             FROM appointments a 
                             LEFT JOIN users u ON a.doctor_id = u.id 
                             LEFT JOIN clinic_queue q ON q.appointment_id = a.id
+                            {$pendingRescheduleJoin}
                             WHERE a.patient_id = ? 
                             ORDER BY a.appointment_date DESC, a.appointment_time DESC");
     $stmt->bind_param("i", $currentUser['id']);
 } elseif ($userRole === 'admin') {
+    $pendingRescheduleJoin = appointment_reschedule_pending_join_sql();
     checkRole($userRole);
     $stmt = $conn->prepare("SELECT a.*, 
                             {$patientNameSql} as patient_name,
                             p.profile_photo,
                             p.profile_updated_at,
                             {$doctorNameSql} as doctor_name,
-                            q.queue_number
+                            q.queue_number,
+                            rr.id AS reschedule_request_id, rr.requested_date AS reschedule_requested_date,
+                            rr.requested_time AS reschedule_requested_time, rr.status AS reschedule_request_status
                             FROM appointments a 
                             JOIN users p ON a.patient_id = p.id 
                             LEFT JOIN users d ON a.doctor_id = d.id 
                             LEFT JOIN clinic_queue q ON q.appointment_id = a.id
+                            {$pendingRescheduleJoin}
                             ORDER BY a.appointment_date DESC, a.appointment_time DESC");
 } elseif ($userRole === 'doctor') {
+    $pendingRescheduleJoin = appointment_reschedule_pending_join_sql();
     checkRole('doctor');
     $stmt = $conn->prepare("SELECT a.*, 
                             {$patientNameSql} as patient_name,
                             p.profile_photo,
                             p.profile_updated_at,
                             {$doctorNameSql} as doctor_name,
-                            q.queue_number
+                            q.queue_number,
+                            rr.id AS reschedule_request_id, rr.requested_date AS reschedule_requested_date,
+                            rr.requested_time AS reschedule_requested_time, rr.status AS reschedule_request_status
                             FROM appointments a 
                             JOIN users p ON a.patient_id = p.id 
                             LEFT JOIN users d ON a.doctor_id = d.id 
                             LEFT JOIN clinic_queue q ON q.appointment_id = a.id
+                            {$pendingRescheduleJoin}
                             WHERE a.doctor_id = ?
                               AND a.booking_type = 'consultation'
                             ORDER BY a.appointment_date DESC, a.appointment_time DESC");
@@ -1901,6 +1915,9 @@ include __DIR__ . '/includes/header.php';
                             <td data-label="Schedule" class="appointment-schedule-cell appointments-date">
                                 <strong><?php echo htmlspecialchars($formattedDate); ?></strong>
                                 <span><?php echo htmlspecialchars($formattedTime); ?></span>
+                                <?php if (!empty($appointment['reschedule_request_id'])): ?>
+                                    <small class="reschedule-request-note"><strong>Reschedule Request: Pending</strong><br>Requested: <?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $appointment['reschedule_requested_date'], (string) $appointment['reschedule_requested_time'])); ?></small>
+                                <?php endif; ?>
                             </td>
                             <td data-label="Service" class="appointments-services"><?php echo htmlspecialchars($servicesText); ?></td>
                             <td data-label="Status">
@@ -1911,13 +1928,20 @@ include __DIR__ . '/includes/header.php';
                             <td data-label="Actions">
                                 <div class="action-buttons <?php echo (($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation')) && $appointment['status'] === 'pending' ? 'pending-actions' : ''; ?>">
                                     <button type="button" class="btn btn-details" data-open-details>Details</button>
-                                    <?php if (in_array($statusValue, ['pending', 'confirmed'], true)): ?>
-                                        <button type="button" class="btn btn-reschedule"
-                                            data-open-reschedule
-                                            data-appointment-id="<?php echo (int) ($appointment['id'] ?? 0); ?>"
-                                            data-reschedule-date="<?php echo htmlspecialchars((string) ($appointment['appointment_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                                            data-reschedule-time="<?php echo htmlspecialchars((string) ($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                                            data-reschedule-label="Current schedule: <?php echo htmlspecialchars($formattedDate . ' at ' . $formattedTime, ENT_QUOTES, 'UTF-8'); ?>">Reschedule</button>
+                                    <?php if (!empty($appointment['reschedule_request_id']) && (($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation'))): ?>
+                                        <small class="reschedule-request-note"><strong>Pending reschedule</strong><br><?php echo htmlspecialchars(appointment_reschedule_request_date_label((string) $appointment['reschedule_requested_date'], (string) $appointment['reschedule_requested_time'])); ?></small>
+                                        <form method="POST" action="process_reschedule_request.php" style="display:inline;">
+                                            <input type="hidden" name="request_id" value="<?php echo (int) $appointment['reschedule_request_id']; ?>">
+                                            <input type="hidden" name="action" value="approve">
+                                            <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
+                                            <button type="submit" class="btn btn-confirm" data-confirm-message="Approve this reschedule request?">Approve Reschedule</button>
+                                        </form>
+                                        <form method="POST" action="process_reschedule_request.php" style="display:inline;">
+                                            <input type="hidden" name="request_id" value="<?php echo (int) $appointment['reschedule_request_id']; ?>">
+                                            <input type="hidden" name="action" value="reject">
+                                            <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
+                                            <button type="submit" class="btn btn-cancel" data-confirm-message="Reject this reschedule request?">Reject Request</button>
+                                        </form>
                                     <?php endif; ?>
                                     <?php if (($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation' && $appointment['status'] === 'pending')): ?>
                                         <?php if ($appointment['status'] === 'pending'): ?>
