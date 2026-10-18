@@ -747,9 +747,11 @@ $additionalStyles = patientAvatarStyles() . '
     }
     .action-buttons {
         display: flex;
+        justify-content: center;
         gap: 10px;
         flex-wrap: wrap;
     }
+    .appointment-actions-cell { text-align: center; }
     .action-buttons.pending-actions {
         display: grid;
         grid-template-columns: repeat(2, max-content);
@@ -1241,7 +1243,7 @@ $additionalStyles = patientAvatarStyles() . '
             display: flex;
             flex: 1 1 auto;
             flex-wrap: wrap;
-            justify-content: flex-end;
+            justify-content: center;
             gap: 6px;
         }
         .patient-history-page .action-buttons .btn {
@@ -1256,6 +1258,16 @@ $additionalStyles = patientAvatarStyles() . '
             width: 100%;
             gap: 8px;
             align-items: stretch;
+        }
+        .patient-history-page .appointment-actions-cell {
+            display: block !important;
+            text-align: center !important;
+        }
+        .patient-history-page .appointment-actions-cell::before {
+            display: block;
+            width: 100%;
+            margin-bottom: 8px;
+            text-align: center;
         }
         .patient-history-page .action-buttons > form {
             display: block !important;
@@ -1576,7 +1588,7 @@ include __DIR__ . '/includes/header.php';
                                     <span><?php echo htmlspecialchars($formattedTime); ?></span>
                                 </td>
                             <?php endif; ?>
-                            <td>
+                            <td class="appointment-actions-cell">
                                 <span class="status-badge <?php echo htmlspecialchars($statusValue); ?>">
                                     <?php echo htmlspecialchars($statusLabel); ?>
                                 </span>
