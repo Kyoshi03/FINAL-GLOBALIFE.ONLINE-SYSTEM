@@ -848,6 +848,10 @@ $additionalStyles = '
         .mobile-calendar-close:hover, .mobile-calendar-close:focus-visible { background:#e5f5fb; }
         .mobile-calendar-dialog-body { min-height:0; overflow:auto; padding:12px; }
         .mobile-calendar-dialog .mini-calendar { overflow:visible; }
+        .mobile-calendar-dialog-actions { flex:0 0 auto; padding:12px 24px 18px; border-top:1px solid #d8eaf3; background:#fff; }
+        .mobile-calendar-confirm { display:block; width:min(100%, 320px); min-height:46px; margin:0 auto; border:0; border-radius:10px; background:#0878b5; color:#fff; font:inherit; font-size:.95rem; font-weight:900; cursor:pointer; box-shadow:0 6px 14px rgba(8,120,181,.18); }
+        .mobile-calendar-confirm:hover, .mobile-calendar-confirm:focus-visible { background:#056696; }
+        .mobile-calendar-confirm:disabled { background:#b8cad8; color:#f7fbfd; cursor:not-allowed; box-shadow:none; }
     }
     .mini-calendar { border: 0; border-radius: 0; background: #fff; overflow: hidden; box-shadow: none; }
     .mini-calendar-head { display: grid; grid-template-columns: minmax(360px, 1fr) minmax(360px, .9fr); align-items: center; gap: 24px; padding: 22px 28px 14px; background: #fff; color: #073b4c; border-bottom: 1px solid #d8e8f2; }
