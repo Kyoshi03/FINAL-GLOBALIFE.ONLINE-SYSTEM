@@ -703,7 +703,7 @@ body {
                 <?php endif; ?>
             </div>
             <?php if ($calendarMobileTotalPages > 1): ?>
-                <nav class="availability-mobile-pagination" aria-label="Calendar pagination">
+                <div class="availability-mobile-pagination" role="navigation" aria-label="Calendar pagination">
                     <?php if ($calendarMobilePage > 1): ?>
                         <a href="patient_calendar.php?calendar_month=<?php echo htmlspecialchars($calendarMonthStart->format('Y-m')); ?>&calendar_page=<?php echo $calendarMobilePage - 1; ?>" aria-label="Previous dates">Previous</a>
                     <?php else: ?>
@@ -715,7 +715,7 @@ body {
                     <?php else: ?>
                         <span class="pagination-disabled" aria-disabled="true">Next</span>
                     <?php endif; ?>
-                </nav>
+                </div>
             <?php endif; ?>
         </section>
     </main>
