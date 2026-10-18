@@ -831,6 +831,24 @@ $additionalStyles = '
     .selected-date-slots { display: inline-flex; color: #45566c; font-size: .86rem; font-weight: 700; }
     .selected-date-card.is-invalid { border-color:#c9303e; box-shadow:0 0 0 3px rgba(201,48,62,.1); }
     .mobile-date-picker-trigger, .mobile-calendar-modal { display: none; }
+    @media (min-width: 761px) {
+        .mobile-date-picker-trigger { display:flex; align-items:center; justify-content:space-between; gap:16px; width:100%; min-height:76px; padding:16px 20px; border:1px solid #b9d9ea; border-radius:14px; background:#f8fcff; color:#0b4f80; font:inherit; text-align:left; cursor:pointer; box-shadow:0 8px 18px rgba(20,79,123,.06); }
+        .mobile-date-picker-trigger:hover { border-color:#73b9da; background:#f3fbff; }
+        .mobile-date-picker-trigger:focus-visible { outline:3px solid rgba(15,124,194,.24); outline-offset:2px; }
+        .mobile-date-picker-copy { min-width:0; display:grid; gap:4px; }
+        .mobile-date-picker-copy small { color:#60727d; font-size:.78rem; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
+        .mobile-date-picker-copy strong { overflow-wrap:anywhere; font-size:1rem; line-height:1.3; }
+        .mobile-date-picker-action { flex:0 0 auto; padding:10px 14px; border-radius:9px; background:#e5f5fb; color:#006b9f; font-size:.86rem; font-weight:900; }
+        .mobile-calendar-modal { position:fixed; inset:0; z-index:6500; align-items:center; justify-content:center; padding:24px; background:rgba(3,37,56,.56); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); }
+        .mobile-calendar-modal.is-open { display:flex; }
+        .mobile-calendar-dialog { display:flex; flex-direction:column; width:min(100%, 980px); max-height:90vh; overflow:hidden; border:1px solid #c9e2ef; border-radius:20px; background:#fff; box-shadow:0 24px 70px rgba(4,35,52,.3); }
+        .mobile-calendar-dialog-head { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 24px; border-bottom:1px solid #d8eaf3; background:linear-gradient(135deg,#f7fdff,#e8f7ff); color:#073b4c; }
+        .mobile-calendar-dialog-head strong { font-size:1.2rem; }
+        .mobile-calendar-close { flex:0 0 38px; width:38px; height:38px; border:0; border-radius:50%; background:#fff; color:#0878b5; font-size:1.45rem; line-height:1; cursor:pointer; box-shadow:0 4px 12px rgba(20,79,123,.12); }
+        .mobile-calendar-close:hover, .mobile-calendar-close:focus-visible { background:#e5f5fb; }
+        .mobile-calendar-dialog-body { min-height:0; overflow:auto; padding:12px; }
+        .mobile-calendar-dialog .mini-calendar { overflow:visible; }
+    }
     .mini-calendar { border: 0; border-radius: 0; background: #fff; overflow: hidden; box-shadow: none; }
     .mini-calendar-head { display: grid; grid-template-columns: minmax(360px, 1fr) minmax(360px, .9fr); align-items: center; gap: 24px; padding: 22px 28px 14px; background: #fff; color: #073b4c; border-bottom: 1px solid #d8e8f2; }
     .mini-calendar-title { display: grid; grid-template-columns: 42px 1fr 42px; align-items: center; gap: 18px; padding-right: 4px; }
