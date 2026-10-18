@@ -1891,11 +1891,11 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
             </form>
             
             <div class="login-link">
-                Already have an account? <a href="index.php#patient-login">Go to Login</a> | <a href="forgot_password.php">Forgot password?</a>
+                Already have an account? <a href="index.php#patient-login" target="_top">Go to Login</a> | <a href="forgot_password.php" target="_top">Forgot password?</a>
             </div>
             
             <div class="back-to-home">
-                <a href="index.php">
+                <a href="index.php" target="_top">
                     <svg class="back-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
@@ -2026,7 +2026,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
             </p>
 
             <div class="popup-actions">
-                <a href="index.php?registered=1#patient-login" class="popup-btn popup-btn-primary" id="successLoginBtn">Back to Sign In</a>
+                <a href="index.php?registered=1#patient-login" target="_top" class="popup-btn popup-btn-primary" id="successLoginBtn">Back to Sign In</a>
             </div>
         </div>
     </div>

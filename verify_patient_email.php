@@ -214,6 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $pageTitle = 'Verify Account | Globalife Medical Laboratory & Polyclinic';
 $headerBrandOnly = true;
+$headerNavigationTarget = '_top';
 $publicLoginHref = 'index.php#patient-login';
 $publicSignUpHref = 'register_patient.php';
 $additionalStyles = '

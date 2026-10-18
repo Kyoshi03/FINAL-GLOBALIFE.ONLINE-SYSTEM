@@ -121,6 +121,7 @@ $maskedEmail = isset($_SESSION['pw_reset_email']) ? pw_reset_mask_email($_SESSIO
 
 $pageTitle = 'Forgot Password | Globalife Medical Laboratory & Polyclinic';
 $headerBrandOnly = true;
+$headerNavigationTarget = '_top';
 $additionalStyles = '
     body {
         background: linear-gradient(135deg, #90e0ef 0%, #48cae4 100%);
@@ -350,9 +351,9 @@ include 'includes/header.php';
             <?php endif; ?>
 
             <div class="form-footer">
-                <a href="index.php#patient-login">← Back to sign in</a>
+                <a href="index.php#patient-login" target="_top">← Back to sign in</a>
                 &nbsp;·&nbsp;
-                <a href="index.php#patient-login">Home login</a>
+                <a href="index.php#patient-login" target="_top">Home login</a>
             </div>
         </div>
     </div>

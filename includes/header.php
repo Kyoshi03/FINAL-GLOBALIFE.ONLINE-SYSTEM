@@ -38,6 +38,9 @@ $headerPatientPhotoUrl = $headerPatientPhotoUrl ?? null;
 $headerPatientInitials = $headerPatientInitials ?? ($profileInitials ?? null);
 $headerPatientDisplayName = $headerPatientDisplayName ?? null;
 $headerBrandOnly = !empty($headerBrandOnly);
+$headerNavigationTarget = isset($headerNavigationTarget) && $headerNavigationTarget !== ''
+    ? ' target="' . htmlspecialchars((string) $headerNavigationTarget, ENT_QUOTES, 'UTF-8') . '"'
+    : '';
 $currentPage = basename($_SERVER['PHP_SELF'] ?? '');
 $currentPageClass = 'page-' . preg_replace('/[^a-z0-9]+/i', '-', pathinfo($currentPage, PATHINFO_FILENAME) ?: 'app');
 $logoHref = 'index.php';
@@ -2639,7 +2642,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
 <body class="<?php echo htmlspecialchars($currentPageClass); ?> <?php echo isLoggedIn() ? 'app-layout app-role-' . htmlspecialchars((string) $currentUser['role']) : 'public-role'; ?>">
     <header id="mainHeader">
         <div class="header-flex<?php echo $headerBrandOnly ? ' brand-only' : ''; ?>">
-            <a href="<?php echo htmlspecialchars($logoHref); ?>" class="logo-section" data-logo-home="<?php echo $currentPage === 'index.php' ? '1' : '0'; ?>">
+            <a href="<?php echo htmlspecialchars($logoHref); ?>"<?php echo $headerNavigationTarget; ?> class="logo-section" data-logo-home="<?php echo $currentPage === 'index.php' ? '1' : '0'; ?>">
                 <img src="<?php echo htmlspecialchars((string) ($headerClinicInfo['clinic_logo'] ?? 'globalife.png')); ?>" alt="Clinic Logo" class="logo-img">
                 <h1><?php echo htmlspecialchars((string) ($headerClinicInfo['clinic_name'] ?? 'Globalife Medical Laboratory & Polyclinic')); ?></h1>
             </a>
@@ -2808,10 +2811,10 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                         <button type="submit" class="logout-btn">Log Out</button>
                     </form>
                 <?php else: ?>
-                    <a href="#about">About</a>
-                    <a href="#contact">Contact Us</a>
-                    <a href="<?php echo htmlspecialchars($headerLoginHref); ?>" class="login-btn">Log In</a>
-                    <a href="<?php echo htmlspecialchars($headerSignUpHref); ?>" class="signup-btn">Sign Up</a>
+                    <a href="#about"<?php echo $headerNavigationTarget; ?>>About</a>
+                    <a href="#contact"<?php echo $headerNavigationTarget; ?>>Contact Us</a>
+                    <a href="<?php echo htmlspecialchars($headerLoginHref); ?>"<?php echo $headerNavigationTarget; ?> class="login-btn">Log In</a>
+                    <a href="<?php echo htmlspecialchars($headerSignUpHref); ?>"<?php echo $headerNavigationTarget; ?> class="signup-btn">Sign Up</a>
                 <?php endif; ?>
                 </nav>
             <?php endif; ?>
