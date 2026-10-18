@@ -233,18 +233,20 @@ $additionalStyles = '
     .error-message {
         background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
         color: #fff;
-        padding: 14px 16px;
+        padding: 10px 12px;
         border-radius: 12px;
-        margin-bottom: 20px;
+        margin-bottom: 12px;
         font-size: 0.92rem;
+        line-height: 1.3;
     }
     .success-message {
         background: linear-gradient(135deg, #51cf66, #37b24d);
         color: #fff;
-        padding: 14px 16px;
+        padding: 10px 12px;
         border-radius: 12px;
-        margin-bottom: 20px;
+        margin-bottom: 12px;
         font-size: 0.92rem;
+        line-height: 1.3;
     }
     .form-footer {
         text-align: center;
@@ -296,8 +298,21 @@ $additionalStyles = '
     }
     .forgot-form .login-btn-form {
         margin-top: 0;
-        padding-top: 12px;
-        padding-bottom: 12px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+    .forgot-content .form-group {
+        margin-bottom: 12px;
+    }
+    .forgot-content .form-group label {
+        margin-bottom: 5px;
+    }
+    .forgot-content .form-group input {
+        padding-top: 11px;
+        padding-bottom: 11px;
+    }
+    .forgot-content .form-footer {
+        margin-top: 12px;
     }
 ';
 
@@ -399,12 +414,12 @@ include 'includes/header.php';
                                 autofocus
                             >
                         </div>
-                        <p class="login-subtitle" style="margin-top: -8px; margin-bottom: 20px;">
+                        <p class="login-subtitle" style="margin-top: -8px; margin-bottom: 10px;">
                             Code sent to <strong><?php echo htmlspecialchars($maskedEmail); ?></strong>
                         </p>
                         <button type="submit" class="login-btn-form">Verify code</button>
                     </form>
-                    <form method="POST" action="<?php echo htmlspecialchars($forgotPasswordAction); ?>" style="text-align: center; margin-top: 16px;">
+                    <form method="POST" action="<?php echo htmlspecialchars($forgotPasswordAction); ?>" style="text-align: center; margin-top: 10px;">
                         <input type="hidden" name="action" value="resend_code">
                         <button type="submit" class="inline-link-btn">Resend code</button>
                     </form>

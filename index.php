@@ -928,6 +928,35 @@ $additionalScripts = '
         const forgotPasswordCloseTriggers = document.querySelectorAll("[data-forgot-close]");
         const shouldOpenPatientLogin = ' . (($loginError !== '' || $loginSuccess !== '') ? 'true' : 'false') . ';
 
+        function fitForgotPasswordModal() {
+            if (!forgotPasswordModal || !forgotPasswordFrame) {
+                return;
+            }
+
+            const dialog = forgotPasswordModal.querySelector(".registration-dialog");
+            const frameDocument = forgotPasswordFrame.contentDocument;
+            if (!dialog || !frameDocument) {
+                return;
+            }
+
+            if (window.matchMedia("(max-width: 560px)").matches) {
+                dialog.style.height = "100dvh";
+                return;
+            }
+
+            const frameBody = frameDocument.body;
+            const contentHeight = frameBody ? frameBody.scrollHeight : 0;
+            const header = dialog.querySelector(".registration-modal-head");
+            const headerHeight = header ? header.getBoundingClientRect().height : 0;
+            const viewportHeight = Math.max(320, window.innerHeight - 40);
+            const desiredHeight = Math.min(
+                viewportHeight,
+                Math.max(440, Math.ceil(headerHeight + contentHeight + 2))
+            );
+
+            dialog.style.height = desiredHeight + "px";
+        }
+
         function openPatientLogin(event) {
             if (event) {
                 event.preventDefault();
@@ -1032,6 +1061,7 @@ $additionalScripts = '
             forgotPasswordModal.classList.add("is-open");
             forgotPasswordModal.setAttribute("aria-hidden", "false");
             document.body.style.overflow = "hidden";
+            window.setTimeout(fitForgotPasswordModal, 0);
             window.setTimeout(function () {
                 const closeButton = forgotPasswordModal.querySelector("[data-forgot-close]");
                 if (closeButton) {
@@ -1073,6 +1103,13 @@ $additionalScripts = '
         forgotPasswordTriggers.forEach(function (trigger) {
             trigger.addEventListener("click", openForgotPasswordModal);
         });
+
+        if (forgotPasswordFrame) {
+            forgotPasswordFrame.addEventListener("load", function () {
+                window.setTimeout(fitForgotPasswordModal, 0);
+            });
+            window.addEventListener("resize", fitForgotPasswordModal);
+        }
 
         forgotPasswordCloseTriggers.forEach(function (trigger) {
             trigger.addEventListener("click", closeForgotPasswordModal);
