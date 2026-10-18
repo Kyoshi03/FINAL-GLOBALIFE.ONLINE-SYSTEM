@@ -2606,8 +2606,16 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
         body.app-role-patient .patient-app-topbar {
             top: 0 !important;
         }
-        body.app-role-patient {
-            --app-mobile-brand-height: 0px;
+        body.app-role-patient .patient-notification-panel {
+            left: 12px !important;
+            right: 12px !important;
+            width: auto !important;
+            max-width: none !important;
+            padding: 12px !important;
+            border-radius: 16px;
+        }
+        body.app-role-patient .notification-list {
+            max-height: min(360px, calc(100dvh - var(--app-mobile-brand-height) - var(--app-mobile-topbar-height) - 24px));
         }
         body.app-layout .patient-profile-menu,
         body.app-layout .patient-notification-panel {
@@ -2624,9 +2632,6 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
         body.app-role-patient {
             --app-mobile-brand-height: 106px;
             --app-mobile-topbar-height: 68px;
-        }
-        body.app-role-patient {
-            --app-mobile-brand-height: 0px;
         }
     }
     </style>
