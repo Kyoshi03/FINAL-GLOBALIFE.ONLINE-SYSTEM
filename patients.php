@@ -1760,6 +1760,13 @@ $additionalStyles = '
         justify-self: center;
     }
 
+    .appointment-action-stack.has-request-pending .request-pending-badge {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
     .patient-details-inline {
         min-height: 26px;
         padding: 3px 2px;
@@ -3222,7 +3229,8 @@ $additionalStyles = '
 
         .appointment-action-stack .cancel-inline,
         .appointment-action-stack .patient-details-inline,
-        .appointment-action-stack .patient-reschedule-btn {
+        .appointment-action-stack .patient-reschedule-btn,
+        .appointment-action-stack .request-pending-badge {
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -3234,6 +3242,14 @@ $additionalStyles = '
             font-size: .74rem;
             line-height: 1.1;
             white-space: nowrap;
+        }
+
+        .appointment-action-stack.has-request-pending .request-pending-badge {
+            grid-column: auto;
+            grid-row: auto;
+            width: 100%;
+            padding-inline: 5px;
+            font-size: .68rem;
         }
 
         .patient-appointment-modal {
@@ -3838,7 +3854,7 @@ include 'includes/header.php';
                                 </div>
                                 <div class="appointment-side">
                                     <?php if (in_array($statusClass, ['pending', 'confirmed'], true)): ?>
-                                        <div class="appointment-action-stack <?php echo $statusClass === 'pending' ? 'has-cancel' : 'no-cancel'; ?>">
+                                        <div class="appointment-action-stack <?php echo $statusClass === 'pending' ? 'has-cancel' : 'no-cancel'; ?><?php echo $hasPendingReschedule ? ' has-request-pending' : ''; ?>">
                                             <?php if ($statusClass === 'pending'): ?>
                                                 <form method="post" action="patients.php" data-patient-cancel-form>
                                                     <input type="hidden" name="patient_action" value="cancel_appointment">
