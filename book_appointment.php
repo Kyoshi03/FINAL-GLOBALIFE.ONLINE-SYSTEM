@@ -771,8 +771,8 @@ $additionalStyles = '
     .booking-container { max-width: 720px; margin: 40px auto; padding: 40px; background: #fff; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
     .booking-container.book-wide { max-width: 1240px; }
     @media (min-width: 761px) {
-        .container { max-width: 100%; }
-        .booking-container.book-wide { width: calc(100% - 48px); max-width: none; box-sizing: border-box; }
+        .container { width: 100%; max-width: none; padding-left: 24px; padding-right: 24px; box-sizing: border-box; }
+        .booking-container, .booking-container.book-wide { width: 100%; max-width: none; margin-left: 0; margin-right: 0; box-sizing: border-box; }
     }
     .booking-header { text-align: center; margin-bottom: 28px; }
     .booking-header h2 { color: #0077b6; font-size: 2rem; margin-bottom: 8px; }
@@ -1122,7 +1122,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
 ?>
 
 <div class="container">
-    <div class="booking-container<?php echo $step > 1 ? ' book-wide' : ''; ?>">
+    <div class="booking-container">
         <a href="patients.php" class="back-link">Back to Dashboard</a>
 
         <?php if ($bookedId > 0): ?>
