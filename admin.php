@@ -3119,11 +3119,11 @@ document.addEventListener("DOMContentLoaded", function () {
             setText("adminDetailType", data.type);
             setText("adminDetailServices", data.services);
             setText("adminDetailStatus", data.statusLabel);
-            var detailNotes = data.notes || "None";
-            if (data.reschedulePending === "1") {
-                detailNotes += "\n\nReschedule reason: " + (data.rescheduleReason || "Not provided");
+            setText("adminDetailRescheduleReason", data.rescheduleReason || "Not provided");
+            var rescheduleReasonBox = document.querySelector("[data-admin-reschedule-reason-box]");
+            if (rescheduleReasonBox) {
+                rescheduleReasonBox.style.display = data.reschedulePending === "1" ? "" : "none";
             }
-            setText("adminDetailNotes", detailNotes);
             var bookingType = (data.bookingType || "").toLowerCase();
             var isKnownBookingType = ["consultation", "ultrasound", "package", "individual"].indexOf(bookingType) !== -1;
             setDetailRow("doctor", !isKnownBookingType || bookingType === "consultation");
@@ -4091,9 +4091,9 @@ include 'includes/header.php';
                     <dt>Status</dt><dd id="adminDetailStatus">None</dd>
                     <dt data-admin-cancel-reason-detail>Cancellation reason</dt><dd data-admin-cancel-reason-detail id="adminDetailCancelReason">None</dd>
                 </dl>
-                <div class="detail-notes-box">
-                    <strong>Notes</strong>
-                    <span id="adminDetailNotes">None</span>
+                <div class="detail-notes-box" data-admin-reschedule-reason-box style="display:none;">
+                    <strong>Reschedule reason</strong>
+                    <span id="adminDetailRescheduleReason">Not provided</span>
                 </div>
             </div>
             <div class="appointment-modal-actions">
