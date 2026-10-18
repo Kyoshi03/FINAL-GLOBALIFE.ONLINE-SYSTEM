@@ -4331,17 +4331,20 @@ include 'includes/header.php';
             } catch (error) {
                 data = {};
             }
+            var bookingType = String(data.bookingTypeKey || '').toLowerCase();
+            var isKnownBookingType = ['consultation', 'ultrasound', 'package', 'individual'].indexOf(bookingType) !== -1;
             if (detailSummary) {
-                detailSummary.innerHTML = [
+                var summaryItems = [
                     ['Queue number', data.queueNumber],
-                    ['Status', data.status],
-                    ['Total', data.totalAmount]
-                ].map(function(item) {
+                    ['Status', data.status]
+                ];
+                if (bookingType !== 'consultation' && bookingType !== 'ultrasound') {
+                    summaryItems.push(['Total', data.totalAmount]);
+                }
+                detailSummary.innerHTML = summaryItems.map(function(item) {
                     return '<div class="patient-detail-pill"><span>' + item[0] + '</span><strong>' + escapeHtml(item[1] || 'N/A') + '</strong></div>';
                 }).join('');
             }
-            var bookingType = String(data.bookingTypeKey || '').toLowerCase();
-            var isKnownBookingType = ['consultation', 'ultrasound', 'package', 'individual'].indexOf(bookingType) !== -1;
             var detailItems = [['Patient', data.patient]];
             if (!isKnownBookingType || bookingType === 'consultation') {
                 detailItems.push(['Doctor', data.doctor]);

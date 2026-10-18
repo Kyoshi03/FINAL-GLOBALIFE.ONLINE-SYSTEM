@@ -2379,17 +2379,20 @@ include __DIR__ . '/includes/header.php';
         if (!row || !detailGrid) return;
         var data = {};
         try { data = JSON.parse(row.getAttribute('data-appointment') || '{}'); } catch (e) { data = {}; }
+        var bookingType = String(data.bookingTypeKey || '').toLowerCase();
+        var isKnownBookingType = ['consultation', 'ultrasound', 'package', 'individual'].indexOf(bookingType) !== -1;
         if (detailSummary) {
-            detailSummary.innerHTML = [
+            var summaryItems = [
                 ['Queue number', data.queueNumber],
-                ['Status', data.status],
-                ['Total', data.totalAmount]
-            ].map(function(item) {
+                ['Status', data.status]
+            ];
+            if (bookingType !== 'consultation' && bookingType !== 'ultrasound') {
+                summaryItems.push(['Total', data.totalAmount]);
+            }
+            detailSummary.innerHTML = summaryItems.map(function(item) {
                 return '<div class="detail-pill"><span>' + item[0] + '</span><strong>' + escapeHtml(item[1]) + '</strong></div>';
             }).join('');
         }
-        var bookingType = String(data.bookingTypeKey || '').toLowerCase();
-        var isKnownBookingType = ['consultation', 'ultrasound', 'package', 'individual'].indexOf(bookingType) !== -1;
         var items = [['Patient', data.patient]];
         if (!isKnownBookingType || bookingType === 'consultation') {
             items.push(['Doctor', data.doctor]);
