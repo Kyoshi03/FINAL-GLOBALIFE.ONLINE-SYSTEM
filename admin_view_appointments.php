@@ -1674,9 +1674,10 @@ $additionalStyles = patientAvatarStyles() . '
     }
     .appointments-table .action-buttons.reschedule-actions {
         display: grid;
-        grid-template-columns: minmax(0, 190px);
+        grid-template-columns: 150px;
         gap: 8px;
-        max-width: 190px;
+        width: 150px !important;
+        max-width: 150px !important;
         white-space: normal;
         justify-items: center;
         justify-content: center;
@@ -1685,28 +1686,34 @@ $additionalStyles = patientAvatarStyles() . '
     .appointments-table .action-buttons.reschedule-actions > .reschedule-review-note,
     .appointments-table .action-buttons.reschedule-actions > form {
         grid-column: 1;
-        width: 190px;
+        width: 150px !important;
+        max-width: 150px !important;
         min-width: 0;
+        flex: 0 0 150px;
         margin: 0;
     }
     .appointments-table .action-buttons.reschedule-actions > .btn-details {
-        width: 126px;
+        width: 126px !important;
+        max-width: 126px !important;
+        flex-basis: 126px;
     }
     .appointments-table .action-buttons.reschedule-actions > form {
-        display: block;
+        display: block !important;
     }
     .appointments-table .action-buttons.reschedule-actions .btn {
-        width: 100%;
+        width: 150px !important;
+        max-width: 150px !important;
         min-width: 0;
         min-height: 34px;
         padding: 8px 10px;
-        font-size: .78rem;
+        font-size: .74rem;
         white-space: normal;
         line-height: 1.2;
     }
     .appointments-table .reschedule-review-note {
         display: block;
-        width: 190px;
+        width: 150px !important;
+        max-width: 150px !important;
         box-sizing: border-box;
         padding: 7px 9px;
         border: 1px solid #f1d7a2;
@@ -1715,7 +1722,7 @@ $additionalStyles = patientAvatarStyles() . '
         color: #8a5a00;
         font-size: .72rem;
         line-height: 1.35;
-        text-align: left;
+        text-align: center;
         overflow-wrap: anywhere;
     }
     @media (max-width: 760px) {
@@ -2027,18 +2034,18 @@ include __DIR__ . '/includes/header.php';
                                 <div class="action-buttons <?php echo $canReviewReschedule ? 'reschedule-actions' : (((($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation')) && $appointment['status'] === 'pending') ? 'pending-actions' : ''); ?>">
                                     <button type="button" class="btn btn-details" data-open-details>Details</button>
                                     <?php if ($canReviewReschedule): ?>
-                                        <small class="reschedule-review-note"><strong>Pending reschedule approval</strong></small>
-                                        <form method="POST" action="process_reschedule_request.php">
+                                        <small class="reschedule-review-note"><strong>Pending reschedule</strong><br><span>Approval required</span></small>
+                                        <form method="POST" action="process_reschedule_request.php" class="reschedule-action-form">
                                             <input type="hidden" name="request_id" value="<?php echo (int) $appointment['reschedule_request_id']; ?>">
                                             <input type="hidden" name="action" value="approve">
                                             <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
-                                            <button type="submit" class="btn btn-confirm" data-confirm-message="Approve this reschedule request?">Approve Reschedule</button>
+                                            <button type="submit" class="btn btn-confirm" data-confirm-message="Approve this reschedule request?">Approve</button>
                                         </form>
-                                        <form method="POST" action="process_reschedule_request.php">
+                                        <form method="POST" action="process_reschedule_request.php" class="reschedule-action-form">
                                             <input type="hidden" name="request_id" value="<?php echo (int) $appointment['reschedule_request_id']; ?>">
                                             <input type="hidden" name="action" value="reject">
                                             <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
-                                            <button type="submit" class="btn btn-cancel" data-confirm-message="Reject this reschedule request?">Reject Request</button>
+                                            <button type="submit" class="btn btn-cancel" data-confirm-message="Reject this reschedule request?">Reject</button>
                                         </form>
                                     <?php endif; ?>
                                     <?php if (($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation' && $appointment['status'] === 'pending')): ?>
