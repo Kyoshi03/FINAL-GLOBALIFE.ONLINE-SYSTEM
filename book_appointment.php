@@ -930,7 +930,7 @@ $additionalStyles = '
         .capacity-event strong { max-width: 100%; justify-content: center; padding-left: 8px; padding-right: 8px; text-align: center; }
         .capacity-event span { margin-top: 5px; font-size: .74rem; line-height: 1.25; }
         .clinic-closed-event { max-width: 100%; padding-left: 8px !important; padding-right: 8px !important; white-space: normal; }
-        .calendar-actions { align-items:stretch; flex-direction:column; position: sticky; bottom: 0; z-index: 5; padding: 10px 0 0; background: linear-gradient(180deg, rgba(255,255,255,.65), #fff 45%); }
+        .calendar-actions { align-items:stretch; flex-direction:column; position: static; z-index: auto; padding: 10px 0 0; background: transparent; }
         .calendar-actions .btn-primary { width:100%; min-width:0; }
     }
     @media (max-width: 520px) {
@@ -977,7 +977,7 @@ $additionalStyles = '
         .booking-container {
             width: calc(100% - 20px);
             margin: 14px auto;
-            padding: 18px 12px 132px;
+            padding: 18px 12px 220px;
             border-radius: 14px;
             box-sizing: border-box;
         }
