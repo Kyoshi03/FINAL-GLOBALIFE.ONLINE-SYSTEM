@@ -537,9 +537,7 @@ body {
     }
     .availability-mobile-pagination {
         display: flex !important;
-        position: sticky;
-        bottom: 174px;
-        z-index: 10;
+        position: static;
         align-items: center;
         justify-content: space-between;
         gap: 10px;
