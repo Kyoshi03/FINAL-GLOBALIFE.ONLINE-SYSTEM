@@ -126,6 +126,25 @@ if ($currentRole === 'patient') {
     );
     $conn->close();
 
+    $calendarMobileDates = [];
+    for ($cursor = $calendarMonthStart; $cursor < $calendarMonthEnd; $cursor = $cursor->modify('+1 day')) {
+        if ($cursor->format('Y-m-d') >= $calendarToday) {
+            $calendarMobileDates[] = $cursor;
+        }
+    }
+    $calendarMobilePageSize = 7;
+    $calendarMobileTotal = count($calendarMobileDates);
+    $calendarMobileTotalPages = max(1, (int) ceil($calendarMobileTotal / $calendarMobilePageSize));
+    $calendarMobilePage = max(1, (int) ($_GET['calendar_page'] ?? 1));
+    $calendarMobilePage = min($calendarMobilePage, $calendarMobileTotalPages);
+    $calendarMobilePageDates = array_slice(
+        $calendarMobileDates,
+        ($calendarMobilePage - 1) * $calendarMobilePageSize,
+        $calendarMobilePageSize
+    );
+    $calendarMobileFirst = $calendarMobileTotal > 0 ? (($calendarMobilePage - 1) * $calendarMobilePageSize) + 1 : 0;
+    $calendarMobileLast = min($calendarMobilePage * $calendarMobilePageSize, $calendarMobileTotal);
+
     $additionalStyles = '
 body {
     background:
@@ -375,6 +394,9 @@ body {
 .availability-mobile-list {
     display: none;
 }
+.availability-mobile-pagination {
+    display: none;
+}
 @media (max-width: 760px) {
     .patient-calendar-page {
         padding: 12px 8px 118px;
@@ -513,6 +535,43 @@ body {
         text-align: center;
         font-size: .85rem;
     }
+    .availability-mobile-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 2px 12px 14px;
+        background: #f8fcff;
+    }
+    .availability-mobile-pagination a,
+    .availability-mobile-pagination span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 36px;
+        border: 1px solid #cfe4f1;
+        border-radius: 8px;
+        padding: 0 12px;
+        background: #fff;
+        color: #0077b6;
+        font-size: .76rem;
+        font-weight: 900;
+        text-decoration: none;
+    }
+    .availability-mobile-pagination .pagination-summary {
+        flex: 1;
+        border: 0;
+        padding: 0;
+        background: transparent;
+        color: #60727d;
+        font-size: .7rem;
+        text-align: center;
+    }
+    .availability-mobile-pagination .pagination-disabled {
+        color: #a7bbc7;
+        background: #f4f8fb;
+        cursor: not-allowed;
+    }
 }
 ';
 
@@ -591,18 +650,12 @@ body {
                 </div>
             </div>
             <div class="availability-mobile-list" aria-label="Mobile doctor availability list">
-                <?php $mobileAvailabilityCount = 0; ?>
-                <?php for ($cursor = $calendarMonthStart; $cursor < $calendarMonthEnd; $cursor = $cursor->modify('+1 day')): ?>
+                <?php foreach ($calendarMobilePageDates as $cursor): ?>
                     <?php
                     $dateValue = $cursor->format('Y-m-d');
                     $dateDayOfWeek = (int) $cursor->format('N');
                     $clinicOpen = $dateDayOfWeek >= 1 && $dateDayOfWeek <= 6;
                     $doctorSlots = $calendarDoctorSlotsByDow[$dateDayOfWeek] ?? [];
-                    $isPastDate = $dateValue < $calendarToday;
-                    if ($isPastDate) {
-                        continue;
-                    }
-                    $mobileAvailabilityCount++;
                     ?>
                     <article class="availability-mobile-day <?php echo $dateValue === $calendarToday ? 'is-today' : ''; ?>">
                         <div class="availability-mobile-day-head">
@@ -638,11 +691,26 @@ body {
                             </div>
                         <?php endif; ?>
                     </article>
-                <?php endfor; ?>
-                <?php if ($mobileAvailabilityCount === 0): ?>
+                <?php endforeach; ?>
+                <?php if ($calendarMobileTotal === 0): ?>
                     <div class="availability-mobile-empty">No upcoming clinic dates this month.</div>
                 <?php endif; ?>
             </div>
+            <?php if ($calendarMobileTotalPages > 1): ?>
+                <nav class="availability-mobile-pagination" aria-label="Calendar pagination">
+                    <?php if ($calendarMobilePage > 1): ?>
+                        <a href="patient_calendar.php?calendar_month=<?php echo htmlspecialchars($calendarMonthStart->format('Y-m')); ?>&calendar_page=<?php echo $calendarMobilePage - 1; ?>" aria-label="Previous dates">Previous</a>
+                    <?php else: ?>
+                        <span class="pagination-disabled" aria-disabled="true">Previous</span>
+                    <?php endif; ?>
+                    <span class="pagination-summary">Showing <?php echo $calendarMobileFirst; ?>-<?php echo $calendarMobileLast; ?> of <?php echo $calendarMobileTotal; ?> dates</span>
+                    <?php if ($calendarMobilePage < $calendarMobileTotalPages): ?>
+                        <a href="patient_calendar.php?calendar_month=<?php echo htmlspecialchars($calendarMonthStart->format('Y-m')); ?>&calendar_page=<?php echo $calendarMobilePage + 1; ?>" aria-label="Next dates">Next</a>
+                    <?php else: ?>
+                        <span class="pagination-disabled" aria-disabled="true">Next</span>
+                    <?php endif; ?>
+                </nav>
+            <?php endif; ?>
         </section>
     </main>
     <script>
