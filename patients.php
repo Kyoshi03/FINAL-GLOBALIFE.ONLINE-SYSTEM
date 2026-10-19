@@ -442,6 +442,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['profile_verify_submit
     exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['profile_action'] ?? '') === 'change_password') {
+    $currentPassword = (string) ($_POST['current_password'] ?? '');
+    $newPassword = (string) ($_POST['new_password'] ?? '');
+    $confirmNewPassword = (string) ($_POST['confirm_new_password'] ?? '');
+    $currentProfileStmt = $conn->prepare("SELECT * FROM users WHERE id = ? AND role = 'patient' LIMIT 1");
+    $currentProfileStmt->bind_param('i', $currentUser['id']);
+    $currentProfileStmt->execute();
+    $currentProfileRow = $currentProfileStmt->get_result()->fetch_assoc() ?: [];
+    $currentProfileStmt->close();
+
+    if ($currentPassword === '' || $newPassword === '' || $confirmNewPassword === '') {
+        $profileError = 'Complete the current password, new password, and confirmation fields.';
+    } elseif ($newPassword !== $confirmNewPassword) {
+        $profileError = 'New password and confirmation do not match.';
+    } elseif (empty($currentProfileRow['password']) || !password_verify($currentPassword, (string) $currentProfileRow['password'])) {
+        $profileError = 'Current password is incorrect.';
+    } else {
+        $passwordErrors = pw_reset_validate_password($newPassword);
+        if ($passwordErrors !== []) {
+            $profileError = implode(' ', $passwordErrors);
+        }
+    }
+
+    if ($profileError === '') {
+        $pendingSensitivePayload = ['password_hash' => password_hash($newPassword, PASSWORD_DEFAULT)];
+        $currentEmail = trim((string) ($currentProfileRow['email'] ?? ''));
+        $currentPhone = trim((string) ($currentProfileRow['phone'] ?? ''));
+        $delivery = patient_profile_sensitive_delivery($currentProfileRow, $currentEmail, $currentPhone, false, false);
+        if (empty($delivery['ok'])) {
+            $profileError = $delivery['error'] ?? 'Add a valid email address or mobile number before changing your password.';
+        } else {
+            $sent = patient_profile_send_sensitive_code($delivery, (string) $currentUser['full_name'], $pendingSensitivePayload);
+            if (empty($sent['ok'])) {
+                $profileError = $sent['error'] ?? 'Could not send the password verification code.';
+            } else {
+                $_SESSION['patient_profile_message'] = 'A verification code was sent to ' . ($sent['masked'] ?: 'your contact') . ' to finish changing your password.';
+                $conn->close();
+                header('Location: patients.php?profile=verify');
+                exit;
+            }
+        }
+    }
+
+    if ($profileError !== '') {
+        $_SESSION['patient_profile_error'] = $profileError;
+        $conn->close();
+        header('Location: patients.php?profile=1');
+        exit;
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['profile_action'] ?? '') === 'update_profile') {
     $firstName = patient_profile_normalize_name_part((string) ($_POST['first_name'] ?? ''), true, false);
     $middleName = patient_profile_normalize_name_part((string) ($_POST['middle_name'] ?? ''), false, true);
@@ -2567,23 +2618,64 @@ $additionalStyles = '
         stroke-linejoin: round;
     }
 
-    .profile-password-section {
+    .profile-password-card {
         margin-top: 20px;
-        padding-top: 18px;
-        border-top: 1px solid #e0ebf3;
+        padding: 20px;
+        border: 1px solid #cfe5f1;
+        border-radius: 12px;
+        background: linear-gradient(180deg, #fbfeff 0%, #f4fbfe 100%);
+        box-shadow: 0 10px 24px rgba(7, 59, 76, 0.08);
     }
 
-    .profile-password-section h4 {
-        margin: 0 0 6px;
+    .profile-password-card-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .profile-password-card-icon {
+        display: grid;
+        flex: 0 0 38px;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: #e8f7fc;
+        color: #0878b5;
+    }
+
+    .profile-password-card-icon svg {
+        width: 21px;
+        height: 21px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .profile-password-card h4 {
+        margin: 0 0 4px;
         color: #073b4c;
-        font-size: 1rem;
+        font-size: 1.05rem;
     }
 
-    .profile-password-section > p {
+    .profile-password-card-header p {
         margin: 0 0 14px;
         color: #60727d;
         font-size: 0.86rem;
         line-height: 1.5;
+    }
+
+    .profile-password-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 16px;
+    }
+
+    .profile-password-actions .primary-btn {
+        min-width: 190px;
     }
 
     .record-grid {
@@ -2879,6 +2971,10 @@ $additionalStyles = '
 
     .profile-modal-body {
         padding: 20px;
+        display: block;
+    }
+
+    .profile-main-form {
         display: grid;
         grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
         gap: 24px;
@@ -3326,6 +3422,10 @@ $additionalStyles = '
             padding: 16px 14px 28px;
         }
 
+        .profile-main-form {
+            grid-template-columns: 1fr;
+        }
+
         .profile-modal-actions {
             position: sticky;
             bottom: 0;
@@ -3337,6 +3437,18 @@ $additionalStyles = '
         }
 
         .profile-modal-actions button {
+            width: 100%;
+        }
+
+        .profile-password-card {
+            padding: 16px;
+        }
+
+        .profile-password-actions {
+            justify-content: stretch;
+        }
+
+        .profile-password-actions button {
             width: 100%;
         }
 
@@ -4439,7 +4551,8 @@ include 'includes/header.php';
                 <h3 id="patientProfileModalTitle">My Profile</h3>
                 <button type="button" class="profile-modal-close" id="closeProfileModal" aria-label="Close profile editor">&times;</button>
             </div>
-            <form method="post" action="patients.php?profile=1" class="profile-modal-body" id="patientProfileForm">
+            <div class="profile-modal-body">
+                <form method="post" action="patients.php?profile=1" class="profile-main-form" id="patientProfileForm">
                 <input type="hidden" name="profile_action" value="update_profile">
                 <input type="hidden" name="profile_photo_cropped" id="profile_photo_cropped" value="">
 
@@ -4604,47 +4717,59 @@ include 'includes/header.php';
                             </div>
                         </div>
 
-                        <div class="profile-password-section">
-                            <h4>Change password</h4>
-                            <p>Leave blank to keep your current password. Use at least 8 characters with upper, lower, number, and special character.</p>
-                            <div class="profile-form-grid">
-                                <div class="profile-field full">
-                                    <label for="modal_current_password">Current password</label>
-                                    <div class="profile-password-input-wrap">
-                                        <input type="password" id="modal_current_password" name="current_password" autocomplete="current-password" placeholder="Required only if changing password">
-                                        <button type="button" class="profile-password-toggle" data-profile-password-toggle="modal_current_password" aria-label="Show current password" aria-pressed="false">
-                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="profile-field">
-                                    <label for="modal_new_password">New password</label>
-                                    <div class="profile-password-input-wrap">
-                                        <input type="password" id="modal_new_password" name="new_password" autocomplete="new-password" placeholder="New password">
-                                        <button type="button" class="profile-password-toggle" data-profile-password-toggle="modal_new_password" aria-label="Show new password" aria-pressed="false">
-                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="profile-field">
-                                    <label for="modal_confirm_new_password">Confirm new password</label>
-                                    <div class="profile-password-input-wrap">
-                                        <input type="password" id="modal_confirm_new_password" name="confirm_new_password" autocomplete="new-password" placeholder="Confirm new password">
-                                        <button type="button" class="profile-password-toggle" data-profile-password-toggle="modal_confirm_new_password" aria-label="Show confirm password" aria-pressed="false">
-                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                         <div class="profile-modal-actions">
                             <button type="submit" class="primary-btn">Save Profile</button>
                             <button type="button" class="plain-btn" id="cancelProfileModal">Cancel</button>
                         </div>
                     </div>
                 </div>
-            </form>
+                </form>
+
+                <form method="post" action="patients.php?profile=1" class="profile-password-card" id="patientPasswordForm">
+                    <input type="hidden" name="profile_action" value="change_password">
+                    <div class="profile-password-card-header">
+                        <span class="profile-password-card-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="m21 2-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.8 7.8 5.5 5.5 0 0 1 7.8-7.8Zm0 0L15.5 7.5m0 0 3 3 2-2-3-3m-2 2 2 2"/></svg>
+                        </span>
+                        <div>
+                            <h4>Change Password</h4>
+                            <p>Use a strong password with at least 8 characters, including upper and lower case letters, a number, and a special character.</p>
+                        </div>
+                    </div>
+                    <div class="profile-form-grid">
+                        <div class="profile-field">
+                            <label for="modal_current_password">Current Password</label>
+                            <div class="profile-password-input-wrap">
+                                <input type="password" id="modal_current_password" name="current_password" autocomplete="current-password" placeholder="Enter current password" required>
+                                <button type="button" class="profile-password-toggle" data-profile-password-toggle="modal_current_password" aria-label="Show current password" aria-pressed="false">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="profile-field">
+                            <label for="modal_new_password">New Password</label>
+                            <div class="profile-password-input-wrap">
+                                <input type="password" id="modal_new_password" name="new_password" autocomplete="new-password" placeholder="Enter new password" required>
+                                <button type="button" class="profile-password-toggle" data-profile-password-toggle="modal_new_password" aria-label="Show new password" aria-pressed="false">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="profile-field">
+                            <label for="modal_confirm_new_password">Confirm New Password</label>
+                            <div class="profile-password-input-wrap">
+                                <input type="password" id="modal_confirm_new_password" name="confirm_new_password" autocomplete="new-password" placeholder="Confirm new password" required>
+                                <button type="button" class="profile-password-toggle" data-profile-password-toggle="modal_confirm_new_password" aria-label="Show confirm password" aria-pressed="false">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="profile-password-actions">
+                        <button type="submit" class="primary-btn">Change Password</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
