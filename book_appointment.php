@@ -918,8 +918,33 @@ $additionalStyles = '
     .progressive-date-trigger:focus-visible { outline: 3px solid rgba(8,120,181,.22); outline-offset: 2px; }
     .progressive-date-trigger svg { width: 22px; height: 22px; flex: 0 0 22px; fill: none; stroke: #0878b5; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .progressive-date-trigger.has-value { color: #1a3558; }
-    .progressive-date-picker input[type="date"] { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; min-height: 52px; opacity: 0; pointer-events: none; }
-    .progressive-date-picker input[type="date"]:disabled { cursor: not-allowed; }
+    .progressive-date-picker input[type="date"] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .progressive-calendar-modal { position: fixed; inset: 0; z-index: 6500; display: none; align-items: center; justify-content: center; padding: 18px; background: rgba(3,37,56,.56); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+    .progressive-calendar-modal.is-open { display: flex; }
+    body.modal-open { overflow: hidden; }
+    .progressive-calendar-dialog { width: min(100%, 520px); max-height: 92vh; overflow: hidden; border: 1px solid #c9e2ef; border-radius: 18px; background: #fff; box-shadow: 0 24px 70px rgba(4,35,52,.3); }
+    .progressive-calendar-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 18px; border-bottom: 1px solid #d8eaf3; background: linear-gradient(135deg,#f7fdff,#e8f7ff); color: #073b4c; }
+    .progressive-calendar-head strong { font-size: 1.08rem; }
+    .progressive-calendar-close { flex: 0 0 34px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #fff; color: #0878b5; font-size: 1.35rem; line-height: 1; cursor: pointer; box-shadow: 0 4px 12px rgba(20,79,123,.12); }
+    .progressive-calendar-body { padding: 16px; }
+    .progressive-calendar-month { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .progressive-calendar-month strong { color: #0f1f35; font-size: 1.05rem; }
+    .progressive-calendar-nav { width: 36px; height: 36px; border: 1px solid #c9e2ef; border-radius: 9px; background: #fff; color: #0878b5; font-size: 1.35rem; line-height: 1; cursor: pointer; }
+    .progressive-calendar-nav:disabled { opacity: .4; cursor: not-allowed; }
+    .progressive-calendar-weekdays, .progressive-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
+    .progressive-calendar-weekdays { margin-bottom: 5px; color: #607784; font-size: .72rem; font-weight: 900; text-align: center; }
+    .progressive-calendar-grid button, .progressive-calendar-empty { min-height: 44px; border-radius: 9px; }
+    .progressive-calendar-grid button { border: 1px solid #d8e8f2; background: #fff; color: #173b5b; font: inherit; font-weight: 800; cursor: pointer; }
+    .progressive-calendar-grid button:hover, .progressive-calendar-grid button:focus-visible { border-color: #0878b5; background: #eef8fd; outline: none; }
+    .progressive-calendar-grid button.is-today { box-shadow: inset 0 0 0 2px #77c7e5; }
+    .progressive-calendar-grid button.is-selected { border-color: #0878b5; background: #0878b5; color: #fff; }
+    .progressive-calendar-grid button:disabled { border-color: #edf2f5; background: #f7fafb; color: #9aa8b2; cursor: not-allowed; }
+    .progressive-calendar-help { margin: 12px 0 0; color: #607784; font-size: .83rem; line-height: 1.4; }
+    .progressive-calendar-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 12px 16px 16px; border-top: 1px solid #d8eaf3; }
+    .progressive-calendar-cancel, .progressive-calendar-confirm { min-height: 42px; padding: 0 18px; border-radius: 9px; font: inherit; font-weight: 900; cursor: pointer; }
+    .progressive-calendar-cancel { border: 1px solid #c9dce8; background: #fff; color: #44647a; }
+    .progressive-calendar-confirm { border: 0; background: #0878b5; color: #fff; box-shadow: 0 6px 14px rgba(8,120,181,.18); }
+    .progressive-calendar-confirm:disabled { background: #b8cad8; cursor: not-allowed; box-shadow: none; }
     .progressive-form-error { display: none; margin: 0 0 16px; padding: 11px 13px; border-left: 4px solid #c1121f; border-radius: 8px; background: #fff0f0; color: #a30e19; }
     .progressive-form-error.is-visible { display: block; }
     .progressive-actions { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 18px; padding-top: 18px; border-top: 1px solid #e3edf4; }
@@ -1046,6 +1071,15 @@ $additionalStyles = '
     @media (max-width: 760px) {
         .booking-container { margin: 22px auto; padding: 24px 14px 148px; }
         .booking-calendar-panel { padding: 12px; }
+        .progressive-calendar-modal { padding: 10px; }
+        .progressive-calendar-dialog { max-height: 94vh; border-radius: 15px; }
+        .progressive-calendar-head { padding: 13px 14px; }
+        .progressive-calendar-head strong { font-size: .98rem; }
+        .progressive-calendar-body { padding: 12px 10px; }
+        .progressive-calendar-weekdays, .progressive-calendar-grid { gap: 3px; }
+        .progressive-calendar-grid button, .progressive-calendar-empty { min-height: 42px; }
+        .progressive-calendar-actions { padding: 10px; }
+        .progressive-calendar-cancel, .progressive-calendar-confirm { flex: 1; padding: 0 10px; }
         .schedule-hero { align-items:flex-start; padding:16px; }
         .schedule-hero-icon { width:52px; height:52px; flex-basis:52px; }
         .mobile-date-picker-trigger { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-height:66px; padding:12px 14px; border:1px solid #b9d9ea; border-radius:12px; background:#f8fcff; color:#0b4f80; font:inherit; text-align:left; cursor:pointer; box-shadow:0 6px 16px rgba(20,79,123,.06); }
@@ -1565,6 +1599,30 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                     <span id="progressiveDateLabel"><?php echo $bk['appointment_date'] !== '' ? date('F j, Y', strtotime($bk['appointment_date'])) : 'Choose Date'; ?></span>
                                 </button>
                                 <input type="date" name="appointment_date" id="progressiveAppointmentDate" value="<?php echo htmlspecialchars($bk['appointment_date']); ?>" min="<?php echo date('Y-m-d'); ?>" disabled>
+                                <div class="progressive-calendar-modal" id="progressiveCalendarModal" aria-hidden="true">
+                                    <div class="progressive-calendar-dialog" role="dialog" aria-modal="true" aria-labelledby="progressiveCalendarTitle">
+                                        <div class="progressive-calendar-head">
+                                            <strong id="progressiveCalendarTitle">Choose an appointment date</strong>
+                                            <button type="button" class="progressive-calendar-close" id="progressiveCalendarClose" aria-label="Close calendar">&times;</button>
+                                        </div>
+                                        <div class="progressive-calendar-body">
+                                            <div class="progressive-calendar-month">
+                                                <button type="button" class="progressive-calendar-nav" id="progressiveCalendarPrev" aria-label="Previous month">&lsaquo;</button>
+                                                <strong id="progressiveCalendarMonth"></strong>
+                                                <button type="button" class="progressive-calendar-nav" id="progressiveCalendarNext" aria-label="Next month">&rsaquo;</button>
+                                            </div>
+                                            <div class="progressive-calendar-weekdays" aria-hidden="true">
+                                                <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                                            </div>
+                                            <div class="progressive-calendar-grid" id="progressiveCalendarGrid"></div>
+                                            <p class="progressive-calendar-help" id="progressiveCalendarHelp">Choose an available date for your appointment.</p>
+                                        </div>
+                                        <div class="progressive-calendar-actions">
+                                            <button type="button" class="progressive-calendar-cancel" id="progressiveCalendarCancel">Cancel</button>
+                                            <button type="button" class="progressive-calendar-confirm" id="progressiveCalendarConfirm" disabled>Use this date</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="form-group">
@@ -1592,9 +1650,99 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 var dateInput = document.getElementById('progressiveAppointmentDate');
                 var dateLabel = document.getElementById('progressiveDateLabel');
                 var dateTrigger = document.getElementById('progressiveDateTrigger');
+                var calendarModal = document.getElementById('progressiveCalendarModal');
+                var calendarClose = document.getElementById('progressiveCalendarClose');
+                var calendarCancel = document.getElementById('progressiveCalendarCancel');
+                var calendarConfirm = document.getElementById('progressiveCalendarConfirm');
+                var calendarPrev = document.getElementById('progressiveCalendarPrev');
+                var calendarNext = document.getElementById('progressiveCalendarNext');
+                var calendarMonth = document.getElementById('progressiveCalendarMonth');
+                var calendarGrid = document.getElementById('progressiveCalendarGrid');
+                var calendarHelp = document.getElementById('progressiveCalendarHelp');
                 var schedule = document.getElementById('progressiveSchedule');
                 var errorBox = document.getElementById('progressiveFormError');
-                if (!form || !typeSelect || !specialtySelect || !doctorSelect || !dateInput || !dateLabel || !dateTrigger || !schedule || !errorBox) return;
+                if (!form || !typeSelect || !specialtySelect || !doctorSelect || !dateInput || !dateLabel || !dateTrigger || !calendarModal || !calendarClose || !calendarCancel || !calendarConfirm || !calendarPrev || !calendarNext || !calendarMonth || !calendarGrid || !calendarHelp || !schedule || !errorBox) return;
+
+                var calendarDraftValue = dateInput.value || '';
+                var calendarViewDate = new Date();
+                calendarViewDate.setDate(1);
+
+                function pad(value) { return String(value).padStart(2, '0'); }
+                function toIsoDate(date) {
+                    return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate());
+                }
+                function fromIsoDate(value) {
+                    var parts = (value || '').split('-').map(Number);
+                    return parts.length === 3 && parts.every(function(part) { return Number.isFinite(part); })
+                        ? new Date(parts[0], parts[1] - 1, parts[2])
+                        : null;
+                }
+                function dateCanBeSelected(date) {
+                    var iso = toIsoDate(date);
+                    if (iso < dateInput.min) return false;
+                    if (typeSelect.value === 'ultrasound') return date.getDay() === 3 || date.getDay() === 6;
+                    if (typeSelect.value === 'package' || typeSelect.value === 'individual') return date.getDay() !== 0;
+                    return true;
+                }
+                function renderProgressiveCalendar() {
+                    var year = calendarViewDate.getFullYear();
+                    var month = calendarViewDate.getMonth();
+                    var firstDay = new Date(year, month, 1).getDay();
+                    var daysInMonth = new Date(year, month + 1, 0).getDate();
+                    var todayMonth = new Date();
+                    todayMonth.setDate(1);
+                    calendarMonth.textContent = calendarViewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                    calendarPrev.disabled = calendarViewDate <= todayMonth;
+                    calendarGrid.innerHTML = '';
+                    for (var blank = 0; blank < firstDay; blank += 1) {
+                        var empty = document.createElement('span');
+                        empty.className = 'progressive-calendar-empty';
+                        empty.setAttribute('aria-hidden', 'true');
+                        calendarGrid.appendChild(empty);
+                    }
+                    for (var day = 1; day <= daysInMonth; day += 1) {
+                        var date = new Date(year, month, day);
+                        var dateValue = toIsoDate(date);
+                        var dayButton = document.createElement('button');
+                        dayButton.type = 'button';
+                        dayButton.textContent = day;
+                        dayButton.dataset.date = dateValue;
+                        dayButton.disabled = !dateCanBeSelected(date);
+                        if (dateValue === toIsoDate(new Date())) dayButton.classList.add('is-today');
+                        if (dateValue === calendarDraftValue) dayButton.classList.add('is-selected');
+                        dayButton.addEventListener('click', function() {
+                            calendarDraftValue = this.dataset.date;
+                            calendarConfirm.disabled = false;
+                            renderProgressiveCalendar();
+                        });
+                        calendarGrid.appendChild(dayButton);
+                    }
+                    if (typeSelect.value === 'ultrasound') {
+                        calendarHelp.textContent = 'Ultrasound appointments are available on Wednesday and Saturday.';
+                    } else if (typeSelect.value === 'package' || typeSelect.value === 'individual') {
+                        calendarHelp.textContent = 'Choose an available clinic date from Monday to Saturday.';
+                    } else {
+                        calendarHelp.textContent = 'Choose an available date for your doctor appointment.';
+                    }
+                }
+                function openProgressiveCalendar() {
+                    if (dateInput.disabled) return;
+                    calendarDraftValue = dateInput.value || '';
+                    calendarConfirm.disabled = !calendarDraftValue;
+                    var selectedDate = fromIsoDate(calendarDraftValue);
+                    calendarViewDate = selectedDate || new Date();
+                    calendarViewDate.setDate(1);
+                    renderProgressiveCalendar();
+                    calendarModal.classList.add('is-open');
+                    calendarModal.setAttribute('aria-hidden', 'false');
+                    document.body.classList.add('modal-open');
+                    calendarClose.focus();
+                }
+                function closeProgressiveCalendar() {
+                    calendarModal.classList.remove('is-open');
+                    calendarModal.setAttribute('aria-hidden', 'true');
+                    document.body.classList.remove('modal-open');
+                }
 
                 function updateDateLabel() {
                     if (!dateInput.value) {
@@ -1660,24 +1808,35 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     dateInput.disabled = !canSchedule;
                     dateInput.required = canSchedule;
                     dateTrigger.disabled = !canSchedule;
+                    if (!calendarModal.classList.contains('is-open')) renderProgressiveCalendar();
                 }
                 typeSelect.addEventListener('change', function() { setError(''); updatePanels(); });
                 specialtySelect.addEventListener('change', function() { setError(''); updateDoctorOptions(); updatePanels(); });
                 doctorSelect.addEventListener('change', updatePanels);
                 dateInput.addEventListener('change', updateDateLabel);
-                dateTrigger.addEventListener('click', function() {
-                    if (dateInput.disabled) return;
-                    try {
-                        if (typeof dateInput.showPicker === 'function') {
-                            dateInput.showPicker();
-                        } else {
-                            dateInput.focus();
-                            dateInput.click();
-                        }
-                    } catch (error) {
-                        dateInput.focus();
-                        dateInput.click();
-                    }
+                dateTrigger.addEventListener('click', openProgressiveCalendar);
+                calendarClose.addEventListener('click', closeProgressiveCalendar);
+                calendarCancel.addEventListener('click', closeProgressiveCalendar);
+                calendarPrev.addEventListener('click', function() {
+                    if (calendarViewDate <= new Date(new Date().getFullYear(), new Date().getMonth(), 1)) return;
+                    calendarViewDate.setMonth(calendarViewDate.getMonth() - 1);
+                    renderProgressiveCalendar();
+                });
+                calendarNext.addEventListener('click', function() {
+                    calendarViewDate.setMonth(calendarViewDate.getMonth() + 1);
+                    renderProgressiveCalendar();
+                });
+                calendarConfirm.addEventListener('click', function() {
+                    if (!calendarDraftValue) return;
+                    dateInput.value = calendarDraftValue;
+                    updateDateLabel();
+                    closeProgressiveCalendar();
+                });
+                calendarModal.addEventListener('click', function(event) {
+                    if (event.target === calendarModal) closeProgressiveCalendar();
+                });
+                document.addEventListener('keydown', function(event) {
+                    if (event.key === 'Escape' && calendarModal.classList.contains('is-open')) closeProgressiveCalendar();
                 });
                 form.querySelectorAll('input[name="package_id"], input[name="service_ids[]"]').forEach(function(input) { input.addEventListener('change', updatePanels); });
                 [['progressivePackageSearch', 'progressivePackageCategory', 'progressivePackageList'], ['progressiveIndividualSearch', 'progressiveIndividualCategory', 'progressiveIndividualList']].forEach(function(config) {
