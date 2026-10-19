@@ -1347,14 +1347,21 @@ $additionalStyles = '
     .error-message { background: #fee; color: #c1121f; padding: 14px; border-radius: 10px; margin-bottom: 18px; border-left: 4px solid #c1121f; }
     .success-banner { background: #d4edda; color: #155724; padding: 20px; border-radius: 12px; margin-bottom: 22px; border-left: 4px solid #28a745; }
     .info-box { background: #e3f2fd; border-left: 4px solid #2196f3; padding: 14px; border-radius: 8px; margin-bottom: 20px; color: #1565c0; font-size: 0.95rem; }
-    .clinic-reminder-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 16px 0 22px; }
-    .clinic-reminder-heading { grid-column:1 / -1; margin-bottom:2px; }
-    .clinic-reminder-heading h3 { margin:0 0 4px; color:#073b4c; font-size:1.15rem; }
-    .clinic-reminder-heading p { margin:0; color:#60727d; font-size:.88rem; line-height:1.45; }
-    .clinic-reminder { display:grid; grid-template-columns:32px minmax(0,1fr); column-gap:10px; align-items:start; background:#fff; border:1px solid #dce9f4; border-radius:10px; padding:12px; box-shadow:0 8px 18px rgba(20,79,123,.07); }
-    .clinic-reminder-number { display:inline-grid; grid-row:span 2; place-items:center; width:32px; height:32px; margin:0; border-radius:50%; background:#e5f5fb; color:#006b9f; font-size:.9rem; font-weight:900; }
-    .clinic-reminder strong { display:block; color:#0b4f80; margin:1px 0 4px; line-height:1.25; }
-    .clinic-reminder span { color:#4a6072; font-size:.86rem; line-height:1.4; }
+    .clinic-reminder-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 18px; margin:16px 0 14px; padding:20px 22px; border-left:5px solid #2f7d32; border-radius:15px; background:linear-gradient(135deg,#e9fff3 0%,#b9f2d7 100%); box-shadow:0 10px 24px rgba(28,112,64,.08); }
+    .clinic-reminder-heading { grid-column:1 / -1; margin-bottom:3px; }
+    .clinic-reminder-heading h3 { margin:0 0 5px; color:#08745f; font-size:1.18rem; }
+    .clinic-reminder-heading p { margin:0; color:#23695d; font-size:.88rem; line-height:1.45; }
+    .clinic-reminder { display:grid; grid-template-columns:29px minmax(0,1fr); column-gap:9px; align-items:start; padding:4px 0; }
+    .clinic-reminder-number { display:inline-grid; grid-row:span 2; place-items:center; width:29px; height:29px; margin:0; border-radius:50%; background:#168b63; color:#fff; font-size:.82rem; font-weight:900; }
+    .clinic-reminder strong { display:block; color:#075f50; margin:1px 0 3px; line-height:1.25; }
+    .clinic-reminder span { color:#23695d; font-size:.86rem; line-height:1.4; }
+    .clinic-restrictions { display:grid; gap:10px; margin:0 0 22px; padding:18px 20px 19px; border-left:5px solid #0878b5; border-radius:15px; background:linear-gradient(135deg,#e9f5ff 0%,#c9e0ff 100%); color:#164f9c; box-shadow:0 10px 24px rgba(0,119,182,.08); }
+    .clinic-restrictions-heading { display:flex; align-items:center; gap:9px; color:#164a9d; }
+    .clinic-restrictions-heading svg { width:21px; height:21px; flex:0 0 21px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+    .clinic-restrictions-heading h3 { margin:0; font-size:1.08rem; }
+    .clinic-restrictions ul { display:grid; gap:7px; margin:0; padding-left:25px; }
+    .clinic-restrictions li { padding-left:2px; color:#2457a0; font-size:.88rem; line-height:1.45; }
+    .clinic-restrictions li::marker { color:#2188df; }
     .booking-progress { margin:16px 0 22px; padding:12px 14px; border:1px solid #dce9f4; border-radius:12px; background:#f8fcff; }
     .booking-progress-copy { display:flex; align-items:center; justify-content:space-between; gap:12px; color:#60727d; font-size:.78rem; }
     .booking-progress-copy strong { color:#0b4f80; font-size:.88rem; text-align:right; }
@@ -1383,17 +1390,20 @@ $additionalStyles = '
     .appointment-terms-confirm { border: 0; background: #0878b5; color: #fff; }
     .appointment-terms-confirm:hover, .appointment-terms-confirm:focus-visible { background: #056696; }
     @media (max-width: 520px) { .appointment-terms-dialog { max-height: 90vh; } .appointment-terms-head, .appointment-terms-body { padding-left: 18px; padding-right: 18px; } .appointment-terms-actions { padding-left: 18px; padding-right: 18px; flex-direction: column-reverse; } .appointment-terms-actions button { width: 100%; } }
-    @media (max-width: 820px) { .clinic-reminder-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 820px) { .clinic-reminder-grid { grid-template-columns:1fr; } }
     @media (max-width: 520px) {
         .booking-progress { margin:12px 0 16px; padding:10px 11px; }
         .booking-progress-copy { display:block; font-size:.72rem; }
         .booking-progress-copy strong { display:block; margin-top:3px; font-size:.82rem; text-align:left; }
         .booking-progress-track { margin-top:8px; }
-        .clinic-reminder-grid { grid-template-columns:1fr; gap:8px; }
-        .clinic-reminder { grid-template-columns:28px minmax(0,1fr); column-gap:9px; padding:10px; }
+        .clinic-reminder-grid { gap:8px; padding:15px 14px; }
+        .clinic-reminder { grid-template-columns:28px minmax(0,1fr); column-gap:9px; padding:3px 0; }
         .clinic-reminder-number { width:28px; height:28px; font-size:.82rem; }
         .clinic-reminder strong { font-size:.86rem; }
         .clinic-reminder span { font-size:.78rem; line-height:1.35; }
+        .clinic-restrictions { padding:15px 14px 16px; }
+        .clinic-restrictions-heading h3 { font-size:.98rem; }
+        .clinic-restrictions li { font-size:.78rem; }
     }
     .detail-block { background: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 14px; }
     .detail-block h4 { margin: 0 0 8px; color: #0077b6; font-size: 1rem; }
@@ -1563,6 +1573,19 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     <span>Arrive 10-15 minutes early, and pay at the front desk.</span>
                 </div>
             </div>
+            <section class="clinic-restrictions" aria-labelledby="scheduleRestrictionsTitle">
+                <div class="clinic-restrictions-heading">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 10v6M12 7h.01"></path></svg>
+                    <h3 id="scheduleRestrictionsTitle">Scheduling restrictions</h3>
+                </div>
+                <ul>
+                    <li>Laboratory tests and package deals are available Monday to Saturday, from 8:00 AM to 5:00 PM.</li>
+                    <li>Ultrasound appointments are available on Wednesday and Saturday, from 8:00 AM to 5:00 PM.</li>
+                    <li>Doctor consultation schedules depend on the availability of the selected doctor.</li>
+                    <li>Past dates and dates with no available slots cannot be selected.</li>
+                    <li>The system assigns the earliest available clinic time after you choose a date.</li>
+                </ul>
+            </section>
         <?php else: ?>
             <div class="booking-progress" aria-label="Booking progress">
                 <div class="booking-progress-copy">
