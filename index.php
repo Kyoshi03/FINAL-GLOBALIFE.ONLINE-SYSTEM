@@ -63,6 +63,15 @@ $additionalStyles = '
         background: #f5f8fa;
     }
 
+    body.page-index .logo-section:hover {
+        transform: none;
+    }
+
+    body.page-index .logo-img:hover {
+        transform: none;
+        box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+    }
+
     html {
         scroll-behavior: smooth;
     }
