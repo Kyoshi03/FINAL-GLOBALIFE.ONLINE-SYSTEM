@@ -920,15 +920,6 @@ $welcomeTitle = $isNewPatientWelcome
 $welcomeSubtitle = $isNewPatientWelcome
     ? 'Book your first appointment below'
     : 'Book appointments, check your upcoming schedule, and keep your contact details ready for clinic updates.';
-$showGetStartedPanel = $isNewPatientWelcome || ($totalCount === 0 && $upcomingCount === 0);
-
-$hideProfileStepInGetStarted = trim((string) ($profileDisplayName ?? '')) !== ''
-    && trim((string) ($userDetails['email'] ?? '')) !== ''
-    && trim((string) ($userDetails['phone'] ?? '')) !== ''
-    && trim((string) ($userDetails['gender'] ?? '')) !== ''
-    && trim((string) ($userDetails['date_of_birth'] ?? '')) !== ''
-    && trim((string) ($userDetails['barangay'] ?? '')) !== ''
-    && trim((string) ($userDetails['city'] ?? '')) !== '';
 
 $profileFields = [
     'First name' => $profileNameParts['first_name'] ?? '',
@@ -2833,18 +2824,11 @@ $additionalStyles = '
     }
 
     .patient-profile-trigger {
-        border: none;
         background: transparent;
         padding: 0;
-        cursor: pointer;
         border-radius: 50%;
         position: relative;
         flex-shrink: 0;
-    }
-
-    .patient-profile-trigger:focus-visible {
-        outline: 3px solid #90e0ef;
-        outline-offset: 4px;
     }
 
     .patient-profile-avatar {
@@ -2861,23 +2845,6 @@ $additionalStyles = '
         font-weight: 800;
         line-height: 88px;
         text-align: center;
-    }
-
-    .patient-profile-trigger .edit-badge {
-        position: absolute;
-        right: 0;
-        bottom: 0;
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: #0f7cc2;
-        color: #fff;
-        border: 2px solid #073b4c;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.72rem;
-        font-weight: 800;
     }
 
     .profile-card-mini {
@@ -4205,73 +4172,19 @@ include 'includes/header.php';
         </section>
         <?php else: ?>
         <section class="patient-hero<?php echo $isNewPatientWelcome ? ' is-new-welcome' : ''; ?>">
-            <button type="button" class="patient-profile-trigger" id="openProfileFromHero" aria-label="Open my profile">
+            <div class="patient-profile-trigger" aria-hidden="true">
                 <?php if ($profilePhotoUrl): ?>
                     <img src="<?php echo htmlspecialchars($profilePhotoUrl); ?>" alt="Profile photo" class="patient-profile-avatar">
                 <?php else: ?>
                     <span class="patient-profile-avatar"><?php echo htmlspecialchars($profileInitials); ?></span>
                 <?php endif; ?>
-                <span class="edit-badge" aria-hidden="true">✎</span>
-            </button>
+            </div>
             <div>
                 <?php if ($isNewPatientWelcome): ?>
                     <span class="new-welcome-badge">New account</span>
                 <?php endif; ?>
                 <h2><?php echo htmlspecialchars($welcomeTitle); ?></h2>
                 <p><?php echo htmlspecialchars($welcomeSubtitle); ?></p>
-            </div>
-        </section>
-
-        <?php if ($showGetStartedPanel): ?>
-        <section class="get-started-panel" aria-label="Getting started">
-            <h3><?php echo $isNewPatientWelcome ? 'Get started with your clinic account' : 'Ready to schedule a visit?'; ?></h3>
-            <p><?php echo $isNewPatientWelcome
-                ? 'You are all set. Follow these steps for a smooth first visit at Globalife.'
-                : 'You have no upcoming appointments. Book a slot when you are ready.'; ?></p>
-            <ol class="get-started-steps">
-                <?php $getStartedStep = 1; ?>
-                <?php if (!$hideProfileStepInGetStarted): ?>
-                <li>
-                    <strong><?php echo $getStartedStep++; ?>. Complete your profile</strong>
-                    Add phone, email, and a contact person so the clinic can reach you.
-                    <a href="#" id="openProfileFromGetStarted">Update profile</a>
-                </li>
-                <?php endif; ?>
-                <li>
-                    <strong><?php echo $getStartedStep++; ?>. Book online</strong>
-                    Choose doctor consultation, laboratory services, or ultrasounds and pick a date and time.
-                    <a href="book_appointment.php?start=1">Book now</a>
-                </li>
-                <li>
-                    <strong><?php echo $getStartedStep++; ?>. Visit the clinic</strong>
-                    Arrive on time and pay at the front desk unless staff advises otherwise.
-                </li>
-            </ol>
-        </section>
-        <?php endif; ?>
-
-        <section class="clinic-tips-bar" aria-labelledby="clinicProcedureTitle">
-            <div class="clinic-procedure-head">
-                <div>
-                    <h3 id="clinicProcedureTitle">Your clinic visit, step by step</h3>
-                    <p>Follow these four steps from booking your appointment to completing your clinic visit.</p>
-                </div>
-            </div>
-            <div class="clinic-tip-card">
-                <span class="clinic-step-number" aria-hidden="true">1</span>
-                <strong>Book an appointment</strong>
-            </div>
-            <div class="clinic-tip-card">
-                <span class="clinic-step-number" aria-hidden="true">2</span>
-                <strong>Appointment status</strong>
-            </div>
-            <div class="clinic-tip-card">
-                <span class="clinic-step-number" aria-hidden="true">3</span>
-                <strong>Prepare for your visit</strong>
-            </div>
-            <div class="clinic-tip-card">
-                <span class="clinic-step-number" aria-hidden="true">4</span>
-                <strong>Complete your clinic visit</strong>
             </div>
         </section>
 
@@ -5248,7 +5161,7 @@ include 'includes/header.php';
             document.body.style.overflow = '';
         }
 
-        ['openProfileFromHero', 'openProfileFromCard', 'openProfileFromBtn', 'openProfileFromAction', 'openProfileFromGetStarted'].forEach(function(id) {
+        ['openProfileFromCard', 'openProfileFromBtn', 'openProfileFromAction'].forEach(function(id) {
             const el = document.getElementById(id);
             if (el) {
                 el.addEventListener('click', function(e) {
@@ -5639,7 +5552,7 @@ include 'includes/header.php';
     })();
     </script>
     <?php endif; ?>
-+    <?php if ($isNewPatientWelcome && !$showNotificationsPage): ?>
+    <?php if ($isNewPatientWelcome && !$showNotificationsPage): ?>
     <script>
     (function () {
         var overlay = document.getElementById('patientTourOverlay');
