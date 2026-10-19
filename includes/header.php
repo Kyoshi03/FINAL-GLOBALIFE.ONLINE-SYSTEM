@@ -3029,22 +3029,20 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
                     </button>
                     <div class="patient-profile-menu" role="menu" aria-label="Account menu">
-                        <?php if ($topbarRole !== 'admin'): ?>
+                        <?php if ($topbarRole === 'doctor'): ?>
                             <a href="<?php echo htmlspecialchars($patientTopbarProfileHref); ?>" role="menuitem">
                                 <span class="profile-menu-icon" aria-hidden="true">
-                                    <?php if ($topbarRole === 'doctor'): ?>
-                                        <svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/><path d="M7 7h10v10H7z"/></svg>
-                                    <?php else: ?>
-                                        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>
-                                    <?php endif; ?>
+                                    <svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/><path d="M7 7h10v10H7z"/></svg>
                                 </span>
-                                <span><?php echo $topbarRole === 'doctor' ? 'Change Password' : 'My Profile'; ?></span>
+                                <span>Change Password</span>
                             </a>
                         <?php endif; ?>
-                        <a href="<?php echo htmlspecialchars($topbarNotificationsHref); ?>" role="menuitem">
-                            <span class="profile-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></span>
-                            <span>Notifications</span>
-                        </a>
+                        <?php if ($topbarRole !== 'patient'): ?>
+                            <a href="<?php echo htmlspecialchars($topbarNotificationsHref); ?>" role="menuitem">
+                                <span class="profile-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></span>
+                                <span>Notifications</span>
+                            </a>
+                        <?php endif; ?>
                         <form action="logout.php" method="post" class="logout-form profile-menu-form">
                             <button type="submit" class="profile-menu-logout" role="menuitem">
                                 <span class="profile-menu-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg></span>
