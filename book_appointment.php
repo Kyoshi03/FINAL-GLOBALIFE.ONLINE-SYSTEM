@@ -915,11 +915,18 @@ $additionalStyles = '
     .progressive-schedule.is-active { display: block; }
     .progressive-schedule-note { margin: -8px 0 14px; color: #607784; font-size: .86rem; line-height: 1.4; }
     .progressive-date-picker { position: relative; min-height: 52px; }
-    .progressive-date-trigger { position: relative; z-index: 2; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; padding: 0 14px; border: 1px solid #c7dbea; border-radius: 11px; background: #fff; color: #6f7f93; font: inherit; text-align: left; cursor: pointer; }
-    .progressive-date-trigger:disabled { cursor: not-allowed; opacity: .65; }
+    .progressive-date-trigger { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; min-height: 64px; padding: 10px 14px; border: 2px solid #55b7dc; border-radius: 12px; background: #f5fcff; color: #173b5b; font: inherit; text-align: left; cursor: pointer; box-shadow: 0 5px 14px rgba(8,120,181,.12); transition: border-color .18s ease, background-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+    .progressive-date-trigger:hover { border-color: #0878b5; background: #eef9fe; box-shadow: 0 8px 18px rgba(8,120,181,.18); transform: translateY(-1px); }
+    .progressive-date-trigger:disabled { cursor: not-allowed; opacity: .65; transform: none; box-shadow: none; }
     .progressive-date-trigger:focus-visible { outline: 3px solid rgba(8,120,181,.22); outline-offset: 2px; }
-    .progressive-date-trigger svg { width: 22px; height: 22px; flex: 0 0 22px; fill: none; stroke: #0878b5; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    .progressive-date-trigger.has-value { color: #1a3558; }
+    .progressive-date-trigger-content { display: flex; align-items: center; min-width: 0; gap: 10px; }
+    .progressive-date-trigger svg { width: 25px; height: 25px; flex: 0 0 25px; fill: none; stroke: #0878b5; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    .progressive-date-trigger-label { display: grid; gap: 2px; min-width: 0; }
+    .progressive-date-trigger-label strong { color: #173b5b; font-size: 1rem; font-weight: 700; line-height: 1.25; }
+    .progressive-date-trigger-label small { color: #0878b5; font-size: .72rem; font-weight: 800; line-height: 1.2; }
+    .progressive-date-trigger-action { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 8px; background: #dff4fc; color: #056696; font-size: .76rem; font-weight: 900; white-space: nowrap; }
+    .progressive-date-trigger-action::after { content: "v"; font-size: .9rem; line-height: .7; }
+    .progressive-date-trigger.has-value .progressive-date-trigger-label small { color: #16865b; }
     .progressive-date-picker input[type="date"] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
     .progressive-calendar-modal { position: fixed; inset: 0; z-index: 6500; display: none; align-items: center; justify-content: center; padding: 18px; background: rgba(3,37,56,.56); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
     .progressive-calendar-modal.is-open { display: flex; }
@@ -1090,6 +1097,10 @@ $additionalStyles = '
         .progressive-calendar-grid button, .progressive-calendar-empty { min-height: 42px; }
         .progressive-calendar-actions { padding: 10px; }
         .progressive-calendar-cancel, .progressive-calendar-confirm { flex: 1; padding: 0 10px; }
+        .progressive-date-trigger { min-height: 60px; padding: 9px 11px; }
+        .progressive-date-trigger-action { padding: 7px 8px; font-size: .7rem; }
+        .progressive-date-trigger-label strong { font-size: .92rem; }
+        .progressive-date-trigger-label small { font-size: .66rem; }
         .schedule-hero { align-items:flex-start; padding:16px; }
         .schedule-hero-icon { width:52px; height:52px; flex-basis:52px; }
         .mobile-date-picker-trigger { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-height:66px; padding:12px 14px; border:1px solid #b9d9ea; border-radius:12px; background:#f8fcff; color:#0b4f80; font:inherit; text-align:left; cursor:pointer; box-shadow:0 6px 16px rgba(20,79,123,.06); }
@@ -1605,8 +1616,14 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                             <label for="progressiveAppointmentDate">Appointment Date <span aria-hidden="true" style="color:#c1121f;">*</span></label>
                             <div class="progressive-date-picker">
                                 <button type="button" class="progressive-date-trigger<?php echo $bk['appointment_date'] !== '' ? ' has-value' : ''; ?>" id="progressiveDateTrigger" aria-controls="progressiveAppointmentDate">
-                                    <svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="2.5"></rect><path d="M8 2.5v4M16 2.5v4M3 9h18"></path></svg>
-                                    <span id="progressiveDateLabel"><?php echo $bk['appointment_date'] !== '' ? date('F j, Y', strtotime($bk['appointment_date'])) : 'Choose Date'; ?></span>
+                                    <span class="progressive-date-trigger-content">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5"></rect><path d="M8 2.5v4M16 2.5v4M3 9h18"></path></svg>
+                                        <span class="progressive-date-trigger-label">
+                                            <strong id="progressiveDateLabel"><?php echo $bk['appointment_date'] !== '' ? date('F j, Y', strtotime($bk['appointment_date'])) : 'Choose Date'; ?></strong>
+                                            <small><?php echo $bk['appointment_date'] !== '' ? 'Date selected' : 'Click to choose a date'; ?></small>
+                                        </span>
+                                    </span>
+                                    <span class="progressive-date-trigger-action">Open calendar</span>
                                 </button>
                                 <input type="date" name="appointment_date" id="progressiveAppointmentDate" value="<?php echo htmlspecialchars($bk['appointment_date']); ?>" min="<?php echo date('Y-m-d'); ?>" disabled>
                                 <div class="progressive-calendar-modal" id="progressiveCalendarModal" aria-hidden="true">
@@ -1658,6 +1675,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 var dateInput = document.getElementById('progressiveAppointmentDate');
                 var dateLabel = document.getElementById('progressiveDateLabel');
                 var dateTrigger = document.getElementById('progressiveDateTrigger');
+                var dateHint = dateTrigger ? dateTrigger.querySelector('.progressive-date-trigger-label small') : null;
                 var calendarModal = document.getElementById('progressiveCalendarModal');
                 var calendarClose = document.getElementById('progressiveCalendarClose');
                 var calendarCancel = document.getElementById('progressiveCalendarCancel');
@@ -1830,12 +1848,14 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     if (!dateInput.value) {
                         dateLabel.textContent = 'Choose Date';
                         dateTrigger.classList.remove('has-value');
+                        if (dateHint) dateHint.textContent = 'Click to choose a date';
                         return;
                     }
                     var parts = dateInput.value.split('-');
                     var selectedDate = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
                     dateLabel.textContent = selectedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
                     dateTrigger.classList.add('has-value');
+                    if (dateHint) dateHint.textContent = 'Date selected';
                 }
 
                 function setError(message) {
