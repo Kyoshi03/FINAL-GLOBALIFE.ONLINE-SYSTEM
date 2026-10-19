@@ -4207,7 +4207,7 @@ $additionalStyles = '
         display: grid;
         grid-template-columns: minmax(0, 1.55fr) minmax(290px, .8fr);
         gap: 18px;
-        align-items: stretch;
+        align-items: start;
     }
 
     .dashboard-main-column {
@@ -4217,7 +4217,8 @@ $additionalStyles = '
     }
 
     .dashboard-main-grid > aside {
-        display: flex;
+        display: block;
+        align-self: start;
         min-width: 0;
     }
 
@@ -4558,7 +4559,7 @@ $additionalStyles = '
     .dashboard-profile-card {
         display: grid;
         width: 100%;
-        height: 100%;
+        height: auto;
         box-sizing: border-box;
         gap: 16px;
     }
