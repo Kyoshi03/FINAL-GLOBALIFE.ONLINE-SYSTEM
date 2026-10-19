@@ -457,7 +457,7 @@ $additionalStyles = patientAvatarStyles() . '
         grid-template-columns:minmax(220px,1fr) minmax(180px,220px) minmax(180px,220px) auto auto;
     }
     .appointment-tools.patient-filters.patient-active-filters {
-        grid-template-columns:minmax(180px,220px) auto auto;
+        grid-template-columns:minmax(180px,220px);
     }
     .patient-custom-range{grid-column:1 / -1;display:flex;gap:12px;flex-wrap:wrap}
     .patient-custom-range[hidden]{display:none}
@@ -1519,8 +1519,10 @@ include __DIR__ . '/includes/header.php';
                         </select>
                     </div>
                 <?php endif; ?>
-                <button type="button" class="btn btn-primary" id="appointmentFilterApply">Apply Filter</button>
-                <button type="button" class="filter-reset-btn" id="appointmentFilterReset">Reset</button>
+                <?php if ($userRole !== 'patient' || $patientAppointmentView === 'history'): ?>
+                    <button type="button" class="btn btn-primary" id="appointmentFilterApply">Apply Filter</button>
+                    <button type="button" class="filter-reset-btn" id="appointmentFilterReset">Reset</button>
+                <?php endif; ?>
                 <?php if ($userRole !== 'patient' || $patientAppointmentView === 'history'): ?>
                     <div class="patient-custom-range" id="patientCustomDateRange" hidden>
                         <div class="tool-field">
@@ -2022,6 +2024,7 @@ include __DIR__ . '/includes/header.php';
     var currentPage = 1;
     var pageSize = 5;
     var customDateRangeApplied = false;
+    var isPatientActiveAppointments = <?php echo $userRole === 'patient' && $patientAppointmentView === 'active' ? 'true' : 'false'; ?>;
 
     function openModal(modal) {
         if (!modal) return;
@@ -2270,6 +2273,12 @@ include __DIR__ . '/includes/header.php';
         dateRangeFilter.addEventListener('change', function() {
             customDateRangeApplied = false;
             toggleCustomDateRange();
+        });
+    }
+    if (isPatientActiveAppointments && statusFilter) {
+        statusFilter.addEventListener('change', function() {
+            syncStatusFilterToUrl();
+            applyAppointmentFilters();
         });
     }
     if (filterApply) {
