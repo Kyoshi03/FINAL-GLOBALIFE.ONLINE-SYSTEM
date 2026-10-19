@@ -1750,7 +1750,9 @@ include __DIR__ . '/includes/header.php';
                     <button type="button" class="filter-reset-btn" id="appointmentFilterReset">Reset</button>
                 </div>
             <?php endif; ?>
-            <p class="appointment-result-count" id="appointmentResultCount"><?php echo count($appointments); ?> appointment<?php echo count($appointments) === 1 ? '' : 's'; ?> shown</p>
+            <?php if (!($userRole === 'patient' && $patientAppointmentView === 'active')): ?>
+                <p class="appointment-result-count" id="appointmentResultCount"><?php echo count($appointments); ?> appointment<?php echo count($appointments) === 1 ? '' : 's'; ?> shown</p>
+            <?php endif; ?>
             <div class="appointments-scroll" aria-label="Scrollable appointments list">
                 <table class="appointments-table">
                     <thead>
