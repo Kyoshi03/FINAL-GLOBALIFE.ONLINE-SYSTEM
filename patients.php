@@ -3838,7 +3838,7 @@ $additionalStyles = '
         }
     }
 
-    @media (max-width: 560px) {
+    @media (max-width: 900px) {
         .patient-tour-focus {
             border-radius: 10px;
         }
@@ -3849,10 +3849,10 @@ $additionalStyles = '
             bottom: 10px !important;
             top: auto !important;
             width: auto;
-            max-height: min(52vh, 420px);
+            max-height: min(31vh, 250px);
             overflow: auto;
             border-radius: 12px;
-            padding: 14px 14px 15px;
+            padding: 10px 12px;
         }
 
         .patient-tour-tooltip::before {
@@ -3860,17 +3860,57 @@ $additionalStyles = '
         }
 
         .patient-tour-actions {
-            flex-direction: column;
-            align-items: stretch;
+            flex-direction: row;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
         }
 
         .patient-tour-actions .left-actions,
         .patient-tour-actions .right-actions {
-            width: 100%;
+            width: auto;
+            gap: 6px;
         }
 
         .patient-tour-actions .patient-tour-btn {
-            flex: 1;
+            min-height: 32px;
+            padding: 6px 10px;
+            font-size: .74rem;
+        }
+
+        .patient-tour-head {
+            margin-bottom: 5px;
+        }
+
+        .patient-tour-badge {
+            padding: 3px 8px;
+            font-size: .68rem;
+        }
+
+        .patient-tour-close {
+            width: 24px;
+            height: 24px;
+            font-size: 1rem;
+        }
+
+        .patient-tour-progress {
+            height: 4px;
+            margin-bottom: 7px;
+        }
+
+        .patient-tour-tooltip h3 {
+            margin-bottom: 3px;
+            font-size: .95rem;
+        }
+
+        .patient-tour-tooltip p {
+            display: -webkit-box;
+            margin: 0;
+            overflow: hidden;
+            font-size: .78rem;
+            line-height: 1.3;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 3;
         }
     }
 ';
@@ -5484,7 +5524,7 @@ include 'includes/header.php';
             if (!tooltip || !activeTarget) return;
             setFocusRing(activeTarget);
 
-            if (window.matchMedia('(max-width: 560px)').matches) {
+            if (window.matchMedia('(max-width: 900px)').matches) {
                 tooltip.style.left = '10px';
                 tooltip.style.right = '10px';
                 tooltip.style.top = 'auto';
