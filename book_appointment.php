@@ -948,12 +948,13 @@ $additionalStyles = '
     .progressive-add-button:disabled { opacity: .45; cursor: not-allowed; }
     .progressive-add-button.is-added { border-color: #16865b; background: #e5f7ee; color: #16865b; }
     .progressive-selection-summary { margin-top: 12px; padding: 13px 15px; border: 1px solid #d8e8f2; border-left: 4px solid #55b7dc; border-radius: 11px; background: #fff; color: #173b5b; }
-    #progressivePackageSummary { border-color: #ded2f4; border-left-color: #8b63c7; background: #fbf9ff; }
-    #progressivePackageSummary .progressive-selection-header strong, #progressivePackageSummary .progressive-selection-total strong { color: #6f42a8; }
-    #progressivePackageSummary .progressive-selection-total { border-top-color: #e4d9f6; }
-    #progressiveIndividualSummary { border-color: #c8e8f2; border-left-color: #35a9cc; background: #f5fcff; }
-    #progressiveIndividualSummary .progressive-selected-item { border-color: #c9e8f2; background: #fbfeff; }
-    #progressiveIndividualSummary .progressive-selection-total { border-top-color: #c8e8f2; }
+    #progressivePackageSummary { border-color: #d8c7f1; border-left-color: #7c4dba; background: #f7f0ff; }
+    #progressivePackageSummary .progressive-selection-header strong, #progressivePackageSummary .progressive-selection-total strong { color: #63399b; }
+    #progressivePackageSummary .progressive-selection-total { border-top-color: #dfd1f2; }
+    #progressiveIndividualSummary { border-color: #b7e4c7; border-left-color: #2f9b62; background: #effaf3; }
+    #progressiveIndividualSummary .progressive-selection-header strong, #progressiveIndividualSummary .progressive-selection-total strong { color: #197044; }
+    #progressiveIndividualSummary .progressive-selected-item { border-color: #c8ead4; background: #f8fffa; }
+    #progressiveIndividualSummary .progressive-selection-total { border-top-color: #bfe5cb; }
     .progressive-selection-summary[hidden] { display: none; }
     .progressive-selection-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
     .progressive-selection-header strong { color: #173b5b; font-size: .9rem; }
