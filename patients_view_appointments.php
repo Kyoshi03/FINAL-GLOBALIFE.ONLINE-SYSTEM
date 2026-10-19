@@ -467,9 +467,11 @@ $additionalStyles = patientAvatarStyles() . '
         margin-bottom:18px;
         box-shadow:0 10px 24px rgba(25,76,110,.05);
     }
-    .patient-appointments-heading { margin:0 0 18px; padding:18px 22px; border:1px solid #d9e9f1; border-radius:14px; background:linear-gradient(135deg,#ffffff 0%,#f1faff 100%); box-shadow:0 8px 20px rgba(25,76,110,.05); }
+    .patient-appointments-heading { display:flex; align-items:center; justify-content:space-between; gap:18px; margin:0 0 18px; padding:18px 22px; border:1px solid #d9e9f1; border-radius:14px; background:linear-gradient(135deg,#ffffff 0%,#f1faff 100%); box-shadow:0 8px 20px rgba(25,76,110,.05); }
     .patient-appointments-heading h1 { margin:0 0 4px; color:#073b4c; font-size:1.55rem; }
     .patient-appointments-heading p { margin:0; color:#607784; font-size:.9rem; line-height:1.45; }
+    .patient-new-appointment { display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; min-height:44px; padding:0 18px; border-radius:10px; background:linear-gradient(135deg,#17466f,#0878b5); color:#fff; font-size:.88rem; font-weight:800; text-decoration:none; box-shadow:0 8px 18px rgba(8,120,181,.16); }
+    .patient-new-appointment:hover, .patient-new-appointment:focus-visible { background:linear-gradient(135deg,#123b60,#056696); color:#fff; outline:none; }
     .appointment-report-card{
         display:flex;
         justify-content:flex-end;
@@ -1158,6 +1160,10 @@ $additionalStyles = patientAvatarStyles() . '
         box-shadow: 0 6px 20px rgba(0, 119, 182, 0.4);
     }
     @media (max-width: 768px) {
+        .patient-appointments-heading { align-items:stretch; flex-direction:column; gap:12px; padding:15px; }
+        .patient-appointments-heading h1 { font-size:1.25rem; }
+        .patient-appointments-heading p { font-size:.8rem; }
+        .patient-new-appointment { width:100%; min-height:42px; }
         .patient-history-page {
             width: 100%;
             max-width: none;
@@ -1412,10 +1418,15 @@ include __DIR__ . '/includes/header.php';
 
     <?php if ($userRole === 'patient'): ?>
         <section class="patient-appointments-heading" aria-labelledby="patientAppointmentsTitle">
-            <h1 id="patientAppointmentsTitle"><?php echo $patientAppointmentView === 'active' ? 'My Appointments' : 'Appointment History'; ?></h1>
-            <p><?php echo $patientAppointmentView === 'active'
-                ? 'Manage your upcoming clinic appointments and schedules.'
-                : 'Review your completed and cancelled appointment records.'; ?></p>
+            <div>
+                <h1 id="patientAppointmentsTitle"><?php echo $patientAppointmentView === 'active' ? 'My Appointments' : 'Appointment History'; ?></h1>
+                <p><?php echo $patientAppointmentView === 'active'
+                    ? 'Manage your upcoming clinic appointments and schedules.'
+                    : 'Review your completed and cancelled appointment records.'; ?></p>
+            </div>
+            <?php if ($patientAppointmentView === 'active'): ?>
+                <a class="patient-new-appointment" href="book_appointment.php?start=1">+ New Book Appointment</a>
+            <?php endif; ?>
         </section>
     <?php endif; ?>
     

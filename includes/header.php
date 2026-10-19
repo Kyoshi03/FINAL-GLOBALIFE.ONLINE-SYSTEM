@@ -2818,9 +2818,9 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                             <span class="nav-ui-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 3v3M16 3v3M5 8h14M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M8 12h3M13 12h3M8 16h3M13 16h3"/></svg></span>
                             <span class="nav-label">Calendar</span>
                         </a>
-                        <a href="book_appointment.php?start=1" class="has-svg-icon <?php echo basename($_SERVER['PHP_SELF']) === 'book_appointment.php' ? 'active' : ''; ?>">
+                        <a href="patients_my_appointments.php" class="has-svg-icon <?php echo in_array(basename($_SERVER['PHP_SELF']), ['book_appointment.php', 'patients_view_appointments.php', 'patients_my_appointments.php'], true) ? 'active' : ''; ?>">
                             <span class="nav-ui-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3v3M17 3v3M4.5 9h15M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M12 12v5M9.5 14.5h5"/></svg></span>
-                            <span class="nav-label"><span>Book</span><span class="nav-booking-label-secondary"> Appointments</span></span>
+                            <span class="nav-label">Appointments</span>
                         </a>
                         <?php
                         $patientHistoryPages = ['patients_view_appointments.php', 'patients_queue_history.php'];
@@ -2886,7 +2886,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             $patientTopbarSettingsHref = 'patients.php?profile=1';
         } elseif (in_array($currentPage, ['admin_view_appointments.php', 'doctor_view_appointments.php', 'patients_view_appointments.php'], true)) {
             $patientTopbarTitle = ($currentUser['role'] ?? '') === 'patient'
-                ? ((($_GET['view'] ?? '') === 'active' || isset($_GET['highlight'])) ? 'My Appointments' : 'Appointment History')
+                ? ((($_GET['view'] ?? '') === 'active' || isset($_GET['highlight'])) ? 'Appointments' : 'Appointment History')
                 : 'Appointments';
             if (($currentUser['role'] ?? '') === 'patient') {
                 $patientTopbarProfileHref = 'patients.php?profile=1';
