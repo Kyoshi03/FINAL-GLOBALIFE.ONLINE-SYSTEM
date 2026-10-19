@@ -4134,10 +4134,10 @@ $additionalStyles = '
     .dashboard-welcome-banner {
         display: grid;
         grid-template-columns: auto minmax(0, 1fr) minmax(330px, .95fr);
-        gap: 20px;
+        gap: 16px;
         align-items: center;
-        min-height: 190px;
-        padding: 22px 30px;
+        min-height: 168px;
+        padding: 18px 26px;
         overflow: hidden;
         border: 1px solid rgba(202, 240, 248, .55);
         border-radius: 18px;
@@ -4147,13 +4147,13 @@ $additionalStyles = '
     }
 
     .dashboard-welcome-banner .patient-profile-avatar {
-        width: 96px;
-        height: 96px;
-        line-height: 96px;
+        width: 86px;
+        height: 86px;
+        line-height: 86px;
         border-color: rgba(255, 255, 255, .9);
         background: #e3f4ff;
         color: #0568c3;
-        font-size: 2rem;
+        font-size: 1.85rem;
     }
 
     .dashboard-welcome-copy {
@@ -4167,7 +4167,7 @@ $additionalStyles = '
     .dashboard-welcome-copy h2 {
         margin: 0 0 8px;
         color: #fff !important;
-        font-size: 2rem;
+        font-size: 1.85rem;
         line-height: 1.12;
     }
 
@@ -4175,12 +4175,12 @@ $additionalStyles = '
         max-width: 520px;
         margin: 0;
         color: #fff !important;
-        font-size: 1rem;
+        font-size: .95rem;
         line-height: 1.5;
     }
 
     .dashboard-welcome-actions {
-        margin-top: 16px;
+        margin-top: 14px;
     }
 
     .dashboard-welcome-actions .primary-btn {
@@ -4192,12 +4192,12 @@ $additionalStyles = '
     .dashboard-welcome-art {
         display: grid;
         place-items: center;
-        min-height: 150px;
+        min-height: 136px;
         color: #0b78bf;
     }
 
     .dashboard-welcome-art svg {
-        width: min(100%, 390px);
+        width: min(100%, 350px);
         height: auto;
         overflow: visible;
     }
