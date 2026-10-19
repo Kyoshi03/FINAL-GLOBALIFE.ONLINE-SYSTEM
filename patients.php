@@ -4437,6 +4437,10 @@ $additionalStyles = '
         line-height: 1.45;
     }
 
+    .dashboard-empty-state .primary-btn {
+        display: none;
+    }
+
     .dashboard-history-tabs {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
