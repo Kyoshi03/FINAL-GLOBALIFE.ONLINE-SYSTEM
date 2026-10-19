@@ -901,6 +901,47 @@ $additionalStyles = '
         font-size: 1.35rem;
     }
 
+    #verification-success-modal .registration-dialog {
+        width: min(520px, 100%);
+        height: auto;
+        max-height: calc(100vh - 40px);
+    }
+
+    .verification-success-body {
+        padding: 32px 28px 28px;
+        text-align: center;
+    }
+
+    .verification-success-icon {
+        display: grid;
+        place-items: center;
+        width: 58px;
+        height: 58px;
+        margin: 0 auto 16px;
+        border-radius: 50%;
+        background: #e8f7ee;
+        color: #168342;
+        font-size: 2rem;
+        font-weight: 800;
+    }
+
+    .verification-success-body h3 {
+        margin: 0 0 10px;
+        color: #073b4c;
+        font-size: 1.45rem;
+    }
+
+    .verification-success-body p {
+        margin: 0;
+        color: #5d6d76;
+        line-height: 1.55;
+    }
+
+    .verification-success-login {
+        width: 100%;
+        margin-top: 24px;
+    }
+
     @media (max-width: 560px) {
         .registration-modal {
             align-items: stretch;
@@ -930,6 +971,16 @@ $additionalStyles = '
             width: 100%;
             height: 100dvh;
         }
+
+        #verification-success-modal .registration-dialog {
+            width: calc(100% - 32px);
+            height: auto;
+            max-height: calc(100dvh - 32px);
+        }
+
+        .verification-success-body {
+            padding: 28px 20px 22px;
+        }
     }
 ';
 
@@ -951,6 +1002,9 @@ $additionalScripts = '
         const verificationModal = document.getElementById("verification-modal");
         const verificationFrame = document.getElementById("verification-frame");
         const verificationCloseTriggers = document.querySelectorAll("[data-verification-close]");
+        const verificationSuccessModal = document.getElementById("verification-success-modal");
+        const verificationSuccessCloseTriggers = document.querySelectorAll("[data-verification-success-close]");
+        const verificationSuccessLogin = document.getElementById("verification-success-login");
         const patientLoginSuccess = document.getElementById("patient-login-success");
         const shouldOpenPatientLogin = ' . (($loginError !== '' || $loginSuccess !== '') ? 'true' : 'false') . ';
 
@@ -1134,6 +1188,35 @@ $additionalScripts = '
             document.body.style.overflow = "";
         }
 
+        function openVerificationSuccessModal() {
+            if (!verificationSuccessModal) {
+                return;
+            }
+
+            verificationSuccessModal.classList.add("is-open");
+            verificationSuccessModal.setAttribute("aria-hidden", "false");
+            document.body.style.overflow = "hidden";
+            window.setTimeout(function () {
+                if (verificationSuccessLogin) {
+                    verificationSuccessLogin.focus();
+                }
+            }, 80);
+        }
+
+        function closeVerificationSuccessModal(event) {
+            if (event) {
+                event.preventDefault();
+            }
+
+            if (!verificationSuccessModal) {
+                return;
+            }
+
+            verificationSuccessModal.classList.remove("is-open");
+            verificationSuccessModal.setAttribute("aria-hidden", "true");
+            document.body.style.overflow = "";
+        }
+
         function openForgotPasswordModal(event) {
             if (event) {
                 event.preventDefault();
@@ -1214,6 +1297,17 @@ $additionalScripts = '
             trigger.addEventListener("click", closeVerificationModal);
         });
 
+        if (verificationSuccessLogin) {
+            verificationSuccessLogin.addEventListener("click", function () {
+                closeVerificationSuccessModal();
+                openPatientLogin();
+            });
+        }
+
+        verificationSuccessCloseTriggers.forEach(function (trigger) {
+            trigger.addEventListener("click", closeVerificationSuccessModal);
+        });
+
         if (registrationFrame) {
             registrationFrame.addEventListener("load", function () {
                 const path = framePath(registrationFrame);
@@ -1236,8 +1330,7 @@ $additionalScripts = '
 
                     if (verificationUrl && verificationUrl.searchParams.get("created") === "1") {
                         closeVerificationModal();
-                        openPatientLogin();
-                        showPatientLoginSuccess("Your account was verified successfully. Please log in to continue.");
+                        openVerificationSuccessModal();
                         return;
                     }
 
@@ -1280,11 +1373,21 @@ $additionalScripts = '
             });
         }
 
+        if (verificationSuccessModal) {
+            verificationSuccessModal.addEventListener("click", function (event) {
+                if (event.target === verificationSuccessModal) {
+                    closeVerificationSuccessModal(event);
+                }
+            });
+        }
+
         document.addEventListener("keydown", function (event) {
             if (event.key === "Escape" && registrationModal && registrationModal.classList.contains("is-open")) {
                 closeRegistrationModal(event);
             } else if (event.key === "Escape" && verificationModal && verificationModal.classList.contains("is-open")) {
                 closeVerificationModal(event);
+            } else if (event.key === "Escape" && verificationSuccessModal && verificationSuccessModal.classList.contains("is-open")) {
+                closeVerificationSuccessModal(event);
             } else if (event.key === "Escape" && forgotPasswordModal && forgotPasswordModal.classList.contains("is-open")) {
                 closeForgotPasswordModal(event);
             } else if (event.key === "Escape" && loginModal && loginModal.classList.contains("is-open")) {
@@ -1630,6 +1733,20 @@ include 'includes/header.php';
                 <button type="button" class="registration-modal-close" data-verification-close aria-label="Close account verification">&times;</button>
             </div>
             <iframe id="verification-frame" class="registration-frame" title="Verify your account"></iframe>
+        </div>
+    </section>
+    <section id="verification-success-modal" class="registration-modal" role="dialog" aria-modal="true" aria-labelledby="verification-success-title" aria-hidden="true">
+        <div class="registration-dialog">
+            <div class="registration-modal-head">
+                <h2 id="verification-success-title">Account verified</h2>
+                <button type="button" class="registration-modal-close" data-verification-success-close aria-label="Close verification success">&times;</button>
+            </div>
+            <div class="verification-success-body">
+                <div class="verification-success-icon" aria-hidden="true">&#10003;</div>
+                <h3>Account verified</h3>
+                <p>Your account was verified successfully. Please log in to continue.</p>
+                <button type="button" id="verification-success-login" class="patient-submit-btn verification-success-login">Go to log in</button>
+            </div>
         </div>
     </section>
 <?php include 'includes/footer.php'; ?>
