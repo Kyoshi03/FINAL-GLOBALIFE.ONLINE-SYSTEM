@@ -276,11 +276,13 @@ body {
     display: block;
     min-width: 0;
     width: 100%;
+    box-sizing: border-box;
     margin-top: 4px;
     border-radius: 7px;
     cursor: default;
 }
 .availability-slot {
+    box-sizing: border-box;
     border: 1px solid #97d9cf;
     border-left: 3px solid #0ea58e;
     background: #eafaf6;
