@@ -228,6 +228,17 @@ body { background:#f4f8fb; min-height:100vh; color:#1f343d; }
     .patient-history-page .appointments-table td { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid #eef3f6; text-align:right; white-space:normal; overflow-wrap:anywhere; }
     .patient-history-page .appointments-table td::before { content:attr(data-label); flex:0 0 40%; color:#708792; font-size:.68rem; font-weight:800; letter-spacing:.04em; text-align:left; text-transform:uppercase; }
     .patient-history-page .appointments-table td:last-child { border-bottom:0; }
+    .patient-history-page .appointments-table-wrapper { padding:10px 8px 12px; border-radius:14px; }
+    .patient-history-page .appointments-table tr { margin-bottom:8px; padding:8px 10px; border-radius:12px; }
+    .patient-history-page .appointments-table td { min-height:28px; gap:8px; padding:6px 0; font-size:.78rem; line-height:1.25; }
+    .patient-history-page .appointments-table td::before { flex:0 0 32%; font-size:.6rem; letter-spacing:.03em; }
+    .patient-history-page .appointment-schedule-cell { min-width:0; }
+    .patient-history-page .appointment-schedule-cell strong { font-size:.78rem; }
+    .patient-history-page .appointment-schedule-cell span { margin-top:0; font-size:.72rem; white-space:nowrap; }
+    .patient-history-page .queue-number { font-size:.95rem; }
+    .patient-history-page .queue-service { max-width:none; min-width:0; color:#1f343d; font-size:.78rem; line-height:1.25; text-align:right; }
+    .patient-history-page .queue-muted { font-size:.78rem; }
+    .patient-history-page .status-badge { padding:3px 8px; font-size:.58rem; }
 }
 ';
 
