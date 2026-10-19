@@ -704,23 +704,59 @@ $additionalStyles = patientAvatarStyles() . '
         font-weight:800;
     }
     .patient-inline-status-filter {
-        display:flex;
+        display:grid;
+        grid-template-columns:max-content minmax(220px, 320px);
         align-items:center;
-        gap:12px;
+        gap:16px;
         margin:0 0 18px;
-        padding:12px 14px;
-        border:1px solid #e1edf3;
-        border-radius:10px;
-        background:#f8fcff;
+        padding:14px 16px;
+        border:1px solid #d7e9f2;
+        border-radius:12px;
+        background:linear-gradient(135deg,#f9fdff 0%,#f1faff 100%);
+        box-shadow:0 5px 16px rgba(25,76,110,.05);
     }
     .patient-inline-status-filter label {
+        display:flex;
+        align-items:center;
+        gap:8px;
         color:#173b52;
-        font-size:.84rem;
+        font-size:.9rem;
         font-weight:800;
+        white-space:nowrap;
+    }
+    .patient-inline-status-filter label::before {
+        content:"";
+        width:8px;
+        height:8px;
+        flex:0 0 8px;
+        border-radius:50%;
+        background:#0f8ec9;
+        box-shadow:0 0 0 4px rgba(15,142,201,.12);
     }
     .patient-inline-status-filter select {
-        width:min(220px, 100%);
-        min-height:40px;
+        width:100%;
+        min-height:46px;
+        box-sizing:border-box;
+        padding:10px 14px;
+        border:1px solid #cfe1eb;
+        border-radius:11px;
+        color:#16384a;
+        background:#fff;
+        font:inherit;
+        font-size:.95rem;
+        font-weight:650;
+        cursor:pointer;
+        box-shadow:0 3px 10px rgba(25,76,110,.04);
+        transition:border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+    }
+    .patient-inline-status-filter select:hover {
+        border-color:#8cc8e6;
+        background:#fbfdff;
+    }
+    .patient-inline-status-filter select:focus {
+        outline:none;
+        border-color:#0f8ec9;
+        box-shadow:0 0 0 4px rgba(15,142,201,.14), 0 3px 10px rgba(25,76,110,.05);
     }
     .filter-empty {
         display: none;
@@ -1187,7 +1223,11 @@ $additionalStyles = patientAvatarStyles() . '
         .patient-appointments-heading h1 { font-size:1.25rem; }
         .patient-appointments-heading p { font-size:.8rem; }
         .patient-new-appointment { width:100%; min-height:42px; }
-        .patient-inline-status-filter { align-items:stretch; flex-direction:column; gap:7px; }
+        .patient-inline-status-filter {
+            grid-template-columns:1fr;
+            align-items:stretch;
+            gap:8px;
+        }
         .patient-inline-status-filter select { width:100%; }
         .patient-history-page {
             width: 100%;
