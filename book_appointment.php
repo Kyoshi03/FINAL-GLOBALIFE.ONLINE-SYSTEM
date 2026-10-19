@@ -401,9 +401,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($error === '') {
                 $bk['appointment_date'] = $date;
                 $bk['appointment_time'] = $time;
-                $bk['step'] = 5;
-                header('Location: book_appointment.php?booking_step=5');
-                exit;
+                $booking = appointment_create_direct(
+                    $conn,
+                    (int) $currentUser['id'],
+                    [
+                        'type' => $bk['type'],
+                        'service_ids' => $bk['service_ids'],
+                        'doctor_id' => $bk['type'] === 'consultation' && !empty($bk['doctor_id']) ? (int) $bk['doctor_id'] : null,
+                        'price_channel' => $bk['price_channel'],
+                        'appointment_date' => $bk['appointment_date'],
+                        'appointment_time' => $bk['appointment_time'],
+                    ]
+                );
+
+                if (!$booking['ok']) {
+                    $error = (string) $booking['error'];
+                } else {
+                    unset($_SESSION['lab_booking']);
+                    $failedChannels = [];
+                    if (empty($booking['email_sent'])) {
+                        $failedChannels[] = 'email';
+                    }
+                    if (empty($booking['sms_sent'])) {
+                        $failedChannels[] = 'SMS';
+                    }
+                    if ($failedChannels) {
+                        $_SESSION['appointment_email_warning'] = 'Your appointment was saved, but the '
+                            . implode(' and ', $failedChannels)
+                            . ' notification could not be delivered. You can still view the booking in My Appointments.';
+                    }
+                    $appointmentId = (int) $booking['appointment_id'];
+                    $conn->close();
+                    header('Location: book_appointment.php?booked=' . $appointmentId);
+                    exit;
+                }
             }
         }
     }
