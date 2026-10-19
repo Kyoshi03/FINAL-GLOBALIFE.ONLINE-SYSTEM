@@ -2039,7 +2039,7 @@ include __DIR__ . '/includes/header.php';
                 return '<div class="detail-pill"><span>' + item[0] + '</span><strong>' + escapeHtml(item[1]) + '</strong></div>';
             }).join('');
         }
-        var items = [['Patient', data.patient]];
+        var items = [['Appointment for', data.patient]];
         if (!isKnownBookingType || bookingType === 'consultation') {
             items.push(['Doctor', data.doctor]);
         }

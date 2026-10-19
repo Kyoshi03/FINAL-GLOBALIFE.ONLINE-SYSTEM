@@ -4076,7 +4076,7 @@ include 'includes/header.php';
             <div class="appointment-modal-body">
                 <div class="detail-summary-strip" id="adminDetailSummary"></div>
                 <dl class="appointment-detail-grid" id="adminAppointmentDetailGrid">
-                    <dt>Patient</dt><dd id="adminDetailPatient">None</dd>
+                    <dt>Appointment for</dt><dd id="adminDetailPatient">None</dd>
                     <dt>Contact</dt><dd id="adminDetailContact">None</dd>
                     <dt data-admin-detail-row="doctor">Doctor</dt><dd data-admin-detail-row="doctor" id="adminDetailDoctor">None</dd>
                     <dt data-admin-detail-row="regular-schedule">Schedule</dt><dd data-admin-detail-row="regular-schedule" id="adminDetailSchedule">None</dd>
