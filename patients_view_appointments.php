@@ -457,7 +457,7 @@ $additionalStyles = patientAvatarStyles() . '
         grid-template-columns:minmax(220px,1fr) minmax(180px,220px) minmax(180px,220px) auto auto;
     }
     .appointment-tools.patient-filters.patient-active-filters {
-        grid-template-columns:minmax(220px,1fr) minmax(180px,220px) auto auto;
+        grid-template-columns:minmax(180px,220px) auto auto;
     }
     .patient-custom-range{grid-column:1 / -1;display:flex;gap:12px;flex-wrap:wrap}
     .patient-custom-range[hidden]{display:none}
@@ -1484,10 +1484,12 @@ include __DIR__ . '/includes/header.php';
     <?php if (!$isClinicalAppointmentsView): ?>
         <section class="appointments-filter-card" aria-label="Appointment filters">
             <div class="appointment-tools patient-filters<?php echo $userRole === 'patient' && $patientAppointmentView === 'active' ? ' patient-active-filters' : ''; ?>" id="patientAppointmentFilterBar">
-                <div class="tool-field">
-                    <label for="appointmentSearch"><?php echo $userRole === 'patient' ? ($patientAppointmentView === 'active' ? 'Search my appointments' : 'Search appointment history') : 'Search appointments'; ?></label>
-                    <input type="search" id="appointmentSearch" placeholder="Search date, service, or status">
-                </div>
+                <?php if ($userRole !== 'patient' || $patientAppointmentView === 'history'): ?>
+                    <div class="tool-field">
+                        <label for="appointmentSearch"><?php echo $userRole === 'patient' ? 'Search appointment history' : 'Search appointments'; ?></label>
+                        <input type="search" id="appointmentSearch" placeholder="Search date, service, or status">
+                    </div>
+                <?php endif; ?>
                 <div class="tool-field">
                     <label for="appointmentStatusFilter">Status</label>
                     <select id="appointmentStatusFilter">
