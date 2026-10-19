@@ -2670,12 +2670,12 @@ $additionalStyles = '
 
     .profile-password-actions {
         display: flex;
-        justify-content: flex-end;
+        justify-content: flex-start;
         margin-top: 16px;
     }
 
     .profile-password-actions .primary-btn {
-        min-width: 190px;
+        min-width: 0;
     }
 
     .record-grid {
