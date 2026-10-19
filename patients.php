@@ -4558,6 +4558,12 @@ $additionalStyles = '
         gap: 16px;
     }
 
+    .dashboard-profile-card .dashboard-card-title h3,
+    .dashboard-profile-card .dashboard-profile-progress-head,
+    .dashboard-profile-card .dashboard-contact-copy strong {
+        color: #0a477f;
+    }
+
     .dashboard-profile-identity {
         display: flex;
         align-items: center;
@@ -4574,7 +4580,9 @@ $additionalStyles = '
         width: 64px;
         height: 64px;
         line-height: 64px;
-        border-color: #d5f1fb;
+        border-color: #c9eafe;
+        background: #e4f4ff;
+        color: #0874c1;
         box-shadow: none;
         font-size: 1.2rem;
     }
@@ -4582,7 +4590,7 @@ $additionalStyles = '
     .dashboard-profile-identity strong {
         display: block;
         overflow: hidden;
-        color: #073b4c;
+        color: #0a477f;
         font-size: 1rem;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -4591,7 +4599,7 @@ $additionalStyles = '
     .dashboard-profile-identity span {
         display: block;
         margin-top: 4px;
-        color: #6a7e89;
+        color: #607b95;
         font-size: .84rem;
     }
 
@@ -4654,7 +4662,7 @@ $additionalStyles = '
 
     .dashboard-contact-copy span {
         overflow: hidden;
-        color: #6a7e89;
+        color: #607b95;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
