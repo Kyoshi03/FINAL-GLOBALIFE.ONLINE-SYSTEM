@@ -364,8 +364,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $bk['appointment_date'] = '';
             $bk['appointment_time'] = '';
             $bk['step'] = 4;
-            $calendarPickerQuery = !empty($_POST['open_calendar']) ? '&calendar_picker=1' : '';
-            header('Location: book_appointment.php?booking_step=4' . $calendarPickerQuery);
+            header('Location: book_appointment.php?booking_step=4');
             exit;
         }
     }
@@ -874,7 +873,6 @@ $additionalStyles = '
     .progressive-schedule { display: none; margin-top: 18px; padding-top: 18px; border-top: 1px solid #e3edf4; }
     .progressive-schedule.is-active { display: block; }
     .progressive-schedule-note { margin: -8px 0 14px; color: #607784; font-size: .86rem; line-height: 1.4; }
-    .progressive-actions .btn-primary:disabled { background: #b8cad8; color: #f7fbfd; cursor: not-allowed; box-shadow: none; }
     .progressive-form-error { display: none; margin: 0 0 16px; padding: 11px 13px; border-left: 4px solid #c1121f; border-radius: 8px; background: #fff0f0; color: #a30e19; }
     .progressive-form-error.is-visible { display: block; }
     .progressive-actions { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 18px; padding-top: 18px; border-top: 1px solid #e3edf4; }
@@ -1511,13 +1509,13 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 </div>
 
                 <div class="progressive-schedule" id="progressiveSchedule">
-                    <p class="progressive-schedule-note">Choose your appointment date and available time using the clinic calendar.</p>
+                    <p class="progressive-schedule-note">Next, choose your appointment date and available time using the clinic calendar.</p>
                 </div>
 
                 <div class="progressive-form-error" id="progressiveFormError" role="alert"></div>
                 <div class="progressive-actions">
                     <a href="patients.php" class="btn-secondary">Cancel</a>
-                    <button type="submit" name="open_calendar" value="1" class="btn-primary" id="progressiveChooseDate" disabled>Choose Date</button>
+                    <button type="submit" class="btn-primary">Next: Choose Date</button>
                 </div>
             </form>
             <script>
@@ -1527,9 +1525,8 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 var specialtySelect = document.getElementById('progressiveSpecialty');
                 var doctorSelect = document.getElementById('progressiveDoctor');
                 var schedule = document.getElementById('progressiveSchedule');
-                var chooseDateButton = document.getElementById('progressiveChooseDate');
                 var errorBox = document.getElementById('progressiveFormError');
-                if (!form || !typeSelect || !specialtySelect || !doctorSelect || !schedule || !chooseDateButton || !errorBox) return;
+                if (!form || !typeSelect || !specialtySelect || !doctorSelect || !schedule || !errorBox) return;
 
                 function setError(message) {
                     errorBox.textContent = message || '';
@@ -1580,7 +1577,6 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     }
                     var canSchedule = !!type && hasSelectedService(type);
                     schedule.classList.toggle('is-active', canSchedule);
-                    chooseDateButton.disabled = !canSchedule;
                 }
                 typeSelect.addEventListener('change', function() { setError(''); updatePanels(); });
                 specialtySelect.addEventListener('change', function() { setError(''); updateDoctorOptions(); updatePanels(); });
