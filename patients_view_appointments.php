@@ -703,6 +703,25 @@ $additionalStyles = patientAvatarStyles() . '
         font-size:.95rem;
         font-weight:800;
     }
+    .patient-inline-status-filter {
+        display:flex;
+        align-items:center;
+        gap:12px;
+        margin:0 0 18px;
+        padding:12px 14px;
+        border:1px solid #e1edf3;
+        border-radius:10px;
+        background:#f8fcff;
+    }
+    .patient-inline-status-filter label {
+        color:#173b52;
+        font-size:.84rem;
+        font-weight:800;
+    }
+    .patient-inline-status-filter select {
+        width:min(220px, 100%);
+        min-height:40px;
+    }
     .filter-empty {
         display: none;
         text-align: center;
@@ -1168,6 +1187,8 @@ $additionalStyles = patientAvatarStyles() . '
         .patient-appointments-heading h1 { font-size:1.25rem; }
         .patient-appointments-heading p { font-size:.8rem; }
         .patient-new-appointment { width:100%; min-height:42px; }
+        .patient-inline-status-filter { align-items:stretch; flex-direction:column; gap:7px; }
+        .patient-inline-status-filter select { width:100%; }
         .patient-history-page {
             width: 100%;
             max-width: none;
@@ -1481,7 +1502,7 @@ include __DIR__ . '/includes/header.php';
         </section>
     <?php endif; ?>
 
-    <?php if (!$isClinicalAppointmentsView): ?>
+    <?php if (!$isClinicalAppointmentsView && !($userRole === 'patient' && $patientAppointmentView === 'active')): ?>
         <section class="appointments-filter-card" aria-label="Appointment filters">
             <div class="appointment-tools patient-filters<?php echo $userRole === 'patient' && $patientAppointmentView === 'active' ? ' patient-active-filters' : ''; ?>" id="patientAppointmentFilterBar">
                 <?php if ($userRole !== 'patient' || $patientAppointmentView === 'history'): ?>
@@ -1541,6 +1562,16 @@ include __DIR__ . '/includes/header.php';
     <?php endif; ?>
 
     <div class="appointments-table-wrapper">
+        <?php if ($userRole === 'patient' && $patientAppointmentView === 'active'): ?>
+            <div class="patient-inline-status-filter">
+                <label for="appointmentStatusFilter">Status</label>
+                <select id="appointmentStatusFilter">
+                    <option value="">All statuses</option>
+                    <option value="pending"<?php echo $initialStatusFilter === 'pending' ? ' selected' : ''; ?>>Pending (<?php echo (int) $statusCounts['pending']; ?>)</option>
+                    <option value="confirmed"<?php echo $initialStatusFilter === 'confirmed' ? ' selected' : ''; ?>>Confirmed (<?php echo (int) $statusCounts['confirmed']; ?>)</option>
+                </select>
+            </div>
+        <?php endif; ?>
         <?php if ($isClinicalAppointmentsView): ?>
             <div class="clinical-panel-head">
                 <h2>All Appointments</h2>
