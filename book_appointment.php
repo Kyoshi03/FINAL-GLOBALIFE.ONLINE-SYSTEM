@@ -1347,20 +1347,20 @@ $additionalStyles = '
     .error-message { background: #fee; color: #c1121f; padding: 14px; border-radius: 10px; margin-bottom: 18px; border-left: 4px solid #c1121f; }
     .success-banner { background: #d4edda; color: #155724; padding: 20px; border-radius: 12px; margin-bottom: 22px; border-left: 4px solid #28a745; }
     .info-box { background: #e3f2fd; border-left: 4px solid #2196f3; padding: 14px; border-radius: 8px; margin-bottom: 20px; color: #1565c0; font-size: 0.95rem; }
-    .clinic-reminder-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 18px; margin:16px 0 14px; padding:20px 22px; border-left:5px solid #2f7d32; border-radius:15px; background:linear-gradient(135deg,#e9fff3 0%,#b9f2d7 100%); box-shadow:0 10px 24px rgba(28,112,64,.08); }
-    .clinic-reminder-heading { grid-column:1 / -1; margin-bottom:3px; }
-    .clinic-reminder-heading h3 { margin:0 0 5px; color:#08745f; font-size:1.18rem; }
-    .clinic-reminder-heading p { margin:0; color:#23695d; font-size:.88rem; line-height:1.45; }
-    .clinic-reminder { display:grid; grid-template-columns:29px minmax(0,1fr); column-gap:9px; align-items:start; padding:4px 0; }
-    .clinic-reminder-number { display:inline-grid; grid-row:span 2; place-items:center; width:29px; height:29px; margin:0; border-radius:50%; background:#168b63; color:#fff; font-size:.82rem; font-weight:900; }
+    .clinic-reminder-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 15px; margin:14px 0 12px; padding:16px 18px; border-left:4px solid #2f7d32; border-radius:13px; background:linear-gradient(135deg,#e9fff3 0%,#b9f2d7 100%); box-shadow:0 8px 18px rgba(28,112,64,.07); }
+    .clinic-reminder-heading { grid-column:1 / -1; margin-bottom:2px; }
+    .clinic-reminder-heading h3 { margin:0 0 4px; color:#08745f; font-size:1.05rem; }
+    .clinic-reminder-heading p { margin:0; color:#23695d; font-size:.8rem; line-height:1.4; }
+    .clinic-reminder { display:grid; grid-template-columns:26px minmax(0,1fr); column-gap:8px; align-items:start; padding:3px 0; }
+    .clinic-reminder-number { display:inline-grid; grid-row:span 2; place-items:center; width:26px; height:26px; margin:0; border-radius:50%; background:#168b63; color:#fff; font-size:.76rem; font-weight:900; }
     .clinic-reminder strong { display:block; color:#075f50; margin:1px 0 3px; line-height:1.25; }
-    .clinic-reminder span { color:#23695d; font-size:.86rem; line-height:1.4; }
-    .clinic-restrictions { display:grid; gap:10px; margin:0 0 22px; padding:18px 20px 19px; border-left:5px solid #0878b5; border-radius:15px; background:linear-gradient(135deg,#e9f5ff 0%,#c9e0ff 100%); color:#164f9c; box-shadow:0 10px 24px rgba(0,119,182,.08); }
+    .clinic-reminder span { color:#23695d; font-size:.8rem; line-height:1.35; }
+    .clinic-restrictions { display:grid; gap:8px; margin:0 0 18px; padding:15px 18px 16px; border-left:4px solid #0878b5; border-radius:13px; background:linear-gradient(135deg,#e9f5ff 0%,#c9e0ff 100%); color:#164f9c; box-shadow:0 8px 18px rgba(0,119,182,.07); }
     .clinic-restrictions-heading { display:flex; align-items:center; gap:9px; color:#164a9d; }
     .clinic-restrictions-heading svg { width:21px; height:21px; flex:0 0 21px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
-    .clinic-restrictions-heading h3 { margin:0; font-size:1.08rem; }
-    .clinic-restrictions ul { display:grid; gap:7px; margin:0; padding-left:25px; }
-    .clinic-restrictions li { padding-left:2px; color:#2457a0; font-size:.88rem; line-height:1.45; }
+    .clinic-restrictions-heading h3 { margin:0; font-size:1rem; }
+    .clinic-restrictions ul { display:grid; gap:5px; margin:0; padding-left:23px; }
+    .clinic-restrictions li { padding-left:1px; color:#2457a0; font-size:.8rem; line-height:1.35; }
     .clinic-restrictions li::marker { color:#2188df; }
     .booking-progress { margin:16px 0 22px; padding:12px 14px; border:1px solid #dce9f4; border-radius:12px; background:#f8fcff; }
     .booking-progress-copy { display:flex; align-items:center; justify-content:space-between; gap:12px; color:#60727d; font-size:.78rem; }
@@ -1396,14 +1396,14 @@ $additionalStyles = '
         .booking-progress-copy { display:block; font-size:.72rem; }
         .booking-progress-copy strong { display:block; margin-top:3px; font-size:.82rem; text-align:left; }
         .booking-progress-track { margin-top:8px; }
-        .clinic-reminder-grid { gap:8px; padding:15px 14px; }
-        .clinic-reminder { grid-template-columns:28px minmax(0,1fr); column-gap:9px; padding:3px 0; }
-        .clinic-reminder-number { width:28px; height:28px; font-size:.82rem; }
-        .clinic-reminder strong { font-size:.86rem; }
-        .clinic-reminder span { font-size:.78rem; line-height:1.35; }
-        .clinic-restrictions { padding:15px 14px 16px; }
-        .clinic-restrictions-heading h3 { font-size:.98rem; }
-        .clinic-restrictions li { font-size:.78rem; }
+        .clinic-reminder-grid { gap:6px; padding:12px 11px; }
+        .clinic-reminder { grid-template-columns:25px minmax(0,1fr); column-gap:8px; }
+        .clinic-reminder-number { width:25px; height:25px; font-size:.74rem; }
+        .clinic-reminder strong { font-size:.8rem; }
+        .clinic-reminder span { font-size:.72rem; line-height:1.3; }
+        .clinic-restrictions { gap:7px; padding:12px 11px 13px; }
+        .clinic-restrictions-heading h3 { font-size:.9rem; }
+        .clinic-restrictions li { font-size:.72rem; line-height:1.3; }
     }
     .detail-block { background: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 14px; }
     .detail-block h4 { margin: 0 0 8px; color: #0077b6; font-size: 1rem; }
