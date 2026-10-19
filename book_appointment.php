@@ -1638,6 +1638,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                             <div class="progressive-selection-header">
                                 <strong>Selected package</strong>
                                 <span class="progressive-selection-count" id="progressivePackageSelectedName"></span>
+                                <button type="button" class="progressive-selected-remove" id="progressivePackageRemove">Remove</button>
                             </div>
                             <div class="progressive-selection-total">
                                 <span>Estimated total</span>
@@ -1767,6 +1768,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 var packageSummary = document.getElementById('progressivePackageSummary');
                 var packageSelectedName = document.getElementById('progressivePackageSelectedName');
                 var packageTotal = document.getElementById('progressivePackageTotal');
+                var packageRemove = document.getElementById('progressivePackageRemove');
                 var individualSummary = document.getElementById('progressiveIndividualSummary');
                 var individualSelectedCount = document.getElementById('progressiveIndividualSelectedCount');
                 var individualSelectedItems = document.getElementById('progressiveIndividualSelectedItems');
@@ -2009,6 +2011,12 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         button.setAttribute('aria-pressed', isAdded ? 'true' : 'false');
                     });
                 }
+                packageRemove.addEventListener('click', function() {
+                    var selectedPackage = form.querySelector('input[name="package_id"]:checked');
+                    if (!selectedPackage) return;
+                    selectedPackage.checked = false;
+                    updatePanels();
+                });
                 function filterServices(searchId, categoryId, listId) {
                     var search = document.getElementById(searchId);
                     var category = document.getElementById(categoryId);
