@@ -3811,6 +3811,12 @@ $additionalStyles = '
         z-index: 5202 !important;
     }
 
+    body.patient-tour-history-visible #mainNav,
+    body.patient-tour-history-visible .patient-history-group,
+    body.patient-tour-history-visible .patient-history-group .nav-submenu {
+        z-index: 5202 !important;
+    }
+
     @media (max-width: 560px) {
         .patient-tour-focus {
             border-radius: 10px;
@@ -5396,11 +5402,13 @@ include 'includes/header.php';
             if (!group) return;
             if (step.target.indexOf('patients_') === -1) {
                 group.classList.remove('patient-tour-history-open');
+                document.body.classList.remove('patient-tour-history-visible');
                 return;
             }
             var toggle = group ? group.querySelector('.patient-history-toggle') : null;
             if (group && toggle && !group.classList.contains('is-open')) toggle.click();
             group.classList.add('patient-tour-history-open');
+            document.body.classList.add('patient-tour-history-visible');
         }
 
         function clearHighlight() {
@@ -5555,6 +5563,7 @@ include 'includes/header.php';
             clearHighlight();
             var historyGroup = document.querySelector('.patient-history-group');
             if (historyGroup) historyGroup.classList.remove('patient-tour-history-open');
+            document.body.classList.remove('patient-tour-history-visible');
             if (tooltip) {
                 tooltip.remove();
                 tooltip = null;
