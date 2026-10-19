@@ -3590,6 +3590,172 @@ $additionalStyles = '
         border-color: #cde8f3;
         color: #0077b6;
     }
+
+    .patient-tour-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 5200;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(3, 35, 53, 0.62);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity .2s ease, visibility .2s ease;
+    }
+
+    .patient-tour-overlay.is-open {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
+
+    .patient-tour-dialog {
+        width: min(100%, 560px);
+        box-sizing: border-box;
+        padding: 24px;
+        border: 1px solid #cde8f3;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 24px 70px rgba(2, 62, 138, .24);
+        transform: translateY(10px) scale(.98);
+        transition: transform .2s ease;
+    }
+
+    .patient-tour-overlay.is-open .patient-tour-dialog {
+        transform: translateY(0) scale(1);
+    }
+
+    .patient-tour-head,
+    .patient-tour-actions,
+    .patient-tour-progress {
+        display: flex;
+        align-items: center;
+    }
+
+    .patient-tour-head {
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+    }
+
+    .patient-tour-step-label {
+        color: #0077b6;
+        font-size: .8rem;
+        font-weight: 800;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    .patient-tour-close {
+        width: 34px;
+        height: 34px;
+        flex: 0 0 34px;
+        border: 1px solid #cde8f3;
+        border-radius: 50%;
+        background: #f4fbff;
+        color: #0b4f80;
+        font-size: 1.25rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .patient-tour-number {
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        margin-bottom: 14px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #48cae4 0%, #0077b6 100%);
+        color: #fff;
+        font-size: 1.25rem;
+        font-weight: 800;
+    }
+
+    .patient-tour-dialog h3 {
+        margin: 0 0 8px;
+        color: #023e8a;
+        font-size: 1.45rem;
+    }
+
+    .patient-tour-dialog p {
+        margin: 0;
+        color: #60727d;
+        font-size: .98rem;
+        line-height: 1.55;
+    }
+
+    .patient-tour-progress {
+        gap: 6px;
+        margin: 22px 0;
+    }
+
+    .patient-tour-progress span {
+        width: 28px;
+        height: 4px;
+        border-radius: 4px;
+        background: #dbeff6;
+    }
+
+    .patient-tour-progress span.is-active {
+        background: #0077b6;
+    }
+
+    .patient-tour-actions {
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .patient-tour-actions .plain-btn,
+    .patient-tour-actions .primary-btn {
+        min-width: 92px;
+    }
+
+    .patient-tour-actions .plain-btn[hidden] {
+        display: none;
+    }
+
+    .patient-tour-target {
+        position: relative;
+        z-index: 5201;
+        border-radius: 8px !important;
+        outline: 3px solid #48cae4 !important;
+        outline-offset: 4px;
+        box-shadow: 0 0 0 8px rgba(72, 202, 228, .22), 0 10px 26px rgba(0, 119, 182, .22) !important;
+    }
+
+    body.patient-tour-open {
+        overflow: hidden;
+    }
+
+    @media (max-width: 560px) {
+        .patient-tour-overlay {
+            align-items: flex-end;
+            padding: 10px;
+        }
+
+        .patient-tour-dialog {
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .patient-tour-dialog h3 {
+            font-size: 1.2rem;
+        }
+
+        .patient-tour-actions {
+            justify-content: stretch;
+        }
+
+        .patient-tour-actions .plain-btn,
+        .patient-tour-actions .primary-btn {
+            flex: 1 1 120px;
+        }
+    }
 ';
 
 $additionalHeadLinks = '
@@ -3744,7 +3910,7 @@ include 'includes/header.php';
 
         <div class="dashboard-layout">
             <div>
-            <section class="panel">
+            <section class="panel" id="upcomingAppointmentsPanel">
                 <div class="panel-header">
                     <div>
                         <h3>Upcoming Appointments</h3>
@@ -3982,6 +4148,30 @@ include 'includes/header.php';
         </div>
         <?php endif; ?>
     </main>
+
+    <?php if ($isNewPatientWelcome && !$showNotificationsPage): ?>
+    <div class="patient-tour-overlay" id="patientTourOverlay" aria-hidden="true">
+        <section class="patient-tour-dialog" role="dialog" aria-modal="true" aria-labelledby="patientTourTitle">
+            <div class="patient-tour-head">
+                <span class="patient-tour-step-label" id="patientTourStepLabel">Step 1 of 7</span>
+                <button type="button" class="patient-tour-close" id="patientTourClose" aria-label="Close tutorial">&times;</button>
+            </div>
+            <div class="patient-tour-number" id="patientTourNumber" aria-hidden="true">1</div>
+            <h3 id="patientTourTitle">Calendar</h3>
+            <p id="patientTourDescription">View the clinic calendar to check available doctors, services, dates, and appointment slots.</p>
+            <div class="patient-tour-progress" id="patientTourProgress" aria-hidden="true">
+                <?php for ($tourStep = 1; $tourStep <= 7; $tourStep++): ?>
+                    <span<?php echo $tourStep === 1 ? ' class="is-active"' : ''; ?>></span>
+                <?php endfor; ?>
+            </div>
+            <div class="patient-tour-actions">
+                <button type="button" class="plain-btn" id="patientTourSkip">Skip tutorial</button>
+                <button type="button" class="plain-btn" id="patientTourBack" hidden>Back</button>
+                <button type="button" class="primary-btn" id="patientTourNext">Next</button>
+            </div>
+        </section>
+    </div>
+    <?php endif; ?>
 
     <div class="patient-appointment-modal" id="patientAppointmentDetailsModal" aria-hidden="true">
         <section class="patient-appointment-dialog" role="dialog" aria-modal="true" aria-labelledby="patientAppointmentDetailsTitle">
@@ -4936,5 +5126,145 @@ include 'includes/header.php';
         });
     })();
     </script>
+    <?php if ($isNewPatientWelcome && !$showNotificationsPage): ?>
+    <script>
+    (function () {
+        var overlay = document.getElementById('patientTourOverlay');
+        if (!overlay) return;
+
+        var stepLabel = document.getElementById('patientTourStepLabel');
+        var stepNumber = document.getElementById('patientTourNumber');
+        var title = document.getElementById('patientTourTitle');
+        var description = document.getElementById('patientTourDescription');
+        var progress = document.querySelectorAll('#patientTourProgress span');
+        var backButton = document.getElementById('patientTourBack');
+        var nextButton = document.getElementById('patientTourNext');
+        var skipButton = document.getElementById('patientTourSkip');
+        var closeButton = document.getElementById('patientTourClose');
+        var currentStep = 0;
+        var activeTarget = null;
+
+        var steps = [
+            {
+                title: 'Calendar',
+                description: 'View the clinic calendar to check available doctors, services, dates, and appointment slots.',
+                target: 'a[href="patient_calendar.php"]'
+            },
+            {
+                title: 'Upcoming Appointments',
+                description: 'See your next clinic visit, appointment status, queue number, and any pending reschedule request here.',
+                target: '#upcomingAppointmentsPanel'
+            },
+            {
+                title: 'Book Appointment',
+                description: 'Use Book Appointments to choose a service or doctor, then select an available date and time.',
+                target: 'a[href^="book_appointment.php"]'
+            },
+            {
+                title: 'My Profile',
+                description: 'Open My Profile to update your contact details and keep your clinic information complete.',
+                target: '#profile'
+            },
+            {
+                title: 'History',
+                description: 'Open History to review completed appointments and your queue records.',
+                target: '.patient-history-toggle'
+            },
+            {
+                title: 'Appointment History',
+                description: 'Appointment History shows your past and current appointment records, including their statuses.',
+                target: 'a[href="patients_view_appointments.php"]'
+            },
+            {
+                title: 'Queue History',
+                description: 'Queue History shows your previous queue activity and visit records.',
+                target: 'a[href="patients_queue_history.php"]'
+            }
+        ];
+
+        function clearTarget() {
+            if (activeTarget) {
+                activeTarget.classList.remove('patient-tour-target');
+                activeTarget = null;
+            }
+        }
+
+        function prepareHistoryMenu(step) {
+            if (step.target.indexOf('patients_') === -1) return;
+            var group = document.querySelector('.patient-history-group');
+            var toggle = group ? group.querySelector('.patient-history-toggle') : null;
+            if (group && toggle && !group.classList.contains('is-open')) {
+                toggle.click();
+            }
+        }
+
+        function showStep(index) {
+            currentStep = Math.max(0, Math.min(index, steps.length - 1));
+            var step = steps[currentStep];
+            clearTarget();
+            prepareHistoryMenu(step);
+
+            if (stepLabel) stepLabel.textContent = 'Step ' + (currentStep + 1) + ' of ' + steps.length;
+            if (stepNumber) stepNumber.textContent = String(currentStep + 1);
+            if (title) title.textContent = step.title;
+            if (description) description.textContent = step.description;
+            progress.forEach(function (item, itemIndex) {
+                item.classList.toggle('is-active', itemIndex === currentStep);
+            });
+            if (backButton) backButton.hidden = currentStep === 0;
+            if (nextButton) nextButton.textContent = currentStep === steps.length - 1 ? 'Done' : 'Next';
+
+            window.setTimeout(function () {
+                var target = document.querySelector(step.target);
+                if (!target) return;
+                activeTarget = target;
+                activeTarget.classList.add('patient-tour-target');
+                if (currentStep > 0 || target.closest('.patient-history-group')) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+                }
+            }, 80);
+        }
+
+        function closeTour() {
+            clearTarget();
+            overlay.classList.remove('is-open');
+            overlay.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('patient-tour-open');
+        }
+
+        function openTour() {
+            overlay.classList.add('is-open');
+            overlay.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('patient-tour-open');
+            showStep(0);
+        }
+
+        if (backButton) {
+            backButton.addEventListener('click', function () {
+                showStep(currentStep - 1);
+            });
+        }
+        if (nextButton) {
+            nextButton.addEventListener('click', function () {
+                if (currentStep === steps.length - 1) {
+                    closeTour();
+                    return;
+                }
+                showStep(currentStep + 1);
+            });
+        }
+        if (skipButton) skipButton.addEventListener('click', closeTour);
+        if (closeButton) closeButton.addEventListener('click', closeTour);
+        overlay.addEventListener('click', function (event) {
+            if (event.target === overlay) closeTour();
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && overlay.classList.contains('is-open')) closeTour();
+        });
+
+        window.setTimeout(openTour, 250);
+    })();
+    </script>
+    <?php endif; ?>
 <?php $appointmentPage = 'patients.php'; include __DIR__ . '/includes/appointment_reschedule_ui.php'; ?>
 <?php include 'includes/footer.php'; ?>
