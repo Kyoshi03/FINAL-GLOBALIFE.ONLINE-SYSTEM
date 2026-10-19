@@ -3852,6 +3852,29 @@ $additionalStyles = '
             z-index: 5207 !important;
         }
 
+        body.patient-tour-history-visible #mainNav .patient-history-group .nav-submenu {
+            display: block !important;
+            position: fixed !important;
+            right: 18px !important;
+            bottom: 106px !important;
+            z-index: 5208 !important;
+            width: min(220px, calc(100vw - 38px)) !important;
+            max-width: none !important;
+        }
+
+        body.patient-tour-history-visible #mainNav .patient-history-group .nav-submenu-inner {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 6px !important;
+            overflow: visible !important;
+        }
+
+        body.patient-tour-history-visible #mainNav .patient-history-group .nav-subitem {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
         .patient-tour-focus {
             border-radius: 10px;
         }
