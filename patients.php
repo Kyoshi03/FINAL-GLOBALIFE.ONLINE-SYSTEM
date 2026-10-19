@@ -3852,6 +3852,18 @@ $additionalStyles = '
             z-index: 5207 !important;
         }
 
+        body.patient-tour-nav-visible #mainNav .patient-tour-highlight {
+            background: #ffffff !important;
+            border-color: rgba(72, 202, 228, .78) !important;
+            color: #023e8a !important;
+            box-shadow: 0 0 0 3px #48cae4, 0 0 0 8px rgba(72, 202, 228, .24), 0 12px 24px rgba(2, 62, 138, .24) !important;
+        }
+
+        body.patient-tour-nav-visible #mainNav .patient-tour-highlight .nav-ui-icon,
+        body.patient-tour-nav-visible #mainNav .patient-tour-highlight .nav-chevron {
+            color: #023e8a !important;
+        }
+
         body.patient-tour-history-visible #mainNav .patient-history-group .nav-submenu {
             display: block !important;
             position: fixed !important;
