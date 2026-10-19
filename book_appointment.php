@@ -931,11 +931,11 @@ $additionalStyles = '
     .progressive-calendar-modal { position: fixed; inset: 0; z-index: 6500; display: none; align-items: center; justify-content: center; padding: 18px; background: rgba(3,37,56,.56); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
     .progressive-calendar-modal.is-open { display: flex; }
     body.modal-open { overflow: hidden; }
-    .progressive-calendar-dialog { width: min(100%, 520px); max-height: 92vh; overflow: hidden; border: 1px solid #c9e2ef; border-radius: 18px; background: #fff; box-shadow: 0 24px 70px rgba(4,35,52,.3); }
+    .progressive-calendar-dialog { display: flex; flex-direction: column; width: min(100%, 520px); max-height: calc(100vh - 36px); overflow: hidden; border: 1px solid #c9e2ef; border-radius: 18px; background: #fff; box-shadow: 0 24px 70px rgba(4,35,52,.3); }
     .progressive-calendar-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 18px; border-bottom: 1px solid #d8eaf3; background: linear-gradient(135deg,#f7fdff,#e8f7ff); color: #073b4c; }
     .progressive-calendar-head strong { font-size: 1.08rem; }
     .progressive-calendar-close { flex: 0 0 34px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #fff; color: #0878b5; font-size: 1.35rem; line-height: 1; cursor: pointer; box-shadow: 0 4px 12px rgba(20,79,123,.12); }
-    .progressive-calendar-body { padding: 16px; }
+    .progressive-calendar-body { min-height: 0; overflow: auto; flex: 1 1 auto; padding: 16px; }
     .progressive-calendar-month { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
     .progressive-calendar-month strong { color: #0f1f35; font-size: 1.05rem; }
     .progressive-calendar-nav { width: 36px; height: 36px; border: 1px solid #c9e2ef; border-radius: 9px; background: #fff; color: #0878b5; font-size: 1.35rem; line-height: 1; cursor: pointer; }
@@ -957,7 +957,7 @@ $additionalStyles = '
     .progressive-calendar-grid button:disabled { border-color: #edf2f5; background: #f7fafb; color: #9aa8b2; cursor: not-allowed; }
     .progressive-calendar-grid button.is-selected small { color: #dff6ff; }
     .progressive-calendar-help { margin: 12px 0 0; color: #607784; font-size: .83rem; line-height: 1.4; }
-    .progressive-calendar-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 12px 16px 16px; border-top: 1px solid #d8eaf3; }
+    .progressive-calendar-actions { display: flex; flex: 0 0 auto; justify-content: flex-end; gap: 10px; padding: 12px 16px 16px; border-top: 1px solid #d8eaf3; background: #fff; }
     .progressive-calendar-cancel, .progressive-calendar-confirm { min-height: 42px; padding: 0 18px; border-radius: 9px; font: inherit; font-weight: 900; cursor: pointer; }
     .progressive-calendar-cancel { border: 1px solid #c9dce8; background: #fff; color: #44647a; }
     .progressive-calendar-confirm { border: 0; background: #0878b5; color: #fff; box-shadow: 0 6px 14px rgba(8,120,181,.18); }
