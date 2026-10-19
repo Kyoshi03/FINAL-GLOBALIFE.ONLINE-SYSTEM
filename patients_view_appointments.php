@@ -2362,9 +2362,6 @@ include __DIR__ . '/includes/header.php';
         if (highlightedRow) {
             highlightedRow.scrollIntoView({ block: 'center', behavior: 'smooth' });
             highlightedRow.classList.add('is-highlighted');
-            window.setTimeout(function() {
-                showDetails(highlightedRow);
-            }, 250);
         }
     }
     document.querySelectorAll('button[data-confirm-message]').forEach(function(button) {
