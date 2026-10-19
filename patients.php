@@ -827,10 +827,11 @@ $stmt = $conn->prepare("SELECT a.*, {$doctorNameSql} AS doctor_name, q.queue_num
       AND a.status IN ('pending', 'confirmed')
       AND a.appointment_date >= CURDATE()
     ORDER BY a.appointment_date ASC, a.appointment_time ASC
-    LIMIT 1");
+    LIMIT 3");
 $stmt->bind_param("i", $currentUser['id']);
 $stmt->execute();
-$nextAppointment = $stmt->get_result()->fetch_assoc() ?: null;
+$upcomingAppointments = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$nextAppointment = $upcomingAppointments[0] ?? null;
 $stmt->close();
 
 $appointmentsPerPage = 5;
@@ -4303,6 +4304,10 @@ $additionalStyles = '
         background: #f7fcff;
     }
 
+    .dashboard-upcoming-item + .dashboard-upcoming-item {
+        margin-top: 10px;
+    }
+
     .dashboard-date-tile {
         display: grid;
         overflow: hidden;
@@ -4959,6 +4964,11 @@ include 'includes/header.php';
                     <?php if ($nextAppointment): ?>
                         <?php $nextAppointmentDateStamp = strtotime((string) ($nextAppointment['appointment_date'] ?? '')); $nextAppointmentStatusClass = patient_status_class($nextAppointment['status'] ?? 'pending'); $nextAppointmentStatusLabel = $nextAppointmentStatusClass === 'cancelled' ? 'Cancelled' : ucfirst($nextAppointmentStatusClass); ?>
                         <div class="dashboard-upcoming-item"><div class="dashboard-date-tile" aria-label="<?php echo htmlspecialchars(patient_format_date($nextAppointment['appointment_date'] ?? '')); ?>"><span><?php echo $nextAppointmentDateStamp ? htmlspecialchars(strtoupper(date('M', $nextAppointmentDateStamp))) : 'DATE'; ?></span><strong><?php echo $nextAppointmentDateStamp ? (int) date('j', $nextAppointmentDateStamp) : '--'; ?></strong></div><div class="dashboard-upcoming-copy"><strong><?php echo htmlspecialchars(patient_booking_label($nextAppointment['booking_type'] ?? null)); ?></strong><div class="dashboard-upcoming-meta"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3v3M16 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/></svg><?php echo htmlspecialchars(patient_format_date($nextAppointment['appointment_date'] ?? '')); ?></span><span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><?php echo htmlspecialchars(patient_format_time($nextAppointment['appointment_time'] ?? '')); ?></span></div></div><div class="dashboard-upcoming-actions"><span class="dashboard-status-badge <?php echo htmlspecialchars($nextAppointmentStatusClass); ?>"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><?php echo htmlspecialchars($nextAppointmentStatusLabel); ?></span><a href="patients_view_appointments.php" class="dashboard-view-details">View details</a></div></div>
+                        <?php foreach (array_slice($upcomingAppointments, 1) as $upcomingAppointment): ?>
+                            <?php $upcomingDateStamp = strtotime((string) ($upcomingAppointment['appointment_date'] ?? '')); $upcomingStatusClass = patient_status_class($upcomingAppointment['status'] ?? 'pending'); $upcomingStatusLabel = $upcomingStatusClass === 'cancelled' ? 'Cancelled' : ucfirst($upcomingStatusClass); ?>
+                            <div class="dashboard-upcoming-item"><div class="dashboard-date-tile" aria-label="<?php echo htmlspecialchars(patient_format_date($upcomingAppointment['appointment_date'] ?? '')); ?>"><span><?php echo $upcomingDateStamp ? htmlspecialchars(strtoupper(date('M', $upcomingDateStamp))) : 'DATE'; ?></span><strong><?php echo $upcomingDateStamp ? (int) date('j', $upcomingDateStamp) : '--'; ?></strong></div><div class="dashboard-upcoming-copy"><strong><?php echo htmlspecialchars(patient_booking_label($upcomingAppointment['booking_type'] ?? null)); ?></strong><div class="dashboard-upcoming-meta"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3v3M16 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/></svg><?php echo htmlspecialchars(patient_format_date($upcomingAppointment['appointment_date'] ?? '')); ?></span><span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><?php echo htmlspecialchars(patient_format_time($upcomingAppointment['appointment_time'] ?? '')); ?></span></div></div><div class="dashboard-upcoming-actions"><span class="dashboard-status-badge <?php echo htmlspecialchars($upcomingStatusClass); ?>"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><?php echo htmlspecialchars($upcomingStatusLabel); ?></span><a href="patients_view_appointments.php" class="dashboard-view-details">View details</a></div></div>
+                            <?php if (!empty($upcomingAppointment['reschedule_request_id'])): ?><div class="profile-alert" style="margin-top:12px;">A reschedule request is waiting for clinic approval.</div><?php endif; ?>
+                        <?php endforeach; ?>
                         <?php if (!empty($nextAppointment['reschedule_request_id'])): ?><div class="profile-alert" style="margin-top:12px;">A reschedule request is waiting for clinic approval.</div><?php endif; ?>
                     <?php else: ?><div class="dashboard-empty-state"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3v3M16 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/><path d="M8 14h8M8 17h5"/></svg><strong>No upcoming appointments</strong><p>You have no scheduled visits yet. Start a booking when you are ready.</p><a href="book_appointment.php?start=1" class="primary-btn">Book Appointment</a></div><?php endif; ?>
                 </section>
