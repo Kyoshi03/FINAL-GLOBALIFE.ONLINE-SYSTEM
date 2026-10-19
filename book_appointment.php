@@ -913,10 +913,12 @@ $additionalStyles = '
     .progressive-schedule.is-active { display: block; }
     .progressive-schedule-note { margin: -8px 0 14px; color: #607784; font-size: .86rem; line-height: 1.4; }
     .progressive-date-picker { position: relative; min-height: 52px; }
-    .progressive-date-trigger { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; padding: 0 14px; border: 1px solid #c7dbea; border-radius: 11px; background: #fff; color: #6f7f93; font: inherit; text-align: left; }
+    .progressive-date-trigger { position: relative; z-index: 2; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; padding: 0 14px; border: 1px solid #c7dbea; border-radius: 11px; background: #fff; color: #6f7f93; font: inherit; text-align: left; cursor: pointer; }
+    .progressive-date-trigger:disabled { cursor: not-allowed; opacity: .65; }
+    .progressive-date-trigger:focus-visible { outline: 3px solid rgba(8,120,181,.22); outline-offset: 2px; }
     .progressive-date-trigger svg { width: 22px; height: 22px; flex: 0 0 22px; fill: none; stroke: #0878b5; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .progressive-date-trigger.has-value { color: #1a3558; }
-    .progressive-date-picker input[type="date"] { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; min-height: 52px; opacity: 0; cursor: pointer; }
+    .progressive-date-picker input[type="date"] { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; min-height: 52px; opacity: 0; pointer-events: none; }
     .progressive-date-picker input[type="date"]:disabled { cursor: not-allowed; }
     .progressive-form-error { display: none; margin: 0 0 16px; padding: 11px 13px; border-left: 4px solid #c1121f; border-radius: 8px; background: #fff0f0; color: #a30e19; }
     .progressive-form-error.is-visible { display: block; }
@@ -1558,7 +1560,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         <div class="form-group">
                             <label for="progressiveAppointmentDate">Appointment Date <span aria-hidden="true" style="color:#c1121f;">*</span></label>
                             <div class="progressive-date-picker">
-                                <button type="button" class="progressive-date-trigger<?php echo $bk['appointment_date'] !== '' ? ' has-value' : ''; ?>" id="progressiveDateTrigger" tabindex="-1" aria-hidden="true">
+                                <button type="button" class="progressive-date-trigger<?php echo $bk['appointment_date'] !== '' ? ' has-value' : ''; ?>" id="progressiveDateTrigger" aria-controls="progressiveAppointmentDate">
                                     <svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="2.5"></rect><path d="M8 2.5v4M16 2.5v4M3 9h18"></path></svg>
                                     <span id="progressiveDateLabel"><?php echo $bk['appointment_date'] !== '' ? date('F j, Y', strtotime($bk['appointment_date'])) : 'Choose Date'; ?></span>
                                 </button>
@@ -1657,11 +1659,26 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     schedule.classList.toggle('is-active', canSchedule);
                     dateInput.disabled = !canSchedule;
                     dateInput.required = canSchedule;
+                    dateTrigger.disabled = !canSchedule;
                 }
                 typeSelect.addEventListener('change', function() { setError(''); updatePanels(); });
                 specialtySelect.addEventListener('change', function() { setError(''); updateDoctorOptions(); updatePanels(); });
                 doctorSelect.addEventListener('change', updatePanels);
                 dateInput.addEventListener('change', updateDateLabel);
+                dateTrigger.addEventListener('click', function() {
+                    if (dateInput.disabled) return;
+                    try {
+                        if (typeof dateInput.showPicker === 'function') {
+                            dateInput.showPicker();
+                        } else {
+                            dateInput.focus();
+                            dateInput.click();
+                        }
+                    } catch (error) {
+                        dateInput.focus();
+                        dateInput.click();
+                    }
+                });
                 form.querySelectorAll('input[name="package_id"], input[name="service_ids[]"]').forEach(function(input) { input.addEventListener('change', updatePanels); });
                 [['progressivePackageSearch', 'progressivePackageCategory', 'progressivePackageList'], ['progressiveIndividualSearch', 'progressiveIndividualCategory', 'progressiveIndividualList']].forEach(function(config) {
                     var search = document.getElementById(config[0]);
