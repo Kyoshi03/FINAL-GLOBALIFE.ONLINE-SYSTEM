@@ -1511,10 +1511,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 </div>
 
                 <div class="progressive-schedule" id="progressiveSchedule">
-                    <div class="form-group" style="margin-bottom:8px;">
-                        <label>Appointment Date and Time</label>
-                        <p class="progressive-schedule-note" id="progressiveScheduleNote">Choose Date will open the clinic calendar.</p>
-                    </div>
+                    <p class="progressive-schedule-note">Choose your appointment date and available time using the clinic calendar.</p>
                 </div>
 
                 <div class="progressive-form-error" id="progressiveFormError" role="alert"></div>
@@ -1530,10 +1527,9 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 var specialtySelect = document.getElementById('progressiveSpecialty');
                 var doctorSelect = document.getElementById('progressiveDoctor');
                 var schedule = document.getElementById('progressiveSchedule');
-                var scheduleNote = document.getElementById('progressiveScheduleNote');
                 var chooseDateButton = document.getElementById('progressiveChooseDate');
                 var errorBox = document.getElementById('progressiveFormError');
-                if (!form || !typeSelect || !specialtySelect || !doctorSelect || !schedule || !scheduleNote || !chooseDateButton || !errorBox) return;
+                if (!form || !typeSelect || !specialtySelect || !doctorSelect || !schedule || !chooseDateButton || !errorBox) return;
 
                 function setError(message) {
                     errorBox.textContent = message || '';
@@ -1583,21 +1579,8 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         updateDoctorOptions();
                     }
                     var canSchedule = !!type && hasSelectedService(type);
-                    schedule.classList.toggle('is-active', !!type);
+                    schedule.classList.toggle('is-active', canSchedule);
                     chooseDateButton.disabled = !canSchedule;
-                    if (!type) {
-                        scheduleNote.textContent = 'Choose an appointment type first.';
-                    } else if (!canSchedule) {
-                        scheduleNote.textContent = type === 'consultation'
-                            ? 'Select a specialization and doctor above before choosing a date.'
-                            : (type === 'package'
-                                ? 'Select a package above before choosing a date.'
-                                : (type === 'individual'
-                                    ? 'Select at least one laboratory test above before choosing a date.'
-                                    : 'Choose Date will open the clinic calendar.'));
-                    } else {
-                        scheduleNote.textContent = 'Choose Date will open the clinic calendar.';
-                    }
                 }
                 typeSelect.addEventListener('change', function() { setError(''); updatePanels(); });
                 specialtySelect.addEventListener('change', function() { setError(''); updateDoctorOptions(); updatePanels(); });
