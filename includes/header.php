@@ -3134,6 +3134,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
         }
         const menuButton = menuWrap.querySelector('[data-profile-menu-button]');
         const menuPanel = menuWrap.querySelector('.patient-profile-menu');
+        const notificationWrap = document.querySelector('[data-notification-menu]');
         function closeProfileMenu() {
             menuWrap.classList.remove('is-open');
             if (menuButton) {
@@ -3142,6 +3143,13 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
         }
         function toggleProfileMenu() {
             const isOpen = menuWrap.classList.toggle('is-open');
+            if (isOpen && notificationWrap) {
+                notificationWrap.classList.remove('is-open');
+                const notificationButton = notificationWrap.querySelector('[data-notification-menu-button]');
+                if (notificationButton) {
+                    notificationButton.setAttribute('aria-expanded', 'false');
+                }
+            }
             if (menuButton) {
                 menuButton.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
             }
