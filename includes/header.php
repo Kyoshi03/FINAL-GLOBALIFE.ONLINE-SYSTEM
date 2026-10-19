@@ -2629,9 +2629,11 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
         body.app-layout .patient-notification-panel {
             left: auto !important;
             right: 12px !important;
+            top: var(--notification-panel-top, calc(var(--app-mobile-brand-height) + var(--app-mobile-topbar-height) + 10px)) !important;
             width: min(520px, calc(100vw - 24px)) !important;
             max-width: calc(100vw - 24px) !important;
             max-height: min(390px, calc(100dvh - 220px));
+            box-sizing: border-box;
             overflow: hidden;
         }
         body.app-layout .patient-notification-panel::before {
@@ -3230,6 +3232,8 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             const desiredLeft = buttonRect.left + (buttonRect.width / 2) - panelRect.left - (pointerWidth / 2);
             const boundedLeft = Math.max(14, Math.min(panelRect.width - 28, desiredLeft));
             panel.style.setProperty('--notification-pointer-left', boundedLeft + 'px');
+            const panelTop = Math.max(8, Math.min(window.innerHeight - 80, buttonRect.bottom + 10));
+            panel.style.setProperty('--notification-panel-top', panelTop + 'px');
         }
         if (menuButton) {
             menuButton.addEventListener('click', function(event) {
@@ -3248,6 +3252,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             }
         });
         window.addEventListener('resize', alignNotificationPointer);
+        window.addEventListener('scroll', alignNotificationPointer, true);
     })();
     (function() {
         const logoutForms = document.querySelectorAll('.logout-form');
