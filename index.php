@@ -884,6 +884,19 @@ $additionalStyles = '
         font-size: 1.35rem;
     }
 
+    #verification-modal .registration-dialog {
+        width: min(620px, 100%);
+        height: min(680px, calc(100vh - 40px));
+    }
+
+    #verification-modal .registration-modal-head {
+        padding: 14px 20px;
+    }
+
+    #verification-modal .registration-modal-head h2 {
+        font-size: 1.35rem;
+    }
+
     @media (max-width: 560px) {
         .registration-modal {
             align-items: stretch;
@@ -908,6 +921,11 @@ $additionalStyles = '
             width: 100%;
             height: 100dvh;
         }
+
+        #verification-modal .registration-dialog {
+            width: 100%;
+            height: 100dvh;
+        }
     }
 ';
 
@@ -926,7 +944,21 @@ $additionalScripts = '
         const forgotPasswordFrame = document.getElementById("forgot-password-frame");
         const forgotPasswordTriggers = document.querySelectorAll("a[href^=\"forgot_password.php\"]");
         const forgotPasswordCloseTriggers = document.querySelectorAll("[data-forgot-close]");
+        const verificationModal = document.getElementById("verification-modal");
+        const verificationFrame = document.getElementById("verification-frame");
+        const verificationCloseTriggers = document.querySelectorAll("[data-verification-close]");
         const shouldOpenPatientLogin = ' . (($loginError !== '' || $loginSuccess !== '') ? 'true' : 'false') . ';
+
+        function framePath(frame) {
+            if (!frame || !frame.contentWindow) {
+                return "";
+            }
+            try {
+                return new URL(frame.contentWindow.location.href, window.location.href).pathname;
+            } catch (error) {
+                return "";
+            }
+        }
 
         function fitForgotPasswordModal() {
             if (!forgotPasswordModal || !forgotPasswordFrame) {
@@ -1010,6 +1042,13 @@ $additionalScripts = '
             if (loginModal && loginModal.classList.contains("is-open")) {
                 closePatientLogin();
             }
+            if (verificationModal && verificationModal.classList.contains("is-open")) {
+                closeVerificationModal();
+            }
+
+            if (framePath(registrationFrame).indexOf("verify_patient_email.php") !== -1) {
+                registrationFrame.setAttribute("src", "register_patient.php?modal=1");
+            }
 
             if (!registrationFrame.getAttribute("src")) {
                 registrationFrame.setAttribute("src", "register_patient.php?modal=1");
@@ -1036,6 +1075,48 @@ $additionalScripts = '
 
             registrationModal.classList.remove("is-open");
             registrationModal.setAttribute("aria-hidden", "true");
+            document.body.style.overflow = "";
+        }
+
+        function openVerificationModalFromRegistration() {
+            if (!registrationFrame || !verificationModal || !verificationFrame) {
+                return;
+            }
+
+            let verificationUrl = "";
+            try {
+                verificationUrl = registrationFrame.contentWindow.location.href;
+            } catch (error) {
+                verificationUrl = "";
+            }
+            if (!verificationUrl || framePath(registrationFrame).indexOf("verify_patient_email.php") === -1) {
+                return;
+            }
+
+            verificationFrame.setAttribute("src", verificationUrl);
+            closeRegistrationModal();
+            verificationModal.classList.add("is-open");
+            verificationModal.setAttribute("aria-hidden", "false");
+            document.body.style.overflow = "hidden";
+            window.setTimeout(function () {
+                const closeButton = verificationModal.querySelector("[data-verification-close]");
+                if (closeButton) {
+                    closeButton.focus();
+                }
+            }, 80);
+        }
+
+        function closeVerificationModal(event) {
+            if (event) {
+                event.preventDefault();
+            }
+
+            if (!verificationModal) {
+                return;
+            }
+
+            verificationModal.classList.remove("is-open");
+            verificationModal.setAttribute("aria-hidden", "true");
             document.body.style.overflow = "";
         }
 
@@ -1115,6 +1196,30 @@ $additionalScripts = '
             trigger.addEventListener("click", closeForgotPasswordModal);
         });
 
+        verificationCloseTriggers.forEach(function (trigger) {
+            trigger.addEventListener("click", closeVerificationModal);
+        });
+
+        if (registrationFrame) {
+            registrationFrame.addEventListener("load", function () {
+                const path = framePath(registrationFrame);
+                if (path.indexOf("verify_patient_email.php") !== -1) {
+                    openVerificationModalFromRegistration();
+                }
+            });
+        }
+
+        if (verificationFrame) {
+            verificationFrame.addEventListener("load", function () {
+                const path = framePath(verificationFrame);
+                if (path.indexOf("register_patient.php") !== -1 && verificationModal && verificationModal.classList.contains("is-open")) {
+                    registrationFrame.setAttribute("src", verificationFrame.contentWindow.location.href);
+                    closeVerificationModal();
+                    openRegistrationModal();
+                }
+            });
+        }
+
         if (loginModal) {
             loginModal.addEventListener("click", function (event) {
                 if (event.target === loginModal) {
@@ -1139,9 +1244,19 @@ $additionalScripts = '
             });
         }
 
+        if (verificationModal) {
+            verificationModal.addEventListener("click", function (event) {
+                if (event.target === verificationModal) {
+                    closeVerificationModal(event);
+                }
+            });
+        }
+
         document.addEventListener("keydown", function (event) {
             if (event.key === "Escape" && registrationModal && registrationModal.classList.contains("is-open")) {
                 closeRegistrationModal(event);
+            } else if (event.key === "Escape" && verificationModal && verificationModal.classList.contains("is-open")) {
+                closeVerificationModal(event);
             } else if (event.key === "Escape" && forgotPasswordModal && forgotPasswordModal.classList.contains("is-open")) {
                 closeForgotPasswordModal(event);
             } else if (event.key === "Escape" && loginModal && loginModal.classList.contains("is-open")) {
@@ -1477,6 +1592,15 @@ include 'includes/header.php';
                 <button type="button" class="registration-modal-close" data-forgot-close aria-label="Close forgot password">&times;</button>
             </div>
             <iframe id="forgot-password-frame" class="registration-frame" title="Forgot password form"></iframe>
+        </div>
+    </section>
+    <section id="verification-modal" class="registration-modal" role="dialog" aria-modal="true" aria-labelledby="verification-modal-title" aria-hidden="true">
+        <div class="registration-dialog">
+            <div class="registration-modal-head">
+                <h2 id="verification-modal-title">Verify your account</h2>
+                <button type="button" class="registration-modal-close" data-verification-close aria-label="Close account verification">&times;</button>
+            </div>
+            <iframe id="verification-frame" class="registration-frame" title="Verify your account"></iframe>
         </div>
     </section>
 <?php include 'includes/footer.php'; ?>

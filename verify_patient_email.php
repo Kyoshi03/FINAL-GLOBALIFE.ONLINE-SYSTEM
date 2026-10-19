@@ -23,6 +23,7 @@ $verificationDestination = $verificationChannel === 'sms'
     ? clinic_sms_mask_phone((string) ($patient['phone'] ?? ''))
     : registration_mask_email((string) ($patient['email'] ?? ''));
 $verificationLabel = $verificationChannel === 'sms' ? 'mobile number' : 'email';
+$isVerificationModal = (($_GET['modal'] ?? '') === '1') || (($_POST['verification_modal'] ?? '') === '1');
 $error = '';
 $success = isset($_GET['sent']) && $_GET['sent'] === '1'
     ? 'We sent a 6-digit verification code to your ' . $verificationLabel . '.'
@@ -42,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'cancel') {
         unset($_SESSION['pending_patient_registration']);
-        header('Location: register_patient.php');
+        header('Location: register_patient.php' . ($isVerificationModal ? '?modal=1' : ''));
         exit();
     }
 
@@ -204,7 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'display_name' => $displayName,
                     ];
                     unset($_SESSION['pending_patient_registration']);
-                    header('Location: register_patient.php?created=1');
+                    header('Location: register_patient.php?created=1' . ($isVerificationModal ? '&modal=1' : ''));
                     exit();
                 }
             }
@@ -236,6 +237,33 @@ $additionalStyles = '
     .expiry-note { color:#6a7d88; font-size:.84rem; margin-top:14px; }
 ';
 
+if ($isVerificationModal) {
+    $additionalStyles .= '
+        body.page-verify-patient-email { background:#fff; overflow:hidden; }
+        body.page-verify-patient-email > header,
+        body.page-verify-patient-email > footer { display:none; }
+        body.page-verify-patient-email .verify-page {
+            min-height:100%;
+            padding:24px 28px 28px;
+            box-sizing:border-box;
+        }
+        body.page-verify-patient-email .verify-card {
+            width:100%;
+            max-width:none;
+            padding:0;
+            border:0;
+            border-radius:0;
+            box-shadow:none;
+        }
+        body.page-verify-patient-email .verify-logo,
+        body.page-verify-patient-email .verify-card h2 { display:none; }
+        body.page-verify-patient-email .verify-card > p { margin-top:0; }
+        @media (max-width:560px) {
+            body.page-verify-patient-email .verify-page { padding:20px 16px 22px; }
+        }
+    ';
+}
+
 include 'includes/header.php';
 ?>
 <main class="verify-page">
@@ -255,6 +283,9 @@ include 'includes/header.php';
         <form method="POST" action="verify_patient_email.php">
             <?php echo clinic_csrf_field(); ?>
             <input type="hidden" name="action" value="verify">
+                <?php if ($isVerificationModal): ?>
+                    <input type="hidden" name="verification_modal" value="1">
+                <?php endif; ?>
             <input
                 type="text"
                 name="code"
@@ -282,11 +313,17 @@ include 'includes/header.php';
             <form method="POST" action="verify_patient_email.php">
                 <?php echo clinic_csrf_field(); ?>
                 <input type="hidden" name="action" value="resend">
+                <?php if ($isVerificationModal): ?>
+                    <input type="hidden" name="verification_modal" value="1">
+                <?php endif; ?>
                 <button type="submit" class="link-btn">Resend code</button>
             </form>
             <form method="POST" action="verify_patient_email.php">
                 <?php echo clinic_csrf_field(); ?>
                 <input type="hidden" name="action" value="cancel">
+                <?php if ($isVerificationModal): ?>
+                    <input type="hidden" name="verification_modal" value="1">
+                <?php endif; ?>
                 <button type="submit" class="link-btn">Change details</button>
             </form>
         </div>
