@@ -896,7 +896,7 @@ $additionalStyles = '
     .progressive-schedule-grid { display: grid; grid-template-columns: 1fr; gap: 18px; }
     .progressive-type-grid { max-width: 560px; }
     .progressive-fields { margin-top: 4px; }
-    .progressive-panel { display: none; padding: 18px; border: 1px solid #d8e8f2; border-radius: 14px; background: #fbfdff; }
+    .progressive-panel { display: none; scroll-margin: 28px 0; padding: 18px; border: 1px solid #d8e8f2; border-radius: 14px; background: #fbfdff; }
     .progressive-panel.is-active { display: block; }
     .progressive-panel:focus { outline: 3px solid rgba(8,120,181,.2); outline-offset: 3px; }
     .progressive-panel h3 { margin: 0 0 5px; color: #073b4c; font-size: 1.08rem; }
@@ -1931,7 +1931,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     if (!activePanel) return;
                     activePanel.setAttribute('tabindex', '-1');
                     window.setTimeout(function() {
-                        activePanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        activePanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         activePanel.focus({ preventScroll: true });
                     }, 40);
                 }
