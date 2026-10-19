@@ -3595,10 +3595,6 @@ $additionalStyles = '
         position: fixed;
         inset: 0;
         z-index: 5200;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
         background: rgba(3, 35, 53, 0.62);
         opacity: 0;
         visibility: hidden;
@@ -3613,6 +3609,9 @@ $additionalStyles = '
     }
 
     .patient-tour-dialog {
+        position: fixed;
+        top: 50%;
+        left: 50%;
         width: min(100%, 560px);
         box-sizing: border-box;
         padding: 24px;
@@ -3620,12 +3619,19 @@ $additionalStyles = '
         border-radius: 14px;
         background: #fff;
         box-shadow: 0 24px 70px rgba(2, 62, 138, .24);
-        transform: translateY(10px) scale(.98);
+        z-index: 5202;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translate(-50%, calc(-50% + 10px)) scale(.98);
         transition: transform .2s ease;
     }
 
-    .patient-tour-overlay.is-open .patient-tour-dialog {
-        transform: translateY(0) scale(1);
+    .patient-tour-dialog.is-open {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translate(-50%, -50%) scale(1);
     }
 
     .patient-tour-head,
@@ -3734,13 +3740,22 @@ $additionalStyles = '
 
     @media (max-width: 560px) {
         .patient-tour-overlay {
-            align-items: flex-end;
-            padding: 10px;
+            padding: 0;
         }
 
         .patient-tour-dialog {
+            top: auto;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
             padding: 20px;
             border-radius: 12px;
+            width: auto;
+            transform: translateY(10px) scale(.98);
+        }
+
+        .patient-tour-dialog.is-open {
+            transform: translateY(0) scale(1);
         }
 
         .patient-tour-dialog h3 {
@@ -4150,8 +4165,8 @@ include 'includes/header.php';
     </main>
 
     <?php if ($isNewPatientWelcome && !$showNotificationsPage): ?>
-    <div class="patient-tour-overlay" id="patientTourOverlay" aria-hidden="true">
-        <section class="patient-tour-dialog" role="dialog" aria-modal="true" aria-labelledby="patientTourTitle">
+    <div class="patient-tour-overlay" id="patientTourOverlay" aria-hidden="true"></div>
+    <section class="patient-tour-dialog" id="patientTourDialog" role="dialog" aria-modal="true" aria-labelledby="patientTourTitle" aria-hidden="true">
             <div class="patient-tour-head">
                 <span class="patient-tour-step-label" id="patientTourStepLabel">Step 1 of 7</span>
                 <button type="button" class="patient-tour-close" id="patientTourClose" aria-label="Close tutorial">&times;</button>
@@ -4169,8 +4184,7 @@ include 'includes/header.php';
                 <button type="button" class="plain-btn" id="patientTourBack" hidden>Back</button>
                 <button type="button" class="primary-btn" id="patientTourNext">Next</button>
             </div>
-        </section>
-    </div>
+    </section>
     <?php endif; ?>
 
     <div class="patient-appointment-modal" id="patientAppointmentDetailsModal" aria-hidden="true">
@@ -5131,6 +5145,8 @@ include 'includes/header.php';
     (function () {
         var overlay = document.getElementById('patientTourOverlay');
         if (!overlay) return;
+        var dialog = document.getElementById('patientTourDialog');
+        if (!dialog) return;
 
         var stepLabel = document.getElementById('patientTourStepLabel');
         var stepNumber = document.getElementById('patientTourNumber');
@@ -5229,12 +5245,16 @@ include 'includes/header.php';
             clearTarget();
             overlay.classList.remove('is-open');
             overlay.setAttribute('aria-hidden', 'true');
+            dialog.classList.remove('is-open');
+            dialog.setAttribute('aria-hidden', 'true');
             document.body.classList.remove('patient-tour-open');
         }
 
         function openTour() {
             overlay.classList.add('is-open');
             overlay.setAttribute('aria-hidden', 'false');
+            dialog.classList.add('is-open');
+            dialog.setAttribute('aria-hidden', 'false');
             document.body.classList.add('patient-tour-open');
             showStep(0);
         }
