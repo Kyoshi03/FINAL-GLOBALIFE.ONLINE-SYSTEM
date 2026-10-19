@@ -2034,6 +2034,12 @@ include __DIR__ . '/includes/header.php';
         }
         return null;
     }
+    function searchMatches(rowSearch, query) {
+        var terms = query.split(/\s+/).filter(function(term) { return term !== ''; });
+        return terms.every(function(term) {
+            return rowSearch.indexOf(term) !== -1;
+        });
+    }
     function setDateError(message) {
         if (!dateError) return;
         dateError.textContent = message || '';
@@ -2193,7 +2199,7 @@ include __DIR__ . '/includes/header.php';
             var rowDate = row.getAttribute('data-date') || '';
             var show = true;
 
-            if (q && rowSearch.indexOf(q) === -1) show = false;
+            if (q && !searchMatches(rowSearch, q)) show = false;
             if (status && rowStatus !== status) show = false;
             if (date && rowDate !== date) show = false;
             if (dateRange && (rowDate < dateRange.from || rowDate > dateRange.to)) show = false;
@@ -2212,26 +2218,17 @@ include __DIR__ . '/includes/header.php';
         renderAppointmentPage();
     }
 
-    [searchInput, statusFilter, dateFilter, dateRangeFilter].forEach(function(control) {
-        if (control) control.addEventListener('input', applyAppointmentFilters);
-        if (control && control.tagName === 'SELECT') {
-            control.addEventListener('change', function() {
-                if (control === statusFilter) {
-                    syncStatusFilterToUrl();
-                }
-                if (control === dateRangeFilter) {
-                    customDateRangeApplied = false;
-                    toggleCustomDateRange();
-                    if (dateRangeFilter.value !== 'custom') applyAppointmentFilters();
-                } else {
-                    applyAppointmentFilters();
-                }
-            });
-        }
-    });
+    if (dateRangeFilter) {
+        dateRangeFilter.addEventListener('change', function() {
+            customDateRangeApplied = false;
+            toggleCustomDateRange();
+        });
+    }
     if (filterApply) {
         filterApply.addEventListener('click', function() {
             if (!dateRangeFilter || dateRangeFilter.value !== 'custom') {
+                customDateRangeApplied = false;
+                syncStatusFilterToUrl();
                 applyAppointmentFilters();
                 openModal(filterSuccessModal);
                 return;
@@ -2246,6 +2243,7 @@ include __DIR__ . '/includes/header.php';
             }
             setDateError('');
             customDateRangeApplied = true;
+            syncStatusFilterToUrl();
             applyAppointmentFilters();
             openModal(filterSuccessModal);
         });

@@ -94,15 +94,18 @@ if ($filterFromDate !== '' && $filterToDate !== '') {
 }
 
 if ($search !== '') {
-    $searchLike = '%' . $search . '%';
-    $where[] = "(
-        q.queue_number LIKE ?
-        OR q.service LIKE ?
-        OR q.queue_date LIKE ?
-        OR DATE_FORMAT(q.queue_date, '%M %e, %Y') LIKE ?
-    )";
-    $types .= 'ssss';
-    array_push($params, $searchLike, $searchLike, $searchLike, $searchLike);
+    $searchTerms = preg_split('/\s+/', $search, -1, PREG_SPLIT_NO_EMPTY);
+    foreach ($searchTerms as $searchTerm) {
+        $searchLike = '%' . $searchTerm . '%';
+        $where[] = "(
+            q.queue_number LIKE ?
+            OR q.service LIKE ?
+            OR q.queue_date LIKE ?
+            OR DATE_FORMAT(q.queue_date, '%M %e, %Y') LIKE ?
+        )";
+        $types .= 'ssss';
+        array_push($params, $searchLike, $searchLike, $searchLike, $searchLike);
+    }
 }
 
 $whereSql = implode(' AND ', $where);
