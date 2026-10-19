@@ -305,6 +305,10 @@ body {
     margin-top: 1px;
     font-size: .62rem;
     font-weight: 850;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
 }
 .availability-count {
     margin-top: 1px;
