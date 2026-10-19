@@ -3595,7 +3595,7 @@ $additionalStyles = '
         position: fixed;
         inset: 0;
         z-index: 5200;
-        background: rgba(3, 35, 53, 0.42);
+        background: transparent;
         opacity: 0;
         pointer-events: none;
         transition: opacity .2s ease;
@@ -3610,21 +3610,22 @@ $additionalStyles = '
         position: fixed;
         z-index: 5203;
         pointer-events: none;
+        background: transparent;
         border: 2px solid rgba(72, 202, 228, .95);
         border-radius: 12px;
-        box-shadow: 0 0 0 6px rgba(72, 202, 228, .22), 0 0 28px rgba(72, 202, 228, .42);
+        box-shadow: 0 0 0 3px #48cae4, 0 0 0 8px rgba(72, 202, 228, .24), 0 0 28px rgba(72, 202, 228, .42), 0 0 0 9999px rgba(3, 35, 53, .42);
         transition: top .18s ease, left .18s ease, width .18s ease, height .18s ease;
         animation: patientTourPulse 1.8s ease-in-out infinite;
     }
 
     @keyframes patientTourPulse {
-        0%, 100% { box-shadow: 0 0 0 6px rgba(72, 202, 228, .22), 0 0 24px rgba(72, 202, 228, .38); }
-        50% { box-shadow: 0 0 0 9px rgba(72, 202, 228, .14), 0 0 30px rgba(72, 202, 228, .5); }
+        0%, 100% { box-shadow: 0 0 0 3px #48cae4, 0 0 0 8px rgba(72, 202, 228, .24), 0 0 24px rgba(72, 202, 228, .38), 0 0 0 9999px rgba(3, 35, 53, .42); }
+        50% { box-shadow: 0 0 0 3px #48cae4, 0 0 0 9px rgba(72, 202, 228, .18), 0 0 30px rgba(72, 202, 228, .5), 0 0 0 9999px rgba(3, 35, 53, .42); }
     }
 
     .patient-tour-tooltip {
         position: fixed;
-        z-index: 5205;
+        z-index: 5210;
         width: min(420px, calc(100vw - 20px));
         box-sizing: border-box;
         padding: 16px 16px 15px;
@@ -3799,6 +3800,20 @@ $additionalStyles = '
         border-radius: 10px !important;
         box-shadow: 0 0 0 3px #48cae4, 0 0 0 8px rgba(72, 202, 228, .18), 0 14px 28px rgba(2, 62, 138, .2) !important;
         pointer-events: none !important;
+    }
+
+    body.patient-tour-nav-visible #mainNav .patient-tour-highlight {
+        background: #ffffff !important;
+        border-color: rgba(72, 202, 228, .78) !important;
+        color: #023e8a !important;
+        opacity: 1 !important;
+        filter: none !important;
+        box-shadow: 0 0 0 3px #48cae4, 0 0 0 8px rgba(72, 202, 228, .24), 0 12px 24px rgba(2, 62, 138, .24) !important;
+    }
+
+    body.patient-tour-nav-visible #mainNav .patient-tour-highlight .nav-ui-icon,
+    body.patient-tour-nav-visible #mainNav .patient-tour-highlight .nav-chevron {
+        color: #023e8a !important;
     }
 
     .patient-tour-history-open {
