@@ -4468,7 +4468,7 @@ $additionalStyles = '
     .dashboard-history-tab {
         position: relative;
         min-width: 0;
-        padding: 10px 12px;
+        padding: 8px 10px;
         border: 0;
         background: transparent;
         color: #60758a;
@@ -4497,7 +4497,7 @@ $additionalStyles = '
     }
 
     .dashboard-history-panel {
-        padding-top: 12px;
+        padding-top: 8px;
     }
 
     .dashboard-history-panel[hidden] {
@@ -4512,12 +4512,12 @@ $additionalStyles = '
         width: 100%;
         border-collapse: collapse;
         color: #284c61;
-        font-size: .84rem;
+        font-size: .82rem;
     }
 
     .dashboard-history-table th,
     .dashboard-history-table td {
-        padding: 10px 8px;
+        padding: 8px 8px;
         border-bottom: 1px solid #e5f0f4;
         text-align: left;
         vertical-align: middle;
@@ -4543,7 +4543,7 @@ $additionalStyles = '
     }
 
     .dashboard-history-empty {
-        padding: 19px 10px;
+        padding: 16px 10px;
         color: #6a7e89;
         font-size: .86rem;
         text-align: center;
@@ -4552,7 +4552,7 @@ $additionalStyles = '
     .dashboard-history-footer {
         display: flex;
         justify-content: flex-end;
-        margin-top: 12px;
+        margin-top: 8px;
     }
 
     .dashboard-profile-card {
@@ -4836,11 +4836,13 @@ $additionalStyles = '
 
         .dashboard-history-table th,
         .dashboard-history-table td {
-            padding: 9px 5px;
+            padding: 7px 5px;
         }
 
         .dashboard-history-tab {
+            padding-top: 7px;
             padding-right: 5px;
+            padding-bottom: 7px;
             padding-left: 5px;
             font-size: .78rem;
         }
