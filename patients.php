@@ -4689,38 +4689,82 @@ $additionalStyles = '
     }
 
     @media (max-width: 600px) {
+        .patient-shell {
+            padding-bottom: 150px;
+        }
+
         .dashboard-card {
-            padding: 16px;
+            padding: 14px;
         }
 
         .dashboard-welcome-banner {
             grid-template-columns: auto minmax(0, 1fr);
-            gap: 14px;
-            padding: 20px;
+            gap: 12px;
+            padding: 16px;
+            border-radius: 16px;
         }
 
         .dashboard-welcome-banner .patient-profile-avatar {
-            width: 68px;
-            height: 68px;
-            line-height: 68px;
-            font-size: 1.35rem;
+            width: 60px;
+            height: 60px;
+            line-height: 60px;
+            font-size: 1.2rem;
         }
 
         .dashboard-welcome-copy h2 {
-            font-size: 1.45rem;
+            font-size: 1.28rem;
         }
 
         .dashboard-welcome-copy p {
-            font-size: .86rem;
+            font-size: .78rem;
+            line-height: 1.35;
         }
 
         .dashboard-welcome-actions {
-            grid-column: 1 / -1;
-            margin-top: 2px;
+            grid-column: 2;
+            margin-top: 10px;
         }
 
         .dashboard-welcome-actions .primary-btn {
-            width: 100%;
+            width: auto;
+            max-width: 100%;
+            padding: 10px 14px;
+            font-size: .84rem;
+        }
+
+        .dashboard-card-header {
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .dashboard-card-title {
+            gap: 8px;
+        }
+
+        .dashboard-card-title svg {
+            flex-basis: 22px;
+            width: 22px;
+            height: 22px;
+        }
+
+        .dashboard-card h3 {
+            font-size: 1.08rem;
+        }
+
+        .dashboard-link {
+            font-size: .82rem;
+        }
+
+        .dashboard-empty-state {
+            gap: 5px;
+            padding: 18px 10px;
+        }
+
+        .dashboard-empty-state .primary-btn {
+            width: auto;
+            max-width: 100%;
+            padding: 10px 14px;
+            font-size: .84rem;
         }
 
         .dashboard-upcoming-item {
