@@ -4131,15 +4131,15 @@ $additionalStyles = '
 
     .dashboard-welcome-banner {
         display: grid;
-        grid-template-columns: auto minmax(0, 1fr) minmax(260px, .8fr);
-        gap: 24px;
+        grid-template-columns: auto minmax(0, 1fr) minmax(330px, .95fr);
+        gap: 20px;
         align-items: center;
-        min-height: 220px;
-        padding: 28px 34px;
+        min-height: 190px;
+        padding: 22px 30px;
         overflow: hidden;
         border: 1px solid rgba(202, 240, 248, .55);
         border-radius: 18px;
-        background: linear-gradient(120deg, #08a5c7 0%, #0b8fcb 52%, #0756a6 100%);
+        background: linear-gradient(115deg, #24c9d2 0%, #32afea 52%, #79d9f3 100%);
         box-shadow: 0 16px 34px rgba(2, 62, 138, .16);
         color: #fff;
     }
@@ -4149,8 +4149,8 @@ $additionalStyles = '
         height: 96px;
         line-height: 96px;
         border-color: rgba(255, 255, 255, .9);
-        background: #e8f8ff;
-        color: #0563ad;
+        background: #e3f4ff;
+        color: #0568c3;
         font-size: 2rem;
     }
 
@@ -4159,46 +4159,43 @@ $additionalStyles = '
     }
 
     .dashboard-welcome-copy .new-welcome-badge {
-        display: inline-flex;
-        margin-bottom: 8px;
-        background: rgba(255, 255, 255, .18);
-        color: #fff;
+        display: none;
     }
 
     .dashboard-welcome-copy h2 {
         margin: 0 0 8px;
-        color: #fff;
-        font-size: 2.05rem;
+        color: #fff !important;
+        font-size: 2rem;
         line-height: 1.12;
     }
 
     .dashboard-welcome-copy p {
         max-width: 520px;
         margin: 0;
-        color: rgba(255, 255, 255, .9);
+        color: #fff !important;
         font-size: 1rem;
         line-height: 1.5;
     }
 
     .dashboard-welcome-actions {
-        margin-top: 18px;
+        margin-top: 16px;
     }
 
     .dashboard-welcome-actions .primary-btn {
-        background: #fff;
-        color: #0563ad;
+        background: #fff !important;
+        color: #0568c3 !important;
         box-shadow: 0 10px 20px rgba(1, 57, 105, .18);
     }
 
     .dashboard-welcome-art {
         display: grid;
         place-items: center;
-        min-height: 170px;
-        color: #d9f8ff;
+        min-height: 150px;
+        color: #0b78bf;
     }
 
     .dashboard-welcome-art svg {
-        width: min(100%, 310px);
+        width: min(100%, 390px);
         height: auto;
         overflow: visible;
     }
@@ -4837,26 +4834,28 @@ include 'includes/header.php';
                 <span class="patient-profile-avatar"><?php echo htmlspecialchars($profileInitials); ?></span>
             </div>
             <div class="dashboard-welcome-copy">
-                <?php if ($isNewPatientWelcome): ?>
-                    <span class="new-welcome-badge">New account</span>
-                <?php endif; ?>
                 <h2 id="dashboardWelcomeTitle"><?php echo htmlspecialchars($welcomeTitle); ?></h2>
-                <p>Manage your appointments and clinic visits in one place.</p>
+                <p>Manage your appointments and clinic visits.</p>
                 <div class="dashboard-welcome-actions">
                     <a href="book_appointment.php?start=1" class="primary-btn">Book Appointment</a>
                 </div>
             </div>
             <div class="dashboard-welcome-art" aria-hidden="true">
-                <svg viewBox="0 0 360 190" role="img">
+                <svg viewBox="0 0 430 190" role="img">
                     <title>Calendar and stethoscope</title>
-                    <circle cx="277" cy="89" r="74" fill="rgba(202,240,248,.18)"/>
-                    <path d="M72 36h156a13 13 0 0 1 13 13v101a13 13 0 0 1-13 13H72a13 13 0 0 1-13-13V49a13 13 0 0 1 13-13Z" fill="#eefbff" opacity=".95"/>
-                    <path d="M59 70h182" stroke="#42bddd" stroke-width="10"/>
-                    <path d="M91 22v30M184 22v30" stroke="#d8f8ff" stroke-width="11" stroke-linecap="round"/>
-                    <g fill="#b8e9f5"><rect x="82" y="87" width="23" height="21" rx="5"/><rect x="118" y="87" width="23" height="21" rx="5"/><rect x="154" y="87" width="23" height="21" rx="5"/><rect x="190" y="87" width="23" height="21" rx="5"/><rect x="82" y="120" width="23" height="21" rx="5"/><rect x="118" y="120" width="23" height="21" rx="5"/><rect x="154" y="120" width="23" height="21" rx="5"/></g>
-                    <rect x="190" y="120" width="23" height="21" rx="5" fill="#168ed0"/>
-                    <path d="M269 47c19 0 31 13 31 30v23c0 26 18 42 40 42 20 0 32-14 32-31 0-17-11-29-26-29-14 0-25 10-25 24" fill="none" stroke="#e4fbff" stroke-width="9" stroke-linecap="round"/>
-                    <circle cx="320" cy="128" r="19" fill="none" stroke="#e4fbff" stroke-width="8"/><path d="M320 147v13c0 14-11 25-25 25h-10M286 185h-11" fill="none" stroke="#e4fbff" stroke-width="8" stroke-linecap="round"/>
+                    <circle cx="286" cy="88" r="82" fill="#8fe0f0" opacity=".38"/>
+                    <path d="M110 171c-34-13-57-39-68-77 37 6 64 26 79 61Z" fill="#16b8ce" opacity=".72"/>
+                    <path d="M140 178c-9-42 1-73 28-101 14 38 6 72-15 105Z" fill="#0c9dcc" opacity=".8"/>
+                    <path d="M340 174c18-36 44-57 79-62-9 34-30 59-69 76Z" fill="#20b5d4" opacity=".62"/>
+                    <path d="M364 145c7-38 26-62 58-77 0 35-17 63-50 83Z" fill="#0a8fc4" opacity=".66"/>
+                    <path d="M208 58h18v-18h12v18h18v12h-18v18h-12V70h-18Z" fill="#54cfe6" opacity=".9"/>
+                    <path d="M108 27h164a13 13 0 0 1 13 13v105a13 13 0 0 1-13 13H108a13 13 0 0 1-13-13V40a13 13 0 0 1 13-13Z" fill="#f2fcff" opacity=".98"/>
+                    <path d="M95 62h190" stroke="#37bddb" stroke-width="11"/>
+                    <path d="M130 15v34M236 15v34" stroke="#e7fbff" stroke-width="11" stroke-linecap="round"/>
+                    <g fill="#bdebf5"><rect x="119" y="78" width="25" height="22" rx="5"/><rect x="158" y="78" width="25" height="22" rx="5"/><rect x="197" y="78" width="25" height="22" rx="5"/><rect x="236" y="78" width="25" height="22" rx="5"/><rect x="119" y="113" width="25" height="22" rx="5"/><rect x="158" y="113" width="25" height="22" rx="5"/><rect x="197" y="113" width="25" height="22" rx="5"/></g>
+                    <rect x="236" y="113" width="25" height="22" rx="5" fill="#168ed0"/>
+                    <path d="M306 40c21 0 35 15 35 34v25c0 29 20 48 45 48 23 0 37-16 37-36 0-20-13-34-30-34-16 0-29 12-29 28" fill="none" stroke="#0b6fb7" stroke-width="9" stroke-linecap="round"/>
+                    <circle cx="364" cy="133" r="21" fill="none" stroke="#0b6fb7" stroke-width="8"/><path d="M364 154v10c0 14-11 24-25 24h-18" fill="none" stroke="#0b6fb7" stroke-width="8" stroke-linecap="round"/>
                 </svg>
             </div>
         </section>
