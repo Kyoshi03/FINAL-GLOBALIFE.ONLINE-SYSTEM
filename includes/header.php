@@ -2834,7 +2834,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                             </button>
                             <div class="nav-submenu" id="patientHistorySubmenu">
                                 <div class="nav-submenu-inner">
-                                    <a href="patients_view_appointments.php" class="nav-subitem <?php echo basename($_SERVER['PHP_SELF']) === 'patients_view_appointments.php' ? 'active' : ''; ?>">Appointment History</a>
+                                    <a href="patients_view_appointments.php" class="nav-subitem <?php echo basename($_SERVER['PHP_SELF']) === 'patients_view_appointments.php' && (($_GET['view'] ?? '') !== 'active') ? 'active' : ''; ?>">Appointment History</a>
                                     <a href="patients_queue_history.php" class="nav-subitem <?php echo basename($_SERVER['PHP_SELF']) === 'patients_queue_history.php' ? 'active' : ''; ?>">Queue History</a>
                                 </div>
                             </div>
@@ -2885,7 +2885,9 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             $patientTopbarProfileHref = 'patients.php?profile=1';
             $patientTopbarSettingsHref = 'patients.php?profile=1';
         } elseif (in_array($currentPage, ['admin_view_appointments.php', 'doctor_view_appointments.php', 'patients_view_appointments.php'], true)) {
-            $patientTopbarTitle = ($currentUser['role'] ?? '') === 'patient' ? 'My Appointments' : 'Appointments';
+            $patientTopbarTitle = ($currentUser['role'] ?? '') === 'patient'
+                ? ((($_GET['view'] ?? '') === 'active' || isset($_GET['highlight'])) ? 'My Appointments' : 'Appointment History')
+                : 'Appointments';
             if (($currentUser['role'] ?? '') === 'patient') {
                 $patientTopbarProfileHref = 'patients.php?profile=1';
                 $patientTopbarSettingsHref = 'patients.php?profile=1';
@@ -2930,7 +2932,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
         }
         $topbarRole = (string) ($currentUser['role'] ?? '');
         $topbarAppointmentsHref = $topbarRole === 'patient'
-            ? 'patients_view_appointments.php'
+            ? 'patients_my_appointments.php'
             : ($topbarRole === 'doctor' ? 'doctor_view_appointments.php' : 'admin_view_appointments.php');
         $topbarCalendarHref = '';
         $topbarNotificationsHref = $topbarRole === 'patient'

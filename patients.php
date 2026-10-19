@@ -6651,5 +6651,17 @@ include 'includes/header.php';
     })();
     </script>
 
+    <script>
+    (function () {
+        var upcomingPanel = document.getElementById('upcomingAppointmentsPanel');
+        if (!upcomingPanel) return;
+        upcomingPanel.querySelectorAll('a.dashboard-link, a.dashboard-view-details').forEach(function (link) {
+            var url = new URL(link.getAttribute('href') || 'patients_my_appointments.php', window.location.href);
+            url.pathname = url.pathname.replace(/patients_view_appointments\.php$/, 'patients_my_appointments.php');
+            link.href = url.pathname + url.search;
+        });
+    })();
+    </script>
+
 <?php $appointmentPage = 'patients.php'; include __DIR__ . '/includes/appointment_reschedule_ui.php'; ?>
 <?php include 'includes/footer.php'; ?>

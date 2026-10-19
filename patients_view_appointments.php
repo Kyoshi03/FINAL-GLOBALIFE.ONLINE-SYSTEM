@@ -9,11 +9,15 @@ require_once __DIR__ . '/includes/appointment_reschedule.php';
 $currentUser = getCurrentUser();
 $userRole = $currentUser['role'];
 $isClinicalAppointmentsView = $userRole === 'doctor';
+$patientAppointmentView = ($userRole === 'patient' && (($_GET['view'] ?? '') === 'active' || isset($_GET['highlight']))) ? 'active' : 'history';
 $appointmentPage = [
     'admin' => 'admin_view_appointments.php',
     'doctor' => 'doctor_view_appointments.php',
     'patient' => 'patients_view_appointments.php',
 ][$userRole] ?? 'admin_view_appointments.php';
+$appointmentReturnUrl = $patientAppointmentView === 'active'
+    ? 'patients_view_appointments.php?view=active'
+    : $appointmentPage;
 
 // Determine page title based on user role
 $pageTitle = "Appointments | Globalife Medical Laboratory & Polyclinic";
@@ -115,6 +119,16 @@ if ($userRole === 'patient') {
 $stmt->execute();
 $appointments = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
+
+if ($userRole === 'patient') {
+    $appointments = array_values(array_filter($appointments, static function (array $appointment) use ($patientAppointmentView): bool {
+        $status = strtolower((string) ($appointment['status'] ?? 'pending'));
+        if ($patientAppointmentView === 'active') {
+            return in_array($status, ['pending', 'confirmed'], true);
+        }
+        return in_array($status, ['completed', 'cancelled'], true);
+    }));
+}
 
 $initialStatusFilter = strtolower(trim((string) ($_GET['status'] ?? '')));
 $allowedStatusFilters = ['pending', 'confirmed', 'completed', 'cancelled'];
@@ -453,6 +467,9 @@ $additionalStyles = patientAvatarStyles() . '
         margin-bottom:18px;
         box-shadow:0 10px 24px rgba(25,76,110,.05);
     }
+    .patient-appointments-heading { margin:0 0 18px; padding:18px 22px; border:1px solid #d9e9f1; border-radius:14px; background:linear-gradient(135deg,#ffffff 0%,#f1faff 100%); box-shadow:0 8px 20px rgba(25,76,110,.05); }
+    .patient-appointments-heading h1 { margin:0 0 4px; color:#073b4c; font-size:1.55rem; }
+    .patient-appointments-heading p { margin:0; color:#607784; font-size:.9rem; line-height:1.45; }
     .appointment-report-card{
         display:flex;
         justify-content:flex-end;
@@ -1392,6 +1409,15 @@ include __DIR__ . '/includes/header.php';
             <?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?>
         </div>
     <?php endif; ?>
+
+    <?php if ($userRole === 'patient'): ?>
+        <section class="patient-appointments-heading" aria-labelledby="patientAppointmentsTitle">
+            <h1 id="patientAppointmentsTitle"><?php echo $patientAppointmentView === 'active' ? 'My Appointments' : 'Appointment History'; ?></h1>
+            <p><?php echo $patientAppointmentView === 'active'
+                ? 'Manage your upcoming clinic appointments and schedules.'
+                : 'Review your completed and cancelled appointment records.'; ?></p>
+        </section>
+    <?php endif; ?>
     
     <?php if ($isClinicalAppointmentsView): ?>
         <section class="clinical-page-title">
@@ -1444,17 +1470,21 @@ include __DIR__ . '/includes/header.php';
         <section class="appointments-filter-card" aria-label="Appointment filters">
             <div class="appointment-tools patient-filters" id="patientAppointmentFilterBar">
                 <div class="tool-field">
-                    <label for="appointmentSearch"><?php echo $userRole === 'patient' ? 'Search appointment history' : 'Search appointments'; ?></label>
+                    <label for="appointmentSearch"><?php echo $userRole === 'patient' ? ($patientAppointmentView === 'active' ? 'Search my appointments' : 'Search appointment history') : 'Search appointments'; ?></label>
                     <input type="search" id="appointmentSearch" placeholder="Search date, service, or status">
                 </div>
                 <div class="tool-field">
                     <label for="appointmentStatusFilter">Status</label>
                     <select id="appointmentStatusFilter">
                         <option value="">All statuses</option>
-                        <option value="pending"<?php echo $initialStatusFilter === 'pending' ? ' selected' : ''; ?>>Pending (<?php echo (int) $statusCounts['pending']; ?>)</option>
-                        <option value="confirmed"<?php echo $initialStatusFilter === 'confirmed' ? ' selected' : ''; ?>>Confirmed (<?php echo (int) $statusCounts['confirmed']; ?>)</option>
-                        <option value="completed"<?php echo $initialStatusFilter === 'completed' ? ' selected' : ''; ?>>Completed (<?php echo (int) $statusCounts['completed']; ?>)</option>
-                        <option value="cancelled"<?php echo $initialStatusFilter === 'cancelled' ? ' selected' : ''; ?>>Cancelled (<?php echo (int) $statusCounts['cancelled']; ?>)</option>
+                        <?php if ($userRole !== 'patient' || $patientAppointmentView === 'active'): ?>
+                            <option value="pending"<?php echo $initialStatusFilter === 'pending' ? ' selected' : ''; ?>>Pending (<?php echo (int) $statusCounts['pending']; ?>)</option>
+                            <option value="confirmed"<?php echo $initialStatusFilter === 'confirmed' ? ' selected' : ''; ?>>Confirmed (<?php echo (int) $statusCounts['confirmed']; ?>)</option>
+                        <?php endif; ?>
+                        <?php if ($userRole !== 'patient' || $patientAppointmentView === 'history'): ?>
+                            <option value="completed"<?php echo $initialStatusFilter === 'completed' ? ' selected' : ''; ?>>Completed (<?php echo (int) $statusCounts['completed']; ?>)</option>
+                            <option value="cancelled"<?php echo $initialStatusFilter === 'cancelled' ? ' selected' : ''; ?>>Cancelled (<?php echo (int) $statusCounts['cancelled']; ?>)</option>
+                        <?php endif; ?>
                     </select>
                 </div>
                 <div class="tool-field">
@@ -1735,13 +1765,13 @@ include __DIR__ . '/includes/header.php';
                                         <form method="POST" action="process_reschedule_request.php" style="display:inline;">
                                             <input type="hidden" name="request_id" value="<?php echo (int) $appointment['reschedule_request_id']; ?>">
                                             <input type="hidden" name="action" value="approve">
-                                            <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
+                                            <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentReturnUrl, ENT_QUOTES, 'UTF-8'); ?>">
                                             <button type="submit" class="btn btn-confirm" data-confirm-message="Approve this reschedule request?">Approve Reschedule</button>
                                         </form>
                                         <form method="POST" action="process_reschedule_request.php" style="display:inline;">
                                             <input type="hidden" name="request_id" value="<?php echo (int) $appointment['reschedule_request_id']; ?>">
                                             <input type="hidden" name="action" value="reject">
-                                            <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
+                                            <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentReturnUrl, ENT_QUOTES, 'UTF-8'); ?>">
                                             <button type="submit" class="btn btn-cancel" data-confirm-message="Reject this reschedule request?">Reject Request</button>
                                         </form>
                                     <?php endif; ?>
@@ -1750,29 +1780,29 @@ include __DIR__ . '/includes/header.php';
                                             <form method="POST" action="update_appointment_status.php" class="confirm-action" style="display:inline;">
                                                 <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
                                                 <input type="hidden" name="status" value="confirmed">
-                                                <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
+                                                <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentReturnUrl, ENT_QUOTES, 'UTF-8'); ?>">
                                                 <button type="submit" class="btn btn-confirm" data-confirm-message="Are you sure you want to confirm this appointment?">Confirm</button>
                                             </form>
                                             <form method="POST" action="update_appointment_status.php" class="decline-action" style="display:inline;">
                                                 <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
                                                 <input type="hidden" name="status" value="cancelled">
-                                                <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
+                                                <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentReturnUrl, ENT_QUOTES, 'UTF-8'); ?>">
                                                 <button type="submit" class="btn btn-cancel" data-confirm-message="Are you sure you want to cancel this appointment?">Cancel</button>
                                             </form>
                                         <?php elseif ($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation' && $appointment['status'] === 'confirmed'): ?>
                                             <form method="POST" action="update_appointment_status.php" style="display:inline;">
                                                 <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
                                                 <input type="hidden" name="status" value="completed">
-                                                <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
+                                                <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentReturnUrl, ENT_QUOTES, 'UTF-8'); ?>">
                                                 <button type="submit" class="btn btn-complete" data-confirm-message="Are you sure you want to mark this appointment as completed?">Complete</button>
                                             </form>
                                         <?php endif; ?>
                                     <?php endif; ?>
-                                    <?php if ($userRole === 'patient' && $appointment['status'] === 'pending'): ?>
+                                    <?php if ($userRole === 'patient' && in_array(strtolower((string) ($appointment['status'] ?? '')), ['pending', 'confirmed'], true)): ?>
                                         <form method="POST" action="update_appointment_status.php" style="display:inline;">
                                             <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
                                             <input type="hidden" name="status" value="cancelled">
-                                            <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
+                                            <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentReturnUrl, ENT_QUOTES, 'UTF-8'); ?>">
                                             <button type="submit" class="btn btn-cancel" data-confirm-message="Are you sure you want to cancel this appointment?">Cancel</button>
                                         </form>
                                     <?php endif; ?>
@@ -2429,7 +2459,7 @@ include __DIR__ . '/includes/header.php';
     }
     if (successOk) {
         successOk.addEventListener('click', function() {
-            window.location.href = <?php echo json_encode($appointmentPage, JSON_UNESCAPED_SLASHES); ?>;
+            window.location.href = <?php echo json_encode($appointmentReturnUrl, JSON_UNESCAPED_SLASHES); ?>;
         });
     }
     if (filterSuccessOk) {
@@ -2443,7 +2473,7 @@ include __DIR__ . '/includes/header.php';
     document.querySelectorAll('.appointment-modal').forEach(function(modal) {
         modal.addEventListener('click', function(event) {
             if (event.target === modal && modal === successModal) {
-            window.location.href = <?php echo json_encode($appointmentPage, JSON_UNESCAPED_SLASHES); ?>;
+            window.location.href = <?php echo json_encode($appointmentReturnUrl, JSON_UNESCAPED_SLASHES); ?>;
                 return;
             }
             if (event.target === modal) closeAll();
