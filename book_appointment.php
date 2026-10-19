@@ -215,20 +215,39 @@ function consultationDoctorDirectory(mysqli $conn): array {
 
 function consultationSpecialtyParts(string $specialty): array {
     $parts = preg_split('/\s*\/\s*/', trim($specialty));
-    $parts = array_map('trim', is_array($parts) ? $parts : []);
-    return array_values(array_filter($parts, static fn (string $part): bool => $part !== ''));
+    $normalized = [];
+    foreach (is_array($parts) ? $parts : [] as $part) {
+        $part = trim((string) preg_replace('/^\s*(?:and|&)\s+/i', '', trim((string) $part)));
+        if ($part === '') {
+            continue;
+        }
+        $key = strtolower((string) preg_replace('/\s+/', ' ', $part));
+        $normalized[$key] = $key === 'pediatrician' ? 'Pediatrician' : ($key === 'general doctor' ? 'General Doctor' : $part);
+    }
+    return array_values($normalized);
+}
+
+function consultationSpecialtyLabel(string $specialty): string {
+    $parts = consultationSpecialtyParts($specialty);
+    $hasGeneralDoctor = in_array('General Doctor', $parts, true);
+    $hasPediatrician = in_array('Pediatrician', $parts, true);
+    if ($hasGeneralDoctor && $hasPediatrician) {
+        return 'General Doctor / Pediatrician';
+    }
+    return $parts[0] ?? '';
 }
 
 function consultationSpecialties(array $doctors): array {
     $found = [];
     foreach ($doctors as $doctor) {
-        foreach (consultationSpecialtyParts((string) ($doctor['specialty'] ?? 'General Doctor')) as $specialty) {
-            $found[$specialty] = true;
+        $specialtyLabel = consultationSpecialtyLabel((string) ($doctor['specialty'] ?? 'General Doctor'));
+        if ($specialtyLabel !== '') {
+            $found[$specialtyLabel] = true;
         }
     }
 
     $ordered = [];
-    foreach (['General Doctor', 'Pediatrician'] as $preferred) {
+    foreach (['General Doctor', 'Pediatrician', 'General Doctor / Pediatrician'] as $preferred) {
         if (isset($found[$preferred])) {
             $ordered[] = $preferred;
             unset($found[$preferred]);
@@ -238,16 +257,12 @@ function consultationSpecialties(array $doctors): array {
 }
 
 function consultationDoctorMatchesSpecialty(array $doctor, string $specialty): bool {
-    $specialty = strtolower(trim($specialty));
-    if ($specialty === '') {
+    $selectedParts = consultationSpecialtyParts($specialty);
+    if (empty($selectedParts)) {
         return false;
     }
-    foreach (consultationSpecialtyParts((string) ($doctor['specialty'] ?? '')) as $part) {
-        if (strtolower($part) === $specialty) {
-            return true;
-        }
-    }
-    return false;
+    $doctorParts = consultationSpecialtyParts((string) ($doctor['specialty'] ?? ''));
+    return count(array_intersect($selectedParts, $doctorParts)) === count($selectedParts);
 }
 
 function consultationDoctorNameKey(string $name): string {
@@ -735,7 +750,7 @@ $individualServices = [];
 $bookingDoctors = [];
 $consultationSpecialties = [];
 $consultationDoctorsForSpecialty = [];
-$selectedSpecialty = trim((string) ($bk['consultation_specialty'] ?? ''));
+$selectedSpecialty = consultationSpecialtyLabel((string) ($bk['consultation_specialty'] ?? ''));
 if ($step === 1 || $bk['type'] === 'package') {
     $packageServices = lab_order_package_services(fetchLabBookingPackages($conn));
 }
@@ -2048,10 +2063,15 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     var specialty = specialtySelect.value.toLowerCase().trim();
                     var previousDoctor = doctorSelect.value;
                     doctorSelect.disabled = !specialty;
+                    var selectedSpecialties = specialty.split('/').map(function(item) {
+                        return item.replace(/^\s*(?:and|&)\s+/i, '').trim();
+                    }).filter(Boolean);
                     Array.from(doctorSelect.options).forEach(function(option) {
                         if (!option.value) return;
-                        var specialties = (option.getAttribute('data-specialty') || '').toLowerCase().split('/').map(function(item) { return item.trim(); });
-                        option.hidden = !specialty || specialties.indexOf(specialty) === -1;
+                        var specialties = (option.getAttribute('data-specialty') || '').toLowerCase().split('/').map(function(item) {
+                            return item.replace(/^\s*(?:and|&)\s+/i, '').trim();
+                        }).filter(Boolean);
+                        option.hidden = !specialty || !selectedSpecialties.every(function(selected) { return specialties.indexOf(selected) !== -1; });
                     });
                     var selectedOption = doctorSelect.options[doctorSelect.selectedIndex];
                     doctorSelect.value = previousDoctor && selectedOption && !selectedOption.hidden ? previousDoctor : '';
