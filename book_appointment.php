@@ -1026,6 +1026,10 @@ $additionalStyles = '
         .progressive-calendar-help { font-size: .92rem; }
         .progressive-calendar-actions { padding: 16px 24px 20px; }
     }
+    @media (max-width: 760px) {
+        .progressive-calendar-grid button { min-width: 0; padding: 4px 2px; }
+        .progressive-calendar-grid button small { max-width: 100%; font-size: .52rem; line-height: 1.05; white-space: normal; overflow-wrap: anywhere; text-align: center; }
+    }
     .progressive-form-error { display: none; margin: 0 0 16px; padding: 11px 13px; border-left: 4px solid #c1121f; border-radius: 8px; background: #fff0f0; color: #a30e19; }
     .progressive-form-error.is-visible { display: block; }
     .progressive-actions { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 18px; padding-top: 18px; border-top: 1px solid #e3edf4; }
