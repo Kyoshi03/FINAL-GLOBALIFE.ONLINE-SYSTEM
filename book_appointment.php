@@ -854,6 +854,7 @@ $additionalStyles = '
     .choice-card p { margin: 0; color: #666; font-size: 0.95rem; }
     .progressive-booking-form { max-width: none; }
     .progressive-top-grid, .progressive-schedule-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .progressive-type-grid { max-width: 560px; }
     .progressive-fields { margin-top: 4px; }
     .progressive-panel { display: none; padding: 18px; border: 1px solid #d8e8f2; border-radius: 14px; background: #fbfdff; }
     .progressive-panel.is-active { display: block; }
@@ -1389,7 +1390,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
             </div>
             <form method="post" action="book_appointment.php" class="progressive-booking-form" id="progressiveBookingForm">
                 <input type="hidden" name="booking_action" value="progressive_booking">
-                <div class="progressive-top-grid">
+                <div class="progressive-type-grid">
                     <div class="form-group">
                         <label for="progressiveBookingType">Appointment Type <span aria-hidden="true" style="color:#c1121f;">*</span></label>
                         <select name="booking_type" id="progressiveBookingType" required>
@@ -1398,12 +1399,6 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                             <option value="package" <?php echo $bk['type'] === 'package' ? 'selected' : ''; ?>>Package Deals</option>
                             <option value="individual" <?php echo $bk['type'] === 'individual' ? 'selected' : ''; ?>>Individual Laboratory Tests</option>
                             <option value="ultrasound" <?php echo $bk['type'] === 'ultrasound' ? 'selected' : ''; ?>>Ultrasounds</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="progressiveBookingFor">For <span aria-hidden="true" style="color:#c1121f;">*</span></label>
-                        <select id="progressiveBookingFor" disabled>
-                            <option>My Account</option>
                         </select>
                     </div>
                 </div>
