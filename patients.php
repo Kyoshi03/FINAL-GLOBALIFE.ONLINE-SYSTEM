@@ -3801,6 +3801,16 @@ $additionalStyles = '
         pointer-events: none !important;
     }
 
+    .patient-tour-history-open {
+        position: relative !important;
+        z-index: 5202 !important;
+    }
+
+    .patient-tour-history-open .nav-submenu,
+    .patient-tour-history-open .nav-subitem {
+        z-index: 5202 !important;
+    }
+
     @media (max-width: 560px) {
         .patient-tour-focus {
             border-radius: 10px;
@@ -5382,10 +5392,15 @@ include 'includes/header.php';
         }
 
         function prepareHistory(step) {
-            if (step.target.indexOf('patients_') === -1) return;
             var group = document.querySelector('.patient-history-group');
+            if (!group) return;
+            if (step.target.indexOf('patients_') === -1) {
+                group.classList.remove('patient-tour-history-open');
+                return;
+            }
             var toggle = group ? group.querySelector('.patient-history-toggle') : null;
             if (group && toggle && !group.classList.contains('is-open')) toggle.click();
+            group.classList.add('patient-tour-history-open');
         }
 
         function clearHighlight() {
@@ -5538,6 +5553,8 @@ include 'includes/header.php';
             if (retryTimer) window.clearTimeout(retryTimer);
             if (positionFrame) window.cancelAnimationFrame(positionFrame);
             clearHighlight();
+            var historyGroup = document.querySelector('.patient-history-group');
+            if (historyGroup) historyGroup.classList.remove('patient-tour-history-open');
             if (tooltip) {
                 tooltip.remove();
                 tooltip = null;
