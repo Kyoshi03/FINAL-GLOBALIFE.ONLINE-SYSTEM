@@ -262,7 +262,9 @@ function consultationDoctorMatchesSpecialty(array $doctor, string $specialty): b
         return false;
     }
     $doctorParts = consultationSpecialtyParts((string) ($doctor['specialty'] ?? ''));
-    return count(array_intersect($selectedParts, $doctorParts)) === count($selectedParts);
+    return count($selectedParts) === count($doctorParts)
+        && empty(array_diff($selectedParts, $doctorParts))
+        && empty(array_diff($doctorParts, $selectedParts));
 }
 
 function consultationDoctorNameKey(string $name): string {
@@ -2078,7 +2080,9 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         var specialties = (option.getAttribute('data-specialty') || '').toLowerCase().split('/').map(function(item) {
                             return item.replace(/^\s*(?:and|&)\s+/i, '').trim();
                         }).filter(Boolean);
-                        option.hidden = !specialty || !selectedSpecialties.every(function(selected) { return specialties.indexOf(selected) !== -1; });
+                        var exactMatch = selectedSpecialties.length === specialties.length
+                            && selectedSpecialties.every(function(selected) { return specialties.indexOf(selected) !== -1; });
+                        option.hidden = !specialty || !exactMatch;
                     });
                     var selectedOption = doctorSelect.options[doctorSelect.selectedIndex];
                     doctorSelect.value = previousDoctor && selectedOption && !selectedOption.hidden ? previousDoctor : '';
