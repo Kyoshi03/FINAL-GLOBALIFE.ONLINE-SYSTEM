@@ -3817,6 +3817,11 @@ $additionalStyles = '
         z-index: 5202 !important;
     }
 
+    body.patient-tour-nav-visible header,
+    body.patient-tour-nav-visible #mainNav {
+        z-index: 5202 !important;
+    }
+
     @media (min-width: 901px) {
         body.patient-tour-history-visible header {
             z-index: 5202 !important;
@@ -5636,6 +5641,7 @@ include 'includes/header.php';
             overlay.classList.remove('is-open');
             overlay.setAttribute('aria-hidden', 'true');
             document.body.classList.remove('patient-tour-open');
+            document.body.classList.remove('patient-tour-nav-visible');
             window.removeEventListener('resize', schedulePosition);
             window.removeEventListener('scroll', schedulePosition, true);
             document.removeEventListener('keydown', onKeydown);
@@ -5651,6 +5657,7 @@ include 'includes/header.php';
             overlay.classList.add('is-open');
             overlay.setAttribute('aria-hidden', 'false');
             document.body.classList.add('patient-tour-open');
+            document.body.classList.add('patient-tour-nav-visible');
 
             focusRing = document.createElement('div');
             focusRing.className = 'patient-tour-focus';
