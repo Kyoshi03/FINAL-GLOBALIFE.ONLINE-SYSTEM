@@ -3595,180 +3595,245 @@ $additionalStyles = '
         position: fixed;
         inset: 0;
         z-index: 5200;
-        background: rgba(3, 35, 53, 0.62);
+        background: rgba(3, 35, 53, 0.42);
         opacity: 0;
-        visibility: hidden;
         pointer-events: none;
-        transition: opacity .2s ease, visibility .2s ease;
+        transition: opacity .2s ease;
     }
 
     .patient-tour-overlay.is-open {
         opacity: 1;
-        visibility: visible;
         pointer-events: auto;
     }
 
-    .patient-tour-dialog {
+    .patient-tour-focus {
         position: fixed;
-        top: 50%;
-        left: 50%;
-        width: min(100%, 560px);
+        z-index: 5203;
+        pointer-events: none;
+        border: 2px solid rgba(72, 202, 228, .95);
+        border-radius: 12px;
+        box-shadow: 0 0 0 6px rgba(72, 202, 228, .22), 0 0 28px rgba(72, 202, 228, .42);
+        transition: top .18s ease, left .18s ease, width .18s ease, height .18s ease;
+        animation: patientTourPulse 1.8s ease-in-out infinite;
+    }
+
+    @keyframes patientTourPulse {
+        0%, 100% { box-shadow: 0 0 0 6px rgba(72, 202, 228, .22), 0 0 24px rgba(72, 202, 228, .38); }
+        50% { box-shadow: 0 0 0 9px rgba(72, 202, 228, .14), 0 0 30px rgba(72, 202, 228, .5); }
+    }
+
+    .patient-tour-tooltip {
+        position: fixed;
+        z-index: 5205;
+        width: min(420px, calc(100vw - 20px));
         box-sizing: border-box;
-        padding: 24px;
+        padding: 16px 16px 15px;
         border: 1px solid #cde8f3;
         border-radius: 14px;
         background: #fff;
-        box-shadow: 0 24px 70px rgba(2, 62, 138, .24);
-        z-index: 5202;
-        opacity: 0;
-        visibility: hidden;
-        pointer-events: none;
-        transform: translate(-50%, calc(-50% + 10px)) scale(.98);
-        transition: transform .2s ease;
+        color: #10233f;
+        box-shadow: 0 18px 48px rgba(2, 62, 138, .28);
     }
 
-    .patient-tour-dialog.is-open {
+    .patient-tour-tooltip::before {
+        content: "";
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        background: #fff;
+        border-left: 1px solid #cde8f3;
+        border-top: 1px solid #cde8f3;
+        opacity: 0;
+    }
+
+    .patient-tour-tooltip[data-placement="top"]::before {
+        bottom: -7px;
+        left: 50%;
+        margin-left: -6px;
+        transform: rotate(225deg);
         opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
-        transform: translate(-50%, -50%) scale(1);
+    }
+
+    .patient-tour-tooltip[data-placement="bottom"]::before {
+        top: -7px;
+        left: 50%;
+        margin-left: -6px;
+        transform: rotate(45deg);
+        opacity: 1;
+    }
+
+    .patient-tour-tooltip[data-placement="left"]::before {
+        right: -7px;
+        top: 50%;
+        margin-top: -6px;
+        transform: rotate(135deg);
+        opacity: 1;
+    }
+
+    .patient-tour-tooltip[data-placement="right"]::before {
+        left: -7px;
+        top: 50%;
+        margin-top: -6px;
+        transform: rotate(-45deg);
+        opacity: 1;
     }
 
     .patient-tour-head,
-    .patient-tour-actions,
-    .patient-tour-progress {
+    .patient-tour-actions {
         display: flex;
         align-items: center;
     }
 
     .patient-tour-head {
         justify-content: space-between;
-        gap: 16px;
-        margin-bottom: 18px;
+        gap: 10px;
+        margin-bottom: 8px;
     }
 
-    .patient-tour-step-label {
-        color: #0077b6;
-        font-size: .8rem;
+    .patient-tour-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: #eaf8fc;
+        color: #0b4f80;
+        font-size: .75rem;
         font-weight: 800;
-        letter-spacing: .04em;
-        text-transform: uppercase;
     }
 
     .patient-tour-close {
-        width: 34px;
-        height: 34px;
-        flex: 0 0 34px;
-        border: 1px solid #cde8f3;
-        border-radius: 50%;
-        background: #f4fbff;
-        color: #0b4f80;
-        font-size: 1.25rem;
+        width: 28px;
+        height: 28px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: #60727d;
+        font-size: 1.1rem;
         line-height: 1;
         cursor: pointer;
     }
 
-    .patient-tour-number {
-        display: grid;
-        place-items: center;
-        width: 48px;
-        height: 48px;
-        margin-bottom: 14px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #48cae4 0%, #0077b6 100%);
-        color: #fff;
-        font-size: 1.25rem;
-        font-weight: 800;
-    }
-
-    .patient-tour-dialog h3 {
-        margin: 0 0 8px;
+    .patient-tour-close:hover {
+        background: #f1f8fb;
         color: #023e8a;
-        font-size: 1.45rem;
-    }
-
-    .patient-tour-dialog p {
-        margin: 0;
-        color: #60727d;
-        font-size: .98rem;
-        line-height: 1.55;
     }
 
     .patient-tour-progress {
-        gap: 6px;
-        margin: 22px 0;
-    }
-
-    .patient-tour-progress span {
-        width: 28px;
-        height: 4px;
-        border-radius: 4px;
+        width: 100%;
+        height: 6px;
+        margin-bottom: 10px;
+        overflow: hidden;
+        border-radius: 999px;
         background: #dbeff6;
     }
 
-    .patient-tour-progress span.is-active {
-        background: #0077b6;
+    .patient-tour-progress > span {
+        display: block;
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #48cae4 0%, #0077b6 100%);
+        transition: width .2s ease;
+    }
+
+    .patient-tour-tooltip h3 {
+        margin: 0 0 6px;
+        color: #023e8a;
+        font-size: 1.05rem;
+        font-weight: 800;
+    }
+
+    .patient-tour-tooltip p {
+        margin: 0;
+        color: #60727d;
+        font-size: .92rem;
+        line-height: 1.5;
     }
 
     .patient-tour-actions {
-        justify-content: flex-end;
+        justify-content: space-between;
         gap: 10px;
-        flex-wrap: wrap;
+        margin-top: 15px;
     }
 
-    .patient-tour-actions .plain-btn,
-    .patient-tour-actions .primary-btn {
-        min-width: 92px;
+    .patient-tour-actions .left-actions,
+    .patient-tour-actions .right-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
-    .patient-tour-actions .plain-btn[hidden] {
-        display: none;
+    .patient-tour-btn {
+        min-height: 38px;
+        padding: 8px 13px;
+        border: 0;
+        border-radius: 9px;
+        font-family: inherit;
+        font-size: .84rem;
+        font-weight: 800;
+        cursor: pointer;
     }
 
-    .patient-tour-target {
+    .patient-tour-btn.skip {
+        background: #f1f8fb;
+        color: #60727d;
+    }
+
+    .patient-tour-btn.back {
+        background: #eaf8fc;
+        color: #0b4f80;
+    }
+
+    .patient-tour-btn.next {
+        background: linear-gradient(135deg, #48cae4 0%, #0077b6 100%);
+        color: #fff;
+    }
+
+    .patient-tour-btn:disabled {
+        cursor: not-allowed;
+        opacity: .45;
+    }
+
+    .patient-tour-highlight {
         position: relative;
-        z-index: 5201;
-        border-radius: 8px !important;
-        outline: 3px solid #48cae4 !important;
-        outline-offset: 4px;
-        box-shadow: 0 0 0 8px rgba(72, 202, 228, .22), 0 10px 26px rgba(0, 119, 182, .22) !important;
-    }
-
-    body.patient-tour-open {
-        overflow: hidden;
+        z-index: 5202 !important;
+        border-radius: 10px !important;
+        box-shadow: 0 0 0 3px #48cae4, 0 0 0 8px rgba(72, 202, 228, .18), 0 14px 28px rgba(2, 62, 138, .2) !important;
+        pointer-events: none !important;
     }
 
     @media (max-width: 560px) {
-        .patient-tour-overlay {
-            padding: 0;
+        .patient-tour-focus {
+            border-radius: 10px;
         }
 
-        .patient-tour-dialog {
-            top: auto;
-            left: 10px;
-            right: 10px;
-            bottom: 10px;
-            padding: 20px;
-            border-radius: 12px;
+        .patient-tour-tooltip {
+            left: 10px !important;
+            right: 10px !important;
+            bottom: 10px !important;
+            top: auto !important;
             width: auto;
-            transform: translateY(10px) scale(.98);
+            max-height: min(52vh, 420px);
+            overflow: auto;
+            border-radius: 12px;
+            padding: 14px 14px 15px;
         }
 
-        .patient-tour-dialog.is-open {
-            transform: translateY(0) scale(1);
-        }
-
-        .patient-tour-dialog h3 {
-            font-size: 1.2rem;
+        .patient-tour-tooltip::before {
+            display: none;
         }
 
         .patient-tour-actions {
-            justify-content: stretch;
+            flex-direction: column;
+            align-items: stretch;
         }
 
-        .patient-tour-actions .plain-btn,
-        .patient-tour-actions .primary-btn {
-            flex: 1 1 120px;
+        .patient-tour-actions .left-actions,
+        .patient-tour-actions .right-actions {
+            width: 100%;
+        }
+
+        .patient-tour-actions .patient-tour-btn {
+            flex: 1;
         }
     }
 ';
@@ -4166,25 +4231,6 @@ include 'includes/header.php';
 
     <?php if ($isNewPatientWelcome && !$showNotificationsPage): ?>
     <div class="patient-tour-overlay" id="patientTourOverlay" aria-hidden="true"></div>
-    <section class="patient-tour-dialog" id="patientTourDialog" role="dialog" aria-modal="true" aria-labelledby="patientTourTitle" aria-hidden="true">
-            <div class="patient-tour-head">
-                <span class="patient-tour-step-label" id="patientTourStepLabel">Step 1 of 7</span>
-                <button type="button" class="patient-tour-close" id="patientTourClose" aria-label="Close tutorial">&times;</button>
-            </div>
-            <div class="patient-tour-number" id="patientTourNumber" aria-hidden="true">1</div>
-            <h3 id="patientTourTitle">Calendar</h3>
-            <p id="patientTourDescription">View the clinic calendar to check available doctors, services, dates, and appointment slots.</p>
-            <div class="patient-tour-progress" id="patientTourProgress" aria-hidden="true">
-                <?php for ($tourStep = 1; $tourStep <= 7; $tourStep++): ?>
-                    <span<?php echo $tourStep === 1 ? ' class="is-active"' : ''; ?>></span>
-                <?php endfor; ?>
-            </div>
-            <div class="patient-tour-actions">
-                <button type="button" class="plain-btn" id="patientTourSkip">Skip tutorial</button>
-                <button type="button" class="plain-btn" id="patientTourBack" hidden>Back</button>
-                <button type="button" class="primary-btn" id="patientTourNext">Next</button>
-            </div>
-    </section>
     <?php endif; ?>
 
     <div class="patient-appointment-modal" id="patientAppointmentDetailsModal" aria-hidden="true">
@@ -5286,5 +5332,263 @@ include 'includes/header.php';
     })();
     </script>
     <?php endif; ?>
++    <?php if ($isNewPatientWelcome && !$showNotificationsPage): ?>
+    <script>
+    (function () {
+        var overlay = document.getElementById('patientTourOverlay');
+        if (!overlay) return;
+
+        var steps = [
+            { title: 'Calendar', body: 'View the clinic calendar to check available doctors, services, dates, and appointment slots.', target: 'a[href="patient_calendar.php"]' },
+            { title: 'Upcoming Appointments', body: 'See your next clinic visit, appointment status, queue number, and any pending reschedule request here.', target: '#upcomingAppointmentsPanel' },
+            { title: 'Book Appointment', body: 'Use Book Appointments to choose a service or doctor, then select an available date and time.', target: 'a[href^="book_appointment.php"]' },
+            { title: 'My Profile', body: 'Open My Profile to update your contact details and keep your clinic information complete.', target: '#profile' },
+            { title: 'History', body: 'Open History to review completed appointments and your queue records.', target: '.patient-history-toggle' },
+            { title: 'Appointment History', body: 'Appointment History shows your past and current appointment records, including their statuses.', target: 'a[href="patients_view_appointments.php"]' },
+            { title: 'Queue History', body: 'Queue History shows your previous queue activity and visit records.', target: 'a[href="patients_queue_history.php"]' }
+        ];
+
+        var currentStep = 0;
+        var activeTarget = null;
+        var focusRing = null;
+        var tooltip = null;
+        var positionFrame = 0;
+        var retryTimer = 0;
+        var started = false;
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>"']/g, function (character) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[character];
+            });
+        }
+
+        function isVisible(element) {
+            if (!element) return false;
+            var style = window.getComputedStyle(element);
+            var rect = element.getBoundingClientRect();
+            return style.display !== 'none'
+                && style.visibility !== 'hidden'
+                && Number(style.opacity) !== 0
+                && rect.width > 0
+                && rect.height > 0;
+        }
+
+        function findVisibleTarget(selector) {
+            var matches = document.querySelectorAll(selector);
+            for (var index = 0; index < matches.length; index += 1) {
+                if (isVisible(matches[index])) return matches[index];
+            }
+            return matches[0] || null;
+        }
+
+        function prepareHistory(step) {
+            if (step.target.indexOf('patients_') === -1) return;
+            var group = document.querySelector('.patient-history-group');
+            var toggle = group ? group.querySelector('.patient-history-toggle') : null;
+            if (group && toggle && !group.classList.contains('is-open')) toggle.click();
+        }
+
+        function clearHighlight() {
+            if (activeTarget) {
+                activeTarget.classList.remove('patient-tour-highlight');
+                activeTarget = null;
+            }
+        }
+
+        function setFocusRing(target) {
+            if (!focusRing || !target) return;
+            var rect = target.getBoundingClientRect();
+            var padding = 8;
+            focusRing.style.top = Math.max(4, rect.top - padding) + 'px';
+            focusRing.style.left = Math.max(4, rect.left - padding) + 'px';
+            focusRing.style.width = Math.max(0, rect.width + padding * 2) + 'px';
+            focusRing.style.height = Math.max(0, rect.height + padding * 2) + 'px';
+        }
+
+        function clamp(value, minimum, maximum) {
+            return Math.min(Math.max(value, minimum), maximum);
+        }
+
+        function candidatePlacements(rect, width, height) {
+            var gap = 16;
+            var padding = 10;
+            var vw = window.innerWidth;
+            var vh = window.innerHeight;
+            return [
+                { name: 'bottom', left: clamp(rect.left + (rect.width - width) / 2, padding, vw - width - padding), top: rect.bottom + gap },
+                { name: 'top', left: clamp(rect.left + (rect.width - width) / 2, padding, vw - width - padding), top: rect.top - height - gap },
+                { name: 'right', left: rect.right + gap, top: clamp(rect.top + (rect.height - height) / 2, padding, vh - height - padding) },
+                { name: 'left', left: rect.left - width - gap, top: clamp(rect.top + (rect.height - height) / 2, padding, vh - height - padding) }
+            ];
+        }
+
+        function placementScore(candidate, width, height) {
+            var padding = 10;
+            var vw = window.innerWidth;
+            var vh = window.innerHeight;
+            var visibleWidth = Math.max(0, Math.min(candidate.left + width, vw - padding) - Math.max(candidate.left, padding));
+            var visibleHeight = Math.max(0, Math.min(candidate.top + height, vh - padding) - Math.max(candidate.top, padding));
+            var overflow = Math.max(0, padding - candidate.left)
+                + Math.max(0, candidate.top - (vh - height - padding))
+                + Math.max(0, padding - candidate.top)
+                + Math.max(0, candidate.left - (vw - width - padding));
+            return visibleWidth * visibleHeight - overflow * 1000;
+        }
+
+        function positionTooltip() {
+            positionFrame = 0;
+            if (!tooltip || !activeTarget) return;
+            setFocusRing(activeTarget);
+
+            if (window.matchMedia('(max-width: 560px)').matches) {
+                tooltip.style.left = '10px';
+                tooltip.style.right = '10px';
+                tooltip.style.top = 'auto';
+                tooltip.style.bottom = '10px';
+                tooltip.dataset.placement = 'bottom-sheet';
+                return;
+            }
+
+            var rect = activeTarget.getBoundingClientRect();
+            var candidates = candidatePlacements(rect, tooltip.offsetWidth, tooltip.offsetHeight);
+            var best = candidates[0];
+            var bestScore = placementScore(best, tooltip.offsetWidth, tooltip.offsetHeight);
+            candidates.slice(1).forEach(function (candidate) {
+                var score = placementScore(candidate, tooltip.offsetWidth, tooltip.offsetHeight);
+                if (score > bestScore) {
+                    best = candidate;
+                    bestScore = score;
+                }
+            });
+            tooltip.style.left = best.left + 'px';
+            tooltip.style.top = best.top + 'px';
+            tooltip.style.right = 'auto';
+            tooltip.style.bottom = 'auto';
+            tooltip.dataset.placement = best.name;
+        }
+
+        function schedulePosition() {
+            if (positionFrame) window.cancelAnimationFrame(positionFrame);
+            positionFrame = window.requestAnimationFrame(positionTooltip);
+        }
+
+        function scrollTargetIntoView(target) {
+            if (!target || target.closest('.patient-app-topbar')) return;
+            var rect = target.getBoundingClientRect();
+            if (rect.top < 90 || rect.bottom > window.innerHeight - 90) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+            }
+        }
+
+        function renderStep() {
+            var step = steps[currentStep];
+            prepareHistory(step);
+            clearHighlight();
+
+            var target = findVisibleTarget(step.target);
+            if (!isVisible(target)) {
+                if (retryTimer) window.clearTimeout(retryTimer);
+                retryTimer = window.setTimeout(renderStep, 120);
+                return;
+            }
+
+            activeTarget = target;
+            activeTarget.classList.add('patient-tour-highlight');
+            scrollTargetIntoView(activeTarget);
+
+            var isLast = currentStep === steps.length - 1;
+            var percent = Math.round(((currentStep + 1) / steps.length) * 100);
+            tooltip.innerHTML =
+                '<div class="patient-tour-head">'
+                    + '<span class="patient-tour-badge">Step ' + (currentStep + 1) + ' of ' + steps.length + '</span>'
+                    + '<button type="button" class="patient-tour-close" data-tour-close aria-label="Close tutorial">&times;</button>'
+                + '</div>'
+                + '<div class="patient-tour-progress" aria-hidden="true"><span style="width:' + percent + '%"></span></div>'
+                + '<h3>' + escapeHtml(step.title) + '</h3>'
+                + '<p>' + escapeHtml(step.body) + '</p>'
+                + '<div class="patient-tour-actions">'
+                    + '<div class="left-actions"><button type="button" class="patient-tour-btn skip" data-tour-skip>Skip</button></div>'
+                    + '<div class="right-actions">'
+                        + '<button type="button" class="patient-tour-btn back" data-tour-back' + (currentStep === 0 ? ' disabled' : '') + '>Back</button>'
+                        + '<button type="button" class="patient-tour-btn next" data-tour-next>' + (isLast ? 'Done' : 'Next') + '</button>'
+                    + '</div>'
+                + '</div>';
+
+            tooltip.querySelector('[data-tour-close]').addEventListener('click', destroyTour);
+            tooltip.querySelector('[data-tour-skip]').addEventListener('click', destroyTour);
+            tooltip.querySelector('[data-tour-back]').addEventListener('click', function () {
+                if (currentStep > 0) {
+                    currentStep -= 1;
+                    renderStep();
+                }
+            });
+            tooltip.querySelector('[data-tour-next]').addEventListener('click', function () {
+                if (isLast) {
+                    destroyTour();
+                    return;
+                }
+                currentStep += 1;
+                renderStep();
+            });
+            schedulePosition();
+            window.setTimeout(schedulePosition, 180);
+        }
+
+        function destroyTour() {
+            if (retryTimer) window.clearTimeout(retryTimer);
+            if (positionFrame) window.cancelAnimationFrame(positionFrame);
+            clearHighlight();
+            if (tooltip) {
+                tooltip.remove();
+                tooltip = null;
+            }
+            if (focusRing) {
+                focusRing.remove();
+                focusRing = null;
+            }
+            overlay.classList.remove('is-open');
+            overlay.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('patient-tour-open');
+            window.removeEventListener('resize', schedulePosition);
+            window.removeEventListener('scroll', schedulePosition, true);
+            document.removeEventListener('keydown', onKeydown);
+        }
+
+        function onKeydown(event) {
+            if (overlay.classList.contains('is-open') && event.key === 'Escape') destroyTour();
+        }
+
+        function startTour() {
+            if (started) return;
+            started = true;
+            overlay.classList.add('is-open');
+            overlay.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('patient-tour-open');
+
+            focusRing = document.createElement('div');
+            focusRing.className = 'patient-tour-focus';
+            focusRing.setAttribute('aria-hidden', 'true');
+
+            tooltip = document.createElement('section');
+            tooltip.className = 'patient-tour-tooltip';
+            tooltip.setAttribute('role', 'dialog');
+            tooltip.setAttribute('aria-label', 'Patient dashboard guided walkthrough');
+
+            document.body.appendChild(focusRing);
+            document.body.appendChild(tooltip);
+            window.addEventListener('resize', schedulePosition);
+            window.addEventListener('scroll', schedulePosition, true);
+            document.addEventListener('keydown', onKeydown);
+            renderStep();
+        }
+
+        overlay.addEventListener('click', function (event) {
+            if (event.target === overlay) destroyTour();
+        });
+        window.setTimeout(startTour, 700);
+    })();
+    </script>
+    <?php endif; ?>
+
 <?php $appointmentPage = 'patients.php'; include __DIR__ . '/includes/appointment_reschedule_ui.php'; ?>
 <?php include 'includes/footer.php'; ?>
