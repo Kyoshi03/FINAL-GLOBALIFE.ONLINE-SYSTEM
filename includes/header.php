@@ -2626,6 +2626,18 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             top: calc(var(--app-mobile-brand-height) + var(--app-mobile-topbar-height) + 10px) !important;
             z-index: 2700 !important;
         }
+        body.app-layout .patient-profile-menu {
+            left: auto !important;
+            right: 12px !important;
+            top: var(--profile-menu-top, calc(var(--app-mobile-brand-height) + var(--app-mobile-topbar-height) + 10px)) !important;
+            width: min(320px, calc(100vw - 24px)) !important;
+            max-width: calc(100vw - 24px) !important;
+            box-sizing: border-box;
+        }
+        body.app-layout .patient-profile-menu::before {
+            right: auto;
+            left: var(--profile-pointer-left, 50%);
+        }
         body.app-layout .patient-notification-panel {
             left: 12px !important;
             right: 12px !important;
@@ -3121,6 +3133,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             return;
         }
         const menuButton = menuWrap.querySelector('[data-profile-menu-button]');
+        const menuPanel = menuWrap.querySelector('.patient-profile-menu');
         function closeProfileMenu() {
             menuWrap.classList.remove('is-open');
             if (menuButton) {
@@ -3132,6 +3145,27 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             if (menuButton) {
                 menuButton.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
             }
+            if (isOpen) {
+                alignProfileMenu();
+            }
+        }
+        function alignProfileMenu() {
+            if (!menuPanel || !menuButton) {
+                return;
+            }
+            if (!window.matchMedia('(max-width: 900px)').matches) {
+                menuPanel.style.removeProperty('--profile-pointer-left');
+                menuPanel.style.removeProperty('--profile-menu-top');
+                return;
+            }
+            const panelRect = menuPanel.getBoundingClientRect();
+            const buttonRect = menuButton.getBoundingClientRect();
+            const pointerWidth = 14;
+            const desiredLeft = buttonRect.left + (buttonRect.width / 2) - panelRect.left - (pointerWidth / 2);
+            const boundedLeft = Math.max(14, Math.min(panelRect.width - 28, desiredLeft));
+            menuPanel.style.setProperty('--profile-pointer-left', boundedLeft + 'px');
+            const panelTop = Math.max(8, Math.min(window.innerHeight - 80, buttonRect.bottom + 10));
+            menuPanel.style.setProperty('--profile-menu-top', panelTop + 'px');
         }
         if (menuButton) {
             menuButton.addEventListener('click', function(event) {
@@ -3149,6 +3183,8 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                 closeProfileMenu();
             }
         });
+        window.addEventListener('resize', alignProfileMenu);
+        window.addEventListener('scroll', alignProfileMenu, true);
     })();
     (function() {
         const menuWrap = document.querySelector('[data-notification-menu]');
