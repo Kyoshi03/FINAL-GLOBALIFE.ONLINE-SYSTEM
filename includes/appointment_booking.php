@@ -371,6 +371,12 @@ function appointment_queue_service_label(array $appointment): string {
 
 function appointment_detail_services_text(array $appointment): string {
     $bookingType = strtolower(trim((string) ($appointment['booking_type'] ?? '')));
+    if ($bookingType === 'consultation') {
+        return 'Doctor consultation';
+    }
+    if ($bookingType === 'ultrasound') {
+        return 'Ultra sound';
+    }
     $services = appointment_queue_service_label($appointment);
     if (in_array($bookingType, ['individual', 'package'], true)) {
         $total = $appointment['total_display_price'] ?? null;
@@ -383,6 +389,12 @@ function appointment_detail_services_text(array $appointment): string {
 
 function appointment_detail_notes_text(array $appointment): string {
     $bookingType = strtolower(trim((string) ($appointment['booking_type'] ?? '')));
+    if ($bookingType === 'consultation') {
+        return 'Consultation fee confirmed at clinic';
+    }
+    if ($bookingType === 'ultrasound') {
+        return 'Ultra sound fee confirmed at clinic';
+    }
     if ($bookingType === 'individual') {
         return 'Laboratory tests fee confirmed at clinic';
     }
@@ -970,10 +982,9 @@ function appointment_create_direct(mysqli $conn, int $patientId, array $payload)
     $booking = $validated['booking'];
     $serviceNames = $validated['service_names'];
     if (($booking['type'] ?? '') === 'consultation') {
-        $notes = 'Doctor consultation | ' . (string) $validated['doctor_name']
-            . ' | Consultation fee confirmed at clinic';
+        $notes = 'Doctor consultation | Consultation fee confirmed at clinic';
     } elseif (($booking['type'] ?? '') === 'ultrasound') {
-        $notes = 'Ultra sound | Fee confirmed at clinic';
+        $notes = 'Ultra sound | Ultra sound fee confirmed at clinic';
     } else {
         $feeNote = ($booking['type'] ?? '') === 'package'
             ? 'Laboratory package fee confirmed at clinic'
