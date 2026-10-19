@@ -4736,7 +4736,7 @@ $additionalStyles = '
 
     @media (max-width: 600px) {
         .patient-shell {
-            padding-bottom: 150px;
+            padding-bottom: 96px;
         }
 
         .dashboard-card {
