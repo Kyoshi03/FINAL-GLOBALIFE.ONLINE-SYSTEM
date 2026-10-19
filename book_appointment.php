@@ -935,8 +935,9 @@ $additionalStyles = '
     .progressive-panel .form-group:last-child { margin-bottom: 0; }
     .progressive-search-row { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(180px, .8fr); gap: 12px; margin-bottom: 14px; }
     .progressive-service-list { display: grid; gap: 8px; max-height: 300px; overflow-y: auto; padding: 4px; border: 1px solid #e1edf4; border-radius: 11px; background: #fff; }
-    .progressive-service-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 11px 12px; border: 1px solid #e3edf4; border-radius: 10px; background: #fff; }
+    .progressive-service-row { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 11px 12px; border: 1px solid #e3edf4; border-radius: 10px; background: #fff; }
     .progressive-service-row.is-hidden { display: none; }
+    .progressive-service-row > input[type="radio"], .progressive-service-row > input[type="checkbox"] { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
     .progressive-service-row label { min-width: 0; cursor: pointer; }
     .progressive-service-row label strong { display: block; color: #073b4c; line-height: 1.3; overflow-wrap: anywhere; }
     .progressive-service-row label small { display: block; margin-top: 3px; color: #6a7e92; line-height: 1.35; }
@@ -1281,8 +1282,8 @@ $additionalStyles = '
         .progressive-panel { padding: 13px; border-radius: 11px; }
         .progressive-search-row { grid-template-columns: 1fr; gap: 0; margin-bottom: 10px; }
         .progressive-service-list { max-height: 280px; }
-        .progressive-service-row { grid-template-columns: auto minmax(0, 1fr); gap: 8px; padding: 10px; }
-        .progressive-service-actions { grid-column: 2; justify-content: space-between; width: 100%; }
+        .progressive-service-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 10px; }
+        .progressive-service-actions { grid-column: auto; justify-content: flex-end; width: auto; }
         .progressive-service-row .price-tag { grid-column: auto; }
         .progressive-selected-item { gap: 7px; padding: 8px; font-size: .8rem; }
         .progressive-actions { flex-direction: column-reverse; align-items: stretch; }
@@ -1632,7 +1633,10 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                             <strong><?php echo htmlspecialchars((string) $service['name']); ?></strong>
                                             <?php if (!empty($service['included_tests'])): ?><small><?php echo htmlspecialchars((string) $service['included_tests']); ?></small><?php endif; ?>
                                         </label>
-                                        <span class="price-tag">PHP <?php echo number_format((float) $service['opd_price'], 0); ?></span>
+                                        <span class="progressive-service-actions">
+                                            <span class="price-tag">PHP <?php echo number_format((float) $service['opd_price'], 0); ?></span>
+                                            <button type="button" class="progressive-add-button" data-add-package="progressivePackage<?php echo $serviceId; ?>">Add</button>
+                                        </span>
                                     </div>
                                 <?php endforeach; ?>
                             <?php endforeach; ?>
@@ -2007,8 +2011,9 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         item.appendChild(remove);
                         individualSelectedItems.appendChild(item);
                     });
-                    document.querySelectorAll('[data-add-service]').forEach(function(button) {
-                        var input = document.getElementById(button.getAttribute('data-add-service'));
+                    document.querySelectorAll('[data-add-service], [data-add-package]').forEach(function(button) {
+                        var targetId = button.getAttribute('data-add-service') || button.getAttribute('data-add-package');
+                        var input = document.getElementById(targetId);
                         var isAdded = !!(input && input.checked);
                         button.textContent = isAdded ? 'Added' : 'Add';
                         button.classList.toggle('is-added', isAdded);
@@ -2058,7 +2063,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     specialtySelect.disabled = type !== 'consultation';
                     document.querySelectorAll('input[name="package_id"]').forEach(function(input) { input.disabled = type !== 'package'; });
                     document.querySelectorAll('input[name="service_ids[]"]').forEach(function(input) { input.disabled = type !== 'individual'; });
-                    document.querySelectorAll('[data-add-service]').forEach(function(button) { button.disabled = type !== 'individual'; });
+                    document.querySelectorAll('[data-add-service], [data-add-package]').forEach(function(button) { button.disabled = button.hasAttribute('data-add-package') ? type !== 'package' : type !== 'individual'; });
                     if (type !== 'consultation') {
                         doctorSelect.disabled = true;
                         doctorSelect.value = '';
@@ -2111,11 +2116,19 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     if (event.key === 'Escape' && calendarModal.classList.contains('is-open')) closeProgressiveCalendar();
                 });
                 form.querySelectorAll('input[name="package_id"], input[name="service_ids[]"]').forEach(function(input) { input.addEventListener('change', updatePanels); });
-                document.querySelectorAll('[data-add-service]').forEach(function(button) {
+                document.querySelectorAll('[data-add-service], [data-add-package]').forEach(function(button) {
                     button.addEventListener('click', function() {
-                        var input = document.getElementById(button.getAttribute('data-add-service'));
+                        var isPackage = button.hasAttribute('data-add-package');
+                        var targetId = button.getAttribute('data-add-service') || button.getAttribute('data-add-package');
+                        var input = document.getElementById(targetId);
                         if (!input || input.disabled) return;
-                        input.checked = !input.checked;
+                        if (isPackage) {
+                            var wasChecked = input.checked;
+                            form.querySelectorAll('input[name="package_id"]').forEach(function(packageInput) { packageInput.checked = false; });
+                            input.checked = !wasChecked;
+                        } else {
+                            input.checked = !input.checked;
+                        }
                         updatePanels();
                     });
                 });
