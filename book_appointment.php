@@ -892,7 +892,8 @@ $additionalStyles = '
     .choice-card h3 { margin: 0 0 10px; color: #023e8a; font-size: 1.25rem; }
     .choice-card p { margin: 0; color: #666; font-size: 0.95rem; }
     .progressive-booking-form { max-width: none; }
-    .progressive-top-grid, .progressive-schedule-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .progressive-top-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .progressive-schedule-grid { display: grid; grid-template-columns: 1fr; gap: 18px; }
     .progressive-type-grid { max-width: 560px; }
     .progressive-fields { margin-top: 4px; }
     .progressive-panel { display: none; padding: 18px; border: 1px solid #d8e8f2; border-radius: 14px; background: #fbfdff; }
@@ -1637,12 +1638,6 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="progressiveAppointmentTime">Appointment Time</label>
-                            <select id="progressiveAppointmentTime" disabled>
-                                <option>Assigned based on availability</option>
-                            </select>
                         </div>
                     </div>
                     <p class="progressive-schedule-note">The system will assign the earliest available clinic time after you choose the date.</p>
