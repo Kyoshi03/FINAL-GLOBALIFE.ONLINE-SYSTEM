@@ -3817,6 +3817,27 @@ $additionalStyles = '
         z-index: 5202 !important;
     }
 
+    @media (min-width: 901px) {
+        body.patient-tour-history-visible header {
+            z-index: 5202 !important;
+        }
+
+        body.patient-tour-history-visible .patient-history-group .nav-submenu {
+            display: grid !important;
+            grid-template-rows: 1fr !important;
+        }
+
+        body.patient-tour-history-visible .patient-history-group .nav-submenu-inner {
+            overflow: visible !important;
+        }
+
+        body.patient-tour-history-visible .patient-history-group .nav-subitem {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+    }
+
     @media (max-width: 560px) {
         .patient-tour-focus {
             border-radius: 10px;
