@@ -300,6 +300,10 @@ body {
     font-size: .59rem;
     font-weight: 950;
     text-transform: uppercase;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
 }
 .availability-doctor {
     margin-top: 1px;
