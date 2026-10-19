@@ -1985,6 +1985,13 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     if (dateHint) dateHint.textContent = 'Date selected';
                 }
 
+                function clearSelectedDate() {
+                    dateInput.value = '';
+                    calendarDraftValue = '';
+                    calendarConfirm.disabled = true;
+                    updateDateLabel();
+                }
+
                 function setError(message) {
                     errorBox.textContent = message || '';
                     errorBox.classList.toggle('is-visible', !!message);
@@ -2114,9 +2121,9 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         activePanel.focus({ preventScroll: true });
                     }, 40);
                 }
-                typeSelect.addEventListener('change', function() { setError(''); updatePanels(); focusActivePanel(); });
-                specialtySelect.addEventListener('change', function() { setError(''); updateDoctorOptions(); updatePanels(); });
-                doctorSelect.addEventListener('change', updatePanels);
+                typeSelect.addEventListener('change', function() { setError(''); clearSelectedDate(); updatePanels(); focusActivePanel(); });
+                specialtySelect.addEventListener('change', function() { setError(''); clearSelectedDate(); updateDoctorOptions(); updatePanels(); });
+                doctorSelect.addEventListener('change', function() { setError(''); clearSelectedDate(); updatePanels(); });
                 dateInput.addEventListener('change', updateDateLabel);
                 dateTrigger.addEventListener('click', openProgressiveCalendar);
                 calendarClose.addEventListener('click', closeProgressiveCalendar);
