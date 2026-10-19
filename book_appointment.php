@@ -360,51 +360,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        $date = trim((string) ($_POST['appointment_date'] ?? ''));
-        $bk['appointment_date'] = $date;
-        $bk['appointment_time'] = '';
-        if ($error === '' && $date === '') {
-            $error = 'Please choose an appointment date.';
-        }
-        if ($error === '' && $date !== '') {
-            try {
-                $selectedDate = new DateTime($date);
-                $today = new DateTime();
-                $today->setTime(0, 0, 0);
-                if ($selectedDate < $today) {
-                    $error = 'Appointment date cannot be in the past.';
-                }
-            } catch (Exception $e) {
-                $error = 'Please choose a valid appointment date.';
-            }
-        }
-        if ($error === '' && $date !== '') {
-            $time = bookingAutomaticTime($conn, $bk, $date);
-            if ($t === 'ultrasound' && !appointment_ultrasound_is_available_date($date)) {
-                $error = 'Ultra sound appointments are available on Wednesday and Saturday only. Please choose another date.';
-            } elseif ($time === '') {
-                $error = 'There is no remaining availability on the selected date. Please choose another date.';
-            } elseif ($t === 'consultation' && !user_is_doctor_available_at($conn, (int) $bk['doctor_id'], $date, $time)) {
-                $error = 'The selected doctor is not available on that date. Please choose another date.';
-            } elseif ($t === 'consultation' && appointment_doctor_day_capacity($conn, (int) $bk['doctor_id'], $date)['is_full']) {
-                $capacity = appointment_doctor_day_capacity($conn, (int) $bk['doctor_id'], $date);
-                $error = 'This doctor is fully booked on the selected date (' . $capacity['booked'] . '/' . $capacity['limit'] . ' bookings).';
-            } elseif ($t === 'ultrasound' && appointment_ultrasound_day_capacity($conn, $date)['is_full']) {
-                $capacity = appointment_ultrasound_day_capacity($conn, $date);
-                $error = 'Ultra sound appointments are fully booked on the selected date (' . $capacity['booked'] . '/' . $capacity['limit'] . ' bookings).';
-            } elseif ($t !== 'consultation' && appointment_lab_day_capacity($conn, $date)['is_full']) {
-                $capacity = appointment_lab_day_capacity($conn, $date);
-                $error = 'Laboratory appointments are fully booked on the selected date (' . $capacity['booked'] . '/' . $capacity['limit'] . ' bookings).';
-            } elseif ($t !== 'consultation' && !appointment_clinic_is_open_at($date, $time)) {
-                $error = 'The clinic is closed on the selected date. Please choose another date.';
-            }
-            if ($error === '') {
-                $bk['appointment_date'] = $date;
-                $bk['appointment_time'] = $time;
-                $bk['step'] = 5;
-                header('Location: book_appointment.php?booking_step=5');
-                exit;
-            }
+        if ($error === '') {
+            $bk['appointment_date'] = '';
+            $bk['appointment_time'] = '';
+            $bk['step'] = 4;
+            header('Location: book_appointment.php?booking_step=4');
+            exit;
         }
     }
 
@@ -1553,25 +1514,13 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 </div>
 
                 <div class="progressive-schedule" id="progressiveSchedule">
-                    <div class="progressive-schedule-grid">
-                        <div class="form-group">
-                            <label for="progressiveAppointmentDate">Appointment Date <span aria-hidden="true" style="color:#c1121f;">*</span></label>
-                            <input type="date" name="appointment_date" id="progressiveAppointmentDate" value="<?php echo htmlspecialchars($bk['appointment_date']); ?>" min="<?php echo date('Y-m-d'); ?>" disabled>
-                        </div>
-                        <div class="form-group">
-                            <label for="progressiveAppointmentTime">Appointment Time</label>
-                            <select id="progressiveAppointmentTime" disabled>
-                                <option>Assigned based on availability</option>
-                            </select>
-                        </div>
-                    </div>
-                    <p class="progressive-schedule-note">The system will assign the earliest available clinic time after you choose the date.</p>
+                    <p class="progressive-schedule-note">Next, choose your appointment date and available time using the clinic calendar.</p>
                 </div>
 
                 <div class="progressive-form-error" id="progressiveFormError" role="alert"></div>
                 <div class="progressive-actions">
                     <a href="patients.php" class="btn-secondary">Cancel</a>
-                    <button type="submit" class="btn-primary">Book Appointment</button>
+                    <button type="submit" class="btn-primary">Next: Choose Date</button>
                 </div>
             </form>
             <script>
@@ -1580,10 +1529,9 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 var typeSelect = document.getElementById('progressiveBookingType');
                 var specialtySelect = document.getElementById('progressiveSpecialty');
                 var doctorSelect = document.getElementById('progressiveDoctor');
-                var dateInput = document.getElementById('progressiveAppointmentDate');
                 var schedule = document.getElementById('progressiveSchedule');
                 var errorBox = document.getElementById('progressiveFormError');
-                if (!form || !typeSelect || !specialtySelect || !doctorSelect || !dateInput || !schedule || !errorBox) return;
+                if (!form || !typeSelect || !specialtySelect || !doctorSelect || !schedule || !errorBox) return;
 
                 function setError(message) {
                     errorBox.textContent = message || '';
@@ -1634,8 +1582,6 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     }
                     var canSchedule = !!type && hasSelectedService(type);
                     schedule.classList.toggle('is-active', canSchedule);
-                    dateInput.disabled = !canSchedule;
-                    dateInput.required = canSchedule;
                 }
                 typeSelect.addEventListener('change', function() { setError(''); updatePanels(); });
                 specialtySelect.addEventListener('change', function() { setError(''); updateDoctorOptions(); updatePanels(); });
@@ -1655,7 +1601,6 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     else if (type === 'consultation' && !doctorSelect.value) message = 'Please select a doctor.';
                     else if (type === 'package' && !form.querySelector('input[name="package_id"]:checked')) message = 'Please select a package.';
                     else if (type === 'individual' && !form.querySelector('input[name="service_ids[]"]:checked')) message = 'Please select at least one laboratory test.';
-                    else if (!dateInput.value || dateInput.disabled) message = 'Please select an appointment date.';
                     if (message) { event.preventDefault(); setError(message); errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
                 });
                 updatePanels();
