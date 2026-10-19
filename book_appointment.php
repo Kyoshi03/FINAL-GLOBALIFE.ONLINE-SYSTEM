@@ -1704,6 +1704,9 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 }
                 function appointmentSlotInfo(date) {
                     var iso = toIsoDate(date);
+                    if (iso < dateInput.min) {
+                        return { booked: 0, limit: 0, remaining: 0, open: false, full: false, label: 'Past', scheduleText: '' };
+                    }
                     var phpDayOfWeek = date.getDay() === 0 ? 7 : date.getDay();
                     var type = typeSelect.value;
                     var booked = 0;
@@ -1776,8 +1779,12 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         var dayNumber = document.createElement('span');
                         dayNumber.textContent = day;
                         var dayStatus = document.createElement('small');
-                        dayStatus.textContent = slotInfo.open ? (slotInfo.full ? 'Full' : slotInfo.booked + '/' + slotInfo.limit + ' booked') : 'Closed';
-                        dayButton.title = slotInfo.open
+                        dayStatus.textContent = dateValue < dateInput.min
+                            ? 'Past'
+                            : (slotInfo.open ? (slotInfo.full ? 'Full' : slotInfo.booked + '/' + slotInfo.limit + ' booked') : 'Closed');
+                        dayButton.title = dateValue < dateInput.min
+                            ? 'Past date'
+                            : slotInfo.open
                             ? (slotInfo.full ? 'Fully booked' : slotInfo.remaining + ' appointment slots remaining' + (slotInfo.scheduleText ? ' | ' + slotInfo.scheduleText : ''))
                             : slotInfo.label;
                         dayButton.appendChild(dayNumber);
