@@ -585,6 +585,10 @@ $additionalStyles = '
         color: #17652b;
     }
 
+    #patient-login-success[hidden] {
+        display: none;
+    }
+
     .patient-form-group {
         margin-bottom: 16px;
     }
@@ -947,6 +951,7 @@ $additionalScripts = '
         const verificationModal = document.getElementById("verification-modal");
         const verificationFrame = document.getElementById("verification-frame");
         const verificationCloseTriggers = document.querySelectorAll("[data-verification-close]");
+        const patientLoginSuccess = document.getElementById("patient-login-success");
         const shouldOpenPatientLogin = ' . (($loginError !== '' || $loginSuccess !== '') ? 'true' : 'false') . ';
 
         function framePath(frame) {
@@ -1011,6 +1016,15 @@ $additionalScripts = '
                     firstInput.focus();
                 }, 80);
             }
+        }
+
+        function showPatientLoginSuccess(message) {
+            if (!patientLoginSuccess) {
+                return;
+            }
+
+            patientLoginSuccess.textContent = message;
+            patientLoginSuccess.hidden = false;
         }
 
         function closePatientLogin(event) {
@@ -1213,6 +1227,20 @@ $additionalScripts = '
             verificationFrame.addEventListener("load", function () {
                 const path = framePath(verificationFrame);
                 if (path.indexOf("register_patient.php") !== -1 && verificationModal && verificationModal.classList.contains("is-open")) {
+                    let verificationUrl = null;
+                    try {
+                        verificationUrl = new URL(verificationFrame.contentWindow.location.href, window.location.href);
+                    } catch (error) {
+                        verificationUrl = null;
+                    }
+
+                    if (verificationUrl && verificationUrl.searchParams.get("created") === "1") {
+                        closeVerificationModal();
+                        openPatientLogin();
+                        showPatientLoginSuccess("Your account was verified successfully. Please log in to continue.");
+                        return;
+                    }
+
                     registrationFrame.setAttribute("src", verificationFrame.contentWindow.location.href);
                     closeVerificationModal();
                     openRegistrationModal();
@@ -1531,6 +1559,7 @@ include 'includes/header.php';
                             <?php echo htmlspecialchars($loginSuccess); ?>
                         </div>
                     <?php endif; ?>
+                    <div id="patient-login-success" class="login-alert success" role="status" hidden></div>
 
                     <form method="POST" action="index.php" class="patient-login-form">
                         <input type="hidden" name="portal_login" value="1">
