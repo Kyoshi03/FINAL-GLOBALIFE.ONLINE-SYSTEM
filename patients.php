@@ -5421,13 +5421,13 @@ include 'includes/header.php';
         if (!overlay) return;
 
         var steps = [
-            { title: 'Calendar', body: 'View the clinic calendar to check available doctors, services, dates, and appointment slots.', target: 'a[href="patient_calendar.php"]' },
+            { title: 'Calendar', body: 'View the clinic calendar to check available doctors, services, dates, and appointment slots.', target: 'a[href="patient_calendar.php"]', mobileTarget: '#mainNav a[href="patient_calendar.php"]' },
             { title: 'Upcoming Appointments', body: 'See your next clinic visit, appointment status, queue number, and any pending reschedule request here.', target: '#upcomingAppointmentsPanel' },
-            { title: 'Book Appointment', body: 'Use Book Appointments to choose a service or doctor, then select an available date and time.', target: 'a[href^="book_appointment.php"]' },
+            { title: 'Book Appointment', body: 'Use Book Appointments to choose a service or doctor, then select an available date and time.', target: 'a[href^="book_appointment.php"]', mobileTarget: '#mainNav a[href^="book_appointment.php"]' },
             { title: 'My Profile', body: 'Open My Profile to update your contact details and keep your clinic information complete.', target: '#profile' },
-            { title: 'History', body: 'Open History to review completed appointments and your queue records.', target: '.patient-history-toggle' },
-            { title: 'Appointment History', body: 'Appointment History shows your past and current appointment records, including their statuses.', target: 'a[href="patients_view_appointments.php"]' },
-            { title: 'Queue History', body: 'Queue History shows your previous queue activity and visit records.', target: 'a[href="patients_queue_history.php"]' }
+            { title: 'History', body: 'Open History to review completed appointments and your queue records.', target: '.patient-history-toggle', mobileTarget: '#mainNav .patient-history-toggle' },
+            { title: 'Appointment History', body: 'Appointment History shows your past and current appointment records, including their statuses.', target: 'a[href="patients_view_appointments.php"]', mobileTarget: '#mainNav a[href="patients_view_appointments.php"]' },
+            { title: 'Queue History', body: 'Queue History shows your previous queue activity and visit records.', target: 'a[href="patients_queue_history.php"]', mobileTarget: '#mainNav a[href="patients_queue_history.php"]' }
         ];
 
         var currentStep = 0;
@@ -5437,6 +5437,12 @@ include 'includes/header.php';
         var positionFrame = 0;
         var retryTimer = 0;
         var started = false;
+
+        function getStepTarget(step) {
+            return window.matchMedia('(max-width: 900px)').matches && step.mobileTarget
+                ? step.mobileTarget
+                : step.target;
+        }
 
         function escapeHtml(value) {
             return String(value).replace(/[&<>"']/g, function (character) {
@@ -5466,7 +5472,7 @@ include 'includes/header.php';
         function prepareHistory(step) {
             var group = document.querySelector('.patient-history-group');
             if (!group) return;
-            if (step.target.indexOf('patients_') === -1) {
+            if (getStepTarget(step).indexOf('patients_') === -1) {
                 group.classList.remove('patient-tour-history-open');
                 document.body.classList.remove('patient-tour-history-visible');
                 return;
@@ -5533,7 +5539,12 @@ include 'includes/header.php';
                 tooltip.style.left = '10px';
                 tooltip.style.right = '10px';
                 tooltip.style.top = 'auto';
-                tooltip.style.bottom = '10px';
+                var mobileNav = document.getElementById('mainNav');
+                var mobileNavRect = mobileNav ? mobileNav.getBoundingClientRect() : null;
+                var mobileBottom = mobileNavRect && mobileNavRect.height > 0
+                    ? Math.max(10, window.innerHeight - mobileNavRect.top + 10)
+                    : 112;
+                tooltip.style.bottom = mobileBottom + 'px';
                 tooltip.dataset.placement = 'bottom-sheet';
                 return;
             }
@@ -5562,7 +5573,7 @@ include 'includes/header.php';
         }
 
         function scrollTargetIntoView(target) {
-            if (!target || target.closest('.patient-app-topbar')) return;
+            if (!target || target.closest('.patient-app-topbar') || target.closest('#mainNav')) return;
             var rect = target.getBoundingClientRect();
             if (rect.top < 90 || rect.bottom > window.innerHeight - 90) {
                 target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
@@ -5574,7 +5585,7 @@ include 'includes/header.php';
             prepareHistory(step);
             clearHighlight();
 
-            var target = findVisibleTarget(step.target);
+            var target = findVisibleTarget(getStepTarget(step));
             if (!isVisible(target)) {
                 if (retryTimer) window.clearTimeout(retryTimer);
                 retryTimer = window.setTimeout(renderStep, 120);
