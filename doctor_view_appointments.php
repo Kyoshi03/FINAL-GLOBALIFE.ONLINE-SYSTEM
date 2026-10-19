@@ -1535,10 +1535,7 @@ include __DIR__ . '/includes/header.php';
                             ? 'doctor_patient.php?id=' . (int) ($appointment['patient_id'] ?? 0)
                             : 'admin_accounts.php';
                         $notesFull = trim((string) ($appointment['notes'] ?? ''));
-                        $servicesText = 'Not listed';
-                        if (preg_match('/Services:\s*(.*?)(?:\s*\|\s*(?:Channel:|(?:Est\.\s*)?Total:)|\s*$)/i', $notesFull, $matches)) {
-                            $servicesText = trim($matches[1]) !== '' ? trim($matches[1]) : 'Not listed';
-                        }
+                        $servicesText = appointment_detail_services_text($appointment);
                         $totalAmount = isset($appointment['total_display_price']) && $appointment['total_display_price'] !== null
                             ? 'PHP ' . number_format((float) $appointment['total_display_price'], 2)
                             : 'N/A';
@@ -1609,7 +1606,7 @@ include __DIR__ . '/includes/header.php';
                             'rejectedRequestedSchedule' => $rejectedRequestedScheduleLabel,
                             'rejectionReason' => $rejectedRescheduleReason,
                             'rejectedRescheduleReason' => $rejectedRescheduleNote,
-                            'notes' => $notesFull !== '' ? $notesFull : 'None',
+                            'notes' => appointment_detail_notes_text($appointment),
                             'cancellationReason' => $cancellationReason !== '' ? $cancellationReason : 'None',
                         ];
                         ?>

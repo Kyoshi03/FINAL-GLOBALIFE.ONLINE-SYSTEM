@@ -357,7 +357,7 @@ function appointment_queue_service_label(array $appointment): string {
     }
 
     $notes = trim((string) ($appointment['notes'] ?? ''));
-    if (preg_match('/Services:\s*(.*?)(?:\s*\|\s*(?:Channel:|(?:Est\.\s*)?Total:)|\s*$)/i', $notes, $matches)) {
+    if (preg_match('/Services:\s*([^|]*?)(?:\s*\|.*)?$/i', $notes, $matches)) {
         $services = trim((string) ($matches[1] ?? ''));
         if ($services !== '') {
             return $services;
@@ -367,6 +367,30 @@ function appointment_queue_service_label(array $appointment): string {
     return $bookingType === 'package'
         ? 'Laboratory package'
         : ($bookingType === 'individual' ? 'Laboratory tests' : 'General Consultation');
+}
+
+function appointment_detail_services_text(array $appointment): string {
+    $bookingType = strtolower(trim((string) ($appointment['booking_type'] ?? '')));
+    $services = appointment_queue_service_label($appointment);
+    if (in_array($bookingType, ['individual', 'package'], true)) {
+        $total = $appointment['total_display_price'] ?? null;
+        if ($total !== null && $total !== '') {
+            $services .= ' | Total: PHP ' . number_format((float) $total, 2);
+        }
+    }
+    return $services;
+}
+
+function appointment_detail_notes_text(array $appointment): string {
+    $bookingType = strtolower(trim((string) ($appointment['booking_type'] ?? '')));
+    if ($bookingType === 'individual') {
+        return 'Laboratory tests fee confirmed at clinic';
+    }
+    if ($bookingType === 'package') {
+        return 'Laboratory package fee confirmed at clinic';
+    }
+    $notes = trim((string) ($appointment['notes'] ?? ''));
+    return $notes !== '' ? $notes : 'None';
 }
 
 function appointment_mask_email(string $email): string {
@@ -951,8 +975,10 @@ function appointment_create_direct(mysqli $conn, int $patientId, array $payload)
     } elseif (($booking['type'] ?? '') === 'ultrasound') {
         $notes = 'Ultra sound | Fee confirmed at clinic';
     } else {
-        $notes = 'Services: ' . implode(', ', $serviceNames)
-            . ' | Total: PHP ' . number_format((float) $validated['total'], 2);
+        $feeNote = ($booking['type'] ?? '') === 'package'
+            ? 'Laboratory package fee confirmed at clinic'
+            : 'Laboratory tests fee confirmed at clinic';
+        $notes = 'Services: ' . implode(', ', $serviceNames) . ' | ' . $feeNote;
     }
 
     $conn->begin_transaction();

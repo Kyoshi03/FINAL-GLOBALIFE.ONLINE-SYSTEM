@@ -5,6 +5,7 @@ checkRole('admin');
 require_once 'config/database.php';
 require_once __DIR__ . '/includes/doctor_schedule.php';
 require_once __DIR__ . '/includes/patient_profile_photo.php';
+require_once __DIR__ . '/includes/appointment_booking.php';
 
 $pageTitle = 'User Management | Globalife Administration';
 $currentUser = getCurrentUser();
@@ -235,10 +236,7 @@ function admin_accounts_format_display_date(?string $date): string
 function admin_accounts_appointment_detail(array $appointment, string $patientName): array
 {
     $notesFull = trim((string) ($appointment['notes'] ?? ''));
-    $servicesText = 'Not listed';
-    if (preg_match('/Services:\s*(.*?)(?:\s*\|\s*(?:Channel:|(?:Est\.\s*)?Total:)|\s*$)/i', $notesFull, $matches)) {
-        $servicesText = trim($matches[1]) !== '' ? trim($matches[1]) : 'Not listed';
-    }
+    $servicesText = appointment_detail_services_text($appointment);
 
     $bookingTypeKey = (string) ($appointment['booking_type'] ?? '');
     $bookingType = admin_accounts_booking_label($bookingTypeKey);
@@ -272,7 +270,7 @@ function admin_accounts_appointment_detail(array $appointment, string $patientNa
         'bookingType' => $bookingType,
         'totalAmount' => $totalAmount,
         'services' => $servicesText,
-        'notes' => $notesFull !== '' ? $notesFull : 'None',
+        'notes' => appointment_detail_notes_text($appointment),
         'cancellationReason' => $cancellationReason !== '' ? $cancellationReason : 'None',
     ];
 }

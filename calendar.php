@@ -59,7 +59,7 @@ function calendar_service_label(array $appointment): string {
     }
 
     $notes = trim((string) ($appointment['notes'] ?? ''));
-    if (preg_match('/Services:\s*(.*?)(?:\s*\|\s*(?:Channel:|(?:Est\.\s*)?Total:)|\s*$)/i', $notes, $matches)) {
+    if (preg_match('/Services:\s*([^|]*?)(?:\s*\|.*)?$/i', $notes, $matches)) {
         $service = trim($matches[1]);
         if ($service !== '') {
             return calendar_short_text($service);

@@ -114,7 +114,7 @@ function queue_services_text(array $appointment): string {
     if ($bookingType === 'ultrasound') {
         return 'Ultra sound';
     }
-    if (preg_match('/Services:\s*(.*?)(?:\s*\|\s*(?:Channel:|(?:Est\.\s*)?Total:)|\s*$)/i', $notes, $matches)) {
+    if (preg_match('/Services:\s*([^|]*?)(?:\s*\|.*)?$/i', $notes, $matches)) {
         $services = trim((string) ($matches[1] ?? ''));
         if ($services !== '') {
             return $services;

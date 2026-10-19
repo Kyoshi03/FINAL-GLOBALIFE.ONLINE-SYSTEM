@@ -44,7 +44,7 @@ function doctor_status_label(string $status): string {
 
 function doctor_service_detail(array $appointment): string {
     $notes = (string) ($appointment['notes'] ?? '');
-    if (preg_match('/Services:\s*(.*?)(?:\s*\|\s*(?:Channel:|(?:Est\.\s*)?Total:)|\s*$)/i', $notes, $matches)) {
+    if (preg_match('/Services:\s*([^|]*?)(?:\s*\|.*)?$/i', $notes, $matches)) {
         $service = trim($matches[1]);
         if ($service !== '') {
             return $service;

@@ -5052,7 +5052,7 @@ include 'includes/header.php';
                             $requestedScheduleLabel = $hasPendingReschedule
                                 ? appointment_reschedule_request_date_label((string) ($appointment['reschedule_requested_date'] ?? ''), (string) ($appointment['reschedule_requested_time'] ?? ''))
                                 : '';
-                            $servicesText = patient_appointment_services_text($appointment);
+                            $servicesText = appointment_detail_services_text($appointment);
                             $totalAmount = in_array($bookingType, ['consultation', 'ultrasound'], true)
                                 ? 'PHP 0.00'
                                 : 'PHP ' . number_format((float) ($appointment['total_display_price'] ?? 0), 2);
@@ -5075,7 +5075,7 @@ include 'includes/header.php';
                                 'originalSchedule' => $originalScheduleLabel,
                                 'requestedSchedule' => $requestedScheduleLabel,
                                 'rescheduleReason' => trim((string) ($appointment['reschedule_reason'] ?? '')) ?: 'Not provided',
-                                'notes' => $notesText !== '' ? $notesText : 'None',
+                                'notes' => appointment_detail_notes_text($appointment),
                                 'cancellationReason' => $cancellationReason !== '' ? $cancellationReason : 'None',
                             ];
                             ?>

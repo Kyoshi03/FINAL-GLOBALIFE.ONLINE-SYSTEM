@@ -166,7 +166,7 @@ function admin_appointment_services_text(array $appointment): string {
     if ($bookingType === 'ultrasound') {
         return 'Ultra sound';
     }
-    if (preg_match('/Services:\s*(.*?)(?:\s*\|\s*(?:Channel:|(?:Est\.\s*)?Total:)|\s*$)/i', $notes, $matches)) {
+    if (preg_match('/Services:\s*([^|]*?)(?:\s*\|.*)?$/i', $notes, $matches)) {
         $services = trim((string) ($matches[1] ?? ''));
         if ($services !== '') {
             return $services;
@@ -198,10 +198,18 @@ function admin_appointment_services_with_prices(array $appointment, array $labSe
             $pricedServices[] = $serviceName;
         }
     }
-    return $pricedServices !== [] ? implode(', ', $pricedServices) : $services;
+    $serviceText = $pricedServices !== [] ? implode(', ', $pricedServices) : $services;
+    if (isset($appointment['total_display_price']) && $appointment['total_display_price'] !== null) {
+        $serviceText .= ' | Total: PHP ' . number_format((float) $appointment['total_display_price'], 2);
+    }
+    return $serviceText;
 }
 
 function admin_appointment_total_text(array $appointment): string {
+    $bookingType = strtolower((string) ($appointment['booking_type'] ?? ''));
+    if (in_array($bookingType, ['individual', 'package'], true) && isset($appointment['total_display_price']) && $appointment['total_display_price'] !== null) {
+        return 'Total: PHP ' . number_format((float) $appointment['total_display_price'], 2);
+    }
     $notes = trim((string) ($appointment['notes'] ?? ''));
     if (preg_match('/Total:\s*(PHP\s*[0-9,]+(?:\.[0-9]{2})?)/i', $notes, $matches)) {
         return 'Total: ' . trim((string) $matches[1]);
