@@ -529,36 +529,6 @@ $additionalStyles = patientAvatarStyles() . '
         font-size:.8rem;
         line-height:1.35;
     }
-    .appointments-scheduling-restrictions {
-        display:grid;
-        gap:8px;
-        margin:0 0 18px;
-        padding:15px 18px 16px;
-        border-left:4px solid #0878b5;
-        border-radius:13px;
-        background:linear-gradient(135deg,#e9f5ff 0%,#c9e0ff 100%);
-        color:#164f9c;
-        box-shadow:0 8px 18px rgba(0,119,182,.07);
-    }
-    .appointments-scheduling-heading {
-        display:flex;
-        align-items:center;
-        gap:9px;
-        color:#164a9d;
-    }
-    .appointments-scheduling-heading svg {
-        width:21px;
-        height:21px;
-        flex:0 0 21px;
-        fill:none;
-        stroke:currentColor;
-        stroke-width:2;
-        stroke-linecap:round;
-        stroke-linejoin:round;
-    }
-    .appointments-scheduling-heading h2 { margin:0; font-size:1rem; }
-    .appointments-scheduling-restrictions ul { margin:0; padding-left:22px; }
-    .appointments-scheduling-restrictions li { margin:3px 0; line-height:1.4; }
     .appointment-report-card{
         display:flex;
         justify-content:flex-end;
@@ -1310,9 +1280,6 @@ $additionalStyles = patientAvatarStyles() . '
         .appointments-booking-guide-head { grid-column:auto; }
         .appointments-booking-step strong { font-size:.82rem; }
         .appointments-booking-step span { font-size:.74rem; line-height:1.3; }
-        .appointments-scheduling-restrictions { gap:7px; padding:13px 13px 14px; }
-        .appointments-scheduling-heading h2 { font-size:.92rem; }
-        .appointments-scheduling-restrictions li { font-size:.74rem; line-height:1.3; }
         .patient-inline-status-filter {
             grid-template-columns:1fr;
             align-items:stretch;
@@ -1611,19 +1578,6 @@ include __DIR__ . '/includes/header.php';
                 <strong>Visit the clinic</strong>
                 <span>Arrive 10-15 minutes early and pay at the front desk.</span>
             </div>
-        </section>
-        <section class="appointments-scheduling-restrictions" aria-labelledby="appointmentsSchedulingTitle">
-            <div class="appointments-scheduling-heading">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 10v6M12 7h.01"></path></svg>
-                <h2 id="appointmentsSchedulingTitle">Scheduling restrictions</h2>
-            </div>
-            <ul>
-                <li>Laboratory tests and package deals are available Monday to Saturday, from 8:00 AM to 5:00 PM.</li>
-                <li>Ultrasound appointments are available on Wednesday and Saturday, from 8:00 AM to 5:00 PM.</li>
-                <li>Doctor consultation schedules depend on the selected doctor's availability.</li>
-                <li>Past dates and dates with no available slots cannot be selected.</li>
-                <li>The system assigns the earliest available clinic time after you choose a date.</li>
-            </ul>
         </section>
     <?php endif; ?>
     
