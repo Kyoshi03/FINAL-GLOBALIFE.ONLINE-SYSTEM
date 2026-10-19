@@ -4204,12 +4204,17 @@ $additionalStyles = '
         display: grid;
         grid-template-columns: minmax(0, 1.55fr) minmax(290px, .8fr);
         gap: 18px;
-        align-items: start;
+        align-items: stretch;
     }
 
     .dashboard-main-column {
         display: grid;
         gap: 18px;
+        min-width: 0;
+    }
+
+    .dashboard-main-grid > aside {
+        display: flex;
         min-width: 0;
     }
 
@@ -4231,21 +4236,27 @@ $additionalStyles = '
     }
 
     .dashboard-card-title {
-        display: flex;
-        align-items: center;
-        gap: 10px;
+        display: grid;
+        grid-template-columns: 30px minmax(0, 1fr);
+        align-items: start;
+        column-gap: 12px;
         min-width: 0;
     }
 
-    .dashboard-card-title svg {
-        flex: 0 0 26px;
-        width: 26px;
-        height: 26px;
+    .dashboard-card-title > svg {
+        width: 30px;
+        height: 30px;
+        margin-top: 1px;
         fill: none;
-        stroke: #0797c6;
+        stroke: #079ed1;
         stroke-linecap: round;
         stroke-linejoin: round;
-        stroke-width: 1.9;
+        stroke-width: 2.1;
+    }
+
+    .dashboard-card-title > div,
+    .dashboard-card-title > h3 {
+        min-width: 0;
     }
 
     .dashboard-card h3 {
@@ -4539,6 +4550,9 @@ $additionalStyles = '
 
     .dashboard-profile-card {
         display: grid;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
         gap: 16px;
     }
 
@@ -4690,6 +4704,14 @@ $additionalStyles = '
         .dashboard-welcome-copy h2 {
             font-size: 1.7rem;
         }
+
+        .dashboard-main-grid > aside {
+            display: block;
+        }
+
+        .dashboard-profile-card {
+            height: auto;
+        }
     }
 
     @media (max-width: 600px) {
@@ -4742,13 +4764,13 @@ $additionalStyles = '
         }
 
         .dashboard-card-title {
-            gap: 8px;
+            grid-template-columns: 30px minmax(0, 1fr);
+            column-gap: 8px;
         }
 
-        .dashboard-card-title svg {
-            flex-basis: 22px;
-            width: 22px;
-            height: 22px;
+        .dashboard-card-title > svg {
+            width: 30px;
+            height: 30px;
         }
 
         .dashboard-card h3 {
