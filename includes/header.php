@@ -2626,6 +2626,25 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             top: calc(var(--app-mobile-brand-height) + var(--app-mobile-topbar-height) + 10px) !important;
             z-index: 2700 !important;
         }
+        body.app-layout .patient-notification-panel {
+            left: auto !important;
+            right: 12px !important;
+            width: min(520px, calc(100vw - 24px)) !important;
+            max-width: calc(100vw - 24px) !important;
+            max-height: min(390px, calc(100dvh - 220px));
+            overflow: hidden;
+        }
+        body.app-layout .patient-notification-panel::before {
+            right: auto;
+            left: var(--notification-pointer-left, 50%);
+        }
+        body.app-layout .notification-list {
+            max-height: min(300px, calc(100dvh - var(--app-mobile-brand-height) - var(--app-mobile-topbar-height) - 110px));
+        }
+        body.app-layout .notification-item {
+            gap: 8px;
+            padding: 8px 6px;
+        }
     }
     @media (max-width: 560px) {
         body.app-layout {
@@ -3192,8 +3211,25 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                 menuButton.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
             }
             if (isOpen) {
+                alignNotificationPointer();
                 window.setTimeout(markNotificationsRead, 500);
             }
+        }
+        function alignNotificationPointer() {
+            const panel = menuWrap.querySelector('.patient-notification-panel');
+            if (!panel || !menuButton) {
+                return;
+            }
+            if (!window.matchMedia('(max-width: 900px)').matches) {
+                panel.style.removeProperty('--notification-pointer-left');
+                return;
+            }
+            const panelRect = panel.getBoundingClientRect();
+            const buttonRect = menuButton.getBoundingClientRect();
+            const pointerWidth = 14;
+            const desiredLeft = buttonRect.left + (buttonRect.width / 2) - panelRect.left - (pointerWidth / 2);
+            const boundedLeft = Math.max(14, Math.min(panelRect.width - 28, desiredLeft));
+            panel.style.setProperty('--notification-pointer-left', boundedLeft + 'px');
         }
         if (menuButton) {
             menuButton.addEventListener('click', function(event) {
@@ -3211,6 +3247,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                 closeNotificationMenu();
             }
         });
+        window.addEventListener('resize', alignNotificationPointer);
     })();
     (function() {
         const logoutForms = document.querySelectorAll('.logout-form');
