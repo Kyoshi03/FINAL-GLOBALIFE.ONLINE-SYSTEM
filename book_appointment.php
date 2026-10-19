@@ -962,6 +962,24 @@ $additionalStyles = '
     .progressive-calendar-cancel { border: 1px solid #c9dce8; background: #fff; color: #44647a; }
     .progressive-calendar-confirm { border: 0; background: #0878b5; color: #fff; box-shadow: 0 6px 14px rgba(8,120,181,.18); }
     .progressive-calendar-confirm:disabled { background: #b8cad8; cursor: not-allowed; box-shadow: none; }
+    @media (min-width: 761px) {
+        .progressive-calendar-dialog { width: min(100%, 760px); }
+        .progressive-calendar-head { padding: 20px 24px; }
+        .progressive-calendar-head strong { font-size: 1.25rem; }
+        .progressive-calendar-body { padding: 22px 24px; }
+        .progressive-calendar-month { margin-bottom: 16px; }
+        .progressive-calendar-month strong { font-size: 1.3rem; }
+        .progressive-calendar-nav { width: 44px; height: 44px; font-size: 1.55rem; }
+        .progressive-calendar-weekdays, .progressive-calendar-grid { gap: 8px; }
+        .progressive-calendar-weekdays { font-size: .82rem; }
+        .progressive-calendar-grid button, .progressive-calendar-empty { min-height: 68px; }
+        .progressive-calendar-grid button { font-size: 1.05rem; }
+        .progressive-calendar-grid button small { font-size: .68rem; }
+        .progressive-calendar-selection { padding: 13px 15px; font-size: .86rem; }
+        .progressive-calendar-selection strong { font-size: 1rem; }
+        .progressive-calendar-help { font-size: .92rem; }
+        .progressive-calendar-actions { padding: 16px 24px 20px; }
+    }
     .progressive-form-error { display: none; margin: 0 0 16px; padding: 11px 13px; border-left: 4px solid #c1121f; border-radius: 8px; background: #fff0f0; color: #a30e19; }
     .progressive-form-error.is-visible { display: block; }
     .progressive-actions { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 18px; padding-top: 18px; border-top: 1px solid #e3edf4; }
