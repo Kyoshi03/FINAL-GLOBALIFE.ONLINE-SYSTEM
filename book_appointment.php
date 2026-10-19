@@ -1783,7 +1783,6 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
 
                 <div class="progressive-form-error" id="progressiveFormError" role="alert"></div>
                 <div class="progressive-actions">
-                    <a href="patients.php" class="btn-secondary">Cancel</a>
                     <button type="submit" class="btn-primary">Book Appointment</button>
                 </div>
             </form>
