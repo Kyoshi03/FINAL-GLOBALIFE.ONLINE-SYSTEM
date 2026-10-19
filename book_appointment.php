@@ -910,6 +910,23 @@ $additionalStyles = '
     .progressive-service-row label strong { display: block; color: #073b4c; line-height: 1.3; overflow-wrap: anywhere; }
     .progressive-service-row label small { display: block; margin-top: 3px; color: #6a7e92; line-height: 1.35; }
     .progressive-service-row .price-tag { white-space: nowrap; }
+    .progressive-service-actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: 10px; white-space: nowrap; }
+    .progressive-add-button { min-width: 58px; padding: 7px 10px; border: 1px solid #0878b5; border-radius: 8px; background: #fff; color: #0878b5; font: inherit; font-size: .78rem; font-weight: 900; cursor: pointer; }
+    .progressive-add-button:hover, .progressive-add-button:focus-visible { background: #eaf8fd; outline: none; }
+    .progressive-add-button:disabled { opacity: .45; cursor: not-allowed; }
+    .progressive-add-button.is-added { border-color: #16865b; background: #e5f7ee; color: #16865b; }
+    .progressive-selection-summary { margin-top: 12px; padding: 13px 15px; border: 1px solid #b9dff0; border-radius: 11px; background: #f2fbff; color: #173b5b; }
+    .progressive-selection-summary[hidden] { display: none; }
+    .progressive-selection-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+    .progressive-selection-header strong { color: #056696; font-size: .9rem; }
+    .progressive-selection-count { color: #607784; font-size: .78rem; font-weight: 800; }
+    .progressive-selected-items { display: grid; gap: 6px; }
+    .progressive-selected-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border: 1px solid #d8eaf3; border-radius: 8px; background: #fff; font-size: .86rem; }
+    .progressive-selected-item span:first-child { min-width: 0; overflow-wrap: anywhere; }
+    .progressive-selected-item strong { color: #0878b5; white-space: nowrap; }
+    .progressive-selected-remove { border: 0; background: transparent; color: #c1121f; font: inherit; font-size: .76rem; font-weight: 900; cursor: pointer; }
+    .progressive-selection-total { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #cfe7f2; color: #173b5b; font-size: .9rem; }
+    .progressive-selection-total strong { color: #0878b5; font-size: 1.05rem; }
     .progressive-service-empty { padding: 18px; color: #607784; text-align: center; }
     .progressive-schedule { display: none; margin-top: 18px; padding-top: 18px; border-top: 1px solid #e3edf4; }
     .progressive-schedule.is-active { display: block; }
@@ -1230,7 +1247,8 @@ $additionalStyles = '
         .progressive-search-row { grid-template-columns: 1fr; gap: 0; margin-bottom: 10px; }
         .progressive-service-list { max-height: 280px; }
         .progressive-service-row { grid-template-columns: auto minmax(0, 1fr); gap: 8px; padding: 10px; }
-        .progressive-service-row .price-tag { grid-column: 2; }
+        .progressive-service-actions { grid-column: 2; justify-content: space-between; width: 100%; }
+        .progressive-service-row .price-tag { grid-column: auto; }
         .progressive-actions { flex-direction: column-reverse; align-items: stretch; }
         .progressive-actions .btn-primary, .progressive-actions .btn-secondary { width: 100%; min-width: 0; text-align: center; box-sizing: border-box; }
         .svc-toolbar { gap: 8px; margin-bottom: 12px; }
@@ -1573,7 +1591,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                 <?php foreach ($services as $service): ?>
                                     <?php $serviceId = (int) $service['id']; ?>
                                     <div class="progressive-service-row" data-progressive-service data-search="<?php echo htmlspecialchars(strtolower($service['name'] . ' ' . $category . ' ' . ($service['included_tests'] ?? '')), ENT_QUOTES, 'UTF-8'); ?>" data-category="<?php echo htmlspecialchars((string) $category, ENT_QUOTES, 'UTF-8'); ?>">
-                                        <input type="radio" name="package_id" value="<?php echo $serviceId; ?>" id="progressivePackage<?php echo $serviceId; ?>" <?php echo count($bk['service_ids']) === 1 && (int) $bk['service_ids'][0] === $serviceId ? 'checked' : ''; ?> disabled>
+                                        <input type="radio" name="package_id" value="<?php echo $serviceId; ?>" id="progressivePackage<?php echo $serviceId; ?>" data-name="<?php echo htmlspecialchars((string) $service['name'], ENT_QUOTES, 'UTF-8'); ?>" data-price="<?php echo (float) $service['opd_price']; ?>" <?php echo count($bk['service_ids']) === 1 && (int) $bk['service_ids'][0] === $serviceId ? 'checked' : ''; ?> disabled>
                                         <label for="progressivePackage<?php echo $serviceId; ?>">
                                             <strong><?php echo htmlspecialchars((string) $service['name']); ?></strong>
                                             <?php if (!empty($service['included_tests'])): ?><small><?php echo htmlspecialchars((string) $service['included_tests']); ?></small><?php endif; ?>
@@ -1583,6 +1601,16 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                 <?php endforeach; ?>
                             <?php endforeach; ?>
                             <?php if (empty($groupedPackages)): ?><div class="progressive-service-empty">No packages are available yet.</div><?php endif; ?>
+                        </div>
+                        <div class="progressive-selection-summary" id="progressivePackageSummary" hidden>
+                            <div class="progressive-selection-header">
+                                <strong>Selected package</strong>
+                                <span class="progressive-selection-count" id="progressivePackageSelectedName"></span>
+                            </div>
+                            <div class="progressive-selection-total">
+                                <span>Estimated total</span>
+                                <strong id="progressivePackageTotal">PHP 0</strong>
+                            </div>
                         </div>
                     </section>
 
@@ -1611,11 +1639,25 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                     <div class="progressive-service-row" data-progressive-service data-search="<?php echo htmlspecialchars(strtolower($service['name'] . ' ' . $category), ENT_QUOTES, 'UTF-8'); ?>" data-category="<?php echo htmlspecialchars((string) $category, ENT_QUOTES, 'UTF-8'); ?>">
                                         <input type="checkbox" name="service_ids[]" value="<?php echo $serviceId; ?>" id="progressiveIndividual<?php echo $serviceId; ?>" data-progressive-individual data-price="<?php echo (float) $service['opd_price']; ?>" <?php echo in_array($serviceId, array_map('intval', $bk['service_ids']), true) ? 'checked' : ''; ?> disabled>
                                         <label for="progressiveIndividual<?php echo $serviceId; ?>"><strong><?php echo htmlspecialchars((string) $service['name']); ?></strong></label>
-                                        <span class="price-tag">PHP <?php echo number_format((float) $service['opd_price'], 0); ?></span>
+                                        <span class="progressive-service-actions">
+                                            <span class="price-tag">PHP <?php echo number_format((float) $service['opd_price'], 0); ?></span>
+                                            <button type="button" class="progressive-add-button" data-add-service="progressiveIndividual<?php echo $serviceId; ?>">Add</button>
+                                        </span>
                                     </div>
                                 <?php endforeach; ?>
                             <?php endforeach; ?>
                             <?php if (empty($groupedIndividual)): ?><div class="progressive-service-empty">No individual laboratory tests are available yet.</div><?php endif; ?>
+                        </div>
+                        <div class="progressive-selection-summary" id="progressiveIndividualSummary" hidden>
+                            <div class="progressive-selection-header">
+                                <strong>Selected laboratory tests</strong>
+                                <span class="progressive-selection-count" id="progressiveIndividualSelectedCount">0 selected</span>
+                            </div>
+                            <div class="progressive-selected-items" id="progressiveIndividualSelectedItems"></div>
+                            <div class="progressive-selection-total">
+                                <span>Estimated total</span>
+                                <strong id="progressiveIndividualTotal">PHP 0</strong>
+                            </div>
                         </div>
                     </section>
 
@@ -1690,6 +1732,13 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 var dateLabel = document.getElementById('progressiveDateLabel');
                 var dateTrigger = document.getElementById('progressiveDateTrigger');
                 var dateHint = dateTrigger ? dateTrigger.querySelector('.progressive-date-trigger-label small') : null;
+                var packageSummary = document.getElementById('progressivePackageSummary');
+                var packageSelectedName = document.getElementById('progressivePackageSelectedName');
+                var packageTotal = document.getElementById('progressivePackageTotal');
+                var individualSummary = document.getElementById('progressiveIndividualSummary');
+                var individualSelectedCount = document.getElementById('progressiveIndividualSelectedCount');
+                var individualSelectedItems = document.getElementById('progressiveIndividualSelectedItems');
+                var individualTotal = document.getElementById('progressiveIndividualTotal');
                 var calendarModal = document.getElementById('progressiveCalendarModal');
                 var calendarClose = document.getElementById('progressiveCalendarClose');
                 var calendarCancel = document.getElementById('progressiveCalendarCancel');
@@ -1876,6 +1925,58 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     errorBox.textContent = message || '';
                     errorBox.classList.toggle('is-visible', !!message);
                 }
+                function formatPeso(amount) {
+                    return 'PHP ' + Number(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+                }
+                function updateSelectionSummaries() {
+                    var selectedPackage = form.querySelector('input[name="package_id"]:checked');
+                    if (selectedPackage) {
+                        packageSummary.hidden = false;
+                        packageSelectedName.textContent = selectedPackage.getAttribute('data-name') || 'Selected package';
+                        packageTotal.textContent = formatPeso(selectedPackage.getAttribute('data-price'));
+                    } else {
+                        packageSummary.hidden = true;
+                        packageSelectedName.textContent = '';
+                        packageTotal.textContent = 'PHP 0';
+                    }
+
+                    var selectedTests = Array.from(form.querySelectorAll('input[name="service_ids[]"]:checked'));
+                    var total = selectedTests.reduce(function(sum, input) { return sum + Number(input.getAttribute('data-price') || 0); }, 0);
+                    individualSummary.hidden = selectedTests.length === 0;
+                    individualSelectedCount.textContent = selectedTests.length + (selectedTests.length === 1 ? ' selected test' : ' selected tests');
+                    individualTotal.textContent = formatPeso(total);
+                    individualSelectedItems.innerHTML = '';
+                    selectedTests.forEach(function(input) {
+                        var row = input.closest('.progressive-service-row');
+                        var name = row ? row.querySelector('label strong') : null;
+                        var item = document.createElement('div');
+                        item.className = 'progressive-selected-item';
+                        var label = document.createElement('span');
+                        label.textContent = name ? name.textContent : 'Laboratory test';
+                        var price = document.createElement('strong');
+                        price.textContent = formatPeso(input.getAttribute('data-price'));
+                        var remove = document.createElement('button');
+                        remove.type = 'button';
+                        remove.className = 'progressive-selected-remove';
+                        remove.textContent = 'Remove';
+                        remove.addEventListener('click', function() {
+                            input.checked = false;
+                            updateSelectionSummaries();
+                            updatePanels();
+                        });
+                        item.appendChild(label);
+                        item.appendChild(price);
+                        item.appendChild(remove);
+                        individualSelectedItems.appendChild(item);
+                    });
+                    document.querySelectorAll('[data-add-service]').forEach(function(button) {
+                        var input = document.getElementById(button.getAttribute('data-add-service'));
+                        var isAdded = !!(input && input.checked);
+                        button.textContent = isAdded ? 'Added' : 'Add';
+                        button.classList.toggle('is-added', isAdded);
+                        button.setAttribute('aria-pressed', isAdded ? 'true' : 'false');
+                    });
+                }
                 function filterServices(searchId, categoryId, listId) {
                     var search = document.getElementById(searchId);
                     var category = document.getElementById(categoryId);
@@ -1913,6 +2014,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     specialtySelect.disabled = type !== 'consultation';
                     document.querySelectorAll('input[name="package_id"]').forEach(function(input) { input.disabled = type !== 'package'; });
                     document.querySelectorAll('input[name="service_ids[]"]').forEach(function(input) { input.disabled = type !== 'individual'; });
+                    document.querySelectorAll('[data-add-service]').forEach(function(button) { button.disabled = type !== 'individual'; });
                     if (type !== 'consultation') {
                         doctorSelect.disabled = true;
                         doctorSelect.value = '';
@@ -1924,6 +2026,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     dateInput.disabled = !canSchedule;
                     dateInput.required = canSchedule;
                     dateTrigger.disabled = !canSchedule;
+                    updateSelectionSummaries();
                     if (!calendarModal.classList.contains('is-open')) renderProgressiveCalendar();
                 }
                 function focusActivePanel() {
@@ -1964,6 +2067,14 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     if (event.key === 'Escape' && calendarModal.classList.contains('is-open')) closeProgressiveCalendar();
                 });
                 form.querySelectorAll('input[name="package_id"], input[name="service_ids[]"]').forEach(function(input) { input.addEventListener('change', updatePanels); });
+                document.querySelectorAll('[data-add-service]').forEach(function(button) {
+                    button.addEventListener('click', function() {
+                        var input = document.getElementById(button.getAttribute('data-add-service'));
+                        if (!input || input.disabled) return;
+                        input.checked = !input.checked;
+                        updatePanels();
+                    });
+                });
                 [['progressivePackageSearch', 'progressivePackageCategory', 'progressivePackageList'], ['progressiveIndividualSearch', 'progressiveIndividualCategory', 'progressiveIndividualList']].forEach(function(config) {
                     var search = document.getElementById(config[0]);
                     var category = document.getElementById(config[1]);
