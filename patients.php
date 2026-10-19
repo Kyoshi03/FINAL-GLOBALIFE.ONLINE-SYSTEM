@@ -3844,6 +3844,14 @@ $additionalStyles = '
     }
 
     @media (max-width: 900px) {
+        body.patient-tour-nav-visible #mainNav {
+            z-index: 5206 !important;
+        }
+
+        body.patient-tour-nav-visible .patient-tour-focus {
+            z-index: 5207 !important;
+        }
+
         .patient-tour-focus {
             border-radius: 10px;
         }
@@ -3851,8 +3859,8 @@ $additionalStyles = '
         .patient-tour-tooltip {
             left: 10px !important;
             right: 10px !important;
-            bottom: 10px !important;
-            top: auto !important;
+            top: 10px !important;
+            bottom: auto !important;
             width: auto;
             max-height: min(31vh, 250px);
             overflow: auto;
@@ -5538,13 +5546,8 @@ include 'includes/header.php';
             if (window.matchMedia('(max-width: 900px)').matches) {
                 tooltip.style.left = '10px';
                 tooltip.style.right = '10px';
-                tooltip.style.top = 'auto';
-                var mobileNav = document.getElementById('mainNav');
-                var mobileNavRect = mobileNav ? mobileNav.getBoundingClientRect() : null;
-                var mobileBottom = mobileNavRect && mobileNavRect.height > 0
-                    ? Math.max(10, window.innerHeight - mobileNavRect.top + 10)
-                    : 112;
-                tooltip.style.bottom = mobileBottom + 'px';
+                tooltip.style.top = '10px';
+                tooltip.style.bottom = 'auto';
                 tooltip.dataset.placement = 'bottom-sheet';
                 return;
             }
