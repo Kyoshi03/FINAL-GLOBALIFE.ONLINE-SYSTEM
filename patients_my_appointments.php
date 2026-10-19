@@ -2,11 +2,11 @@
 require_once __DIR__ . '/includes/session.php';
 checkRole('patient');
 
-$params = ['view' => 'active'];
 $highlight = (int) ($_GET['highlight'] ?? 0);
+$target = 'patients_view_appointments.php';
 if ($highlight > 0) {
-    $params['highlight'] = $highlight;
+    $target .= '?highlight=' . $highlight;
 }
 
-header('Location: patients_view_appointments.php?' . http_build_query($params));
+header('Location: ' . $target);
 exit();

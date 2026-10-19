@@ -9,15 +9,16 @@ require_once __DIR__ . '/includes/appointment_reschedule.php';
 $currentUser = getCurrentUser();
 $userRole = $currentUser['role'];
 $isClinicalAppointmentsView = $userRole === 'doctor';
-$patientAppointmentView = ($userRole === 'patient' && (($_GET['view'] ?? '') === 'active' || isset($_GET['highlight']))) ? 'active' : 'history';
+$patientViewParameter = strtolower(trim((string) ($_GET['view'] ?? 'active')));
+$patientAppointmentView = ($userRole === 'patient' && $patientViewParameter !== 'history') ? 'active' : 'history';
 $appointmentPage = [
     'admin' => 'admin_view_appointments.php',
     'doctor' => 'doctor_view_appointments.php',
     'patient' => 'patients_view_appointments.php',
 ][$userRole] ?? 'admin_view_appointments.php';
 $appointmentReturnUrl = $patientAppointmentView === 'active'
-    ? 'patients_view_appointments.php?view=active'
-    : $appointmentPage;
+    ? 'patients_view_appointments.php'
+    : 'patients_appointment_history.php';
 
 // Determine page title based on user role
 $pageTitle = "Appointments | Globalife Medical Laboratory & Polyclinic";
@@ -1741,7 +1742,7 @@ include __DIR__ . '/includes/header.php';
                                         <strong><?php echo htmlspecialchars($formattedDate); ?></strong>
                                         <span><?php echo htmlspecialchars($formattedTime); ?></span>
                                     </div>
-                                    <?php if ($userRole === 'patient' && !empty($appointment['reschedule_request_id'])): ?>
+                                    <?php if ($userRole === 'patient' && $patientAppointmentView === 'active' && !empty($appointment['reschedule_request_id'])): ?>
                                         <small class="reschedule-request-note patient-reschedule-card-note"><span class="patient-reschedule-detail"><strong>Original:</strong> <?php echo htmlspecialchars($originalScheduleLabel); ?><br><strong>Requested:</strong> <?php echo htmlspecialchars($requestedScheduleLabel); ?> <span>(Pending approval)</span></span><span class="patient-reschedule-compact"><strong>Reschedule pending</strong><span>Requested: <?php echo htmlspecialchars($requestedScheduleLabel); ?></span></span></small>
                                     <?php endif; ?>
                                 </td>
@@ -1762,7 +1763,7 @@ include __DIR__ . '/includes/header.php';
                             <td class="appointment-actions-cell">
                                 <div class="action-buttons <?php echo (($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation')) && $appointment['status'] === 'pending' ? 'pending-actions' : ''; ?>">
                                     <button type="button" class="btn btn-details" data-open-details>Details</button>
-                                    <?php if ($userRole === 'patient' && appointment_reschedule_is_patient_editable($appointment) && empty($appointment['reschedule_request_id'])): ?>
+                                    <?php if ($userRole === 'patient' && $patientAppointmentView === 'active' && appointment_reschedule_is_patient_editable($appointment) && empty($appointment['reschedule_request_id'])): ?>
                                         <button type="button" class="btn btn-reschedule"
                                             data-open-reschedule
                                             data-appointment-id="<?php echo (int) ($appointment['id'] ?? 0); ?>"
@@ -1809,7 +1810,7 @@ include __DIR__ . '/includes/header.php';
                                             </form>
                                         <?php endif; ?>
                                     <?php endif; ?>
-                                    <?php if ($userRole === 'patient' && in_array(strtolower((string) ($appointment['status'] ?? '')), ['pending', 'confirmed'], true)): ?>
+                                    <?php if ($userRole === 'patient' && $patientAppointmentView === 'active' && in_array(strtolower((string) ($appointment['status'] ?? '')), ['pending', 'confirmed'], true)): ?>
                                         <form method="POST" action="update_appointment_status.php" style="display:inline;">
                                             <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
                                             <input type="hidden" name="status" value="cancelled">
