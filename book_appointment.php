@@ -324,21 +324,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $bk['doctor_id'] = null;
             $bk['consultation_specialty'] = '';
             $bk['calendar_ready'] = true;
-            if ($t === 'package') {
-                $packageId = (int) ($_POST['package_id'] ?? 0);
-                $validPackageIds = array_map(
-                    static fn (array $package): int => (int) ($package['id'] ?? 0),
-                    fetchLabBookingPackages($conn)
-                );
-                if ($packageId > 0 && in_array($packageId, $validPackageIds, true)) {
-                    $bk['service_ids'] = [$packageId];
-                    $bk['step'] = 3;
-                } else {
-                    $bk['step'] = 2;
-                }
-            } else {
-                $bk['step'] = $t === 'ultrasound' ? 4 : 2;
-            }
+            $bk['step'] = $t === 'ultrasound' ? 4 : 2;
         header('Location: book_appointment.php?booking_step=' . (int) ($bk['step'] ?? 1));
             exit;
         }
@@ -608,7 +594,6 @@ if ($step >= 5 && ($bk['appointment_date'] === '' || $bk['appointment_time'] ===
 }
 $packageServices = [];
 $individualServices = [];
-$bookingPackagePreview = [];
 $bookingDoctors = [];
 $consultationSpecialties = [];
 $consultationDoctorsForSpecialty = [];
@@ -618,9 +603,6 @@ if ($bk['type'] === 'package') {
 }
 if ($bk['type'] === 'individual') {
     $individualServices = fetchLabBookingIndividuals($conn);
-}
-if ($step === 1) {
-    $bookingPackagePreview = lab_order_package_services(fetchLabBookingPackages($conn));
 }
 if ($bk['type'] === 'consultation') {
     $bookingDoctors = consultationDoctorDirectory($conn);
@@ -795,31 +777,6 @@ $additionalStyles = '
     }
     .booking-header { text-align: center; margin-bottom: 28px; }
     .booking-header h2 { color: #0077b6; font-size: 2rem; margin-bottom: 8px; }
-    .booking-header.appointment-screen-title { display: flex; align-items: center; gap: 16px; text-align: left; margin-bottom: 24px; }
-    .appointment-screen-title h2 { margin: 0; color: #102f68; font-size: 2rem; line-height: 1.2; }
-    .appointment-screen-icon { display: grid; place-items: center; flex: 0 0 54px; width: 54px; height: 54px; border-radius: 14px; background: #e2f3ff; color: #0878b5; }
-    .appointment-screen-icon svg { width: 31px; height: 31px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    .appointment-screen-form { max-width: none; margin: 0; }
-    .appointment-screen-form .form-row { align-items: start; gap: 28px; }
-    .appointment-schedule-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-    .appointment-service-column { min-width: 0; }
-    .appointment-schedule-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; min-width: 0; }
-    .appointment-screen-form .form-group { margin-bottom: 18px; }
-    .appointment-screen-form .form-group label { color: #152c50; font-size: 1rem; }
-    .appointment-screen-form .form-group select,
-    .appointment-screen-form .form-group input,
-    .appointment-screen-form .form-group textarea { min-height: 52px; border: 1px solid #c7dbea; border-radius: 11px; background: #fff; color: #1a3558; }
-    .appointment-screen-form .form-group textarea { min-height: 112px; resize: vertical; }
-    .appointment-screen-form .form-group select:focus,
-    .appointment-screen-form .form-group input:focus,
-    .appointment-screen-form .form-group textarea:focus { outline: none; border-color: #0878b5; box-shadow: 0 0 0 3px rgba(8,120,181,.12); }
-    .appointment-screen-form .form-group select:disabled { color: #6f7f93; background: #f8fbfd; cursor: not-allowed; }
-    .appointment-conditional-field { padding-top: 2px; }
-    .appointment-conditional-field[hidden] { display: none; }
-    .appointment-conditional-field small { display: block; margin-top: 7px; color: #6a7e92; font-size: .88rem; line-height: 1.4; }
-    .appointment-form-actions { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding-top: 18px; border-top: 1px solid #e3edf4; }
-    .appointment-form-actions .btn-primary { width: auto; min-width: 240px; margin-top: 0; }
-    .appointment-form-actions .btn-secondary { margin-right: 0; }
     .choice-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
     @media (max-width: 980px) { .choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     @media (max-width: 600px) { .choice-grid { grid-template-columns: 1fr; } }
@@ -1067,19 +1024,6 @@ $additionalStyles = '
         .booking-header { margin-bottom: 16px; }
         .booking-header h2 { margin-bottom: 4px; font-size: 1.45rem; line-height: 1.2; }
         .booking-header p { font-size: .84rem; line-height: 1.35; }
-        .booking-header.appointment-screen-title { align-items: flex-start; gap: 10px; margin-bottom: 16px; }
-        .appointment-screen-icon { flex-basis: 42px; width: 42px; height: 42px; border-radius: 11px; }
-        .appointment-screen-icon svg { width: 25px; height: 25px; }
-        .appointment-screen-title h2 { font-size: 1.45rem; }
-        .appointment-screen-form .form-row { grid-template-columns: 1fr; gap: 0; }
-        .appointment-schedule-fields { grid-template-columns: 1fr; gap: 0; }
-        .appointment-screen-form .form-group select,
-        .appointment-screen-form .form-group input,
-        .appointment-screen-form .form-group textarea { min-height: 48px; font-size: .94rem; }
-        .appointment-screen-form .form-group textarea { min-height: 100px; }
-        .appointment-form-actions { display: flex; flex-direction: column-reverse; align-items: stretch; padding-top: 14px; }
-        .appointment-form-actions .btn-primary,
-        .appointment-form-actions .btn-secondary { width: 100%; min-width: 0; text-align: center; box-sizing: border-box; }
         .choice-grid { gap: 8px; margin-top: 12px; }
         .choice-card { padding: 16px 12px; border-radius: 12px; }
         .choice-card h3 { margin-bottom: 5px; font-size: 1rem; line-height: 1.2; }
@@ -1288,7 +1232,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
 ?>
 
 <div class="container">
-    <div class="booking-container<?php echo $step === 1 ? ' book-wide' : ''; ?>">
+    <div class="booking-container">
         <?php if ($bookedId > 0): ?>
             <div class="success-banner">
                 <strong>Appointment request successfully submitted.</strong><br>
@@ -1310,21 +1254,39 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
             <a href="book_appointment.php?start=1" class="btn-secondary" style="margin-top:12px;">Book another</a>
         <?php else: ?>
 
+        <div class="booking-header">
+            <h2>Book an appointment</h2>
+            <p>Follow the steps below. Payment is made at the clinic after staff confirms your request.</p>
+        </div>
+
         <?php if ($step === 1): ?>
-            <div class="booking-header appointment-screen-title">
-                <span class="appointment-screen-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                        <rect x="3" y="4.5" width="18" height="16" rx="2.5"></rect>
-                        <path d="M8 2.5v4M16 2.5v4M3 9h18M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01"></path>
-                    </svg>
-                </span>
-                <h2>Schedule New Appointment</h2>
+            <div class="clinic-reminder-grid" aria-labelledby="bookingProcedureTitle">
+                <div class="clinic-reminder-heading">
+                    <h3 id="bookingProcedureTitle">How to book your appointment</h3>
+                    <p>Complete these steps to submit and attend your clinic appointment.</p>
+                </div>
+                <div class="clinic-reminder">
+                    <span class="clinic-reminder-number" aria-hidden="true">1</span>
+                    <strong>Choose an appointment</strong>
+                    <span>Select a doctor consultation, ultrasound, laboratory package, or individual laboratory tests.</span>
+                </div>
+                <div class="clinic-reminder">
+                    <span class="clinic-reminder-number" aria-hidden="true">2</span>
+                    <strong>Select your schedule</strong>
+                    <span>Choose an open clinic date before continuing.</span>
+                </div>
+                <div class="clinic-reminder">
+                    <span class="clinic-reminder-number" aria-hidden="true">3</span>
+                    <strong>Submit your request</strong>
+                    <span>Review the appointment details, then send the request to the clinic.</span>
+                </div>
+                <div class="clinic-reminder">
+                    <span class="clinic-reminder-number" aria-hidden="true">4</span>
+                    <strong>Visit the clinic</strong>
+                    <span>Arrive 10-15 minutes early, and pay at the front desk.</span>
+                </div>
             </div>
         <?php else: ?>
-            <div class="booking-header">
-                <h2>Book an appointment</h2>
-                <p>Follow the steps below. Payment is made at the clinic after staff confirms your request.</p>
-            </div>
             <div class="booking-progress" aria-label="Booking progress">
                 <div class="booking-progress-copy">
                     <span>Booking progress</span>
@@ -1343,19 +1305,15 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
 
         <?php if ($step === 1): ?>
             <div class="info-box step-context-box">
-                <strong>Mga Restriksyon sa Pag-schedule</strong>
-                <ul style="margin:8px 0 0;padding-left:20px;">
-                    <li>Mag-schedule lamang ng appointment para sa tunay na pangangailangan.</li>
-                    <li>Pumili lamang ng petsa at oras na available sa system.</li>
-                    <li>Maaaring magbago ang schedule depende sa clinic availability.</li>
-                </ul>
+                <strong>Step 1.</strong> Choose what you need today. We will show only the options related to your appointment type.
             </div>
-            <form method="post" action="book_appointment.php" class="appointment-screen-form" id="appointmentTypeForm">
+            <form method="post" action="book_appointment.php" class="appointment-type-form" id="appointmentTypeForm">
                 <input type="hidden" name="booking_action" value="select_type">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="bookingType">Appointment Type <span aria-hidden="true" style="color:#c1121f;">*</span></label>
-                        <select name="booking_type" id="bookingType" required>
+                <input type="hidden" name="preferred_date" id="preferredDateInput" value="<?php echo htmlspecialchars($bk['appointment_date']); ?>">
+                <div class="appointment-type-field">
+                    <label for="bookingType">Appointment type <span aria-hidden="true" style="color:#c1121f;">*</span></label>
+                    <div class="appointment-type-select-wrap">
+                        <select name="booking_type" id="bookingType" class="appointment-type-select" required>
                             <option value="" selected disabled>Select appointment type...</option>
                             <option value="consultation">Doctor Consultation</option>
                             <option value="package">Laboratory Packages</option>
@@ -1363,100 +1321,38 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                             <option value="ultrasound">Ultrasound</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label for="bookingFor">For <span aria-hidden="true" style="color:#c1121f;">*</span></label>
-                        <select id="bookingFor" disabled>
-                            <option>My Account</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-row appointment-schedule-row">
-                    <div class="appointment-service-column">
-                        <div class="form-group appointment-conditional-field" id="packageField" hidden>
-                            <label for="packageSelect">Select Package <span aria-hidden="true" style="color:#c1121f;">*</span></label>
-                            <select name="package_id" id="packageSelect" disabled>
-                                <option value="" selected disabled>Select a package...</option>
-                                <?php foreach ($bookingPackagePreview as $package): ?>
-                                    <option
-                                        value="<?php echo (int) $package['id']; ?>"
-                                        data-included="<?php echo htmlspecialchars((string) ($package['included_tests'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                                    ><?php echo htmlspecialchars((string) $package['name']); ?> - PHP <?php echo number_format((float) $package['opd_price'], 2); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                            <small id="packageHelp">Choose one package to see its included laboratory tests.</small>
-                        </div>
-                        <div class="appointment-conditional-field" id="servicePreviewField">
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label id="servicePreviewLabel">Select service</label>
-                                <div class="appointment-type-preview" style="margin-top:0;">
-                                    <div>
-                                        <strong id="appointmentTypePreviewTitle">Choose an appointment type</strong>
-                                        <span id="appointmentTypePreviewText">The related service options will appear in the next step.</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="appointment-schedule-fields">
-                        <div class="form-group">
-                            <label for="preferredDateInput">Preferred Date</label>
-                            <input type="date" name="preferred_date" id="preferredDateInput" value="<?php echo htmlspecialchars($bk['appointment_date']); ?>" min="<?php echo date('Y-m-d'); ?>">
-                            <small>Choose an available clinic date. You can review it again before submitting.</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="preferredTimePreview">Preferred Time</label>
-                            <select id="preferredTimePreview" disabled>
-                                <option>SELECT DATE FIRST...</option>
-                            </select>
-                            <small>Available time slots will be confirmed in the schedule step.</small>
+                    <p class="appointment-type-help" id="appointmentTypeHelp">Choose one option to continue. The next step will show only the related services.</p>
+                    <div class="appointment-type-preview" id="appointmentTypePreview" aria-live="polite">
+                        <div>
+                            <strong id="appointmentTypePreviewTitle">Appointment type required</strong>
+                            <span id="appointmentTypePreviewText">Select an appointment type to continue.</span>
                         </div>
                     </div>
                 </div>
-                <div class="appointment-form-actions">
-                    <a href="patients.php" class="btn-secondary">Cancel</a>
-                    <button type="submit" class="btn-primary">Schedule Appointment</button>
+                <div class="appointment-type-actions">
+                    <button type="submit" class="btn-primary">Continue</button>
                 </div>
             </form>
             <script>
             (function() {
                 var select = document.getElementById('bookingType');
-                var packageField = document.getElementById('packageField');
-                var packageSelect = document.getElementById('packageSelect');
-                var servicePreviewField = document.getElementById('servicePreviewField');
                 var title = document.getElementById('appointmentTypePreviewTitle');
                 var text = document.getElementById('appointmentTypePreviewText');
-                var label = document.getElementById('servicePreviewLabel');
-                var packageHelp = document.getElementById('packageHelp');
-                if (!select || !packageField || !packageSelect || !servicePreviewField || !title || !text || !label || !packageHelp) return;
+                var help = document.getElementById('appointmentTypeHelp');
+                if (!select || !title || !text || !help) return;
                 var copy = {
-                    consultation: ['Doctor consultation', 'Choose a doctor specialization and doctor in the next step.', 'Service'],
-                    individual: ['Individual laboratory tests', 'Search and select one or more laboratory tests in the next step.', 'Laboratory tests'],
-                    ultrasound: ['Ultrasound', 'Choose an ultrasound schedule in the next step.', 'Ultrasound service']
+                    consultation: ['Doctor Consultation selected', 'Choose a doctor specialization and available doctor next.', 'You will choose a specialization and doctor in the next step.'],
+                    package: ['Laboratory Packages selected', 'Choose one clinic package and review its included tests and price next.', 'You will choose one package in the next step.'],
+                    individual: ['Individual Laboratory Tests selected', 'Search and select one or more laboratory tests next.', 'You will be able to search by test name or category in the next step.'],
+                    ultrasound: ['Ultrasound selected', 'Choose your ultrasound service and available clinic schedule next.', 'You will continue directly to the ultrasound schedule.']
                 };
-                function updateTypePreview() {
+                select.addEventListener('change', function() {
                     var item = copy[select.value];
-                    var isPackage = select.value === 'package';
-                    packageField.hidden = !isPackage;
-                    packageSelect.disabled = !isPackage;
-                    packageSelect.required = isPackage;
-                    servicePreviewField.hidden = isPackage;
-                    if (!item) {
-                        title.textContent = 'Choose an appointment type';
-                        text.textContent = 'The related service options will appear in the next step.';
-                        label.textContent = 'Select service';
-                        return;
-                    }
+                    if (!item) return;
                     title.textContent = item[0];
                     text.textContent = item[1];
-                    label.textContent = item[2];
-                }
-                select.addEventListener('change', updateTypePreview);
-                packageSelect.addEventListener('change', function() {
-                    var option = packageSelect.options[packageSelect.selectedIndex];
-                    var included = option ? option.getAttribute('data-included') : '';
-                    packageHelp.textContent = included ? 'Includes: ' + included : 'Choose one package to see its included laboratory tests.';
+                    help.textContent = item[2];
                 });
-                updateTypePreview();
             })();
             </script>
         <?php elseif ($step === 2): ?>
