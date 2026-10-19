@@ -915,15 +915,15 @@ $additionalStyles = '
     .progressive-add-button:hover, .progressive-add-button:focus-visible { background: #eaf8fd; outline: none; }
     .progressive-add-button:disabled { opacity: .45; cursor: not-allowed; }
     .progressive-add-button.is-added { border-color: #16865b; background: #e5f7ee; color: #16865b; }
-    .progressive-selection-summary { margin-top: 12px; padding: 13px 15px; border: 1px solid #b9dff0; border-radius: 11px; background: #f2fbff; color: #173b5b; }
+    .progressive-selection-summary { margin-top: 12px; padding: 13px 15px; border: 1px solid #d8e8f2; border-left: 4px solid #55b7dc; border-radius: 11px; background: #fff; color: #173b5b; }
     .progressive-selection-summary[hidden] { display: none; }
     .progressive-selection-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
-    .progressive-selection-header strong { color: #056696; font-size: .9rem; }
+    .progressive-selection-header strong { color: #173b5b; font-size: .9rem; }
     .progressive-selection-count { color: #607784; font-size: .78rem; font-weight: 800; }
     .progressive-selected-items { display: grid; gap: 6px; }
-    .progressive-selected-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border: 1px solid #d8eaf3; border-radius: 8px; background: #fff; font-size: .86rem; }
+    .progressive-selected-item { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 8px 10px; border: 1px solid #d8eaf3; border-radius: 8px; background: #fbfdff; font-size: .86rem; }
     .progressive-selected-item span:first-child { min-width: 0; overflow-wrap: anywhere; }
-    .progressive-selected-item strong { color: #0878b5; white-space: nowrap; }
+    .progressive-selected-item strong { color: #0878b5; white-space: nowrap; text-align: right; }
     .progressive-selected-remove { border: 0; background: transparent; color: #c1121f; font: inherit; font-size: .76rem; font-weight: 900; cursor: pointer; }
     .progressive-selection-total { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #cfe7f2; color: #173b5b; font-size: .9rem; }
     .progressive-selection-total strong { color: #0878b5; font-size: 1.05rem; }
@@ -1249,6 +1249,7 @@ $additionalStyles = '
         .progressive-service-row { grid-template-columns: auto minmax(0, 1fr); gap: 8px; padding: 10px; }
         .progressive-service-actions { grid-column: 2; justify-content: space-between; width: 100%; }
         .progressive-service-row .price-tag { grid-column: auto; }
+        .progressive-selected-item { gap: 7px; padding: 8px; font-size: .8rem; }
         .progressive-actions { flex-direction: column-reverse; align-items: stretch; }
         .progressive-actions .btn-primary, .progressive-actions .btn-secondary { width: 100%; min-width: 0; text-align: center; box-sizing: border-box; }
         .svc-toolbar { gap: 8px; margin-bottom: 12px; }
