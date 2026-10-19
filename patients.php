@@ -2619,7 +2619,11 @@ $additionalStyles = '
     }
 
     .profile-password-card {
-        margin-top: 20px;
+        grid-column: 2;
+        grid-row: 2;
+        width: 100%;
+        box-sizing: border-box;
+        margin-top: 0;
         padding: 20px;
         border: 1px solid #cfe5f1;
         border-radius: 12px;
@@ -2971,14 +2975,26 @@ $additionalStyles = '
 
     .profile-modal-body {
         padding: 20px;
-        display: block;
+        display: grid;
+        grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+        column-gap: 24px;
+        row-gap: 12px;
+        align-items: start;
     }
 
     .profile-main-form {
-        display: grid;
-        grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
-        gap: 24px;
-        align-items: start;
+        display: contents;
+    }
+
+    .profile-main-form > .photo-editor-panel {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .profile-main-form > div:not(.photo-editor-panel) {
+        grid-column: 2;
+        grid-row: 1;
+        min-width: 0;
     }
 
     .photo-editor-panel {
@@ -3422,8 +3438,26 @@ $additionalStyles = '
             padding: 16px 14px 28px;
         }
 
-        .profile-main-form {
+        .profile-modal-body {
             grid-template-columns: 1fr;
+        }
+
+        .profile-main-form > .photo-editor-panel,
+        .profile-main-form > div:not(.photo-editor-panel),
+        .profile-password-card {
+            grid-column: 1;
+        }
+
+        .profile-main-form > .photo-editor-panel {
+            grid-row: 1;
+        }
+
+        .profile-main-form > div:not(.photo-editor-panel) {
+            grid-row: 2;
+        }
+
+        .profile-password-card {
+            grid-row: 3;
         }
 
         .profile-modal-actions {
