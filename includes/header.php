@@ -2627,11 +2627,11 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             z-index: 2700 !important;
         }
         body.app-layout .patient-notification-panel {
-            left: auto !important;
+            left: 12px !important;
             right: 12px !important;
             top: var(--notification-panel-top, calc(var(--app-mobile-brand-height) + var(--app-mobile-topbar-height) + 10px)) !important;
-            width: min(520px, calc(100vw - 24px)) !important;
-            max-width: calc(100vw - 24px) !important;
+            width: auto !important;
+            max-width: none !important;
             max-height: min(390px, calc(100dvh - 220px));
             box-sizing: border-box;
             overflow: hidden;
