@@ -2886,7 +2886,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             $patientTopbarSettingsHref = 'patients.php?profile=1';
         } elseif (in_array($currentPage, ['admin_view_appointments.php', 'doctor_view_appointments.php', 'patients_view_appointments.php', 'patients_appointment_history.php'], true)) {
             $patientTopbarTitle = ($currentUser['role'] ?? '') === 'patient'
-                ? ((($_GET['view'] ?? '') === 'active' || isset($_GET['highlight'])) ? 'Appointments' : 'Appointment History')
+                ? ((strtolower(trim((string) ($_GET['view'] ?? 'active'))) === 'history') ? 'Appointment History' : 'My Appointments')
                 : 'Appointments';
             if (($currentUser['role'] ?? '') === 'patient') {
                 $patientTopbarProfileHref = 'patients.php?profile=1';
