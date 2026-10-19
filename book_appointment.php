@@ -931,14 +931,22 @@ $additionalStyles = '
     .progressive-calendar-month strong { color: #0f1f35; font-size: 1.05rem; }
     .progressive-calendar-nav { width: 36px; height: 36px; border: 1px solid #c9e2ef; border-radius: 9px; background: #fff; color: #0878b5; font-size: 1.35rem; line-height: 1; cursor: pointer; }
     .progressive-calendar-nav:disabled { opacity: .4; cursor: not-allowed; }
+    .progressive-calendar-selection { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 14px; padding: 10px 12px; border: 1px solid #d8e8f2; border-radius: 10px; background: #f8fcff; color: #607784; font-size: .78rem; }
+    .progressive-calendar-selection strong { display: block; margin-top: 2px; color: #0f1f35; font-size: .88rem; }
+    .progressive-calendar-selection span:last-child { color: #16865b; font-weight: 900; text-align: right; }
     .progressive-calendar-weekdays, .progressive-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
     .progressive-calendar-weekdays { margin-bottom: 5px; color: #607784; font-size: .72rem; font-weight: 900; text-align: center; }
     .progressive-calendar-grid button, .progressive-calendar-empty { min-height: 44px; border-radius: 9px; }
-    .progressive-calendar-grid button { border: 1px solid #d8e8f2; background: #fff; color: #173b5b; font: inherit; font-weight: 800; cursor: pointer; }
+    .progressive-calendar-grid button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: 1px solid #d8e8f2; background: #fff; color: #173b5b; font: inherit; font-weight: 800; cursor: pointer; }
+    .progressive-calendar-grid button small { color: #607784; font-size: .58rem; font-weight: 700; line-height: 1.1; white-space: nowrap; }
+    .progressive-calendar-grid button.is-open small { color: #16865b; }
+    .progressive-calendar-grid button.is-full small { color: #a36a12; }
+    .progressive-calendar-grid button.is-closed small { color: #9aa8b2; }
     .progressive-calendar-grid button:hover, .progressive-calendar-grid button:focus-visible { border-color: #0878b5; background: #eef8fd; outline: none; }
     .progressive-calendar-grid button.is-today { box-shadow: inset 0 0 0 2px #77c7e5; }
     .progressive-calendar-grid button.is-selected { border-color: #0878b5; background: #0878b5; color: #fff; }
     .progressive-calendar-grid button:disabled { border-color: #edf2f5; background: #f7fafb; color: #9aa8b2; cursor: not-allowed; }
+    .progressive-calendar-grid button.is-selected small { color: #dff6ff; }
     .progressive-calendar-help { margin: 12px 0 0; color: #607784; font-size: .83rem; line-height: 1.4; }
     .progressive-calendar-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 12px 16px 16px; border-top: 1px solid #d8eaf3; }
     .progressive-calendar-cancel, .progressive-calendar-confirm { min-height: 42px; padding: 0 18px; border-radius: 9px; font: inherit; font-weight: 900; cursor: pointer; }
@@ -1611,6 +1619,10 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                                 <strong id="progressiveCalendarMonth"></strong>
                                                 <button type="button" class="progressive-calendar-nav" id="progressiveCalendarNext" aria-label="Next month">&rsaquo;</button>
                                             </div>
+                                            <div class="progressive-calendar-selection">
+                                                <div><span>Selected date</span><strong id="progressiveCalendarSelected">Choose a date</strong></div>
+                                                <span id="progressiveCalendarSelectedStatus">Select a date</span>
+                                            </div>
                                             <div class="progressive-calendar-weekdays" aria-hidden="true">
                                                 <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
                                             </div>
@@ -1659,13 +1671,26 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 var calendarMonth = document.getElementById('progressiveCalendarMonth');
                 var calendarGrid = document.getElementById('progressiveCalendarGrid');
                 var calendarHelp = document.getElementById('progressiveCalendarHelp');
+                var calendarSelected = document.getElementById('progressiveCalendarSelected');
+                var calendarSelectedStatus = document.getElementById('progressiveCalendarSelectedStatus');
                 var schedule = document.getElementById('progressiveSchedule');
                 var errorBox = document.getElementById('progressiveFormError');
-                if (!form || !typeSelect || !specialtySelect || !doctorSelect || !dateInput || !dateLabel || !dateTrigger || !calendarModal || !calendarClose || !calendarCancel || !calendarConfirm || !calendarPrev || !calendarNext || !calendarMonth || !calendarGrid || !calendarHelp || !schedule || !errorBox) return;
+                if (!form || !typeSelect || !specialtySelect || !doctorSelect || !dateInput || !dateLabel || !dateTrigger || !calendarModal || !calendarClose || !calendarCancel || !calendarConfirm || !calendarPrev || !calendarNext || !calendarMonth || !calendarGrid || !calendarHelp || !calendarSelected || !calendarSelectedStatus || !schedule || !errorBox) return;
 
                 var calendarDraftValue = dateInput.value || '';
                 var calendarViewDate = new Date();
                 calendarViewDate.setDate(1);
+                var appointmentSlotData = {
+                    lab: <?php echo json_encode($calendarLabDayCounts, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                    ultrasound: <?php echo json_encode($calendarUltrasoundDayCounts, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                    consultation: <?php echo json_encode($calendarConsultationDayCounts, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                    doctorDayCounts: <?php echo json_encode($calendarDoctorDayCounts, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                    doctorSlots: <?php echo json_encode($calendarDoctorSlotsByDow, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                    labLimit: <?php echo (int) $labDailyLimit; ?>,
+                    ultrasoundLimit: <?php echo (int) $ultrasoundDailyLimit; ?>,
+                    consultationLimit: <?php echo (int) $consultationDailyLimit; ?>,
+                    doctorLimit: <?php echo (int) $doctorDailyLimit; ?>
+                };
 
                 function pad(value) { return String(value).padStart(2, '0'); }
                 function toIsoDate(date) {
@@ -1677,12 +1702,45 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         ? new Date(parts[0], parts[1] - 1, parts[2])
                         : null;
                 }
+                function appointmentSlotInfo(date) {
+                    var iso = toIsoDate(date);
+                    var phpDayOfWeek = date.getDay() === 0 ? 7 : date.getDay();
+                    var type = typeSelect.value;
+                    var booked = 0;
+                    var limit = 0;
+                    var open = date.getDay() !== 0;
+                    var label = open ? 'Open' : 'Closed';
+                    var scheduleText = '';
+                    if (type === 'ultrasound') {
+                        booked = Number(appointmentSlotData.ultrasound[iso] || 0);
+                        limit = Number(appointmentSlotData.ultrasoundLimit || 0);
+                        open = date.getDay() === 3 || date.getDay() === 6;
+                        label = open ? 'Open' : 'Closed';
+                    } else if (type === 'consultation') {
+                        var selectedDoctorId = doctorSelect.value || '';
+                        var doctorSlots = appointmentSlotData.doctorSlots[phpDayOfWeek] || [];
+                        if (selectedDoctorId) doctorSlots = doctorSlots.filter(function(slot) { return String(slot.id) === String(selectedDoctorId); });
+                        booked = selectedDoctorId
+                            ? Number((appointmentSlotData.doctorDayCounts[selectedDoctorId] || {})[iso] || 0)
+                            : Number(appointmentSlotData.consultation[iso] || 0);
+                        limit = selectedDoctorId ? Number(appointmentSlotData.doctorLimit || 0) : Number(appointmentSlotData.consultationLimit || 0);
+                        open = doctorSlots.length > 0;
+                        label = open ? 'Open' : 'No doctor schedule';
+                        if (doctorSlots.length > 0) scheduleText = doctorSlots[0].start + ' - ' + doctorSlots[0].end;
+                    } else {
+                        booked = Number(appointmentSlotData.lab[iso] || 0);
+                        limit = Number(appointmentSlotData.labLimit || 0);
+                        label = open ? 'Open' : 'Clinic closed';
+                    }
+                    var full = limit > 0 && booked >= limit;
+                    if (full) label = 'Full';
+                    return { booked: booked, limit: limit, remaining: Math.max(0, limit - booked), open: open, full: full, label: label, scheduleText: scheduleText };
+                }
                 function dateCanBeSelected(date) {
                     var iso = toIsoDate(date);
                     if (iso < dateInput.min) return false;
-                    if (typeSelect.value === 'ultrasound') return date.getDay() === 3 || date.getDay() === 6;
-                    if (typeSelect.value === 'package' || typeSelect.value === 'individual') return date.getDay() !== 0;
-                    return true;
+                    var slotInfo = appointmentSlotInfo(date);
+                    return slotInfo.open && !slotInfo.full;
                 }
                 function renderProgressiveCalendar() {
                     var year = calendarViewDate.getFullYear();
@@ -1693,6 +1751,15 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     todayMonth.setDate(1);
                     calendarMonth.textContent = calendarViewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
                     calendarPrev.disabled = calendarViewDate <= todayMonth;
+                    var selectedDate = fromIsoDate(calendarDraftValue);
+                    if (selectedDate) {
+                        var selectedInfo = appointmentSlotInfo(selectedDate);
+                        calendarSelected.textContent = selectedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                        calendarSelectedStatus.textContent = selectedInfo.full ? 'Fully booked' : (selectedInfo.open ? selectedInfo.remaining + ' slots left' : selectedInfo.label);
+                    } else {
+                        calendarSelected.textContent = 'Choose a date';
+                        calendarSelectedStatus.textContent = 'Select a date';
+                    }
                     calendarGrid.innerHTML = '';
                     for (var blank = 0; blank < firstDay; blank += 1) {
                         var empty = document.createElement('span');
@@ -1703,11 +1770,23 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     for (var day = 1; day <= daysInMonth; day += 1) {
                         var date = new Date(year, month, day);
                         var dateValue = toIsoDate(date);
+                        var slotInfo = appointmentSlotInfo(date);
                         var dayButton = document.createElement('button');
                         dayButton.type = 'button';
-                        dayButton.textContent = day;
+                        var dayNumber = document.createElement('span');
+                        dayNumber.textContent = day;
+                        var dayStatus = document.createElement('small');
+                        dayStatus.textContent = slotInfo.open ? (slotInfo.full ? 'Full' : slotInfo.booked + '/' + slotInfo.limit + ' booked') : 'Closed';
+                        dayButton.title = slotInfo.open
+                            ? (slotInfo.full ? 'Fully booked' : slotInfo.remaining + ' appointment slots remaining' + (slotInfo.scheduleText ? ' | ' + slotInfo.scheduleText : ''))
+                            : slotInfo.label;
+                        dayButton.appendChild(dayNumber);
+                        dayButton.appendChild(dayStatus);
                         dayButton.dataset.date = dateValue;
                         dayButton.disabled = !dateCanBeSelected(date);
+                        dayButton.classList.toggle('is-open', slotInfo.open && !slotInfo.full);
+                        dayButton.classList.toggle('is-full', slotInfo.full);
+                        dayButton.classList.toggle('is-closed', !slotInfo.open);
                         if (dateValue === toIsoDate(new Date())) dayButton.classList.add('is-today');
                         if (dateValue === calendarDraftValue) dayButton.classList.add('is-selected');
                         dayButton.addEventListener('click', function() {
