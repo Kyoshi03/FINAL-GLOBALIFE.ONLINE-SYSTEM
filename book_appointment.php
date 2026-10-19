@@ -897,6 +897,7 @@ $additionalStyles = '
     .progressive-fields { margin-top: 4px; }
     .progressive-panel { display: none; padding: 18px; border: 1px solid #d8e8f2; border-radius: 14px; background: #fbfdff; }
     .progressive-panel.is-active { display: block; }
+    .progressive-panel:focus { outline: 3px solid rgba(8,120,181,.2); outline-offset: 3px; }
     .progressive-panel h3 { margin: 0 0 5px; color: #073b4c; font-size: 1.08rem; }
     .progressive-panel > p { margin: 0 0 14px; color: #607784; font-size: .9rem; line-height: 1.45; }
     .progressive-panel .form-group:last-child { margin-bottom: 0; }
@@ -1896,7 +1897,16 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     dateTrigger.disabled = !canSchedule;
                     if (!calendarModal.classList.contains('is-open')) renderProgressiveCalendar();
                 }
-                typeSelect.addEventListener('change', function() { setError(''); updatePanels(); });
+                function focusActivePanel() {
+                    var activePanel = document.querySelector('[data-progressive-panel="' + typeSelect.value + '"]');
+                    if (!activePanel) return;
+                    activePanel.setAttribute('tabindex', '-1');
+                    window.setTimeout(function() {
+                        activePanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        activePanel.focus({ preventScroll: true });
+                    }, 40);
+                }
+                typeSelect.addEventListener('change', function() { setError(''); updatePanels(); focusActivePanel(); });
                 specialtySelect.addEventListener('change', function() { setError(''); updateDoctorOptions(); updatePanels(); });
                 doctorSelect.addEventListener('change', updatePanels);
                 dateInput.addEventListener('change', updateDateLabel);
