@@ -870,6 +870,31 @@ $stmt->execute();
 $summary = $stmt->get_result()->fetch_assoc() ?: [];
 $stmt->close();
 
+$appointmentHistory = [];
+$stmt = $conn->prepare("SELECT appointment_date, appointment_time, booking_type, status
+    FROM appointments
+    WHERE patient_id = ?
+      AND status = 'completed'
+    ORDER BY appointment_date DESC, appointment_time DESC, id DESC
+    LIMIT 3");
+$stmt->bind_param("i", $currentUser['id']);
+$stmt->execute();
+$appointmentHistory = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt->close();
+
+$queueHistory = [];
+$stmt = $conn->prepare("SELECT queue_number, service, queue_date, status
+    FROM clinic_queue
+    WHERE patient_id = ?
+      AND queue_type = 'walk_in'
+      AND status = 'completed'
+    ORDER BY completed_at DESC, id DESC
+    LIMIT 3");
+$stmt->bind_param("i", $currentUser['id']);
+$stmt->execute();
+$queueHistory = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt->close();
+
 $patientNotifications = [];
 $patientUnreadNotificationCount = 0;
 
@@ -4097,6 +4122,641 @@ $additionalStyles = '
             -webkit-line-clamp: 3;
         }
     }
+
+    /* Patient dashboard refresh */
+    .patient-dashboard {
+        display: grid;
+        gap: 18px;
+    }
+
+    .dashboard-welcome-banner {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) minmax(260px, .8fr);
+        gap: 24px;
+        align-items: center;
+        min-height: 220px;
+        padding: 28px 34px;
+        overflow: hidden;
+        border: 1px solid rgba(202, 240, 248, .55);
+        border-radius: 18px;
+        background: linear-gradient(120deg, #08a5c7 0%, #0b8fcb 52%, #0756a6 100%);
+        box-shadow: 0 16px 34px rgba(2, 62, 138, .16);
+        color: #fff;
+    }
+
+    .dashboard-welcome-banner .patient-profile-avatar {
+        width: 96px;
+        height: 96px;
+        line-height: 96px;
+        border-color: rgba(255, 255, 255, .9);
+        background: #e8f8ff;
+        color: #0563ad;
+        font-size: 2rem;
+    }
+
+    .dashboard-welcome-copy {
+        min-width: 0;
+    }
+
+    .dashboard-welcome-copy .new-welcome-badge {
+        display: inline-flex;
+        margin-bottom: 8px;
+        background: rgba(255, 255, 255, .18);
+        color: #fff;
+    }
+
+    .dashboard-welcome-copy h2 {
+        margin: 0 0 8px;
+        color: #fff;
+        font-size: 2.05rem;
+        line-height: 1.12;
+    }
+
+    .dashboard-welcome-copy p {
+        max-width: 520px;
+        margin: 0;
+        color: rgba(255, 255, 255, .9);
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+
+    .dashboard-welcome-actions {
+        margin-top: 18px;
+    }
+
+    .dashboard-welcome-actions .primary-btn {
+        background: #fff;
+        color: #0563ad;
+        box-shadow: 0 10px 20px rgba(1, 57, 105, .18);
+    }
+
+    .dashboard-welcome-art {
+        display: grid;
+        place-items: center;
+        min-height: 170px;
+        color: #d9f8ff;
+    }
+
+    .dashboard-welcome-art svg {
+        width: min(100%, 310px);
+        height: auto;
+        overflow: visible;
+    }
+
+    .dashboard-main-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.55fr) minmax(290px, .8fr);
+        gap: 18px;
+        align-items: start;
+    }
+
+    .dashboard-main-column {
+        display: grid;
+        gap: 18px;
+        min-width: 0;
+    }
+
+    .dashboard-card {
+        min-width: 0;
+        padding: 20px;
+        border: 1px solid #d5e9f2;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 10px 26px rgba(25, 76, 110, .08);
+    }
+
+    .dashboard-card-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 16px;
+    }
+
+    .dashboard-card-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .dashboard-card-title svg {
+        flex: 0 0 26px;
+        width: 26px;
+        height: 26px;
+        fill: none;
+        stroke: #0797c6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.9;
+    }
+
+    .dashboard-card h3 {
+        margin: 0;
+        color: #073b4c;
+        font-size: 1.28rem;
+        line-height: 1.2;
+    }
+
+    .dashboard-card-header p {
+        margin: 5px 0 0;
+        color: #6a7e89;
+        font-size: .88rem;
+        line-height: 1.45;
+    }
+
+    .dashboard-link {
+        display: inline-flex;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: 6px;
+        color: #0077b6;
+        font-size: .88rem;
+        font-weight: 800;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .dashboard-link:hover {
+        color: #023e8a;
+        text-decoration: underline;
+    }
+
+    .dashboard-upcoming-item {
+        display: grid;
+        grid-template-columns: 76px minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: center;
+        padding: 14px;
+        border: 1px solid #d9edf5;
+        border-radius: 11px;
+        background: #f7fcff;
+    }
+
+    .dashboard-date-tile {
+        display: grid;
+        overflow: hidden;
+        border: 1px solid #cce7f2;
+        border-radius: 10px;
+        background: #fff;
+        text-align: center;
+        box-shadow: 0 5px 12px rgba(7, 59, 76, .06);
+    }
+
+    .dashboard-date-tile span {
+        padding: 5px 4px;
+        background: #087fc1;
+        color: #fff;
+        font-size: .73rem;
+        font-weight: 800;
+        letter-spacing: .05em;
+    }
+
+    .dashboard-date-tile strong {
+        padding: 7px 4px 8px;
+        color: #0563ad;
+        font-size: 1.75rem;
+        line-height: 1;
+    }
+
+    .dashboard-upcoming-copy {
+        min-width: 0;
+    }
+
+    .dashboard-upcoming-copy strong {
+        display: block;
+        overflow: hidden;
+        color: #073b4c;
+        font-size: 1rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .dashboard-upcoming-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 14px;
+        margin-top: 9px;
+        color: #60727d;
+        font-size: .82rem;
+    }
+
+    .dashboard-upcoming-meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .dashboard-upcoming-meta svg {
+        width: 16px;
+        height: 16px;
+        fill: none;
+        stroke: #168eb8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.8;
+    }
+
+    .dashboard-upcoming-actions {
+        display: grid;
+        justify-items: end;
+        gap: 10px;
+    }
+
+    .dashboard-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: #e2f8eb;
+        color: #177343;
+        font-size: .72rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .dashboard-status-badge.pending {
+        background: #fff4d9;
+        color: #8a5a00;
+    }
+
+    .dashboard-status-badge svg {
+        width: 14px;
+        height: 14px;
+        fill: currentColor;
+        stroke: none;
+    }
+
+    .dashboard-view-details {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 36px;
+        padding: 7px 14px;
+        border: 1px solid #087fc1;
+        border-radius: 8px;
+        color: #0874b4;
+        font-size: .82rem;
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .dashboard-view-details:hover {
+        background: #eef9fd;
+    }
+
+    .dashboard-empty-state {
+        display: grid;
+        justify-items: center;
+        gap: 7px;
+        padding: 25px 16px;
+        border: 1px dashed #c7e4ef;
+        border-radius: 11px;
+        background: #f8fcfe;
+        text-align: center;
+    }
+
+    .dashboard-empty-state svg {
+        width: 32px;
+        height: 32px;
+        fill: none;
+        stroke: #0d91bd;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.8;
+    }
+
+    .dashboard-empty-state strong {
+        color: #073b4c;
+        font-size: .98rem;
+    }
+
+    .dashboard-empty-state p {
+        max-width: 420px;
+        margin: 0;
+        color: #6a7e89;
+        font-size: .86rem;
+        line-height: 1.45;
+    }
+
+    .dashboard-history-tabs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        border-bottom: 1px solid #dcecf3;
+    }
+
+    .dashboard-history-tab {
+        position: relative;
+        min-width: 0;
+        padding: 10px 12px;
+        border: 0;
+        background: transparent;
+        color: #60758a;
+        font: inherit;
+        font-size: .88rem;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .dashboard-history-tab::after {
+        position: absolute;
+        right: 0;
+        bottom: -1px;
+        left: 0;
+        height: 3px;
+        background: transparent;
+        content: "";
+    }
+
+    .dashboard-history-tab.is-active {
+        color: #078bc0;
+    }
+
+    .dashboard-history-tab.is-active::after {
+        background: #16a8d0;
+    }
+
+    .dashboard-history-panel {
+        padding-top: 12px;
+    }
+
+    .dashboard-history-panel[hidden] {
+        display: none;
+    }
+
+    .dashboard-history-table-wrap {
+        overflow-x: auto;
+    }
+
+    .dashboard-history-table {
+        width: 100%;
+        border-collapse: collapse;
+        color: #284c61;
+        font-size: .84rem;
+    }
+
+    .dashboard-history-table th,
+    .dashboard-history-table td {
+        padding: 10px 8px;
+        border-bottom: 1px solid #e5f0f4;
+        text-align: left;
+        vertical-align: middle;
+    }
+
+    .dashboard-history-table th {
+        background: #f1f8fc;
+        color: #567083;
+        font-size: .72rem;
+        font-weight: 800;
+        letter-spacing: .02em;
+        text-transform: uppercase;
+    }
+
+    .dashboard-history-table tbody tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .dashboard-history-table td:first-child {
+        color: #31576d;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .dashboard-history-empty {
+        padding: 19px 10px;
+        color: #6a7e89;
+        font-size: .86rem;
+        text-align: center;
+    }
+
+    .dashboard-history-footer {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 12px;
+    }
+
+    .dashboard-profile-card {
+        display: grid;
+        gap: 16px;
+    }
+
+    .dashboard-profile-identity {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        min-width: 0;
+        padding: 13px;
+        border: 1px solid #d9eaf2;
+        border-radius: 11px;
+        background: #f8fcff;
+    }
+
+    .dashboard-profile-identity .patient-profile-avatar {
+        flex: 0 0 64px;
+        width: 64px;
+        height: 64px;
+        line-height: 64px;
+        border-color: #d5f1fb;
+        box-shadow: none;
+        font-size: 1.2rem;
+    }
+
+    .dashboard-profile-identity strong {
+        display: block;
+        overflow: hidden;
+        color: #073b4c;
+        font-size: 1rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .dashboard-profile-identity span {
+        display: block;
+        margin-top: 4px;
+        color: #6a7e89;
+        font-size: .84rem;
+    }
+
+    .dashboard-profile-progress {
+        display: grid;
+        gap: 8px;
+    }
+
+    .dashboard-profile-progress-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        color: #073b4c;
+        font-size: .82rem;
+        font-weight: 800;
+    }
+
+    .dashboard-profile-progress .progress-track {
+        margin: 0;
+    }
+
+    .dashboard-contact-list {
+        display: grid;
+        gap: 9px;
+        padding-top: 4px;
+        border-top: 1px solid #e0edf2;
+    }
+
+    .dashboard-contact-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        color: #34596d;
+        font-size: .82rem;
+    }
+
+    .dashboard-contact-row > svg {
+        flex: 0 0 19px;
+        width: 19px;
+        height: 19px;
+        fill: none;
+        stroke: #078bc0;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.8;
+    }
+
+    .dashboard-contact-copy {
+        display: grid;
+        min-width: 0;
+        gap: 2px;
+    }
+
+    .dashboard-contact-copy strong {
+        color: #073b4c;
+        font-size: .78rem;
+    }
+
+    .dashboard-contact-copy span {
+        overflow: hidden;
+        color: #6a7e89;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .dashboard-contact-status {
+        margin-left: auto;
+        padding: 4px 7px;
+        border-radius: 999px;
+        background: #e2f8eb;
+        color: #177343;
+        font-size: .67rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .dashboard-contact-status.missing {
+        background: #fff4d9;
+        color: #8a5a00;
+    }
+
+    .dashboard-profile-note {
+        padding: 11px 12px;
+        border-radius: 9px;
+        background: #eef9fd;
+        color: #315b70;
+        font-size: .8rem;
+        line-height: 1.45;
+    }
+
+    .dashboard-profile-card > .primary-btn {
+        width: 100%;
+    }
+
+    @media (max-width: 900px) {
+        .dashboard-welcome-banner,
+        .dashboard-main-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .dashboard-welcome-banner {
+            min-height: 0;
+            padding: 24px;
+        }
+
+        .dashboard-welcome-art {
+            display: none;
+        }
+
+        .dashboard-welcome-copy h2 {
+            font-size: 1.7rem;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .dashboard-card {
+            padding: 16px;
+        }
+
+        .dashboard-welcome-banner {
+            grid-template-columns: auto minmax(0, 1fr);
+            gap: 14px;
+            padding: 20px;
+        }
+
+        .dashboard-welcome-banner .patient-profile-avatar {
+            width: 68px;
+            height: 68px;
+            line-height: 68px;
+            font-size: 1.35rem;
+        }
+
+        .dashboard-welcome-copy h2 {
+            font-size: 1.45rem;
+        }
+
+        .dashboard-welcome-copy p {
+            font-size: .86rem;
+        }
+
+        .dashboard-welcome-actions {
+            grid-column: 1 / -1;
+            margin-top: 2px;
+        }
+
+        .dashboard-welcome-actions .primary-btn {
+            width: 100%;
+        }
+
+        .dashboard-upcoming-item {
+            grid-template-columns: 62px minmax(0, 1fr);
+            gap: 12px;
+        }
+
+        .dashboard-upcoming-actions {
+            grid-column: 2;
+            justify-items: start;
+            grid-template-columns: auto auto;
+            align-items: center;
+        }
+
+        .dashboard-upcoming-copy strong {
+            white-space: normal;
+        }
+
+        .dashboard-history-table {
+            font-size: .78rem;
+        }
+
+        .dashboard-history-table th,
+        .dashboard-history-table td {
+            padding: 9px 5px;
+        }
+
+        .dashboard-history-tab {
+            padding-right: 5px;
+            padding-left: 5px;
+            font-size: .78rem;
+        }
+    }
 ';
 
 $additionalHeadLinks = '
@@ -4171,20 +4831,33 @@ include 'includes/header.php';
             <?php endif; ?>
         </section>
         <?php else: ?>
-        <section class="patient-hero<?php echo $isNewPatientWelcome ? ' is-new-welcome' : ''; ?>">
-            <div class="patient-profile-trigger" aria-hidden="true">
-                <?php if ($profilePhotoUrl): ?>
-                    <img src="<?php echo htmlspecialchars($profilePhotoUrl); ?>" alt="Profile photo" class="patient-profile-avatar">
-                <?php else: ?>
-                    <span class="patient-profile-avatar"><?php echo htmlspecialchars($profileInitials); ?></span>
-                <?php endif; ?>
+        <div class="patient-dashboard">
+        <section class="dashboard-welcome-banner" aria-labelledby="dashboardWelcomeTitle">
+            <div aria-hidden="true">
+                <span class="patient-profile-avatar"><?php echo htmlspecialchars($profileInitials); ?></span>
             </div>
-            <div>
+            <div class="dashboard-welcome-copy">
                 <?php if ($isNewPatientWelcome): ?>
                     <span class="new-welcome-badge">New account</span>
                 <?php endif; ?>
-                <h2><?php echo htmlspecialchars($welcomeTitle); ?></h2>
-                <p><?php echo htmlspecialchars($welcomeSubtitle); ?></p>
+                <h2 id="dashboardWelcomeTitle"><?php echo htmlspecialchars($welcomeTitle); ?></h2>
+                <p>Manage your appointments and clinic visits in one place.</p>
+                <div class="dashboard-welcome-actions">
+                    <a href="book_appointment.php?start=1" class="primary-btn">Book Appointment</a>
+                </div>
+            </div>
+            <div class="dashboard-welcome-art" aria-hidden="true">
+                <svg viewBox="0 0 360 190" role="img">
+                    <title>Calendar and stethoscope</title>
+                    <circle cx="277" cy="89" r="74" fill="rgba(202,240,248,.18)"/>
+                    <path d="M72 36h156a13 13 0 0 1 13 13v101a13 13 0 0 1-13 13H72a13 13 0 0 1-13-13V49a13 13 0 0 1 13-13Z" fill="#eefbff" opacity=".95"/>
+                    <path d="M59 70h182" stroke="#42bddd" stroke-width="10"/>
+                    <path d="M91 22v30M184 22v30" stroke="#d8f8ff" stroke-width="11" stroke-linecap="round"/>
+                    <g fill="#b8e9f5"><rect x="82" y="87" width="23" height="21" rx="5"/><rect x="118" y="87" width="23" height="21" rx="5"/><rect x="154" y="87" width="23" height="21" rx="5"/><rect x="190" y="87" width="23" height="21" rx="5"/><rect x="82" y="120" width="23" height="21" rx="5"/><rect x="118" y="120" width="23" height="21" rx="5"/><rect x="154" y="120" width="23" height="21" rx="5"/></g>
+                    <rect x="190" y="120" width="23" height="21" rx="5" fill="#168ed0"/>
+                    <path d="M269 47c19 0 31 13 31 30v23c0 26 18 42 40 42 20 0 32-14 32-31 0-17-11-29-26-29-14 0-25 10-25 24" fill="none" stroke="#e4fbff" stroke-width="9" stroke-linecap="round"/>
+                    <circle cx="320" cy="128" r="19" fill="none" stroke="#e4fbff" stroke-width="8"/><path d="M320 147v13c0 14-11 25-25 25h-10M286 185h-11" fill="none" stroke="#e4fbff" stroke-width="8" stroke-linecap="round"/>
+                </svg>
             </div>
         </section>
 
@@ -4195,6 +4868,29 @@ include 'includes/header.php';
             <div class="profile-alert error"><?php echo htmlspecialchars($pageError); ?></div>
         <?php endif; ?>
 
+        <div class="dashboard-main-grid">
+            <div class="dashboard-main-column">
+                <section class="dashboard-card" id="upcomingAppointmentsPanel">
+                    <div class="dashboard-card-header"><div class="dashboard-card-title"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3v3M16 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/><path d="M8 13h3M13 13h3M8 17h3"/></svg><div><h3>Upcoming Appointments</h3><p>Your next scheduled clinic visit.</p></div></div><a href="patients_view_appointments.php" class="dashboard-link">See all <span aria-hidden="true">&rarr;</span></a></div>
+                    <?php if ($nextAppointment): ?>
+                        <?php $nextAppointmentDateStamp = strtotime((string) ($nextAppointment['appointment_date'] ?? '')); $nextAppointmentStatusClass = patient_status_class($nextAppointment['status'] ?? 'pending'); $nextAppointmentStatusLabel = $nextAppointmentStatusClass === 'cancelled' ? 'Cancelled' : ucfirst($nextAppointmentStatusClass); ?>
+                        <div class="dashboard-upcoming-item"><div class="dashboard-date-tile" aria-label="<?php echo htmlspecialchars(patient_format_date($nextAppointment['appointment_date'] ?? '')); ?>"><span><?php echo $nextAppointmentDateStamp ? htmlspecialchars(strtoupper(date('M', $nextAppointmentDateStamp))) : 'DATE'; ?></span><strong><?php echo $nextAppointmentDateStamp ? (int) date('j', $nextAppointmentDateStamp) : '--'; ?></strong></div><div class="dashboard-upcoming-copy"><strong><?php echo htmlspecialchars(patient_booking_label($nextAppointment['booking_type'] ?? null)); ?></strong><div class="dashboard-upcoming-meta"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3v3M16 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/></svg><?php echo htmlspecialchars(patient_format_date($nextAppointment['appointment_date'] ?? '')); ?></span><span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><?php echo htmlspecialchars(patient_format_time($nextAppointment['appointment_time'] ?? '')); ?></span></div></div><div class="dashboard-upcoming-actions"><span class="dashboard-status-badge <?php echo htmlspecialchars($nextAppointmentStatusClass); ?>"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><?php echo htmlspecialchars($nextAppointmentStatusLabel); ?></span><a href="patients_view_appointments.php" class="dashboard-view-details">View details</a></div></div>
+                        <?php if (!empty($nextAppointment['reschedule_request_id'])): ?><div class="profile-alert" style="margin-top:12px;">A reschedule request is waiting for clinic approval.</div><?php endif; ?>
+                    <?php else: ?><div class="dashboard-empty-state"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3v3M16 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/><path d="M8 14h8M8 17h5"/></svg><strong>No upcoming appointments</strong><p>You have no scheduled visits yet. Start a booking when you are ready.</p><a href="book_appointment.php?start=1" class="primary-btn">Book Appointment</a></div><?php endif; ?>
+                </section>
+                <section class="dashboard-card" id="recentHistoryPanel">
+                    <div class="dashboard-card-header"><div class="dashboard-card-title"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 5v4h4M12 8v4l3 2"/></svg><div><h3>Recent History</h3><p>Your latest completed visits and queue records.</p></div></div></div>
+                    <div class="dashboard-history-tabs" role="tablist" aria-label="Recent history type"><button type="button" class="dashboard-history-tab is-active" role="tab" aria-selected="true" aria-controls="appointmentHistoryPanel" data-history-tab="appointments">Appointment History</button><button type="button" class="dashboard-history-tab" role="tab" aria-selected="false" aria-controls="queueHistoryPanel" data-history-tab="queue">Queue History</button></div>
+                    <div class="dashboard-history-panel" id="appointmentHistoryPanel" role="tabpanel" data-history-panel="appointments"><?php if ($appointmentHistory): ?><div class="dashboard-history-table-wrap"><table class="dashboard-history-table"><thead><tr><th>Date</th><th>Service</th><th>Status</th></tr></thead><tbody><?php foreach ($appointmentHistory as $historyAppointment): ?><?php $historyAppointmentStatus = patient_status_class($historyAppointment['status'] ?? 'completed'); ?><tr><td><?php echo htmlspecialchars(patient_format_date($historyAppointment['appointment_date'] ?? '')); ?></td><td><?php echo htmlspecialchars(patient_booking_label($historyAppointment['booking_type'] ?? null)); ?></td><td><span class="dashboard-status-badge <?php echo htmlspecialchars($historyAppointmentStatus); ?>"><?php echo htmlspecialchars(ucfirst($historyAppointmentStatus)); ?></span></td></tr><?php endforeach; ?></tbody></table></div><?php else: ?><div class="dashboard-history-empty">No completed appointments yet.</div><?php endif; ?></div>
+                    <div class="dashboard-history-panel" id="queueHistoryPanel" role="tabpanel" data-history-panel="queue" hidden><?php if ($queueHistory): ?><div class="dashboard-history-table-wrap"><table class="dashboard-history-table"><thead><tr><th>Date</th><th>Queue No.</th><th>Status</th></tr></thead><tbody><?php foreach ($queueHistory as $historyQueue): ?><?php $historyQueueStatus = patient_status_class($historyQueue['status'] ?? 'completed'); ?><tr><td><?php echo htmlspecialchars(patient_format_date($historyQueue['queue_date'] ?? '')); ?></td><td><?php echo htmlspecialchars((string) ($historyQueue['queue_number'] ?? '--')); ?></td><td><span class="dashboard-status-badge <?php echo htmlspecialchars($historyQueueStatus); ?>"><?php echo htmlspecialchars(ucfirst($historyQueueStatus)); ?></span></td></tr><?php endforeach; ?></tbody></table></div><?php else: ?><div class="dashboard-history-empty">No completed queue records yet.</div><?php endif; ?></div>
+                    <div class="dashboard-history-footer"><a href="patients_view_appointments.php" class="dashboard-link" data-history-view-all>View All History <span aria-hidden="true">&rarr;</span></a></div>
+                </section>
+            </div>
+            <aside><section class="dashboard-card dashboard-profile-card" id="profile"><div class="dashboard-card-title"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.7-3.2 3.1-5 7-5s6.3 1.8 7 5"/></svg><h3>My Profile</h3></div><div class="dashboard-profile-identity"><?php if ($profilePhotoUrl): ?><img src="<?php echo htmlspecialchars($profilePhotoUrl); ?>" alt="Profile photo" class="patient-profile-avatar"><?php else: ?><span class="patient-profile-avatar"><?php echo htmlspecialchars($profileInitials); ?></span><?php endif; ?><div><strong><?php echo htmlspecialchars($profileDisplayName); ?></strong><span>Patient account</span></div></div><div class="dashboard-profile-progress"><div class="dashboard-profile-progress-head"><span>Profile completion</span><span><?php echo (int) $profileScore; ?>%</span></div><div class="progress-track" aria-label="Profile completeness"><div class="progress-bar" style="--value: <?php echo $profileScore; ?>%;"></div></div></div><div class="dashboard-contact-list" aria-label="Contact verification status"><div class="dashboard-contact-row"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg><div class="dashboard-contact-copy"><strong>Email</strong><span><?php echo htmlspecialchars($profileEmailMissing ? 'Add your email address' : (string) ($userDetails['email'] ?? '')); ?></span></div><span class="dashboard-contact-status<?php echo $profileEmailVerified ? '' : ' missing'; ?>"><?php echo $profileEmailMissing ? 'Not added' : ($profileEmailVerified ? 'Verified' : 'Needs review'); ?></span></div><div class="dashboard-contact-row"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 3.5 9 3l2 5-2.1 1.7a15 15 0 0 0 5.4 5.4L16 13l5 2 .5 2.4a2 2 0 0 1-2.1 2.4C11 19.2 4.8 13 4.2 4.6A2 2 0 0 1 6.6 3.5Z"/></svg><div class="dashboard-contact-copy"><strong>Contact number</strong><span><?php echo htmlspecialchars($profilePhoneMissing ? 'Add your contact number' : (string) ($userDetails['phone'] ?? '')); ?></span></div><span class="dashboard-contact-status<?php echo $profilePhoneVerified ? '' : ' missing'; ?>"><?php echo $profilePhoneMissing ? 'Not added' : ($profilePhoneVerified ? 'Verified' : 'Needs review'); ?></span></div></div><div class="dashboard-profile-note">Keep your contact details updated so the clinic can send appointment reminders.</div><button type="button" class="primary-btn" id="openProfileFromBtn">Edit My Profile</button></section></aside>
+        </div>
+        </div>
+
+        <?php if (false): ?>
         <div class="dashboard-layout">
             <div>
             <section class="panel" id="upcomingAppointmentsPanel">
@@ -4433,6 +5129,7 @@ include 'includes/header.php';
                 </section>
             </aside>
         </div>
+        <?php endif; ?>
         <?php endif; ?>
     </main>
 
@@ -5827,6 +6524,35 @@ include 'includes/header.php';
     })();
     </script>
     <?php endif; ?>
+
+    <script>
+    (function () {
+        var tabs = document.querySelectorAll('[data-history-tab]');
+        var panels = document.querySelectorAll('[data-history-panel]');
+        var viewAll = document.querySelector('[data-history-view-all]');
+        if (!tabs.length || !panels.length) return;
+
+        var historyLinks = {
+            appointments: 'patients_view_appointments.php',
+            queue: 'patients_queue_history.php'
+        };
+
+        tabs.forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                var selected = tab.getAttribute('data-history-tab');
+                tabs.forEach(function (item) {
+                    var isActive = item === tab;
+                    item.classList.toggle('is-active', isActive);
+                    item.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                });
+                panels.forEach(function (panel) {
+                    panel.hidden = panel.getAttribute('data-history-panel') !== selected;
+                });
+                if (viewAll) viewAll.href = historyLinks[selected] || historyLinks.appointments;
+            });
+        });
+    })();
+    </script>
 
 <?php $appointmentPage = 'patients.php'; include __DIR__ . '/includes/appointment_reschedule_ui.php'; ?>
 <?php include 'includes/footer.php'; ?>
