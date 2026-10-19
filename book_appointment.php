@@ -301,6 +301,113 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($action === 'progressive_booking') {
+        $t = trim((string) ($_POST['booking_type'] ?? ''));
+        $allowedTypes = ['package', 'individual', 'consultation', 'ultrasound'];
+        $bk['type'] = $t;
+        $bk['service_ids'] = [];
+        $bk['doctor_id'] = null;
+        $bk['consultation_specialty'] = '';
+        $bk['price_channel'] = 'opd';
+        $bk['calendar_ready'] = true;
+        $bk['step'] = 1;
+
+        if (!in_array($t, $allowedTypes, true)) {
+            $error = 'Please choose an appointment type.';
+        } elseif ($t === 'consultation') {
+            $specialty = trim((string) ($_POST['consultation_specialty'] ?? ''));
+            $doctorId = (int) ($_POST['doctor_id'] ?? 0);
+            $doctors = consultationDoctorDirectory($conn);
+            $specialties = consultationSpecialties($doctors);
+            $matchedDoctor = null;
+            foreach ($doctors as $doctor) {
+                if ((int) ($doctor['id'] ?? 0) === $doctorId && consultationDoctorMatchesSpecialty($doctor, $specialty)) {
+                    $matchedDoctor = $doctor;
+                    break;
+                }
+            }
+            if ($specialty === '' || !in_array($specialty, $specialties, true)) {
+                $error = 'Please select a doctor specialization.';
+            } elseif (!$matchedDoctor) {
+                $error = 'Please select a doctor for the chosen specialization.';
+            } else {
+                $bk['consultation_specialty'] = $specialty;
+                $bk['doctor_id'] = $doctorId;
+            }
+        } elseif ($t === 'package') {
+            $packageId = (int) ($_POST['package_id'] ?? 0);
+            $validPackageIds = array_map(
+                static fn (array $package): int => (int) ($package['id'] ?? 0),
+                fetchLabBookingPackages($conn)
+            );
+            if ($packageId <= 0 || !in_array($packageId, $validPackageIds, true)) {
+                $error = 'Please select a laboratory package.';
+            } else {
+                $bk['service_ids'] = [$packageId];
+            }
+        } elseif ($t === 'individual') {
+            $ids = $_POST['service_ids'] ?? [];
+            $ids = is_array($ids) ? array_values(array_unique(array_filter(array_map('intval', $ids), static fn (int $id): bool => $id > 0))) : [];
+            $validIndividualIds = array_map(
+                static fn (array $service): int => (int) ($service['id'] ?? 0),
+                fetchLabBookingIndividuals($conn)
+            );
+            $invalidIds = array_diff($ids, $validIndividualIds);
+            if (empty($ids) || !empty($invalidIds)) {
+                $error = 'Please select at least one valid laboratory test.';
+            } else {
+                $bk['service_ids'] = $ids;
+            }
+        }
+
+        $date = trim((string) ($_POST['appointment_date'] ?? ''));
+        $bk['appointment_date'] = $date;
+        $bk['appointment_time'] = '';
+        if ($error === '' && $date === '') {
+            $error = 'Please choose an appointment date.';
+        }
+        if ($error === '' && $date !== '') {
+            try {
+                $selectedDate = new DateTime($date);
+                $today = new DateTime();
+                $today->setTime(0, 0, 0);
+                if ($selectedDate < $today) {
+                    $error = 'Appointment date cannot be in the past.';
+                }
+            } catch (Exception $e) {
+                $error = 'Please choose a valid appointment date.';
+            }
+        }
+        if ($error === '' && $date !== '') {
+            $time = bookingAutomaticTime($conn, $bk, $date);
+            if ($t === 'ultrasound' && !appointment_ultrasound_is_available_date($date)) {
+                $error = 'Ultra sound appointments are available on Wednesday and Saturday only. Please choose another date.';
+            } elseif ($time === '') {
+                $error = 'There is no remaining availability on the selected date. Please choose another date.';
+            } elseif ($t === 'consultation' && !user_is_doctor_available_at($conn, (int) $bk['doctor_id'], $date, $time)) {
+                $error = 'The selected doctor is not available on that date. Please choose another date.';
+            } elseif ($t === 'consultation' && appointment_doctor_day_capacity($conn, (int) $bk['doctor_id'], $date)['is_full']) {
+                $capacity = appointment_doctor_day_capacity($conn, (int) $bk['doctor_id'], $date);
+                $error = 'This doctor is fully booked on the selected date (' . $capacity['booked'] . '/' . $capacity['limit'] . ' bookings).';
+            } elseif ($t === 'ultrasound' && appointment_ultrasound_day_capacity($conn, $date)['is_full']) {
+                $capacity = appointment_ultrasound_day_capacity($conn, $date);
+                $error = 'Ultra sound appointments are fully booked on the selected date (' . $capacity['booked'] . '/' . $capacity['limit'] . ' bookings).';
+            } elseif ($t !== 'consultation' && appointment_lab_day_capacity($conn, $date)['is_full']) {
+                $capacity = appointment_lab_day_capacity($conn, $date);
+                $error = 'Laboratory appointments are fully booked on the selected date (' . $capacity['booked'] . '/' . $capacity['limit'] . ' bookings).';
+            } elseif ($t !== 'consultation' && !appointment_clinic_is_open_at($date, $time)) {
+                $error = 'The clinic is closed on the selected date. Please choose another date.';
+            }
+            if ($error === '') {
+                $bk['appointment_date'] = $date;
+                $bk['appointment_time'] = $time;
+                $bk['step'] = 5;
+                header('Location: book_appointment.php?booking_step=5');
+                exit;
+            }
+        }
+    }
+
     if ($action === 'select_type') {
         $t = $_POST['booking_type'] ?? '';
         if (!in_array($t, ['package', 'individual', 'consultation', 'ultrasound'], true)) {
@@ -598,13 +705,13 @@ $bookingDoctors = [];
 $consultationSpecialties = [];
 $consultationDoctorsForSpecialty = [];
 $selectedSpecialty = trim((string) ($bk['consultation_specialty'] ?? ''));
-if ($bk['type'] === 'package') {
+if ($step === 1 || $bk['type'] === 'package') {
     $packageServices = lab_order_package_services(fetchLabBookingPackages($conn));
 }
-if ($bk['type'] === 'individual') {
+if ($step === 1 || $bk['type'] === 'individual') {
     $individualServices = fetchLabBookingIndividuals($conn);
 }
-if ($bk['type'] === 'consultation') {
+if ($step === 1 || $bk['type'] === 'consultation') {
     $bookingDoctors = consultationDoctorDirectory($conn);
     $consultationSpecialties = consultationSpecialties($bookingDoctors);
     $consultationDoctorsForSpecialty = array_values(array_filter(
@@ -784,6 +891,31 @@ $additionalStyles = '
     .choice-card:hover { border-color: #0077b6; box-shadow: 0 6px 20px rgba(0,119,182,0.15); }
     .choice-card h3 { margin: 0 0 10px; color: #023e8a; font-size: 1.25rem; }
     .choice-card p { margin: 0; color: #666; font-size: 0.95rem; }
+    .progressive-booking-form { max-width: none; }
+    .progressive-top-grid, .progressive-schedule-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .progressive-fields { margin-top: 4px; }
+    .progressive-panel { display: none; padding: 18px; border: 1px solid #d8e8f2; border-radius: 14px; background: #fbfdff; }
+    .progressive-panel.is-active { display: block; }
+    .progressive-panel h3 { margin: 0 0 5px; color: #073b4c; font-size: 1.08rem; }
+    .progressive-panel > p { margin: 0 0 14px; color: #607784; font-size: .9rem; line-height: 1.45; }
+    .progressive-panel .form-group:last-child { margin-bottom: 0; }
+    .progressive-search-row { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(180px, .8fr); gap: 12px; margin-bottom: 14px; }
+    .progressive-service-list { display: grid; gap: 8px; max-height: 300px; overflow-y: auto; padding: 4px; border: 1px solid #e1edf4; border-radius: 11px; background: #fff; }
+    .progressive-service-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 11px 12px; border: 1px solid #e3edf4; border-radius: 10px; background: #fff; }
+    .progressive-service-row.is-hidden { display: none; }
+    .progressive-service-row label { min-width: 0; cursor: pointer; }
+    .progressive-service-row label strong { display: block; color: #073b4c; line-height: 1.3; overflow-wrap: anywhere; }
+    .progressive-service-row label small { display: block; margin-top: 3px; color: #6a7e92; line-height: 1.35; }
+    .progressive-service-row .price-tag { white-space: nowrap; }
+    .progressive-service-empty { padding: 18px; color: #607784; text-align: center; }
+    .progressive-schedule { display: none; margin-top: 18px; padding-top: 18px; border-top: 1px solid #e3edf4; }
+    .progressive-schedule.is-active { display: block; }
+    .progressive-schedule-note { margin: -8px 0 14px; color: #607784; font-size: .86rem; line-height: 1.4; }
+    .progressive-form-error { display: none; margin: 0 0 16px; padding: 11px 13px; border-left: 4px solid #c1121f; border-radius: 8px; background: #fff0f0; color: #a30e19; }
+    .progressive-form-error.is-visible { display: block; }
+    .progressive-actions { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 18px; padding-top: 18px; border-top: 1px solid #e3edf4; }
+    .progressive-actions .btn-primary { width: auto; min-width: 220px; margin-top: 0; }
+    .progressive-actions .btn-secondary { margin-right: 0; }
     .svc-toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 16px; }
     .svc-toolbar label { font-weight: 600; font-size: 0.9rem; display: block; margin-bottom: 4px; }
     .svc-toolbar input, .svc-toolbar select { padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1rem; min-width: 200px; box-sizing: border-box; }
@@ -1014,6 +1146,14 @@ $additionalStyles = '
         .choice-card { padding: 16px 12px; border-radius: 12px; }
         .choice-card h3 { margin-bottom: 5px; font-size: 1rem; line-height: 1.2; }
         .choice-card p { font-size: .82rem; line-height: 1.35; }
+        .progressive-top-grid, .progressive-schedule-grid { grid-template-columns: 1fr; gap: 0; }
+        .progressive-panel { padding: 13px; border-radius: 11px; }
+        .progressive-search-row { grid-template-columns: 1fr; gap: 0; margin-bottom: 10px; }
+        .progressive-service-list { max-height: 280px; }
+        .progressive-service-row { grid-template-columns: auto minmax(0, 1fr); gap: 8px; padding: 10px; }
+        .progressive-service-row .price-tag { grid-column: 2; }
+        .progressive-actions { flex-direction: column-reverse; align-items: stretch; }
+        .progressive-actions .btn-primary, .progressive-actions .btn-secondary { width: 100%; min-width: 0; text-align: center; box-sizing: border-box; }
         .svc-toolbar { gap: 8px; margin-bottom: 12px; }
         .svc-toolbar input, .svc-toolbar select { min-width: 0; width: 100%; padding: 9px 10px; font-size: .92rem; }
         .svc-summary { padding: 10px 12px; margin-bottom: 12px; font-size: .84rem; }
@@ -1211,7 +1351,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
 ?>
 
 <div class="container">
-    <div class="booking-container">
+    <div class="booking-container<?php echo $step === 1 ? ' book-wide' : ''; ?>">
         <?php if ($bookedId > 0): ?>
             <div class="success-banner">
                 <strong>Appointment request successfully submitted.</strong><br>
@@ -1284,30 +1424,243 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
 
         <?php if ($step === 1): ?>
             <div class="info-box step-context-box">
-                <strong>Step 1.</strong> Choose between a <strong>Doctor Consultation</strong>, <strong>Ultra sound</strong>, a clinic <strong>Package Deal</strong>, or <strong>Individual Laboratory Tests</strong>.
+                <strong>Select your service and preferred schedule.</strong>
             </div>
-            <form method="post" action="book_appointment.php">
-                <input type="hidden" name="booking_action" value="select_type">
-                <input type="hidden" name="preferred_date" id="preferredDateInput" value="<?php echo htmlspecialchars($bk['appointment_date']); ?>">
-                <div class="choice-grid">
-                    <button type="submit" name="booking_type" value="consultation" class="choice-card" style="font-family:inherit;width:100%;">
-                        <h3>Doctor consultation</h3>
-                        <p>Review the doctor list, then choose your visit date.</p>
-                    </button>
-                    <button type="submit" name="booking_type" value="package" class="choice-card" style="font-family:inherit;width:100%;">
-                        <h3>Package deals</h3>
-                        <p>Best for clinic packages such as pre-employment, sanitary permit, and CVSU.</p>
-                    </button>
-                    <button type="submit" name="booking_type" value="individual" class="choice-card" style="font-family:inherit;width:100%;">
-                        <h3>Individual laboratory tests</h3>
-                        <p>Choose one or more lab tests, then select your preferred appointment schedule.</p>
-                    </button>
-                    <button type="submit" name="booking_type" value="ultrasound" class="choice-card" style="font-family:inherit;width:100%;">
-                        <h3>Ultra sound</h3>
-                        <p>Submit an ultrasound appointment request, then choose your clinic schedule.</p>
-                    </button>
+            <form method="post" action="book_appointment.php" class="progressive-booking-form" id="progressiveBookingForm">
+                <input type="hidden" name="booking_action" value="progressive_booking">
+                <div class="progressive-top-grid">
+                    <div class="form-group">
+                        <label for="progressiveBookingType">Appointment Type <span aria-hidden="true" style="color:#c1121f;">*</span></label>
+                        <select name="booking_type" id="progressiveBookingType" required>
+                            <option value="" disabled <?php echo empty($bk['type']) ? 'selected' : ''; ?>>Select appointment type...</option>
+                            <option value="consultation" <?php echo $bk['type'] === 'consultation' ? 'selected' : ''; ?>>Doctor Consultation</option>
+                            <option value="package" <?php echo $bk['type'] === 'package' ? 'selected' : ''; ?>>Package Deals</option>
+                            <option value="individual" <?php echo $bk['type'] === 'individual' ? 'selected' : ''; ?>>Individual Laboratory Tests</option>
+                            <option value="ultrasound" <?php echo $bk['type'] === 'ultrasound' ? 'selected' : ''; ?>>Ultrasounds</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="progressiveBookingFor">For <span aria-hidden="true" style="color:#c1121f;">*</span></label>
+                        <select id="progressiveBookingFor" disabled>
+                            <option>My Account</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="progressive-fields">
+                    <section class="progressive-panel" data-progressive-panel="consultation" aria-labelledby="consultationPanelTitle">
+                        <h3 id="consultationPanelTitle">Doctor Consultation</h3>
+                        <p>Choose a specialization first, then select your preferred doctor.</p>
+                        <div class="progressive-top-grid">
+                            <div class="form-group">
+                                <label for="progressiveSpecialty">Choose Specialization <span aria-hidden="true" style="color:#c1121f;">*</span></label>
+                                <select name="consultation_specialty" id="progressiveSpecialty" disabled>
+                                    <option value="" selected disabled>Select specialization...</option>
+                                    <?php foreach ($consultationSpecialties as $specialty): ?>
+                                        <option value="<?php echo htmlspecialchars((string) $specialty, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $selectedSpecialty === $specialty ? 'selected' : ''; ?>><?php echo htmlspecialchars((string) $specialty); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="progressiveDoctor">Choose Doctor <span aria-hidden="true" style="color:#c1121f;">*</span></label>
+                                <select name="doctor_id" id="progressiveDoctor" disabled>
+                                    <option value="" selected disabled>Select specialization first...</option>
+                                    <?php foreach ($bookingDoctors as $doctor): ?>
+                                        <option
+                                            value="<?php echo (int) $doctor['id']; ?>"
+                                            data-specialty="<?php echo htmlspecialchars((string) $doctor['specialty'], ENT_QUOTES, 'UTF-8'); ?>"
+                                            <?php echo (int) ($bk['doctor_id'] ?? 0) === (int) $doctor['id'] ? 'selected' : ''; ?>
+                                        ><?php echo htmlspecialchars((string) $doctor['full_name']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="progressive-panel" data-progressive-panel="package" aria-labelledby="packagePanelTitle">
+                        <h3 id="packagePanelTitle">Package Deals</h3>
+                        <p>Search for a package and choose one package for your appointment.</p>
+                        <div class="progressive-search-row">
+                            <div class="form-group">
+                                <label for="progressivePackageSearch">Search Package</label>
+                                <input type="search" id="progressivePackageSearch" placeholder="Search package..." autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="progressivePackageCategory">Category</label>
+                                <select id="progressivePackageCategory">
+                                    <option value="">All categories</option>
+                                    <?php foreach (array_keys($groupedPackages) as $category): ?>
+                                        <option value="<?php echo htmlspecialchars((string) $category, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $category); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="progressive-service-list" id="progressivePackageList">
+                            <?php foreach ($groupedPackages as $category => $services): ?>
+                                <?php foreach ($services as $service): ?>
+                                    <?php $serviceId = (int) $service['id']; ?>
+                                    <div class="progressive-service-row" data-progressive-service data-search="<?php echo htmlspecialchars(strtolower($service['name'] . ' ' . $category . ' ' . ($service['included_tests'] ?? '')), ENT_QUOTES, 'UTF-8'); ?>" data-category="<?php echo htmlspecialchars((string) $category, ENT_QUOTES, 'UTF-8'); ?>">
+                                        <input type="radio" name="package_id" value="<?php echo $serviceId; ?>" id="progressivePackage<?php echo $serviceId; ?>" <?php echo count($bk['service_ids']) === 1 && (int) $bk['service_ids'][0] === $serviceId ? 'checked' : ''; ?> disabled>
+                                        <label for="progressivePackage<?php echo $serviceId; ?>">
+                                            <strong><?php echo htmlspecialchars((string) $service['name']); ?></strong>
+                                            <?php if (!empty($service['included_tests'])): ?><small><?php echo htmlspecialchars((string) $service['included_tests']); ?></small><?php endif; ?>
+                                        </label>
+                                        <span class="price-tag">PHP <?php echo number_format((float) $service['opd_price'], 0); ?></span>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endforeach; ?>
+                            <?php if (empty($groupedPackages)): ?><div class="progressive-service-empty">No packages are available yet.</div><?php endif; ?>
+                        </div>
+                    </section>
+
+                    <section class="progressive-panel" data-progressive-panel="individual" aria-labelledby="individualPanelTitle">
+                        <h3 id="individualPanelTitle">Individual Laboratory Tests</h3>
+                        <p>Search by test name or category, then select one or more tests.</p>
+                        <div class="progressive-search-row">
+                            <div class="form-group">
+                                <label for="progressiveIndividualSearch">Search Laboratory Test</label>
+                                <input type="search" id="progressiveIndividualSearch" placeholder="Search test or category..." autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="progressiveIndividualCategory">Category</label>
+                                <select id="progressiveIndividualCategory">
+                                    <option value="">All categories</option>
+                                    <?php foreach (array_keys($groupedIndividual) as $category): ?>
+                                        <option value="<?php echo htmlspecialchars((string) $category, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars((string) $category); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="progressive-service-list" id="progressiveIndividualList">
+                            <?php foreach ($groupedIndividual as $category => $services): ?>
+                                <?php foreach ($services as $service): ?>
+                                    <?php $serviceId = (int) $service['id']; ?>
+                                    <div class="progressive-service-row" data-progressive-service data-search="<?php echo htmlspecialchars(strtolower($service['name'] . ' ' . $category), ENT_QUOTES, 'UTF-8'); ?>" data-category="<?php echo htmlspecialchars((string) $category, ENT_QUOTES, 'UTF-8'); ?>">
+                                        <input type="checkbox" name="service_ids[]" value="<?php echo $serviceId; ?>" id="progressiveIndividual<?php echo $serviceId; ?>" data-progressive-individual data-price="<?php echo (float) $service['opd_price']; ?>" <?php echo in_array($serviceId, array_map('intval', $bk['service_ids']), true) ? 'checked' : ''; ?> disabled>
+                                        <label for="progressiveIndividual<?php echo $serviceId; ?>"><strong><?php echo htmlspecialchars((string) $service['name']); ?></strong></label>
+                                        <span class="price-tag">PHP <?php echo number_format((float) $service['opd_price'], 0); ?></span>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endforeach; ?>
+                            <?php if (empty($groupedIndividual)): ?><div class="progressive-service-empty">No individual laboratory tests are available yet.</div><?php endif; ?>
+                        </div>
+                    </section>
+
+                    <section class="progressive-panel" data-progressive-panel="ultrasound" aria-labelledby="ultrasoundPanelTitle">
+                        <h3 id="ultrasoundPanelTitle">Ultrasounds</h3>
+                        <p>Choose an available appointment date. Ultrasound schedules are available on Wednesday and Saturday.</p>
+                    </section>
+                </div>
+
+                <div class="progressive-schedule" id="progressiveSchedule">
+                    <div class="progressive-schedule-grid">
+                        <div class="form-group">
+                            <label for="progressiveAppointmentDate">Appointment Date <span aria-hidden="true" style="color:#c1121f;">*</span></label>
+                            <input type="date" name="appointment_date" id="progressiveAppointmentDate" value="<?php echo htmlspecialchars($bk['appointment_date']); ?>" min="<?php echo date('Y-m-d'); ?>" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label for="progressiveAppointmentTime">Appointment Time</label>
+                            <select id="progressiveAppointmentTime" disabled>
+                                <option>Assigned based on availability</option>
+                            </select>
+                        </div>
+                    </div>
+                    <p class="progressive-schedule-note">The system will assign the earliest available clinic time after you choose the date.</p>
+                </div>
+
+                <div class="progressive-form-error" id="progressiveFormError" role="alert"></div>
+                <div class="progressive-actions">
+                    <a href="patients.php" class="btn-secondary">Cancel</a>
+                    <button type="submit" class="btn-primary">Book Appointment</button>
                 </div>
             </form>
+            <script>
+            (function() {
+                var form = document.getElementById('progressiveBookingForm');
+                var typeSelect = document.getElementById('progressiveBookingType');
+                var specialtySelect = document.getElementById('progressiveSpecialty');
+                var doctorSelect = document.getElementById('progressiveDoctor');
+                var dateInput = document.getElementById('progressiveAppointmentDate');
+                var schedule = document.getElementById('progressiveSchedule');
+                var errorBox = document.getElementById('progressiveFormError');
+                if (!form || !typeSelect || !specialtySelect || !doctorSelect || !dateInput || !schedule || !errorBox) return;
+
+                function setError(message) {
+                    errorBox.textContent = message || '';
+                    errorBox.classList.toggle('is-visible', !!message);
+                }
+                function filterServices(searchId, categoryId, listId) {
+                    var search = document.getElementById(searchId);
+                    var category = document.getElementById(categoryId);
+                    var query = (search ? search.value : '').toLowerCase().trim();
+                    var selectedCategory = category ? category.value : '';
+                    document.querySelectorAll('#' + listId + ' [data-progressive-service]').forEach(function(row) {
+                        var matchesQuery = !query || (row.getAttribute('data-search') || '').indexOf(query) !== -1;
+                        var matchesCategory = !selectedCategory || row.getAttribute('data-category') === selectedCategory;
+                        row.classList.toggle('is-hidden', !(matchesQuery && matchesCategory));
+                    });
+                }
+                function updateDoctorOptions() {
+                    var specialty = specialtySelect.value.toLowerCase().trim();
+                    var previousDoctor = doctorSelect.value;
+                    doctorSelect.disabled = !specialty;
+                    Array.from(doctorSelect.options).forEach(function(option) {
+                        if (!option.value) return;
+                        var specialties = (option.getAttribute('data-specialty') || '').toLowerCase().split('/').map(function(item) { return item.trim(); });
+                        option.hidden = !specialty || specialties.indexOf(specialty) === -1;
+                    });
+                    var selectedOption = doctorSelect.options[doctorSelect.selectedIndex];
+                    doctorSelect.value = previousDoctor && selectedOption && !selectedOption.hidden ? previousDoctor : '';
+                }
+                function hasSelectedService(type) {
+                    if (type === 'package') return !!form.querySelector('input[name="package_id"]:checked');
+                    if (type === 'individual') return !!form.querySelector('input[name="service_ids[]"]:checked');
+                    if (type === 'consultation') return !!specialtySelect.value && !!doctorSelect.value;
+                    return type === 'ultrasound';
+                }
+                function updatePanels() {
+                    var type = typeSelect.value;
+                    document.querySelectorAll('[data-progressive-panel]').forEach(function(panel) {
+                        panel.classList.toggle('is-active', panel.getAttribute('data-progressive-panel') === type);
+                    });
+                    specialtySelect.disabled = type !== 'consultation';
+                    document.querySelectorAll('input[name="package_id"]').forEach(function(input) { input.disabled = type !== 'package'; });
+                    document.querySelectorAll('input[name="service_ids[]"]').forEach(function(input) { input.disabled = type !== 'individual'; });
+                    if (type !== 'consultation') {
+                        doctorSelect.disabled = true;
+                        doctorSelect.value = '';
+                    } else {
+                        updateDoctorOptions();
+                    }
+                    var canSchedule = !!type && hasSelectedService(type);
+                    schedule.classList.toggle('is-active', canSchedule);
+                    dateInput.disabled = !canSchedule;
+                    dateInput.required = canSchedule;
+                }
+                typeSelect.addEventListener('change', function() { setError(''); updatePanels(); });
+                specialtySelect.addEventListener('change', function() { setError(''); updateDoctorOptions(); updatePanels(); });
+                doctorSelect.addEventListener('change', updatePanels);
+                form.querySelectorAll('input[name="package_id"], input[name="service_ids[]"]').forEach(function(input) { input.addEventListener('change', updatePanels); });
+                [['progressivePackageSearch', 'progressivePackageCategory', 'progressivePackageList'], ['progressiveIndividualSearch', 'progressiveIndividualCategory', 'progressiveIndividualList']].forEach(function(config) {
+                    var search = document.getElementById(config[0]);
+                    var category = document.getElementById(config[1]);
+                    if (search) search.addEventListener('input', function() { filterServices(config[0], config[1], config[2]); });
+                    if (category) category.addEventListener('change', function() { filterServices(config[0], config[1], config[2]); });
+                });
+                form.addEventListener('submit', function(event) {
+                    var type = typeSelect.value;
+                    var message = '';
+                    if (!type) message = 'Please select an appointment type.';
+                    else if (type === 'consultation' && !specialtySelect.value) message = 'Please select a doctor specialization.';
+                    else if (type === 'consultation' && !doctorSelect.value) message = 'Please select a doctor.';
+                    else if (type === 'package' && !form.querySelector('input[name="package_id"]:checked')) message = 'Please select a package.';
+                    else if (type === 'individual' && !form.querySelector('input[name="service_ids[]"]:checked')) message = 'Please select at least one laboratory test.';
+                    else if (!dateInput.value || dateInput.disabled) message = 'Please select an appointment date.';
+                    if (message) { event.preventDefault(); setError(message); errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+                });
+                updatePanels();
+            })();
+            </script>
         <?php elseif ($step === 2): ?>
             <div class="info-box">
                 <strong>Step 2.</strong>
