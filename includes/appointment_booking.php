@@ -465,6 +465,18 @@ function appointment_clinic_is_open_at(string $date, string $time): bool {
     return $normalizedTime >= '08:00' && $normalizedTime <= '17:00';
 }
 
+function appointment_date_booking_cutoff_passed(string $date): bool {
+    $timezone = new DateTimeZone('Asia/Manila');
+    $dateValue = DateTimeImmutable::createFromFormat('!Y-m-d', $date, $timezone);
+    if (!$dateValue || $dateValue->format('Y-m-d') !== $date) {
+        return false;
+    }
+
+    $now = new DateTimeImmutable('now', $timezone);
+    return $dateValue->format('Y-m-d') === $now->format('Y-m-d')
+        && $now->format('H:i') >= '17:00';
+}
+
 function appointment_ultrasound_is_available_date(string $date): bool {
     $timestamp = strtotime($date);
     if ($timestamp === false) {

@@ -390,6 +390,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $today->setTime(0, 0, 0);
                 if ($selectedDate < $today) {
                     $error = 'Appointment date cannot be in the past.';
+                } elseif (appointment_date_booking_cutoff_passed($date)) {
+                    $error = 'Booking for today is closed after 5:00 PM. Please choose another date.';
                 }
             } catch (Exception $e) {
                 $error = 'Please choose a valid appointment date.';
@@ -614,6 +616,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($bk['type'] !== 'consultation') {
                     $bk['doctor_id'] = null;
                 }
+            } elseif (appointment_date_booking_cutoff_passed($d)) {
+                $error = 'Booking for today is closed after 5:00 PM. Please choose another date.';
             } elseif ($bk['type'] === 'ultrasound' && !appointment_ultrasound_is_available_date($d)) {
                 $error = 'Ultra sound appointments are available on Wednesday and Saturday only. Please choose another date.';
             } elseif ($t === '') {
@@ -818,6 +822,7 @@ $calendarMonthLabel = $calendarMonthStart->format('F Y');
 $calendarFirstWeekday = (int) $calendarMonthStart->format('w');
 $calendarDaysInMonth = (int) $calendarMonthStart->format('t');
 $calendarToday = date('Y-m-d');
+$calendarCutoffPassedToday = appointment_date_booking_cutoff_passed($calendarToday);
 $calendarMonthEnd = (clone $calendarMonthStart)->modify('first day of next month')->format('Y-m-d');
 $calendarPrevMonth = (clone $calendarMonthStart)->modify('-1 month')->format('Y-m');
 $calendarNextMonth = (clone $calendarMonthStart)->modify('+1 month')->format('Y-m');
@@ -1856,6 +1861,8 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     consultationLimit: <?php echo (int) $consultationDailyLimit; ?>,
                     doctorLimit: <?php echo (int) $doctorDailyLimit; ?>
                 };
+                var calendarToday = <?php echo json_encode($calendarToday); ?>;
+                var bookingCutoffPassedToday = <?php echo $calendarCutoffPassedToday ? 'true' : 'false'; ?>;
 
                 function pad(value) { return String(value).padStart(2, '0'); }
                 function toIsoDate(date) {
@@ -1867,10 +1874,16 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         ? new Date(parts[0], parts[1] - 1, parts[2])
                         : null;
                 }
+                function isBookingCutoffPassed(date) {
+                    return toIsoDate(date) === calendarToday && bookingCutoffPassedToday;
+                }
                 function appointmentSlotInfo(date) {
                     var iso = toIsoDate(date);
                     if (iso < dateInput.min) {
                         return { booked: 0, limit: 0, remaining: 0, open: false, full: false, label: 'Past', scheduleText: '' };
+                    }
+                    if (isBookingCutoffPassed(date)) {
+                        return { booked: 0, limit: 0, remaining: 0, open: false, full: false, label: 'Booking closed after 5:00 PM', scheduleText: '' };
                     }
                     var phpDayOfWeek = date.getDay() === 0 ? 7 : date.getDay();
                     var type = typeSelect.value;
@@ -1906,7 +1919,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 }
                 function dateCanBeSelected(date) {
                     var iso = toIsoDate(date);
-                    if (iso < dateInput.min) return false;
+                    if (iso < dateInput.min || isBookingCutoffPassed(date)) return false;
                     var slotInfo = appointmentSlotInfo(date);
                     return slotInfo.open && !slotInfo.full;
                 }
@@ -1944,14 +1957,20 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         var dayNumber = document.createElement('span');
                         dayNumber.textContent = day;
                         var dayStatus = document.createElement('small');
-                        dayStatus.textContent = dateValue < dateInput.min
-                            ? 'Past'
-                            : (slotInfo.open ? (slotInfo.full ? 'Full' : slotInfo.booked + '/' + slotInfo.limit + ' booked') : 'Closed');
-                        dayButton.title = dateValue < dateInput.min
-                            ? 'Past date'
-                            : slotInfo.open
-                            ? (slotInfo.full ? 'Fully booked' : slotInfo.remaining + ' appointment slots remaining' + (slotInfo.scheduleText ? ' | ' + slotInfo.scheduleText : ''))
-                            : slotInfo.label;
+                        if (dateValue < dateInput.min) {
+                            dayStatus.textContent = 'Past';
+                            dayButton.title = 'Past date';
+                        } else if (isBookingCutoffPassed(date)) {
+                            dayStatus.textContent = 'Closed';
+                            dayButton.title = 'Booking closed after 5:00 PM';
+                        } else {
+                            dayStatus.textContent = slotInfo.open
+                                ? (slotInfo.full ? 'Full' : slotInfo.booked + '/' + slotInfo.limit + ' booked')
+                                : 'Closed';
+                            dayButton.title = slotInfo.open
+                                ? (slotInfo.full ? 'Fully booked' : slotInfo.remaining + ' appointment slots remaining' + (slotInfo.scheduleText ? ' | ' + slotInfo.scheduleText : ''))
+                                : slotInfo.label;
+                        }
                         dayButton.appendChild(dayNumber);
                         dayButton.appendChild(dayStatus);
                         dayButton.dataset.date = dateValue;
@@ -2722,12 +2741,16 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                     $dateDayOfWeek = (int) date('N', strtotime($dateValue));
                                     $isConsultationSchedule = $bk['type'] === 'consultation';
                                     $isUltrasoundSchedule = $bk['type'] === 'ultrasound';
+                                    $dateBookingCutoffPassed = $dateValue === $calendarToday && $calendarCutoffPassedToday;
                                     $holidayName = appointment_holiday_name($dateValue);
                                     $doctorSlots = $holidayName === null ? ($calendarDoctorSlotsByDow[$dateDayOfWeek] ?? []) : [];
                                     $doctorAvailable = $holidayName === null && $isConsultationSchedule && $selectedDoctor && !empty($doctorSlots);
                                     $clinicOpen = $holidayName === null && ($isConsultationSchedule
                                         ? $doctorAvailable
                                         : ($isUltrasoundSchedule ? appointment_ultrasound_is_available_date($dateValue) : ($dateDayOfWeek >= 1 && $dateDayOfWeek <= 6)));
+                                    if ($dateBookingCutoffPassed) {
+                                        $clinicOpen = false;
+                                    }
                                     $selectedDoctorIdForCalendar = $selectedDoctor ? (int) $selectedDoctor['id'] : 0;
                                     $consultationBooked = $selectedDoctorIdForCalendar > 0
                                         ? (int) ($calendarDoctorDayCounts[$selectedDoctorIdForCalendar][$dateValue] ?? 0)
@@ -2782,13 +2805,13 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                     if ($isConsultationSchedule && !$doctorAvailable) {
                                         $classes[] = 'is-unavailable';
                                     }
-                                    $disabled = $dateValue < $calendarToday || ($isConsultationSchedule ? !$doctorAvailable : !$clinicOpen);
+                                    $disabled = $dateValue < $calendarToday || $dateBookingCutoffPassed || ($isConsultationSchedule ? !$doctorAvailable : !$clinicOpen);
                                     ?>
                                     <button
                                         type="button"
                                         class="<?php echo implode(' ', $classes); ?>"
                                         data-date="<?php echo htmlspecialchars($dateValue); ?>"
-                                        data-selectable="<?php echo ($capacityFull || ($isConsultationSchedule && !$doctorAvailable)) ? '0' : '1'; ?>"
+                                        data-selectable="<?php echo ($dateBookingCutoffPassed || !$clinicOpen || $capacityFull || ($isConsultationSchedule && !$doctorAvailable)) ? '0' : '1'; ?>"
                                         data-capacity-date="<?php echo htmlspecialchars($dateValue); ?>"
                                         data-capacity-doctors="<?php echo htmlspecialchars(json_encode($capacityRows, JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8'); ?>"
                                         data-capacity-booked="<?php echo $capacityBooked; ?>"
@@ -2819,7 +2842,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                                 </small>
                                                 <?php endif; ?>
                                             <?php elseif (!$clinicOpen && $dateValue >= $calendarToday): ?>
-                                                <small class="clinic-closed-event"><?php echo $holidayName !== null ? 'Holiday: ' . htmlspecialchars($holidayName) : ($bk['type'] === 'consultation' ? 'Doctor not available' : ($bk['type'] === 'ultrasound' ? 'Ultra sound unavailable' : 'Clinic closed')); ?></small>
+                                                <small class="clinic-closed-event"><?php echo $dateBookingCutoffPassed ? 'Booking closed after 5:00 PM' : ($holidayName !== null ? 'Holiday: ' . htmlspecialchars($holidayName) : ($bk['type'] === 'consultation' ? 'Doctor not available' : ($bk['type'] === 'ultrasound' ? 'Ultra sound unavailable' : 'Clinic closed'))); ?></small>
                                             <?php endif; ?>
                                         </div>
                                     </button>
