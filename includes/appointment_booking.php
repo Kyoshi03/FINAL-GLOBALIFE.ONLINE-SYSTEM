@@ -524,6 +524,9 @@ function appointment_validate_payload(mysqli $conn, int $patientId, array $paylo
     if ($appointmentAt <= $now) {
         return ['ok' => false, 'error' => 'The selected appointment time has already passed. Please choose a future schedule.'];
     }
+    if (appointment_date_booking_cutoff_passed($date)) {
+        return ['ok' => false, 'error' => 'Booking for today is closed after 5:00 PM. Please choose another date.'];
+    }
     $holidayName = appointment_holiday_name($date);
     if ($holidayName !== null) {
         return ['ok' => false, 'error' => 'The clinic is closed on ' . $holidayName . '. Please choose another date.'];
