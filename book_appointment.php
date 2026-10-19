@@ -2122,7 +2122,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     }, 40);
                 }
                 typeSelect.addEventListener('change', function() { setError(''); clearSelectedDate(); updatePanels(); focusActivePanel(); });
-                specialtySelect.addEventListener('change', function() { setError(''); clearSelectedDate(); updateDoctorOptions(); updatePanels(); });
+                specialtySelect.addEventListener('change', function() { setError(''); clearSelectedDate(); doctorSelect.value = ''; updateDoctorOptions(); updatePanels(); });
                 doctorSelect.addEventListener('change', function() { setError(''); clearSelectedDate(); updatePanels(); });
                 dateInput.addEventListener('change', updateDateLabel);
                 dateTrigger.addEventListener('click', openProgressiveCalendar);
