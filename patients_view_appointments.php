@@ -456,6 +456,9 @@ $additionalStyles = patientAvatarStyles() . '
     .appointment-tools.patient-filters {
         grid-template-columns:minmax(220px,1fr) minmax(180px,220px) minmax(180px,220px) auto auto;
     }
+    .appointment-tools.patient-filters.patient-active-filters {
+        grid-template-columns:minmax(220px,1fr) minmax(180px,220px) auto auto;
+    }
     .patient-custom-range{grid-column:1 / -1;display:flex;gap:12px;flex-wrap:wrap}
     .patient-custom-range[hidden]{display:none}
     .patient-custom-range .tool-field{flex:1 1 200px}
@@ -1480,7 +1483,7 @@ include __DIR__ . '/includes/header.php';
 
     <?php if (!$isClinicalAppointmentsView): ?>
         <section class="appointments-filter-card" aria-label="Appointment filters">
-            <div class="appointment-tools patient-filters" id="patientAppointmentFilterBar">
+            <div class="appointment-tools patient-filters<?php echo $userRole === 'patient' && $patientAppointmentView === 'active' ? ' patient-active-filters' : ''; ?>" id="patientAppointmentFilterBar">
                 <div class="tool-field">
                     <label for="appointmentSearch"><?php echo $userRole === 'patient' ? ($patientAppointmentView === 'active' ? 'Search my appointments' : 'Search appointment history') : 'Search appointments'; ?></label>
                     <input type="search" id="appointmentSearch" placeholder="Search date, service, or status">
@@ -1499,32 +1502,36 @@ include __DIR__ . '/includes/header.php';
                         <?php endif; ?>
                     </select>
                 </div>
-                <div class="tool-field">
-                    <label for="appointmentDateRangeFilter">Date Filter</label>
-                    <select id="appointmentDateRangeFilter">
-                        <option value="">All dates</option>
-                        <option value="today">Today</option>
-                        <option value="yesterday">Yesterday</option>
-                        <option value="past_3_days">Past 3 Days</option>
-                        <option value="past_7_days">Past 7 Days</option>
-                        <option value="past_2_weeks">Past 2 Weeks</option>
-                        <option value="past_30_days">Past 30 Days</option>
-                        <option value="custom">Custom Date Range</option>
-                    </select>
-                </div>
+                <?php if ($userRole !== 'patient' || $patientAppointmentView === 'history'): ?>
+                    <div class="tool-field">
+                        <label for="appointmentDateRangeFilter">Date Filter</label>
+                        <select id="appointmentDateRangeFilter">
+                            <option value="">All dates</option>
+                            <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="past_3_days">Past 3 Days</option>
+                            <option value="past_7_days">Past 7 Days</option>
+                            <option value="past_2_weeks">Past 2 Weeks</option>
+                            <option value="past_30_days">Past 30 Days</option>
+                            <option value="custom">Custom Date Range</option>
+                        </select>
+                    </div>
+                <?php endif; ?>
                 <button type="button" class="btn btn-primary" id="appointmentFilterApply">Apply Filter</button>
                 <button type="button" class="filter-reset-btn" id="appointmentFilterReset">Reset</button>
-                <div class="patient-custom-range" id="patientCustomDateRange" hidden>
-                    <div class="tool-field">
-                        <label for="appointmentDateFrom">Start Date</label>
-                        <input type="date" id="appointmentDateFrom">
+                <?php if ($userRole !== 'patient' || $patientAppointmentView === 'history'): ?>
+                    <div class="patient-custom-range" id="patientCustomDateRange" hidden>
+                        <div class="tool-field">
+                            <label for="appointmentDateFrom">Start Date</label>
+                            <input type="date" id="appointmentDateFrom">
+                        </div>
+                        <div class="tool-field">
+                            <label for="appointmentDateTo">End Date</label>
+                            <input type="date" id="appointmentDateTo">
+                        </div>
                     </div>
-                    <div class="tool-field">
-                        <label for="appointmentDateTo">End Date</label>
-                        <input type="date" id="appointmentDateTo">
-                    </div>
-                </div>
-                <p class="patient-date-error" id="patientDateError" hidden>End Date cannot be earlier than Start Date.</p>
+                    <p class="patient-date-error" id="patientDateError" hidden>End Date cannot be earlier than Start Date.</p>
+                <?php endif; ?>
             </div>
         </section>
     <?php endif; ?>
