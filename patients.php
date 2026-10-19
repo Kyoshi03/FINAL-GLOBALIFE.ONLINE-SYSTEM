@@ -4295,17 +4295,17 @@ $additionalStyles = '
 
     .dashboard-upcoming-item {
         display: grid;
-        grid-template-columns: 76px minmax(0, 1fr) auto;
-        gap: 16px;
+        grid-template-columns: 68px minmax(0, 1fr) auto;
+        gap: 12px;
         align-items: center;
-        padding: 14px;
+        padding: 10px;
         border: 1px solid #d9edf5;
         border-radius: 11px;
         background: #f7fcff;
     }
 
     .dashboard-upcoming-item + .dashboard-upcoming-item {
-        margin-top: 10px;
+        margin-top: 8px;
     }
 
     .dashboard-date-tile {
@@ -4319,18 +4319,18 @@ $additionalStyles = '
     }
 
     .dashboard-date-tile span {
-        padding: 5px 4px;
+        padding: 4px 3px;
         background: #087fc1;
         color: #fff;
-        font-size: .73rem;
+        font-size: .68rem;
         font-weight: 800;
         letter-spacing: .05em;
     }
 
     .dashboard-date-tile strong {
-        padding: 7px 4px 8px;
+        padding: 6px 3px 7px;
         color: #0563ad;
-        font-size: 1.75rem;
+        font-size: 1.55rem;
         line-height: 1;
     }
 
@@ -4350,10 +4350,10 @@ $additionalStyles = '
     .dashboard-upcoming-meta {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px 14px;
-        margin-top: 9px;
+        gap: 6px 10px;
+        margin-top: 6px;
         color: #60727d;
-        font-size: .82rem;
+        font-size: .78rem;
     }
 
     .dashboard-upcoming-meta span {
@@ -4375,18 +4375,18 @@ $additionalStyles = '
     .dashboard-upcoming-actions {
         display: grid;
         justify-items: end;
-        gap: 10px;
+        gap: 7px;
     }
 
     .dashboard-status-badge {
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        padding: 6px 10px;
+        padding: 5px 8px;
         border-radius: 999px;
         background: #e2f8eb;
         color: #177343;
-        font-size: .72rem;
+        font-size: .68rem;
         font-weight: 800;
         white-space: nowrap;
     }
@@ -4407,12 +4407,12 @@ $additionalStyles = '
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 36px;
-        padding: 7px 14px;
+        min-height: 32px;
+        padding: 6px 12px;
         border: 1px solid #087fc1;
         border-radius: 8px;
         color: #0874b4;
-        font-size: .82rem;
+        font-size: .78rem;
         font-weight: 800;
         text-decoration: none;
     }
@@ -4814,8 +4814,9 @@ $additionalStyles = '
         }
 
         .dashboard-upcoming-item {
-            grid-template-columns: 62px minmax(0, 1fr);
-            gap: 12px;
+            grid-template-columns: 58px minmax(0, 1fr);
+            gap: 10px;
+            padding: 9px;
         }
 
         .dashboard-upcoming-actions {
