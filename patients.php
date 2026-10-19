@@ -3844,18 +3844,26 @@ $additionalStyles = '
     }
 
     @media (max-width: 900px) {
-        body.patient-tour-nav-visible #mainNav {
+        body.patient-tour-nav-visible header {
             z-index: 5206 !important;
         }
 
-        body.patient-tour-nav-visible .patient-tour-focus {
+        body.patient-tour-nav-visible #mainNav {
             z-index: 5207 !important;
         }
 
+        body.patient-tour-nav-visible .patient-tour-focus {
+            z-index: 5209 !important;
+        }
+
         body.patient-tour-nav-visible #mainNav .patient-tour-highlight {
+            position: relative !important;
+            z-index: 5208 !important;
             background: #ffffff !important;
             border-color: rgba(72, 202, 228, .78) !important;
             color: #023e8a !important;
+            opacity: 1 !important;
+            filter: none !important;
             box-shadow: 0 0 0 3px #48cae4, 0 0 0 8px rgba(72, 202, 228, .24), 0 12px 24px rgba(2, 62, 138, .24) !important;
         }
 
