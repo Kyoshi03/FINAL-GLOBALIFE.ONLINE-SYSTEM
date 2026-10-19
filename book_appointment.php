@@ -1537,7 +1537,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
             <?php if ($appointmentEmailWarning !== ''): ?>
                 <div class="error-message"><?php echo htmlspecialchars($appointmentEmailWarning); ?></div>
             <?php endif; ?>
-            <a href="patients_my_appointments.php" class="btn-primary" style="display:inline-block;width:auto;padding:12px 24px;text-decoration:none;text-align:center;">View my appointments</a>
+            <a href="patients_my_appointments.php?highlight=<?php echo (int) $bookedId; ?>" class="btn-primary" style="display:inline-block;width:auto;padding:12px 24px;text-decoration:none;text-align:center;">View my appointments</a>
             <a href="book_appointment.php?start=1" class="btn-secondary" style="margin-top:12px;">Book another</a>
         <?php else: ?>
 
