@@ -3671,7 +3671,9 @@ $additionalStyles = '
             linear-gradient(135deg, #f4fbff 0%, #f8fcff 54%, #eef8fc 100%);
     }
     body.app-role-patient .patient-shell {
-        max-width: 1180px;
+        width: calc(100% - 40px);
+        max-width: 1360px;
+        box-sizing: border-box;
     }
     body.app-role-patient .patient-hero,
     body.app-role-patient .patient-hero.is-new-welcome {
@@ -4687,6 +4689,11 @@ $additionalStyles = '
     }
 
     @media (max-width: 900px) {
+        body.app-role-patient .patient-shell {
+            width: calc(100% - 24px);
+            max-width: none;
+        }
+
         .dashboard-welcome-banner,
         .dashboard-main-grid {
             grid-template-columns: 1fr;
