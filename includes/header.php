@@ -3240,6 +3240,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             </div>
         </div>
     <?php endif; ?>
+    <script src="includes/form_protection.js" defer></script>
     <script>
     function toggleMobileMenu() {
         const nav = document.getElementById('mainNav');
@@ -3536,22 +3537,5 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                 closeLogoutConfirm();
             }
         });
-    })();
-    (function() {
-        document.addEventListener('submit', function(event) {
-            const form = event.target;
-            if (!(form instanceof HTMLFormElement) || form.method.toLowerCase() !== 'post' || form.classList.contains('logout-form')) {
-                return;
-            }
-            if (form.dataset.submitting === 'true') {
-                event.preventDefault();
-                return;
-            }
-            form.dataset.submitting = 'true';
-            form.setAttribute('aria-busy', 'true');
-            form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function(button) {
-                button.disabled = true;
-            });
-        }, true);
     })();
     </script>
