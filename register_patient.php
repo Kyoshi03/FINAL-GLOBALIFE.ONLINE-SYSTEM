@@ -1491,7 +1491,6 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" href="globalife.png">
     <link rel="stylesheet" href="main.css">
-    <script src="includes/form_protection.js" defer></script>
     <style><?php echo $additionalStyles; ?></style>
 </head>
 <body>
