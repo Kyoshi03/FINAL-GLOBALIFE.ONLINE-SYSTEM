@@ -937,14 +937,19 @@ $appointmentsTotalPages = max(1, (int) ceil($upcomingCount / $appointmentsPerPag
 $appointmentsShowingFrom = $upcomingCount > 0 ? $appointmentsOffset + 1 : 0;
 $appointmentsShowingTo = min($appointmentsOffset + count($appointments), $upcomingCount);
 
-$isNewPatientWelcome = !empty($_SESSION['patient_welcome_new']);
+$patientTourSeen = !empty($_SESSION['patient_tour_seen']);
+$isNewPatientWelcome = !$patientTourSeen && !empty($_SESSION['patient_welcome_new']);
 unset($_SESSION['patient_welcome_new']);
 
-if (!$isNewPatientWelcome && $totalCount === 0) {
+if (!$isNewPatientWelcome && !$patientTourSeen && $totalCount === 0) {
     $createdAt = trim((string) ($userDetails['created_at'] ?? ''));
     if ($createdAt !== '' && ($createdStamp = strtotime($createdAt)) !== false && $createdStamp >= time() - (24 * 3600)) {
         $isNewPatientWelcome = true;
     }
+}
+
+if ($isNewPatientWelcome) {
+    $_SESSION['patient_tour_seen'] = true;
 }
 
 $welcomeTitle = $isNewPatientWelcome
@@ -6209,7 +6214,7 @@ include 'includes/header.php';
         });
     })();
     </script>
-    <?php if ($isNewPatientWelcome && !$showNotificationsPage): ?>
+    <?php if (false && $isNewPatientWelcome && !$showNotificationsPage): ?>
     <script>
     (function () {
         var overlay = document.getElementById('patientTourOverlay');
@@ -6378,6 +6383,7 @@ include 'includes/header.php';
         var positionFrame = 0;
         var retryTimer = 0;
         var started = false;
+        var patientTourStorageKey = 'globalife_patient_tour_seen_<?php echo (int) ($currentUser['id'] ?? 0); ?>';
 
         function getStepTarget(step) {
             return window.matchMedia('(max-width: 900px)').matches && step.mobileTarget
@@ -6600,6 +6606,12 @@ include 'includes/header.php';
 
         function startTour() {
             if (started) return;
+            try {
+                if (window.localStorage.getItem(patientTourStorageKey) === '1') return;
+                window.localStorage.setItem(patientTourStorageKey, '1');
+            } catch (error) {
+                // The server-side session flag still prevents repeated tours.
+            }
             started = true;
             overlay.classList.add('is-open');
             overlay.setAttribute('aria-hidden', 'false');
