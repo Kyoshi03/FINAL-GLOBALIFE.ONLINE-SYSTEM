@@ -29,7 +29,6 @@ appointment_reschedule_init_schema($conn);
 $clinicInfo = clinic_info_get($conn);
 $patientNameSql = dbUsersNameExpression('p');
 $doctorNameSql = dbUsersNameExpression('d');
-$cancelledByNameSql = dbUsersNameExpression('cb');
 $headerDoctorNameSql = dbUsersNameExpression('u');
 $userNameSql = dbUsersNameExpression();
 $rejectedRescheduleJoin = appointment_reschedule_rejected_join_sql();
@@ -65,7 +64,6 @@ if ($userRole === 'patient') {
                             p.profile_photo,
                             p.profile_updated_at,
                             {$doctorNameSql} as doctor_name,
-                            {$cancelledByNameSql} as cancelled_by_name,
                             q.queue_number,
                             rr.id AS reschedule_request_id, rr.original_date AS reschedule_original_date,
                             rr.original_time AS reschedule_original_time,
@@ -78,7 +76,6 @@ if ($userRole === 'patient') {
                             FROM appointments a 
                             JOIN users p ON a.patient_id = p.id 
                             LEFT JOIN users d ON a.doctor_id = d.id 
-                            LEFT JOIN users cb ON a.cancelled_by_user_id = cb.id
                             LEFT JOIN clinic_queue q ON q.appointment_id = a.id
                             {$pendingRescheduleJoin}
                             {$rejectedRescheduleJoin}
@@ -2003,15 +2000,12 @@ include __DIR__ . '/includes/header.php';
                         $rejectedRescheduleNote = trim((string) ($appointment['rejected_reschedule_reason_text'] ?? '')) ?: 'Not provided';
                         $cancellationReason = trim((string) ($appointment['cancellation_reason'] ?? ''));
                         $cancelledByRole = strtolower(trim((string) ($appointment['cancelled_by_role'] ?? '')));
-                        $cancelledByName = trim((string) ($appointment['cancelled_by_name'] ?? ''));
                         $cancelledByLabel = [
-                            'admin' => 'Administrator',
+                            'admin' => 'Admin',
                             'doctor' => 'Doctor',
-                            'patient' => 'Patient',
+                            'patient' => 'User',
                         ][$cancelledByRole] ?? ($cancelledByRole !== '' ? ucfirst($cancelledByRole) : 'Not recorded');
-                        $cancelledByText = $cancelledByName !== ''
-                            ? $cancelledByLabel . ' (' . $cancelledByName . ')'
-                            : $cancelledByLabel;
+                        $cancelledByText = $cancelledByLabel;
                         $queueNumber = trim((string) ($appointment['queue_number'] ?? ''));
                         $queueNumberDisplay = $queueNumber !== '' ? $queueNumber : 'Not generated';
                         $searchText = trim(implode(' ', [
