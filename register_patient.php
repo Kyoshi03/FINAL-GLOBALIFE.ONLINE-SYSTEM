@@ -1491,7 +1491,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" href="globalife.png">
     <link rel="stylesheet" href="main.css">
-    <script src="includes/form_protection.js" defer></script>
+    <script src="includes/form_protection.js?v=3" defer></script>
     <style><?php echo $additionalStyles; ?></style>
 </head>
 <body>
@@ -1890,7 +1890,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                     </label>
                 </div>
                 
-                <button type="submit" class="login-btn-form" id="submitRegisterBtn" <?php echo (!empty($_POST['agree_clinic_terms']) && empty($success)) ? '' : 'disabled'; ?>>
+                <button type="submit" class="login-btn-form" id="submitRegisterBtn" <?php echo ($agree_clinic_terms && empty($error) && empty($success)) ? '' : 'disabled'; ?>>
                     <span>Continue and Verify</span>
                 </button>
             </form>
@@ -2073,6 +2073,11 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                 termsCheckbox.checked = false;
                 syncTermsSubmitState();
                 termsCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            function unlockRegisterSubmit() {
+                if (form) form.dataset.submitting = 'false';
+                syncTermsSubmitState();
             }
 
             function openTermsPolicyPopup() {
@@ -2810,12 +2815,14 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                 if (!validateRequiredFields()) {
                     e.preventDefault();
                     resetTermsAgreement();
+                    unlockRegisterSubmit();
                     return false;
                 }
 
                 calculateAge();
                 if (dateOfBirthInput.value > latestAllowedDobYmd) {
                     e.preventDefault();
+                    unlockRegisterSubmit();
                     setInlineFieldError(dateOfBirthInput, 'dateOfBirthError', 'You must be at least 18 years old to register.');
                     openBirthCalendar();
                     showPopup('ageWarningPopup');
@@ -2828,6 +2835,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                 
                 if (!allValid || passwordInput.value !== confirmPasswordInput.value) {
                     e.preventDefault();
+                    unlockRegisterSubmit();
                     if (!allValid) {
                         setInlineFieldError(passwordInput, 'passwordError', 'Password does not meet all requirements.');
                     }
@@ -2849,6 +2857,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                 const terms = document.getElementById('agree_clinic_terms');
                 if (terms && !terms.checked) {
                     e.preventDefault();
+                    unlockRegisterSubmit();
                     terms.focus();
                     openTermsPolicyPopup();
                     return false;

@@ -3240,7 +3240,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             </div>
         </div>
     <?php endif; ?>
-    <script src="includes/form_protection.js" defer></script>
+    <script src="includes/form_protection.js?v=3" defer></script>
     <script>
     function toggleMobileMenu() {
         const nav = document.getElementById('mainNav');
