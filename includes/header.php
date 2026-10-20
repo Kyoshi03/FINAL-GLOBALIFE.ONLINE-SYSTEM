@@ -574,6 +574,9 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
     body.app-layout.app-role-admin nav .nav-user-management-group .nav-chevron {
         flex: 0 0 16px;
     }
+    body.app-layout.app-role-admin .admin-mobile-more-group {
+        display: none;
+    }
     .patient-app-topbar {
         display: none;
     }
@@ -2267,6 +2270,10 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             display: block;
             margin: 0;
         }
+        body.app-layout.app-role-admin nav > .admin-doctor-nav-link,
+        body.app-layout.app-role-admin nav > .nav-admin-settings-group {
+            display: none !important;
+        }
         body.app-layout.app-role-admin nav > a,
         body.app-layout.app-role-admin nav > .nav-settings-group > .nav-submenu-toggle {
             min-height: 68px;
@@ -2905,7 +2912,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                                 </div>
                             </div>
                         </div>
-                        <a href="admin_doctors.php" class="has-svg-icon <?php echo in_array(basename($_SERVER['PHP_SELF']), ['admin_doctors.php', 'receptionist_doctors.php', 'doctor_schedules.php'], true) ? 'active' : ''; ?>">
+                        <a href="admin_doctors.php" class="has-svg-icon admin-doctor-nav-link <?php echo in_array(basename($_SERVER['PHP_SELF']), ['admin_doctors.php', 'receptionist_doctors.php', 'doctor_schedules.php'], true) ? 'active' : ''; ?>">
                             <span class="nav-ui-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v6"/><path d="M9 6h6"/><path d="M6 21v-3a6 6 0 0 1 12 0v3"/><path d="M8 13a4 4 0 1 1 8 0"/></svg></span>
                             <span class="nav-label">Manage Doctor</span>
                         </a>
@@ -2913,7 +2920,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                         $adminSettingsPages = ['clinic_information.php', 'email_sms.php', 'slot_management.php'];
                         $isAdminSettingsOpen = in_array(basename($_SERVER['PHP_SELF']), $adminSettingsPages, true);
                         ?>
-                        <div class="nav-settings-group <?php echo $isAdminSettingsOpen ? 'is-open' : ''; ?>">
+                        <div class="nav-settings-group nav-admin-settings-group <?php echo $isAdminSettingsOpen ? 'is-open' : ''; ?>">
                             <button type="button" class="has-svg-icon nav-submenu-toggle <?php echo $isAdminSettingsOpen ? 'active' : ''; ?>" data-nav-submenu-toggle aria-expanded="<?php echo $isAdminSettingsOpen ? 'true' : 'false'; ?>" aria-controls="adminSettingsSubmenu">
                                 <span class="nav-ui-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 0 1-4 0v-.08a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 0 1 0-4h.08A1.7 1.7 0 0 0 4.64 8.9a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.88.34H9a1.7 1.7 0 0 0 1-1.56V3a2 2 0 0 1 4 0v.08a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.88V9a1.7 1.7 0 0 0 1.56 1H21a2 2 0 0 1 0 4h-.08A1.7 1.7 0 0 0 19.4 15z"/></svg></span>
                                 <span class="nav-label">Settings</span>
@@ -2924,6 +2931,26 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                                     <a href="clinic_information.php" class="nav-subitem <?php echo basename($_SERVER['PHP_SELF']) === 'clinic_information.php' ? 'active' : ''; ?>">Clinic Information</a>
                                     <a href="email_sms.php" class="nav-subitem <?php echo basename($_SERVER['PHP_SELF']) === 'email_sms.php' ? 'active' : ''; ?>">Email/SMS Settings</a>
                                     <a href="slot_management.php" class="nav-subitem <?php echo basename($_SERVER['PHP_SELF']) === 'slot_management.php' ? 'active' : ''; ?>">Slot Management</a>
+                                </div>
+                            </div>
+                        </div>
+                        <?php
+                        $adminDoctorPages = ['admin_doctors.php', 'receptionist_doctors.php', 'doctor_schedules.php'];
+                        $isAdminMobileMoreActive = $isAdminLabOpen
+                            || in_array(basename($_SERVER['PHP_SELF']), $adminDoctorPages, true)
+                            || $isAdminSettingsOpen;
+                        ?>
+                        <div class="nav-settings-group admin-mobile-more-group">
+                            <button type="button" class="has-svg-icon nav-submenu-toggle admin-mobile-more-toggle <?php echo $isAdminMobileMoreActive ? 'active' : ''; ?>" data-nav-submenu-toggle aria-expanded="false" aria-controls="adminMobileMoreSubmenu">
+                                <span class="nav-ui-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span>
+                                <span class="nav-label">More</span>
+                            </button>
+                            <div class="nav-submenu" id="adminMobileMoreSubmenu">
+                                <div class="nav-submenu-inner">
+                                    <a href="admin_doctors.php" class="nav-subitem">Manage Doctor</a>
+                                    <a href="clinic_information.php" class="nav-subitem">Clinic Information</a>
+                                    <a href="email_sms.php" class="nav-subitem">Email/SMS Settings</a>
+                                    <a href="slot_management.php" class="nav-subitem">Slot Management</a>
                                 </div>
                             </div>
                         </div>
