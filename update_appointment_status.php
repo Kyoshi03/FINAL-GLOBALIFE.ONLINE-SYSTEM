@@ -57,6 +57,7 @@ if (!in_array($new_status, ['pending', 'confirmed', 'completed', 'cancelled'], t
 }
 
 $conn = getDBConnection();
+appointment_init_queue_schema($conn);
 
 if (!function_exists('appointmentStatusColumnExists')) {
     function appointmentStatusColumnExists(mysqli $conn, string $column): bool {
@@ -71,7 +72,13 @@ if (!appointmentStatusColumnExists($conn, 'cancellation_reason')) {
 }
 
 // Check if appointment exists and user has permission
-$checkStmt = $conn->prepare("SELECT patient_id, doctor_id, status, booking_type, appointment_date, notes FROM appointments WHERE id = ?");
+$checkStmt = $conn->prepare("SELECT a.patient_id, a.doctor_id, a.status, a.booking_type, a.appointment_date, a.notes,
+                                    q.status AS queue_status
+                             FROM appointments a
+                             LEFT JOIN clinic_queue q ON q.appointment_id = a.id
+                             WHERE a.id = ?
+                             ORDER BY q.id DESC
+                             LIMIT 1");
 $checkStmt->bind_param("i", $appointment_id);
 $checkStmt->execute();
 $result = $checkStmt->get_result();
@@ -103,13 +110,28 @@ if ($userRole === 'admin') {
     $canUpdate = true;
 } elseif ($userRole === 'patient' && $appointment['patient_id'] == $currentUser['id']) {
     // Patients can only cancel their own appointments
-    if ($new_status === 'cancelled' && ($appointment['status'] === 'pending' || $appointment['status'] === 'confirmed')) {
+    $queueStatus = strtolower(trim((string) ($appointment['queue_status'] ?? '')));
+    if ($new_status === 'cancelled'
+        && in_array($appointment['status'], ['pending', 'confirmed'], true)
+        && !in_array($queueStatus, ['serving', 'completed'], true)) {
         $canUpdate = true;
     }
 }
 
 if (!$canUpdate) {
-    appointment_status_finish($conn, $returnUrl, $wantsJson, false, 'You do not have permission to update this appointment.');
+    $queueStatus = strtolower(trim((string) ($appointment['queue_status'] ?? '')));
+    $isPatientTryingToCancelActiveQueue = $userRole === 'patient'
+        && $new_status === 'cancelled'
+        && in_array($queueStatus, ['serving', 'completed'], true);
+    appointment_status_finish(
+        $conn,
+        $returnUrl,
+        $wantsJson,
+        false,
+        $isPatientTryingToCancelActiveQueue
+            ? 'This appointment can no longer be cancelled because it is already being served or completed.'
+            : 'You do not have permission to update this appointment.'
+    );
 }
 
 $cancellationReason = trim((string) ($_POST['cancellation_reason'] ?? ''));

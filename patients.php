@@ -312,6 +312,7 @@ $profileError = '';
 $profileNoChanges = false;
 
 $conn = getDBConnection();
+appointment_init_queue_schema($conn);
 $patientClinicInfo = clinic_info_get($conn);
 $pageTitle = "Patient Dashboard | " . $patientClinicInfo['clinic_name'];
 ensurePatientProfilePhotoColumn($conn);
@@ -332,7 +333,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['patient_action'] ?? '') ==
         $cancelStatus = 'cancelled';
         $cancel = $conn->prepare("UPDATE appointments
             SET status = ?, cancellation_reason = ?
-            WHERE id = ? AND patient_id = ? AND status = 'pending'");
+            WHERE id = ? AND patient_id = ? AND status IN ('pending', 'confirmed')
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM clinic_queue q
+                  WHERE q.appointment_id = appointments.id
+                    AND q.status IN ('serving', 'completed')
+              )");
         $cancel->bind_param('ssii', $cancelStatus, $cancellationReason, $appointmentId, $currentUser['id']);
         if ($cancel->execute() && $cancel->affected_rows > 0) {
             $cancelOk = true;
@@ -5059,6 +5066,8 @@ include 'includes/header.php';
                             $notesText = trim((string) ($appointment['notes'] ?? ''));
                             $cancellationReason = trim((string) ($appointment['cancellation_reason'] ?? ''));
                             $queueNumber = trim((string) ($appointment['queue_number'] ?? ''));
+                            $queueStatus = strtolower(trim((string) ($appointment['queue_status'] ?? '')));
+                            $canCancelAppointment = !in_array($queueStatus, ['serving', 'completed'], true);
                             $detailPayload = [
                                 'queueNumber' => $queueNumber !== '' ? $queueNumber : 'Not generated',
                                 'patient' => $profileDisplayName,
@@ -5120,8 +5129,8 @@ include 'includes/header.php';
                                 </div>
                                 <div class="appointment-side">
                                     <?php if (in_array($statusClass, ['pending', 'confirmed'], true)): ?>
-                                        <div class="appointment-action-stack <?php echo $statusClass === 'pending' ? 'has-cancel' : 'no-cancel'; ?>">
-                                            <?php if ($statusClass === 'pending'): ?>
+                                        <div class="appointment-action-stack <?php echo $canCancelAppointment ? 'has-cancel' : 'no-cancel'; ?>">
+                                            <?php if ($canCancelAppointment): ?>
                                                 <form method="post" action="patients.php" data-patient-cancel-form>
                                                     <input type="hidden" name="patient_action" value="cancel_appointment">
                                                     <input type="hidden" name="appointment_id" value="<?php echo (int) $appointment['id']; ?>">

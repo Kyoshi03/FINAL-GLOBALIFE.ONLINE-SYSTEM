@@ -37,6 +37,8 @@ if ($userRole === 'patient') {
     checkRole('patient');
     $pendingRescheduleJoin = appointment_reschedule_pending_join_sql();
     $stmt = $conn->prepare("SELECT a.*, {$headerDoctorNameSql} as doctor_name,
+                                   q.queue_number,
+                                   q.status AS queue_status,
                                    rr.id AS reschedule_request_id,
                                    rr.original_date AS reschedule_original_date,
                                    rr.original_time AS reschedule_original_time,
@@ -48,8 +50,9 @@ if ($userRole === 'patient') {
                                    rrh.original_time AS rejected_reschedule_original_time, rrh.requested_date AS rejected_reschedule_requested_date,
                                    rrh.requested_time AS rejected_reschedule_requested_time, rrh.rejection_reason AS rejected_reschedule_reason,
                                    rrh.reason AS rejected_reschedule_reason_text
-                            FROM appointments a 
+                            FROM appointments a
                             LEFT JOIN users u ON a.doctor_id = u.id 
+                            LEFT JOIN clinic_queue q ON q.appointment_id = a.id
                             {$pendingRescheduleJoin}
                             {$rejectedRescheduleJoin}
                             WHERE a.patient_id = ? 
@@ -1820,6 +1823,8 @@ include __DIR__ . '/includes/header.php';
                         $rejectedRescheduleReason = trim((string) ($appointment['rejected_reschedule_reason'] ?? '')) ?: 'Not provided';
                         $rejectedRescheduleNote = trim((string) ($appointment['rejected_reschedule_reason_text'] ?? '')) ?: 'Not provided';
                         $cancellationReason = trim((string) ($appointment['cancellation_reason'] ?? ''));
+                        $queueStatus = strtolower(trim((string) ($appointment['queue_status'] ?? '')));
+                        $canCancelAppointment = !in_array($queueStatus, ['serving', 'completed'], true);
                         $queueNumber = trim((string) ($appointment['queue_number'] ?? ''));
                         $queueNumberDisplay = $queueNumber !== '' ? $queueNumber : 'Not generated';
                         $searchParts = [
@@ -1980,7 +1985,7 @@ include __DIR__ . '/includes/header.php';
                                             </form>
                                         <?php endif; ?>
                                     <?php endif; ?>
-                                    <?php if ($userRole === 'patient' && $patientAppointmentView === 'active' && in_array(strtolower((string) ($appointment['status'] ?? '')), ['pending', 'confirmed'], true)): ?>
+                                    <?php if ($userRole === 'patient' && $patientAppointmentView === 'active' && $canCancelAppointment && in_array(strtolower((string) ($appointment['status'] ?? '')), ['pending', 'confirmed'], true)): ?>
                                         <form method="POST" action="update_appointment_status.php" style="display:inline;">
                                             <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
                                             <input type="hidden" name="status" value="cancelled">

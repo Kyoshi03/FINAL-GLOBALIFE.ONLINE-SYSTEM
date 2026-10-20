@@ -2073,12 +2073,15 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             overflow-wrap: anywhere;
         }
         body.app-layout.app-role-patient nav .patient-history-group {
-            position: relative;
-            display: block;
-            width: 100%;
-            max-width: 100%;
-            min-width: 0;
-            margin: 0;
+            /* Let the History button occupy one navigation grid column, just
+               like the other mobile navigation links. */
+            display: contents;
+        }
+        body.app-layout.app-role-patient nav .patient-history-group .nav-submenu-toggle {
+            min-width: 104px;
+        }
+        body.app-layout.app-role-patient nav .patient-history-group .nav-chevron {
+            display: none;
         }
         body.app-layout.app-role-patient nav .patient-history-group .nav-submenu {
             display: none;
