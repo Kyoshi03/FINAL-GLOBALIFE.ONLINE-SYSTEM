@@ -24,10 +24,12 @@ $conn = getDBConnection();
 $rescheduleRejectionSuccess = $_SESSION['reschedule_rejection_success'] ?? null;
 unset($_SESSION['reschedule_rejection_success']);
 appointment_init_queue_schema($conn);
+appointment_init_cancellation_audit_schema($conn);
 appointment_reschedule_init_schema($conn);
 $clinicInfo = clinic_info_get($conn);
 $patientNameSql = dbUsersNameExpression('p');
 $doctorNameSql = dbUsersNameExpression('d');
+$cancelledByNameSql = dbUsersNameExpression('cb');
 $headerDoctorNameSql = dbUsersNameExpression('u');
 $userNameSql = dbUsersNameExpression();
 $rejectedRescheduleJoin = appointment_reschedule_rejected_join_sql();
@@ -63,6 +65,7 @@ if ($userRole === 'patient') {
                             p.profile_photo,
                             p.profile_updated_at,
                             {$doctorNameSql} as doctor_name,
+                            {$cancelledByNameSql} as cancelled_by_name,
                             q.queue_number,
                             rr.id AS reschedule_request_id, rr.original_date AS reschedule_original_date,
                             rr.original_time AS reschedule_original_time,
@@ -75,6 +78,7 @@ if ($userRole === 'patient') {
                             FROM appointments a 
                             JOIN users p ON a.patient_id = p.id 
                             LEFT JOIN users d ON a.doctor_id = d.id 
+                            LEFT JOIN users cb ON a.cancelled_by_user_id = cb.id
                             LEFT JOIN clinic_queue q ON q.appointment_id = a.id
                             {$pendingRescheduleJoin}
                             {$rejectedRescheduleJoin}
@@ -966,6 +970,14 @@ $additionalStyles = patientAvatarStyles() . '
     .status-badge.cancelled {
         background:#fdecef;
         color:#b42318;
+    }
+    .cancelled-by-label {
+        display:block;
+        margin-top:5px;
+        color:#b42318;
+        font-size:.70rem;
+        font-weight:700;
+        line-height:1.25;
     }
     .status-badge.reschedule {
         background:#fff4d6;
@@ -1990,6 +2002,16 @@ include __DIR__ . '/includes/header.php';
                         $rejectedRescheduleReason = trim((string) ($appointment['rejected_reschedule_reason'] ?? '')) ?: 'Not provided';
                         $rejectedRescheduleNote = trim((string) ($appointment['rejected_reschedule_reason_text'] ?? '')) ?: 'Not provided';
                         $cancellationReason = trim((string) ($appointment['cancellation_reason'] ?? ''));
+                        $cancelledByRole = strtolower(trim((string) ($appointment['cancelled_by_role'] ?? '')));
+                        $cancelledByName = trim((string) ($appointment['cancelled_by_name'] ?? ''));
+                        $cancelledByLabel = [
+                            'admin' => 'Administrator',
+                            'doctor' => 'Doctor',
+                            'patient' => 'Patient',
+                        ][$cancelledByRole] ?? ($cancelledByRole !== '' ? ucfirst($cancelledByRole) : 'Not recorded');
+                        $cancelledByText = $cancelledByName !== ''
+                            ? $cancelledByLabel . ' (' . $cancelledByName . ')'
+                            : $cancelledByLabel;
                         $queueNumber = trim((string) ($appointment['queue_number'] ?? ''));
                         $queueNumberDisplay = $queueNumber !== '' ? $queueNumber : 'Not generated';
                         $searchText = trim(implode(' ', [
@@ -2028,6 +2050,7 @@ include __DIR__ . '/includes/header.php';
                             'rejectedRescheduleReason' => $rejectedRescheduleNote,
                             'notes' => appointment_detail_notes_text($appointment),
                             'cancellationReason' => $cancellationReason !== '' ? $cancellationReason : 'None',
+                            'cancelledBy' => $cancelledByText,
                         ];
                         ?>
                         <tr class="appointment-row" tabindex="0"
@@ -2059,6 +2082,9 @@ include __DIR__ . '/includes/header.php';
                                     <span class="status-badge <?php echo htmlspecialchars($statusValue); ?>">
                                         <?php echo htmlspecialchars($statusLabel); ?>
                                     </span>
+                                    <?php if ($statusValue === 'cancelled'): ?>
+                                        <small class="cancelled-by-label">Cancelled by <?php echo htmlspecialchars($cancelledByText); ?></small>
+                                    <?php endif; ?>
                                     <?php if ($hasPendingReschedule): ?>
                                         <span class="status-badge reschedule">Reschedule</span>
                                     <?php endif; ?>

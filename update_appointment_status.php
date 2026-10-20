@@ -58,18 +58,7 @@ if (!in_array($new_status, ['pending', 'confirmed', 'completed', 'cancelled'], t
 
 $conn = getDBConnection();
 appointment_init_queue_schema($conn);
-
-if (!function_exists('appointmentStatusColumnExists')) {
-    function appointmentStatusColumnExists(mysqli $conn, string $column): bool {
-        $safeColumn = $conn->real_escape_string($column);
-        $result = $conn->query("SHOW COLUMNS FROM appointments LIKE '{$safeColumn}'");
-        return $result && $result->num_rows > 0;
-    }
-}
-
-if (!appointmentStatusColumnExists($conn, 'cancellation_reason')) {
-    $conn->query("ALTER TABLE appointments ADD COLUMN cancellation_reason TEXT DEFAULT NULL AFTER notes");
-}
+appointment_init_cancellation_audit_schema($conn);
 
 // Check if appointment exists and user has permission
 $checkStmt = $conn->prepare("SELECT a.patient_id, a.doctor_id, a.status, a.booking_type, a.appointment_date, a.notes,
@@ -147,10 +136,18 @@ if ($new_status === 'cancelled') {
 
 // Update appointment status
 if ($new_status === 'cancelled') {
-    $updateStmt = $conn->prepare("UPDATE appointments SET status = ?, cancellation_reason = ? WHERE id = ? AND status = ?");
-    $updateStmt->bind_param("ssis", $new_status, $cancellationReason, $appointment_id, $previousStatus);
+    $cancelledByRole = normalizeUserRole((string) ($currentUser['role'] ?? $userRole));
+    $cancelledByUserId = (int) ($currentUser['id'] ?? 0);
+    $updateStmt = $conn->prepare("UPDATE appointments
+                                  SET status = ?, cancellation_reason = ?, cancelled_by_role = ?,
+                                      cancelled_by_user_id = ?, cancelled_at = NOW()
+                                  WHERE id = ? AND status = ?");
+    $updateStmt->bind_param("sssiis", $new_status, $cancellationReason, $cancelledByRole, $cancelledByUserId, $appointment_id, $previousStatus);
 } else {
-    $updateStmt = $conn->prepare("UPDATE appointments SET status = ?, cancellation_reason = NULL WHERE id = ? AND status = ?");
+    $updateStmt = $conn->prepare("UPDATE appointments
+                                  SET status = ?, cancellation_reason = NULL, cancelled_by_role = NULL,
+                                      cancelled_by_user_id = NULL, cancelled_at = NULL
+                                  WHERE id = ? AND status = ?");
     $updateStmt->bind_param("sis", $new_status, $appointment_id, $previousStatus);
 }
 

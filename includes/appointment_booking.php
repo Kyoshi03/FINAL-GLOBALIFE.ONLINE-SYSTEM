@@ -310,6 +310,23 @@ function appointment_init_queue_schema(mysqli $conn): void {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
 }
 
+function appointment_init_cancellation_audit_schema(mysqli $conn): void {
+    $requiredColumns = [
+        'cancellation_reason' => "ALTER TABLE appointments ADD COLUMN cancellation_reason TEXT DEFAULT NULL AFTER notes",
+        'cancelled_by_role' => "ALTER TABLE appointments ADD COLUMN cancelled_by_role VARCHAR(20) DEFAULT NULL AFTER cancellation_reason",
+        'cancelled_by_user_id' => "ALTER TABLE appointments ADD COLUMN cancelled_by_user_id INT DEFAULT NULL AFTER cancelled_by_role",
+        'cancelled_at' => "ALTER TABLE appointments ADD COLUMN cancelled_at DATETIME DEFAULT NULL AFTER cancelled_by_user_id",
+    ];
+
+    foreach ($requiredColumns as $column => $alterSql) {
+        $safeColumn = $conn->real_escape_string($column);
+        $result = $conn->query("SHOW COLUMNS FROM appointments LIKE '{$safeColumn}'");
+        if ($result && $result->num_rows === 0) {
+            $conn->query($alterSql);
+        }
+    }
+}
+
 function appointment_next_online_queue_number(mysqli $conn, string $date): string {
     $type = 'online';
     $stmt = $conn->prepare("SELECT queue_number FROM clinic_queue WHERE queue_date = ? AND queue_type = ? ORDER BY id DESC LIMIT 1");
