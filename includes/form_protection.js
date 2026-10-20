@@ -12,14 +12,10 @@
             return;
         }
 
-        if (event.defaultPrevented) {
-            return;
-        }
-
         form.dataset.submitting = 'true';
         form.setAttribute('aria-busy', 'true');
         form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (button) {
             button.disabled = true;
         });
-    });
+    }, true);
 })();
