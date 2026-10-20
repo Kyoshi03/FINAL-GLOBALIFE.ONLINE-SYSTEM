@@ -689,6 +689,7 @@ include 'includes/header.php';
     (function () {
         var form = document.getElementById('queueHistoryFilters');
         var range = document.getElementById('queueHistoryDateRange');
+        var status = document.getElementById('queueHistoryStatus');
         var customRange = document.getElementById('queueHistoryCustomRange');
         var validation = document.getElementById('queueHistoryValidation');
         var report = document.getElementById('queueHistoryReport');
@@ -725,6 +726,12 @@ include 'includes/header.php';
                     event.preventDefault();
                     showValidation('End Date cannot be earlier than Start Date.');
                 }
+            });
+        }
+
+        if (form && status) {
+            status.addEventListener('change', function () {
+                form.submit();
             });
         }
 
@@ -777,7 +784,7 @@ include 'includes/header.php';
                     'h2{margin:0;color:#073b4c;font-size:22px}' +
                     '.history-report-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 18px;margin:20px 0;padding:14px 16px;border:1px solid #dce8ef;background:#f7fbfe}' +
                     '.history-report-summary div{display:grid;gap:3px}.history-report-summary span{color:#708792;font-size:10px;font-weight:800;text-transform:uppercase}.history-report-summary strong{font-size:12px}' +
-                    'table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{padding:8px;border:1px solid #dce8ef;text-align:left;vertical-align:top;font-size:10px;overflow-wrap:anywhere}th{background:#eaf7ff;color:#426a7e;font-size:9px;text-transform:uppercase}.queue-number{color:#0066cc;font-weight:800}.badge{display:inline-block;padding:3px 7px;border-radius:999px;font-size:8px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}.badge.online,.badge.completed{background:#dff8e8;color:#08743e}.badge.walk_in{background:#dcefff;color:#0066cc}.badge.priority-senior,.badge.priority-pregnant,.badge.priority-pwd{background:#eee7ff;color:#5b3a91}.history-report-empty{padding:18px;border:1px solid #dce8ef;text-align:center;color:#60758a}' +
+                    'table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{padding:8px;border:1px solid #dce8ef;text-align:left;vertical-align:top;font-size:10px;overflow-wrap:anywhere}th{background:#eaf7ff;color:#426a7e;font-size:9px;text-transform:uppercase}.queue-number{color:#0066cc;font-weight:800}.badge{display:inline-block;padding:3px 7px;border-radius:999px;font-size:8px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}.badge.online,.badge.completed{background:#dff8e8;color:#08743e}.badge.cancelled{background:#fff0f0;color:#b42318}.badge.walk_in{background:#dcefff;color:#0066cc}.badge.priority-senior,.badge.priority-pregnant,.badge.priority-pwd{background:#eee7ff;color:#5b3a91}.history-report-empty{padding:18px;border:1px solid #dce8ef;text-align:center;color:#60758a}' +
                     '@media print{body{padding:0}.history-report-summary{break-inside:avoid}}' +
                     '</style></head><body>' + printContent.innerHTML + '</body></html>');
                 printWindow.document.close();
