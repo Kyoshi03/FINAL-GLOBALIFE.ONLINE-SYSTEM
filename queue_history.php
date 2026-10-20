@@ -62,6 +62,11 @@ switch ($dateRange) {
 }
 
 $search = trim((string) ($_GET['search'] ?? ''));
+$statusFilter = strtolower(trim((string) ($_GET['status'] ?? 'all')));
+$allowedStatusFilters = ['all', 'completed', 'cancelled'];
+if (!in_array($statusFilter, $allowedStatusFilters, true)) {
+    $statusFilter = 'all';
+}
 $page = max(1, (int) ($_GET['page'] ?? 1));
 $perPage = 5;
 
@@ -140,6 +145,14 @@ function queue_history_filter_date_label(string $dateRange): string {
     return in_array($dateRange, ['today', 'yesterday'], true) ? 'Date' : 'Period';
 }
 
+function queue_history_status_filter_label(string $status): string {
+    return [
+        'all' => 'All Statuses',
+        'completed' => 'Completed',
+        'cancelled' => 'Cancelled',
+    ][$status] ?? 'All Statuses';
+}
+
 function queue_history_init_schema(mysqli $conn): void {
     $conn->query("CREATE TABLE IF NOT EXISTS clinic_queue (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -182,6 +195,7 @@ function queue_history_url(array $overrides = []): string {
         'date_from' => $_GET['date_from'] ?? '',
         'date_to' => $_GET['date_to'] ?? '',
         'search' => $_GET['search'] ?? '',
+        'status' => $_GET['status'] ?? 'all',
         'page' => $_GET['page'] ?? 1,
     ], $overrides);
     $params = array_filter($params, static fn($value) => trim((string) $value) !== '');
@@ -345,6 +359,12 @@ if ($dateRangeError === '') {
     $types = 'ss';
     $params = [$dateFrom, $dateTo];
 
+    if ($statusFilter !== 'all') {
+        $where .= ' AND q.status = ?';
+        $types .= 's';
+        $params[] = $statusFilter;
+    }
+
     if ($search !== '') {
         $patientNameSql = dbUsersNameExpression('p');
         $where .= " AND (q.queue_number LIKE ? OR {$patientNameSql} LIKE ? OR q.service LIKE ? OR q.queue_type LIKE ? OR q.priority_type LIKE ?)";
@@ -373,7 +393,7 @@ if ($page > $totalPages) {
 $offset = ($page - 1) * $perPage;
 $historyRows = array_slice($allHistoryRows, $offset, $perPage);
 $dateRangeLabel = queue_history_date_range_label($dateFrom, $dateTo);
-$filterLabel = queue_history_filter_label($dateRange);
+$filterLabel = queue_history_filter_label($dateRange) . ' / ' . queue_history_status_filter_label($statusFilter);
 $downloadPdf = strtolower((string) ($_GET['download'] ?? '')) === 'pdf';
 $showReportPreview = (string) ($_GET['generate_report'] ?? '') === '1';
 $conn->close();
@@ -389,7 +409,7 @@ body { background:#f4f9fd; color:#10233f; }
 .history-head { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:18px 20px; background:#eaf7ff; border-bottom:1px solid #dce8ef; }
 .history-head h1 { margin:0; color:#073b4c; font-size:1.28rem; font-weight:700; }
 .history-head a { color:#0066cc; font-weight:700; text-decoration:none; }
-.history-filters { display:grid; grid-template-columns:minmax(190px,.75fr) minmax(240px,1.25fr) auto; gap:12px; align-items:end; padding:18px 20px; border-bottom:1px solid #e6eef4; }
+.history-filters { display:grid; grid-template-columns:minmax(190px,.65fr) minmax(240px,1fr) minmax(160px,.5fr) auto; gap:12px; align-items:end; padding:18px 20px; border-bottom:1px solid #e6eef4; }
 .history-filter-group { display:grid; gap:7px; }
 .history-filter-group label { color:#1a3342; font-size:.78rem; font-weight:800; }
 .history-field { width:100%; min-height:42px; box-sizing:border-box; border:1px solid #dce8ef; border-radius:8px; padding:9px 12px; color:#1a3342; background:#fff; font:inherit; font-size:.875rem; font-weight:500; }
@@ -505,6 +525,14 @@ include 'includes/header.php';
             <div class="history-filter-group">
                 <label for="queueHistorySearch">Search</label>
                 <input class="history-field" type="search" id="queueHistorySearch" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Queue number, patient, or service">
+            </div>
+            <div class="history-filter-group">
+                <label for="queueHistoryStatus">Status</label>
+                <select class="history-field" id="queueHistoryStatus" name="status">
+                    <option value="all"<?php echo $statusFilter === 'all' ? ' selected' : ''; ?>>All statuses</option>
+                    <option value="completed"<?php echo $statusFilter === 'completed' ? ' selected' : ''; ?>>Completed</option>
+                    <option value="cancelled"<?php echo $statusFilter === 'cancelled' ? ' selected' : ''; ?>>Cancelled</option>
+                </select>
             </div>
             <div class="history-filter-actions">
                 <button class="history-filter-btn" type="submit">Apply Filter</button>
