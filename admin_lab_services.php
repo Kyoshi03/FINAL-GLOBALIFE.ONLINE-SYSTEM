@@ -415,7 +415,7 @@ include 'includes/header.php';
                         <label class="field">Category<input type="text" name="category" required list="labCategoryList" placeholder="Example: HEMATOLOGY"></label>
                         <label class="field full">Description<textarea name="description" placeholder="Optional notes for staff"></textarea></label>
                         <label class="field full">Included tests<textarea name="included_tests" placeholder="For packages: CBC, UA, X-Ray, etc."></textarea></label>
-                        <label class="field">OPD price<input type="number" step="0.01" min="1" name="opd_price" required value="" placeholder="Enter OPD price"></label>
+                        <label class="field">OPD price<input type="number" step="0.01" min="1" name="opd_price" id="add_service_opd" required value="" placeholder="Enter OPD price" autocomplete="off"></label>
                         <label class="field">Home service price<input type="number" step="0.01" min="0" name="home_service_price" placeholder="Leave blank if unavailable"></label>
                     </div>
                     <div class="checks" style="margin-top:16px;"><label><input type="checkbox" name="is_package"> Package deal <small>(leave unchecked for an individual laboratory test)</small></label><label><input type="checkbox" name="is_active" checked> Active in booking</label></div>
@@ -449,9 +449,42 @@ include 'includes/header.php';
 (function () {
     const addModal = document.getElementById('addServiceModal');
     const editModal = document.getElementById('editServiceModal');
+    const addForm = addModal ? addModal.querySelector('form') : null;
+    const addOpd = document.getElementById('add_service_opd');
+
+    function validateOpd(input) {
+        if (!input) return true;
+        const value = input.value.trim();
+        const amount = Number(value);
+        const valid = value !== '' && Number.isFinite(amount) && amount >= 1;
+        input.setCustomValidity(valid ? '' : 'Enter an OPD price of at least 1.');
+        return valid;
+    }
+
+    if (addOpd) {
+        addOpd.addEventListener('input', function () {
+            if (addOpd.value !== '' && Number(addOpd.value) < 1) addOpd.value = '';
+            validateOpd(addOpd);
+        });
+        addOpd.addEventListener('blur', function () {
+            if (addOpd.value !== '' && Number(addOpd.value) < 1) addOpd.value = '';
+            validateOpd(addOpd);
+        });
+    }
+
+    if (addForm) {
+        addForm.addEventListener('submit', function (event) {
+            if (!validateOpd(addOpd)) {
+                event.preventDefault();
+                addOpd.focus();
+                addOpd.reportValidity();
+            }
+        });
+    }
 
     function openModal(modal) {
         if (!modal) return;
+        if (modal === addModal && addOpd && Number(addOpd.value) < 1) addOpd.value = '';
         modal.classList.add('active');
         modal.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
