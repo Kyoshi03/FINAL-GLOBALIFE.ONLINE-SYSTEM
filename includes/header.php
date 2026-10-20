@@ -2258,9 +2258,9 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
         }
         body.app-layout.app-role-admin nav > a,
         body.app-layout.app-role-admin nav > .nav-settings-group {
-            flex: 0 0 102px;
-            width: 102px;
-            min-width: 102px;
+            flex: 0 0 86px;
+            width: 86px;
+            min-width: 86px;
             scroll-snap-align: start;
         }
         body.app-layout.app-role-admin nav > .nav-settings-group {
@@ -2274,7 +2274,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             padding: 8px 6px;
             gap: 4px;
             border-radius: 22px;
-            font-size: 0.70rem;
+            font-size: 0.64rem;
             line-height: 1.05;
             white-space: normal;
             overflow: visible;
