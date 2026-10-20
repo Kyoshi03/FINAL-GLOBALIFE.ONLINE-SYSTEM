@@ -2914,7 +2914,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                         </div>
                         <a href="admin_doctors.php" class="has-svg-icon admin-doctor-nav-link <?php echo in_array(basename($_SERVER['PHP_SELF']), ['admin_doctors.php', 'receptionist_doctors.php', 'doctor_schedules.php'], true) ? 'active' : ''; ?>">
                             <span class="nav-ui-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v6"/><path d="M9 6h6"/><path d="M6 21v-3a6 6 0 0 1 12 0v3"/><path d="M8 13a4 4 0 1 1 8 0"/></svg></span>
-                            <span class="nav-label">Manage Doctor</span>
+                            <span class="nav-label">Manage Doctors</span>
                         </a>
                         <?php
                         $adminSettingsPages = ['clinic_information.php', 'email_sms.php', 'slot_management.php'];
@@ -2947,7 +2947,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                             </button>
                             <div class="nav-submenu" id="adminMobileMoreSubmenu">
                                 <div class="nav-submenu-inner">
-                                    <a href="admin_doctors.php" class="nav-subitem">Manage Doctor</a>
+                                    <a href="admin_doctors.php" class="nav-subitem">Manage Doctors</a>
                                     <a href="clinic_information.php" class="nav-subitem">Clinic Information</a>
                                     <a href="email_sms.php" class="nav-subitem">Email/SMS Settings</a>
                                     <a href="slot_management.php" class="nav-subitem">Slot Management</a>
@@ -3076,7 +3076,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
         } elseif ($currentPage === 'admin_lab_services.php' || $currentPage === 'receptionist_lab_services.php') {
             $patientTopbarTitle = 'Laboratory Services';
         } elseif ($currentPage === 'admin_doctors.php' || $currentPage === 'receptionist_doctors.php') {
-            $patientTopbarTitle = 'Manage Doctor';
+            $patientTopbarTitle = 'Manage Doctors';
         } elseif ($currentPage === 'doctor.php') {
             $patientTopbarTitle = 'Clinical Dashboard';
         } elseif ($currentPage === 'patient_calendar.php' || $currentPage === 'admin_calendar.php' || $currentPage === 'calendar.php') {

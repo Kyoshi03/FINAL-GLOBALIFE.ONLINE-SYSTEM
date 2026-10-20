@@ -8,7 +8,7 @@ require_once __DIR__ . '/includes/doctor_schedule.php';
 require_once __DIR__ . '/includes/admin_notifications.php';
 require_once __DIR__ . '/includes/password_reset.php';
 
-$pageTitle = 'Doctors & clinic hours | Globalife';
+$pageTitle = 'Manage Doctors | Globalife';
 $conn = getDBConnection();
 init_doctor_schema_and_accounts($conn);
 init_admin_notifications($conn);
@@ -1354,7 +1354,7 @@ include 'includes/header.php';
 <main class="ad-wrap">
     <section class="ad-hero">
         <div>
-            <h1>Doctors &amp; clinic hours</h1>
+            <h1>Manage Doctors</h1>
             <p>Add doctor accounts, set clinic schedules, and control who is available for appointment booking.</p>
         </div>
         <div class="ad-stats" aria-label="Doctor status summary">
