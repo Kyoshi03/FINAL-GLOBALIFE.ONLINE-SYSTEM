@@ -2238,6 +2238,37 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             right: 20px;
         }
     }
+    @media (max-width: 560px) {
+        /* Keep all four patient tabs visible on narrow phones instead of
+           allowing the bottom navigation to scroll and clip the active tab. */
+        body.app-layout.app-role-patient nav {
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-auto-columns: auto;
+            gap: 2px;
+            padding: 6px;
+            overflow: hidden;
+        }
+        body.app-layout.app-role-patient nav > a,
+        body.app-layout.app-role-patient nav .patient-history-group .nav-submenu-toggle {
+            min-width: 0;
+            width: 100%;
+            padding: 6px 2px;
+            gap: 3px;
+        }
+        body.app-layout.app-role-patient nav a .nav-label,
+        body.app-layout.app-role-patient nav .patient-history-group .nav-label {
+            max-width: 100%;
+            overflow: visible;
+            text-overflow: clip;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            font-size: 0.68rem;
+            line-height: 1.05;
+        }
+    }
     /* Final patient mobile header repair: keep actions inside the header and prevent avatar overflow. */
     body.app-layout .patient-notification-wrap {
         position: relative;
