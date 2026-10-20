@@ -65,13 +65,6 @@ function admin_lab_category_label(?string $category): string {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['admin_svc_action'] ?? '';
 
-    if ($action === 'import_catalog') {
-        $imported = lab_insert_catalog_rows($conn, lab_catalog_seed_rows());
-        lab_sync_categories_from_services($conn);
-        $_SESSION['admin_lab_service_message'] = "Imported {$imported} missing catalog row(s).";
-        admin_lab_redirect();
-    }
-
     if ($action === 'toggle_active') {
         $id = (int) ($_POST['service_id'] ?? 0);
         if ($id > 0) {
@@ -313,10 +306,6 @@ include 'includes/header.php';
         <div class="tool-row">
             <p>Create or update laboratory services. Package and individual lists below are scrollable for easier admin review.</p>
             <div class="tool-actions">
-                <form method="post" onsubmit="return confirm('Import missing laboratory catalog rows?');">
-                    <input type="hidden" name="admin_svc_action" value="import_catalog">
-                    <button type="submit" class="btn secondary">Import missing catalog</button>
-                </form>
                 <button type="button" class="btn primary-action" data-open-modal="addServiceModal">Add laboratory service</button>
             </div>
         </div>
