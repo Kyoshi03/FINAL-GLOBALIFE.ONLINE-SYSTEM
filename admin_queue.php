@@ -188,6 +188,23 @@ function queue_sync_confirmed_appointments(mysqli $conn, string $date): void {
     }
 }
 
+function queue_reconcile_linked_appointments(mysqli $conn): void {
+    $conn->query("UPDATE clinic_queue q
+        INNER JOIN appointments a ON a.id = q.appointment_id
+        SET q.status = CASE
+                WHEN a.status = 'completed' THEN 'completed'
+                WHEN a.status = 'cancelled' THEN 'cancelled'
+                ELSE q.status
+            END,
+            q.completed_at = CASE
+                WHEN a.status = 'completed' THEN COALESCE(q.completed_at, NOW())
+                WHEN a.status = 'cancelled' THEN NULL
+                ELSE q.completed_at
+            END
+        WHERE q.status IN ('waiting', 'serving')
+          AND a.status IN ('completed', 'cancelled')");
+}
+
 function queue_next_number(mysqli $conn, string $type, string $date): string {
     $prefix = $type === 'online' ? 'O' : 'W';
     $stmt = $conn->prepare("SELECT queue_number FROM clinic_queue WHERE queue_date = ? AND queue_type = ? ORDER BY id DESC LIMIT 1");
@@ -479,6 +496,7 @@ function queue_insert_service_lines(mysqli $conn, int $queueId, array $serviceLi
 $conn = getDBConnection();
 queue_init_schema($conn);
 init_doctor_schema_and_accounts($conn);
+queue_reconcile_linked_appointments($conn);
 queue_sync_confirmed_appointments($conn, $today);
 
 $message = $_SESSION['success'] ?? '';

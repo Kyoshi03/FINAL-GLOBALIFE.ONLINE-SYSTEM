@@ -1009,6 +1009,7 @@ function appointment_create_direct(mysqli $conn, int $patientId, array $payload)
 
     $conn->begin_transaction();
     $capacityLockName = '';
+    $patientSlotLockName = '';
     $queueNumber = '';
     try {
         $doctorId = $booking['doctor_id'];
@@ -1017,6 +1018,18 @@ function appointment_create_direct(mysqli $conn, int $patientId, array $payload)
         $bookingType = (string) $booking['type'];
         $total = (float) $validated['total'];
         $priceChannel = (string) $booking['price_channel'];
+
+        // Serialize repeated submissions for the same patient and exact slot.
+        $patientSlotLockName = 'patient-appointment-slot-' . $patientId . '-' . $appointmentDate . '-' . $appointmentTime;
+        $patientLockStmt = $conn->prepare('SELECT GET_LOCK(?, 5) AS acquired');
+        $patientLockStmt->bind_param('s', $patientSlotLockName);
+        $patientLockStmt->execute();
+        $patientLockAcquired = (int) ($patientLockStmt->get_result()->fetch_assoc()['acquired'] ?? 0);
+        $patientLockStmt->close();
+        if ($patientLockAcquired !== 1) {
+            throw new RuntimeException('The selected schedule is being updated. Please try again.');
+        }
+
         if ($bookingType === 'consultation') {
             $capacityLockName = 'clinic-doctor-capacity-' . (int) $doctorId . '-' . $appointmentDate;
             $lockStmt = $conn->prepare('SELECT GET_LOCK(?, 5) AS acquired');
@@ -1057,6 +1070,22 @@ function appointment_create_direct(mysqli $conn, int $patientId, array $payload)
                 );
             }
         }
+
+        // Recheck after locking because the initial validation runs before the transaction.
+        $duplicate = $conn->prepare(
+            "SELECT id FROM appointments
+             WHERE patient_id = ? AND appointment_date = ? AND appointment_time = ?
+               AND status != 'cancelled'
+             LIMIT 1"
+        );
+        $duplicate->bind_param('iss', $patientId, $appointmentDate, $appointmentTime);
+        $duplicate->execute();
+        $duplicateRow = $duplicate->get_result()->fetch_assoc();
+        $duplicate->close();
+        if ($duplicateRow) {
+            throw new RuntimeException('You already have an appointment at this date and time.');
+        }
+
         if ($doctorId === null) {
             $insert = $conn->prepare(
                 "INSERT INTO appointments
@@ -1156,11 +1185,23 @@ function appointment_create_direct(mysqli $conn, int $patientId, array $payload)
             $releaseStmt->execute();
             $releaseStmt->close();
         }
+        if ($patientSlotLockName !== '') {
+            $releaseStmt = $conn->prepare('SELECT RELEASE_LOCK(?)');
+            $releaseStmt->bind_param('s', $patientSlotLockName);
+            $releaseStmt->execute();
+            $releaseStmt->close();
+        }
     } catch (Throwable $e) {
         $conn->rollback();
         if ($capacityLockName !== '') {
             $releaseStmt = $conn->prepare('SELECT RELEASE_LOCK(?)');
             $releaseStmt->bind_param('s', $capacityLockName);
+            $releaseStmt->execute();
+            $releaseStmt->close();
+        }
+        if ($patientSlotLockName !== '') {
+            $releaseStmt = $conn->prepare('SELECT RELEASE_LOCK(?)');
+            $releaseStmt->bind_param('s', $patientSlotLockName);
             $releaseStmt->execute();
             $releaseStmt->close();
         }
