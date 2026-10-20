@@ -152,6 +152,23 @@ if ($new_status === 'cancelled') {
 }
 
 if ($updateStmt->execute() && $updateStmt->affected_rows > 0) {
+    if (in_array($new_status, ['completed', 'cancelled'], true)) {
+        appointment_init_queue_schema($conn);
+        if ($new_status === 'completed') {
+            $queueStatusStmt = $conn->prepare("UPDATE clinic_queue
+                SET status = 'completed', completed_at = COALESCE(completed_at, NOW())
+                WHERE appointment_id = ? AND status IN ('waiting', 'serving')");
+        } else {
+            $queueStatusStmt = $conn->prepare("UPDATE clinic_queue
+                SET status = 'cancelled', completed_at = NULL
+                WHERE appointment_id = ? AND status IN ('waiting', 'serving')");
+        }
+        if ($queueStatusStmt) {
+            $queueStatusStmt->bind_param('i', $appointment_id);
+            $queueStatusStmt->execute();
+            $queueStatusStmt->close();
+        }
+    }
     $statusMessage = $new_status === 'cancelled'
         ? 'Appointment cancelled with reason saved.'
         : (($userRole === 'doctor' && $new_status === 'confirmed')

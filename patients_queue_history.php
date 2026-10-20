@@ -81,7 +81,7 @@ appointment_init_queue_schema($conn);
 $where = [
     'q.patient_id = ?',
     "q.queue_type = 'walk_in'",
-    "q.status = 'completed'",
+    "q.status IN ('completed', 'cancelled')",
 ];
 $types = 'i';
 $params = [$patientId];
@@ -119,10 +119,10 @@ $totalPages = max(1, (int) ceil($totalRecords / $pageSize));
 $historyPage = min($historyPage, $totalPages);
 $offset = ($historyPage - 1) * $pageSize;
 
-$historySql = "SELECT q.queue_number, q.service, q.queue_date, q.time_called, q.completed_at, q.queue_type
+$historySql = "SELECT q.queue_number, q.service, q.queue_date, q.time_called, q.completed_at, q.queue_type, q.status
     FROM clinic_queue q
     WHERE {$whereSql}
-    ORDER BY q.completed_at DESC, q.id DESC
+    ORDER BY COALESCE(q.completed_at, q.time_called, q.time_added) DESC, q.id DESC
     LIMIT ? OFFSET ?";
 $historyTypes = $types . 'ii';
 $historyParams = array_merge($params, [$pageSize, $offset]);
@@ -190,6 +190,7 @@ body { background:#f4f8fb; min-height:100vh; color:#1f343d; }
 .queue-muted { color:#60758a; }
 .status-badge { display:inline-flex; align-items:center; border-radius:999px; padding:4px 10px; font-size:.68rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; white-space:nowrap; }
 .status-badge.completed { background:#e6f6ec; color:#168a45; }
+.status-badge.cancelled { background:#fff0f0; color:#b42318; }
 .status-badge.walk-in { background:#dcefff; color:#0066cc; }
 .filter-empty { width:100%; box-sizing:border-box; min-width:0; padding:28px 16px; color:#60758a; text-align:center; overflow:hidden; }
 .filter-empty strong { display:block; width:100%; max-width:100%; margin:0 auto 6px; color:#073b4c; white-space:normal; overflow-wrap:anywhere; word-break:normal; }
@@ -295,7 +296,7 @@ include __DIR__ . '/includes/header.php';
         </div>
     </div>
 
-    <section class="appointments-table-wrapper" aria-label="Completed walk-in queue history">
+    <section class="appointments-table-wrapper" aria-label="Walk-in queue history">
         <?php if (empty($queueHistory)): ?>
             <div class="filter-empty">
                 <strong>No queue records found for the selected period.</strong>
@@ -326,7 +327,8 @@ include __DIR__ . '/includes/header.php';
                                 <td class="queue-muted" data-label="Time Called"><?php echo htmlspecialchars(patient_queue_history_time_label($queueRow['time_called'] ?? null)); ?></td>
                                 <td class="queue-muted" data-label="Completed At"><?php echo htmlspecialchars(patient_queue_history_time_label($queueRow['completed_at'] ?? null)); ?></td>
                                 <td data-label="Type"><span class="status-badge walk-in">Walk-in</span></td>
-                                <td class="queue-status-cell" data-label="Status"><span class="status-badge completed">Completed</span></td>
+                                <?php $queueStatus = strtolower(trim((string) ($queueRow['status'] ?? 'completed'))); if (!in_array($queueStatus, ['completed', 'cancelled'], true)) { $queueStatus = 'completed'; } ?>
+                                <td class="queue-status-cell" data-label="Status"><span class="status-badge <?php echo htmlspecialchars($queueStatus); ?>"><?php echo htmlspecialchars(ucfirst($queueStatus)); ?></span></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>

@@ -288,7 +288,7 @@ function appointment_init_queue_schema(mysqli $conn): void {
         patient_id INT NOT NULL,
         appointment_id INT DEFAULT NULL,
         service VARCHAR(160) NOT NULL DEFAULT 'General Consultation',
-        status ENUM('waiting','serving','completed') NOT NULL DEFAULT 'waiting',
+        status ENUM('waiting','serving','completed','cancelled') NOT NULL DEFAULT 'waiting',
         time_added DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         time_called DATETIME DEFAULT NULL,
         completed_at DATETIME DEFAULT NULL,
@@ -297,6 +297,11 @@ function appointment_init_queue_schema(mysqli $conn): void {
         KEY idx_queue_patient (patient_id),
         KEY idx_queue_appointment (appointment_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
+    $statusResult = $conn->query("SHOW COLUMNS FROM clinic_queue LIKE 'status'");
+    $statusColumn = $statusResult ? $statusResult->fetch_assoc() : null;
+    if ($statusColumn && strpos((string) ($statusColumn['Type'] ?? ''), "'cancelled'") === false) {
+        $conn->query("ALTER TABLE clinic_queue MODIFY COLUMN status ENUM('waiting','serving','completed','cancelled') NOT NULL DEFAULT 'waiting'");
+    }
     $conn->query("CREATE TABLE IF NOT EXISTS clinic_queue_services (
         id INT AUTO_INCREMENT PRIMARY KEY,
         queue_id INT NOT NULL,

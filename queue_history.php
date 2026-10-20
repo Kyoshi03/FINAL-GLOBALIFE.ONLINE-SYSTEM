@@ -150,7 +150,7 @@ function queue_history_init_schema(mysqli $conn): void {
         appointment_id INT DEFAULT NULL,
         service VARCHAR(160) NOT NULL DEFAULT 'General Consultation',
         priority_type VARCHAR(100) NOT NULL DEFAULT '',
-        status ENUM('waiting','serving','completed') NOT NULL DEFAULT 'waiting',
+        status ENUM('waiting','serving','completed','cancelled') NOT NULL DEFAULT 'waiting',
         time_added DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         time_called DATETIME DEFAULT NULL,
         completed_at DATETIME DEFAULT NULL,
@@ -159,6 +159,11 @@ function queue_history_init_schema(mysqli $conn): void {
         KEY idx_queue_patient (patient_id),
         KEY idx_queue_appointment (appointment_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
+    $statusResult = $conn->query("SHOW COLUMNS FROM clinic_queue LIKE 'status'");
+    $statusColumn = $statusResult ? $statusResult->fetch_assoc() : null;
+    if ($statusColumn && strpos((string) ($statusColumn['Type'] ?? ''), "'cancelled'") === false) {
+        $conn->query("ALTER TABLE clinic_queue MODIFY COLUMN status ENUM('waiting','serving','completed','cancelled') NOT NULL DEFAULT 'waiting'");
+    }
     $priorityResult = $conn->query("SHOW COLUMNS FROM clinic_queue LIKE 'priority_type'");
     if (!$priorityResult || $priorityResult->num_rows === 0) {
         $conn->query("ALTER TABLE clinic_queue ADD COLUMN priority_type VARCHAR(100) NOT NULL DEFAULT '' AFTER service");
@@ -336,7 +341,7 @@ $reportLogoPath = clinic_info_logo_web_path($clinicInfo);
 $reportLogoFilePath = clinic_info_logo_file_path($clinicInfo);
 $allHistoryRows = [];
 if ($dateRangeError === '') {
-    $where = "WHERE q.queue_date BETWEEN ? AND ? AND q.status = 'completed'";
+    $where = "WHERE q.queue_date BETWEEN ? AND ? AND q.status IN ('completed', 'cancelled')";
     $types = 'ss';
     $params = [$dateFrom, $dateTo];
 
@@ -353,7 +358,7 @@ if ($dateRangeError === '') {
         FROM clinic_queue q
         JOIN users p ON p.id = q.patient_id
         {$where}
-        ORDER BY q.queue_date DESC, q.completed_at DESC, q.id DESC";
+        ORDER BY q.queue_date DESC, COALESCE(q.completed_at, q.time_called, q.time_added) DESC, q.id DESC";
     $historyStmt = $conn->prepare($historySql);
     $historyStmt->bind_param($types, ...$params);
     $historyStmt->execute();
@@ -420,7 +425,9 @@ body { background:#f4f9fd; color:#10233f; }
 .history-table .badge { padding:3px 6px; font-size:.64rem; white-space:nowrap; }
 .queue-number { color:#10233f; font-weight:700; }
 .badge { display:inline-flex; align-items:center; border-radius:999px; padding:4px 10px; font-size:.68rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; }
-.badge.completed, .badge.online { background:#dff8e8; color:#08743e; }
+.badge.completed { background:#dff8e8; color:#08743e; }
+.badge.cancelled { background:#fff0f0; color:#b42318; }
+.badge.online { background:#dff8e8; color:#08743e; }
 .badge.walk_in { background:#dcefff; color:#0066cc; }
 .badge.priority-senior, .badge.priority-pregnant, .badge.priority-pwd { background:#eee7ff; color:#5b3a91; }
 .queue-priority-empty { color:#7890a1; font-weight:800; }
@@ -545,7 +552,8 @@ include 'includes/header.php';
                                 <td data-label="Priority"><?php echo queue_history_priority_badges_markup($queueRow['priority_type'] ?? ''); ?></td>
                                 <td data-label="Time Added"><?php echo htmlspecialchars(queue_history_time_label($queueRow['time_added'] ?? null)); ?></td>
                                 <td data-label="Time Called"><?php echo htmlspecialchars(queue_history_time_label($queueRow['time_called'] ?? null)); ?></td>
-                                <td data-label="Status"><span class="badge completed"><?php echo htmlspecialchars(queue_history_status_label($queueRow['status'] ?? 'completed')); ?></span></td>
+                                <?php $queueStatus = strtolower(trim((string) ($queueRow['status'] ?? 'completed'))); if (!in_array($queueStatus, ['completed', 'cancelled'], true)) { $queueStatus = 'completed'; } ?>
+                                <td data-label="Status"><span class="badge <?php echo htmlspecialchars($queueStatus); ?>"><?php echo htmlspecialchars(queue_history_status_label($queueStatus)); ?></span></td>
                                 <td data-label="Date"><?php echo htmlspecialchars(queue_history_valid_date((string) $queueRow['queue_date']) ? date('F j, Y', strtotime((string) $queueRow['queue_date'])) : '--'); ?></td>
                             </tr>
                         <?php endforeach; ?>
@@ -624,7 +632,8 @@ include 'includes/header.php';
                                         <td><?php echo queue_history_priority_badges_markup($queueRow['priority_type'] ?? ''); ?></td>
                                         <td><?php echo htmlspecialchars(queue_history_time_label($queueRow['time_added'] ?? null)); ?></td>
                                         <td><?php echo htmlspecialchars(queue_history_time_label($queueRow['time_called'] ?? null)); ?></td>
-                                        <td><span class="badge completed"><?php echo htmlspecialchars(queue_history_status_label($queueRow['status'] ?? 'completed')); ?></span></td>
+                                        <?php $queueStatus = strtolower(trim((string) ($queueRow['status'] ?? 'completed'))); if (!in_array($queueStatus, ['completed', 'cancelled'], true)) { $queueStatus = 'completed'; } ?>
+                                        <td><span class="badge <?php echo htmlspecialchars($queueStatus); ?>"><?php echo htmlspecialchars(queue_history_status_label($queueStatus)); ?></span></td>
                                         <td><?php echo htmlspecialchars(queue_history_valid_date((string) $queueRow['queue_date']) ? date('F j, Y', strtotime((string) $queueRow['queue_date'])) : '--'); ?></td>
                                     </tr>
                                 <?php endforeach; ?>

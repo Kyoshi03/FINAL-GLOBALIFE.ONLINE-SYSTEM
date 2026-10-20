@@ -313,6 +313,7 @@ $profileNoChanges = false;
 
 $conn = getDBConnection();
 appointment_init_queue_schema($conn);
+appointment_init_cancellation_audit_schema($conn);
 $patientClinicInfo = clinic_info_get($conn);
 $pageTitle = "Patient Dashboard | " . $patientClinicInfo['clinic_name'];
 ensurePatientProfilePhotoColumn($conn);
@@ -331,8 +332,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['patient_action'] ?? '') ==
         $_SESSION['patient_dashboard_error'] = $cancelMessage;
     } else {
         $cancelStatus = 'cancelled';
+        $cancelledByRole = 'patient';
+        $cancelledByUserId = (int) ($currentUser['id'] ?? 0);
         $cancel = $conn->prepare("UPDATE appointments
-            SET status = ?, cancellation_reason = ?
+            SET status = ?, cancellation_reason = ?, cancelled_by_role = ?,
+                cancelled_by_user_id = ?, cancelled_at = NOW()
             WHERE id = ? AND patient_id = ? AND status IN ('pending', 'confirmed')
               AND NOT EXISTS (
                   SELECT 1
@@ -340,10 +344,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['patient_action'] ?? '') ==
                   WHERE q.appointment_id = appointments.id
                     AND q.status IN ('serving', 'completed')
               )");
-        $cancel->bind_param('ssii', $cancelStatus, $cancellationReason, $appointmentId, $currentUser['id']);
+        $cancel->bind_param('sssiii', $cancelStatus, $cancellationReason, $cancelledByRole, $cancelledByUserId, $appointmentId, $currentUser['id']);
         if ($cancel->execute() && $cancel->affected_rows > 0) {
             $cancelOk = true;
             $cancelMessage = 'Appointment cancelled.';
+            $queueCancel = $conn->prepare("UPDATE clinic_queue
+                SET status = 'cancelled', completed_at = NULL
+                WHERE appointment_id = ? AND status IN ('waiting', 'serving')");
+            if ($queueCancel) {
+                $queueCancel->bind_param('i', $appointmentId);
+                $queueCancel->execute();
+                $queueCancel->close();
+            }
             create_patient_appointment_notification($conn, $appointmentId, 'cancelled');
             create_clinic_appointment_notification($conn, $appointmentId, 'cancelled');
             create_admin_appointment_notification($conn, $appointmentId, 'cancelled');
@@ -882,7 +894,7 @@ $appointmentHistory = [];
 $stmt = $conn->prepare("SELECT appointment_date, appointment_time, booking_type, status
     FROM appointments
     WHERE patient_id = ?
-      AND status = 'completed'
+      AND status IN ('completed', 'cancelled')
     ORDER BY appointment_date DESC, appointment_time DESC, id DESC
     LIMIT 3");
 $stmt->bind_param("i", $currentUser['id']);
@@ -4988,10 +5000,10 @@ include 'includes/header.php';
                     <?php else: ?><div class="dashboard-empty-state"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3v3M16 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/><path d="M8 14h8M8 17h5"/></svg><strong>No upcoming appointments</strong><p>You have no scheduled visits yet. Start a booking when you are ready.</p><a href="book_appointment.php?start=1" class="primary-btn">Book Appointment</a></div><?php endif; ?>
                 </section>
                 <section class="dashboard-card" id="recentHistoryPanel">
-                    <div class="dashboard-card-header"><div class="dashboard-card-title"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 5v4h4M12 8v4l3 2"/></svg><div><h3>Recent History</h3><p>Your latest completed visits and queue records.</p></div></div></div>
+                    <div class="dashboard-card-header"><div class="dashboard-card-title"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 5v4h4M12 8v4l3 2"/></svg><div><h3>Recent History</h3><p>Your latest appointment and queue records.</p></div></div></div>
                     <div class="dashboard-history-tabs" role="tablist" aria-label="Recent history type"><button type="button" class="dashboard-history-tab is-active" role="tab" aria-selected="true" aria-controls="appointmentHistoryPanel" data-history-tab="appointments">Appointment History</button><button type="button" class="dashboard-history-tab" role="tab" aria-selected="false" aria-controls="queueHistoryPanel" data-history-tab="queue">Queue History</button></div>
-                    <div class="dashboard-history-panel" id="appointmentHistoryPanel" role="tabpanel" data-history-panel="appointments"><?php if ($appointmentHistory): ?><div class="dashboard-history-table-wrap"><table class="dashboard-history-table"><thead><tr><th>Date</th><th>Service</th><th>Status</th></tr></thead><tbody><?php foreach ($appointmentHistory as $historyAppointment): ?><?php $historyAppointmentStatus = patient_status_class($historyAppointment['status'] ?? 'completed'); ?><tr><td><?php echo htmlspecialchars(patient_format_date($historyAppointment['appointment_date'] ?? '')); ?></td><td><?php echo htmlspecialchars(patient_booking_label($historyAppointment['booking_type'] ?? null)); ?></td><td><span class="dashboard-status-badge <?php echo htmlspecialchars($historyAppointmentStatus); ?>"><?php echo htmlspecialchars(ucfirst($historyAppointmentStatus)); ?></span></td></tr><?php endforeach; ?></tbody></table></div><?php else: ?><div class="dashboard-history-empty">No completed appointments yet.</div><?php endif; ?></div>
-                    <div class="dashboard-history-panel" id="queueHistoryPanel" role="tabpanel" data-history-panel="queue" hidden><?php if ($queueHistory): ?><div class="dashboard-history-table-wrap"><table class="dashboard-history-table"><thead><tr><th>Date</th><th>Queue No.</th><th>Status</th></tr></thead><tbody><?php foreach ($queueHistory as $historyQueue): ?><?php $historyQueueStatus = patient_status_class($historyQueue['status'] ?? 'completed'); ?><tr><td><?php echo htmlspecialchars(patient_format_date($historyQueue['queue_date'] ?? '')); ?></td><td><?php echo htmlspecialchars((string) ($historyQueue['queue_number'] ?? '--')); ?></td><td><span class="dashboard-status-badge <?php echo htmlspecialchars($historyQueueStatus); ?>"><?php echo htmlspecialchars(ucfirst($historyQueueStatus)); ?></span></td></tr><?php endforeach; ?></tbody></table></div><?php else: ?><div class="dashboard-history-empty">No completed queue records yet.</div><?php endif; ?></div>
+                    <div class="dashboard-history-panel" id="appointmentHistoryPanel" role="tabpanel" data-history-panel="appointments"><?php if ($appointmentHistory): ?><div class="dashboard-history-table-wrap"><table class="dashboard-history-table"><thead><tr><th>Date</th><th>Service</th><th>Status</th></tr></thead><tbody><?php foreach ($appointmentHistory as $historyAppointment): ?><?php $historyAppointmentStatus = patient_status_class($historyAppointment['status'] ?? 'completed'); ?><tr><td><?php echo htmlspecialchars(patient_format_date($historyAppointment['appointment_date'] ?? '')); ?></td><td><?php echo htmlspecialchars(patient_booking_label($historyAppointment['booking_type'] ?? null)); ?></td><td><span class="dashboard-status-badge <?php echo htmlspecialchars($historyAppointmentStatus); ?>"><?php echo htmlspecialchars(ucfirst($historyAppointmentStatus)); ?></span></td></tr><?php endforeach; ?></tbody></table></div><?php else: ?><div class="dashboard-history-empty">No appointment history yet.</div><?php endif; ?></div>
+                    <div class="dashboard-history-panel" id="queueHistoryPanel" role="tabpanel" data-history-panel="queue" hidden><?php if ($queueHistory): ?><div class="dashboard-history-table-wrap"><table class="dashboard-history-table"><thead><tr><th>Date</th><th>Queue No.</th><th>Status</th></tr></thead><tbody><?php foreach ($queueHistory as $historyQueue): ?><?php $historyQueueStatus = patient_status_class($historyQueue['status'] ?? 'completed'); ?><tr><td><?php echo htmlspecialchars(patient_format_date($historyQueue['queue_date'] ?? '')); ?></td><td><?php echo htmlspecialchars((string) ($historyQueue['queue_number'] ?? '--')); ?></td><td><span class="dashboard-status-badge <?php echo htmlspecialchars($historyQueueStatus); ?>"><?php echo htmlspecialchars(ucfirst($historyQueueStatus)); ?></span></td></tr><?php endforeach; ?></tbody></table></div><?php else: ?><div class="dashboard-history-empty">No queue history yet.</div><?php endif; ?></div>
                     <div class="dashboard-history-footer"><a href="patients_appointment_history.php" class="dashboard-link" data-history-view-all>View All History <span aria-hidden="true">&rarr;</span></a></div>
                 </section>
             </div>
