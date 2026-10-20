@@ -99,14 +99,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $category = trim((string) ($_POST['category'] ?? ''));
         $description = trim((string) ($_POST['description'] ?? ''));
         $included = trim((string) ($_POST['included_tests'] ?? ''));
-        $opd = max(0, (float) ($_POST['opd_price'] ?? 0));
+        $opdRaw = trim((string) ($_POST['opd_price'] ?? ''));
+        $opd = max(0, (float) $opdRaw);
         $homeRaw = trim((string) ($_POST['home_service_price'] ?? ''));
         $home = $homeRaw === '' ? null : max(0, (float) $homeRaw);
         $isPackage = isset($_POST['is_package']) ? 1 : 0;
         $isActive = isset($_POST['is_active']) ? 1 : 0;
 
-        if ($name === '' || $category === '') {
-            $_SESSION['admin_lab_service_error'] = 'Name and category are required.';
+        if ($name === '' || $category === '' || $opdRaw === '') {
+            $_SESSION['admin_lab_service_error'] = 'Name, category, and OPD price are required.';
             if ($action === 'add_service') {
                 $_SESSION['admin_lab_service_add_open'] = 1;
             }
