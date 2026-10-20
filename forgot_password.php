@@ -317,6 +317,42 @@ $additionalStyles = '
         padding-top: 11px;
         padding-bottom: 11px;
     }
+    .forgot-password-input {
+        position: relative;
+    }
+    .forgot-password-input input {
+        padding-right: 48px !important;
+    }
+    .forgot-password-toggle {
+        position: absolute;
+        top: 50%;
+        right: 8px;
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        padding: 6px;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: #0077b6;
+        cursor: pointer;
+        transform: translateY(-50%);
+    }
+    .forgot-password-toggle:hover,
+    .forgot-password-toggle:focus-visible {
+        background: #e8f7fb;
+        outline: none;
+    }
+    .forgot-password-toggle svg {
+        width: 21px;
+        height: 21px;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 2;
+    }
     .forgot-content .form-footer {
         margin-top: 12px;
     }
@@ -462,11 +498,27 @@ include 'includes/header.php';
                         <input type="hidden" name="action" value="reset_password">
                         <div class="form-group">
                             <label for="password">New password</label>
-                            <input type="password" id="password" name="password" autocomplete="new-password" required>
+                            <div class="forgot-password-input">
+                                <input type="password" id="password" name="password" autocomplete="new-password" required>
+                                <button type="button" class="forgot-password-toggle" data-password-toggle="password" aria-label="Show password" aria-pressed="false" title="Show password">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="confirm_password">Confirm new password</label>
-                            <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" required>
+                            <div class="forgot-password-input">
+                                <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" required>
+                                <button type="button" class="forgot-password-toggle" data-password-toggle="confirm_password" aria-label="Show password" aria-pressed="false" title="Show password">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                         <p class="login-subtitle" style="font-size: 0.82rem; margin-top: -8px;">
                             At least 8 characters with upper, lower, number, and special character.
@@ -483,6 +535,23 @@ include 'includes/header.php';
         </div>
     </div>
     <script>
+        (function () {
+            var eyeOpenIcon = '<path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path><circle cx="12" cy="12" r="3"></circle>';
+            var eyeClosedIcon = '<path d="M3 3l18 18"></path><path d="M10.58 10.58a2 2 0 002.83 2.83"></path><path d="M9.88 5.09A10.7 10.7 0 0112 5c4.48 0 8.27 2.94 9.54 7a10.7 10.7 0 01-3.04 4.27"></path><path d="M6.61 6.61A10.7 10.7 0 002.46 12c1.27 4.06 5.06 7 9.54 7 1.01 0 1.98-.16 2.88-.45"></path>';
+            document.querySelectorAll('[data-password-toggle]').forEach(function (toggle) {
+                var input = document.getElementById(toggle.getAttribute('data-password-toggle'));
+                var icon = toggle.querySelector('svg');
+                if (!input || !icon) return;
+                toggle.addEventListener('click', function () {
+                    var shouldShow = input.type === 'password';
+                    input.type = shouldShow ? 'text' : 'password';
+                    toggle.setAttribute('aria-label', shouldShow ? 'Hide password' : 'Show password');
+                    toggle.setAttribute('title', shouldShow ? 'Hide password' : 'Show password');
+                    toggle.setAttribute('aria-pressed', shouldShow ? 'true' : 'false');
+                    icon.innerHTML = shouldShow ? eyeClosedIcon : eyeOpenIcon;
+                });
+            });
+        })();
         document.querySelectorAll('[data-forgot-back-login]').forEach(function (link) {
             link.addEventListener('click', function (event) {
                 event.preventDefault();
