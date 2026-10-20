@@ -940,7 +940,7 @@ $headerPatientDisplayName = $profileDisplayName;
 $showProfileSuccessPopup = $profileMessage !== '' && $pendingProfileChange === null;
 $showProfileErrorPopup = $profileError !== '' && $pendingProfileChange === null;
 $showProfileVerificationPopup = $pendingProfileChange !== null;
-$openProfileModal = $showProfileErrorPopup || (isset($_GET['profile']) && $_GET['profile'] === '1' && !$showProfileSuccessPopup);
+$openProfileModal = isset($_GET['profile']) && $_GET['profile'] === '1' && !$showProfileSuccessPopup && !$showProfileErrorPopup;
 $showNotificationsPage = isset($_GET['notifications']) && $_GET['notifications'] === '1';
 $upcomingCount = (int) ($summary['upcoming_count'] ?? 0);
 $completedCount = (int) ($summary['completed_count'] ?? 0);
@@ -3609,7 +3609,7 @@ $additionalStyles = '
         position: fixed;
         inset: 0;
         background: rgba(7, 59, 76, 0.55);
-        z-index: 2500;
+        z-index: 5000;
         align-items: center;
         justify-content: center;
         padding: 20px;
@@ -6183,6 +6183,7 @@ include 'includes/header.php';
         });
         document.getElementById('profileErrorOk').addEventListener('click', function() {
             hideProfileFeedback('profileErrorPopup');
+            openProfileModal();
         });
         document.getElementById('profileSuccessPopup').addEventListener('click', function(e) {
             if (e.target === this) hideProfileFeedback('profileSuccessPopup');
@@ -6196,7 +6197,6 @@ include 'includes/header.php';
         <?php endif; ?>
         <?php if ($showProfileErrorPopup): ?>
         showProfileFeedback('profileErrorPopup');
-        openProfileModal();
         <?php elseif ($openProfileModal): ?>
         openProfileModal();
         <?php endif; ?>
