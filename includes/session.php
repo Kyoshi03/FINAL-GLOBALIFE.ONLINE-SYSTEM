@@ -95,20 +95,9 @@ function clinic_csrf_guard_request(): void {
     if ($wantsJson) {
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['ok' => false, 'error' => 'The security token expired. Refresh the page and try again.']);
-        exit();
+    } else {
+        echo 'The security token expired. Refresh the page and try again.';
     }
-
-    $referer = trim((string) ($_SERVER['HTTP_REFERER'] ?? ''));
-    $requestHost = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
-    $refererParts = $referer !== '' ? parse_url($referer) : false;
-    $refererHost = is_array($refererParts) ? strtolower((string) ($refererParts['host'] ?? '')) : '';
-    $redirectUrl = (string) ($_SERVER['PHP_SELF'] ?? '/');
-    if (str_starts_with($referer, '/') && !str_starts_with($referer, '//')) {
-        $redirectUrl = $referer;
-    } elseif ($refererHost !== '' && $refererHost === $requestHost) {
-        $redirectUrl = $referer;
-    }
-    header('Location: ' . $redirectUrl, true, 303);
     exit();
 }
 
