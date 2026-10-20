@@ -1,6 +1,11 @@
 <?php
 require_once 'includes/session.php';
 
+$loginPortal = strtolower(trim((string) ($_GET['portal'] ?? $_POST['portal'] ?? '')));
+if (!in_array($loginPortal, ['admin', 'patient', 'doctor', 'public'], true)) {
+    $loginPortal = '';
+}
+
 if (isLoggedIn()) {
     redirectToDashboardForCurrentUser();
 }
@@ -225,6 +230,7 @@ $pageTitle = "Login | Globalife Medical Laboratory & Polyclinic";
             <?php endif; ?>
 
             <form method="POST" action="login.php">
+                <?php if ($loginPortal !== ''): ?><input type="hidden" name="portal" value="<?php echo htmlspecialchars($loginPortal, ENT_QUOTES, 'UTF-8'); ?>"><?php endif; ?>
                 <div class="form-group">
                     <label for="username">Username</label>
                     <div class="input-wrap">
