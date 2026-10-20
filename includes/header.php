@@ -2237,6 +2237,112 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
         body.app-layout .patient-profile-menu::before {
             right: 20px;
         }
+
+        /* Keep the admin navigation readable on phones while preserving all
+           existing menu groups and their submenu actions. */
+        body.app-layout.app-role-admin nav {
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            display: flex;
+            align-items: stretch;
+            gap: 4px;
+            padding: 6px;
+            overflow-x: auto;
+            overscroll-behavior-x: contain;
+            scroll-snap-type: x proximity;
+        }
+        body.app-layout.app-role-admin nav > a,
+        body.app-layout.app-role-admin nav > .nav-settings-group {
+            flex: 0 0 102px;
+            width: 102px;
+            min-width: 102px;
+            scroll-snap-align: start;
+        }
+        body.app-layout.app-role-admin nav > .nav-settings-group {
+            display: block;
+            margin: 0;
+        }
+        body.app-layout.app-role-admin nav > a,
+        body.app-layout.app-role-admin nav > .nav-settings-group > .nav-submenu-toggle {
+            min-height: 68px;
+            box-sizing: border-box;
+            padding: 8px 6px;
+            gap: 4px;
+            border-radius: 22px;
+            font-size: 0.70rem;
+            line-height: 1.05;
+            white-space: normal;
+            overflow: visible;
+        }
+        body.app-layout.app-role-admin nav > a .nav-label,
+        body.app-layout.app-role-admin nav > .nav-settings-group > .nav-submenu-toggle .nav-label {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            overflow: visible;
+            text-overflow: clip;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            line-height: 1.05;
+        }
+        body.app-layout.app-role-admin nav > .nav-settings-group > .nav-submenu-toggle {
+            width: 100%;
+            border: 1px solid transparent;
+            background: transparent;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        body.app-layout.app-role-admin nav > .nav-settings-group > .nav-submenu-toggle .nav-chevron {
+            display: none;
+        }
+        body.app-layout.app-role-admin nav > .nav-settings-group > .nav-submenu {
+            display: none;
+            position: fixed;
+            left: 12px;
+            right: 12px;
+            bottom: 94px;
+            z-index: 1600;
+            width: auto;
+            max-width: none;
+            padding: 8px;
+            border: 1px solid rgba(207, 227, 236, 0.96);
+            border-radius: 16px;
+            background: #ffffff;
+            box-shadow: 0 16px 32px rgba(2, 62, 138, 0.24);
+        }
+        body.app-layout.app-role-admin nav > .nav-settings-group > .nav-submenu.is-open {
+            display: block;
+        }
+        body.app-layout.app-role-admin nav > .nav-settings-group > .nav-submenu .nav-submenu-inner {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 0;
+            overflow: visible;
+        }
+        body.app-layout.app-role-admin nav > .nav-settings-group > .nav-submenu a.nav-subitem {
+            display: flex;
+            width: 100%;
+            min-height: 42px;
+            box-sizing: border-box;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 10px;
+            border: 1px solid #dceaf2;
+            border-radius: 10px;
+            background: #f7fbfe;
+            color: #0b4f80;
+            font-size: 0.78rem;
+            white-space: normal;
+        }
+        body.app-layout.app-role-admin nav > .nav-settings-group > .nav-submenu a.nav-subitem.active,
+        body.app-layout.app-role-admin nav > .nav-settings-group > .nav-submenu a.nav-subitem:hover {
+            background: #e9f5ff;
+            border-color: #8bc9ed;
+            color: #0066aa;
+        }
     }
     @media (max-width: 560px) {
         /* Keep all four patient tabs visible on narrow phones instead of
