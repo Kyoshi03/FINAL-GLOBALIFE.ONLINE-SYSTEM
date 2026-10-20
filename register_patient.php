@@ -1884,7 +1884,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                 </div>
 
                 <div class="terms-box">
-                    <input type="checkbox" id="agree_clinic_terms" name="agree_clinic_terms" value="1" required <?php echo (!empty($_POST['agree_clinic_terms']) && empty($success)) ? 'checked' : ''; ?>>
+                    <input type="checkbox" id="agree_clinic_terms" name="agree_clinic_terms" value="1" required <?php echo ($agree_clinic_terms && empty($error) && empty($success)) ? 'checked' : ''; ?>>
                     <label for="agree_clinic_terms">
                         I agree to the Terms and Conditions and acknowledge the Privacy Policy of Globalife Medical Laboratory &amp; Polyclinic.
                     </label>
@@ -2066,6 +2066,13 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                 if (submitRegisterBtn && termsCheckbox) {
                     submitRegisterBtn.disabled = !termsCheckbox.checked;
                 }
+            }
+
+            function resetTermsAgreement() {
+                if (!termsCheckbox) return;
+                termsCheckbox.checked = false;
+                syncTermsSubmitState();
+                termsCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
             }
 
             function openTermsPolicyPopup() {
@@ -2802,6 +2809,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
             form.addEventListener('submit', function(e) {
                 if (!validateRequiredFields()) {
                     e.preventDefault();
+                    resetTermsAgreement();
                     return false;
                 }
 
