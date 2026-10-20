@@ -134,7 +134,7 @@ foreach ($todayAppointments as $index => $appointment) {
         $pendingRequests[] = $appointment;
     }
 
-    if (($appointment['appointment_date'] ?? '') === $today && in_array($status, ['confirmed', 'completed'], true)) {
+    if (($appointment['appointment_date'] ?? '') === $today && $status === 'confirmed') {
         $todaysConsultations[] = $appointment;
     }
 
