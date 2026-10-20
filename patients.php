@@ -6258,7 +6258,7 @@ include 'includes/header.php';
             {
                 title: 'Appointment History',
                 description: 'Appointment History shows your past and current appointment records, including their statuses.',
-                target: 'a[href="patients_view_appointments.php"]'
+                target: 'a[href="patients_appointment_history.php"]'
             },
             {
                 title: 'Queue History',
@@ -6367,7 +6367,7 @@ include 'includes/header.php';
             { title: 'Book Appointment', body: 'Use Book Appointments to choose a service or doctor, then select an available date and time.', target: 'a[href^="book_appointment.php"]', mobileTarget: '#mainNav a[href^="book_appointment.php"]' },
             { title: 'My Profile', body: 'Open My Profile to update your contact details and keep your clinic information complete.', target: '#profile' },
             { title: 'History', body: 'Open History to review completed appointments and your queue records.', target: '.patient-history-toggle', mobileTarget: '#mainNav .patient-history-toggle' },
-            { title: 'Appointment History', body: 'Appointment History shows your past and current appointment records, including their statuses.', target: 'a[href="patients_view_appointments.php"]', mobileTarget: '#mainNav a[href="patients_view_appointments.php"]' },
+            { title: 'Appointment History', body: 'Appointment History shows your past and current appointment records, including their statuses.', target: 'a[href="patients_appointment_history.php"]', mobileTarget: '#mainNav a[href="patients_appointment_history.php"]' },
             { title: 'Queue History', body: 'Queue History shows your previous queue activity and visit records.', target: 'a[href="patients_queue_history.php"]', mobileTarget: '#mainNav a[href="patients_queue_history.php"]' }
         ];
 
