@@ -75,10 +75,6 @@ function queue_history_time_label(?string $time): string {
     return $stamp ? date('h:i A', $stamp) : '--';
 }
 
-function queue_history_type_label(?string $type): string {
-    return (string) $type === 'online' ? 'Online' : 'Walk-in';
-}
-
 function queue_history_priority_options(): array {
     return ['senior', 'pregnant', 'pwd'];
 }
@@ -223,7 +219,6 @@ function queue_history_pdf_stream(array $rows, string $filterLabel, string $peri
     $columns = [
         ['Queue No.', 65],
         ['Patient Name', 110],
-        ['Type', 55],
         ['Service', 125],
         ['Priority', 65],
         ['Time Added', 65],
@@ -252,7 +247,6 @@ function queue_history_pdf_stream(array $rows, string $filterLabel, string $peri
             $values = [
                 (string) ($row['queue_number'] ?? '--'),
                 (string) ($row['patient_name'] ?? '--'),
-                queue_history_type_label($row['queue_type'] ?? ''),
                 (string) ($row['service'] ?? 'General Consultation'),
                 queue_history_priority_label($row['priority_type'] ?? ''),
                 queue_history_time_label($row['time_added'] ?? null),
@@ -369,14 +363,14 @@ if ($dateRangeError === '') {
 
     if ($search !== '') {
         $patientNameSql = dbUsersNameExpression('p');
-        $where .= " AND (q.queue_number LIKE ? OR {$patientNameSql} LIKE ? OR q.service LIKE ? OR q.queue_type LIKE ? OR q.priority_type LIKE ?)";
+        $where .= " AND (q.queue_number LIKE ? OR {$patientNameSql} LIKE ? OR q.service LIKE ? OR q.priority_type LIKE ?)";
         $searchLike = '%' . $search . '%';
-        $types .= 'sssss';
-        array_push($params, $searchLike, $searchLike, $searchLike, $searchLike, $searchLike);
+        $types .= 'ssss';
+        array_push($params, $searchLike, $searchLike, $searchLike, $searchLike);
     }
 
     $patientNameSql = $patientNameSql ?? dbUsersNameExpression('p');
-    $historySql = "SELECT q.queue_number, q.queue_type, q.priority_type, q.service, q.queue_date, q.time_added, q.time_called, q.completed_at, q.status, {$patientNameSql} AS patient_name
+    $historySql = "SELECT q.queue_number, q.priority_type, q.service, q.queue_date, q.time_added, q.time_called, q.completed_at, q.status, {$patientNameSql} AS patient_name
         FROM clinic_queue q
         JOIN users p ON p.id = q.patient_id
         {$where}
@@ -431,19 +425,18 @@ body { background:#f4f9fd; color:#10233f; }
 .history-table th, .history-table td { padding:12px 8px; border-bottom:1px solid #eef3f6; text-align:left; color:#10233f; font-size:.82rem; font-weight:500; overflow-wrap:anywhere; }
 .history-table th { background:#fff; color:#708792; font-size:.72rem; font-weight:800; letter-spacing:.05em; text-transform:uppercase; }
 .history-table tr:last-child td { border-bottom:0; }
-.history-table th:nth-child(1), .history-table td:nth-child(1) { width:7%; }
-.history-table th:nth-child(2), .history-table td:nth-child(2) { width:18%; }
-.history-table th:nth-child(3), .history-table td:nth-child(3) { width:10%; text-align:center; }
-.history-table th:nth-child(4), .history-table td:nth-child(4) { width:16%; }
-.history-table th:nth-child(5), .history-table td:nth-child(5) { width:10%; text-align:center; }
-.history-table th:nth-child(6), .history-table td:nth-child(6) { width:9%; white-space:nowrap; }
-.history-table th:nth-child(7), .history-table td:nth-child(7) { width:9%; white-space:nowrap; }
-.history-table th:nth-child(8), .history-table td:nth-child(8) { width:9%; text-align:center; }
-.history-table th:nth-child(9), .history-table td:nth-child(9) { width:12%; white-space:nowrap; }
-.history-table td:nth-child(2), .history-table td:nth-child(4) { line-height:1.3; }
-.history-table td:nth-child(9) { font-size:.76rem; }
+.history-table th:nth-child(1), .history-table td:nth-child(1) { width:8%; }
+.history-table th:nth-child(2), .history-table td:nth-child(2) { width:21%; }
+.history-table th:nth-child(3), .history-table td:nth-child(3) { width:20%; }
+.history-table th:nth-child(4), .history-table td:nth-child(4) { width:12%; text-align:center; }
+.history-table th:nth-child(5), .history-table td:nth-child(5) { width:10%; white-space:nowrap; }
+.history-table th:nth-child(6), .history-table td:nth-child(6) { width:10%; white-space:nowrap; }
+.history-table th:nth-child(7), .history-table td:nth-child(7) { width:10%; text-align:center; }
+.history-table th:nth-child(8), .history-table td:nth-child(8) { width:9%; white-space:nowrap; }
+.history-table td:nth-child(2), .history-table td:nth-child(3) { line-height:1.3; }
+.history-table td:nth-child(8) { font-size:.76rem; }
 .history-cell-clamp { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
-.history-table td:nth-child(3) .badge, .history-table td:nth-child(5) .badge, .history-table td:nth-child(8) .badge { white-space:nowrap; }
+.history-table td:nth-child(4) .badge, .history-table td:nth-child(7) .badge { white-space:nowrap; }
 .history-table .badge { padding:3px 6px; font-size:.64rem; white-space:nowrap; }
 .queue-number { color:#10233f; font-weight:700; }
 .badge { display:inline-flex; align-items:center; border-radius:999px; padding:4px 10px; font-size:.68rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; }
@@ -563,7 +556,6 @@ include 'includes/header.php';
                         <tr>
                             <th>Queue No.</th>
                             <th>Patient Name</th>
-                            <th>Type</th>
                             <th>Service</th>
                             <th>Priority</th>
                             <th>Time Added</th>
@@ -577,7 +569,6 @@ include 'includes/header.php';
                             <tr>
                                 <td data-label="Queue No." class="queue-number"><?php echo htmlspecialchars((string) $queueRow['queue_number']); ?></td>
                                 <td data-label="Patient Name"><?php echo htmlspecialchars((string) $queueRow['patient_name']); ?></td>
-                                <td data-label="Type"><span class="badge <?php echo htmlspecialchars((string) $queueRow['queue_type']); ?>"><?php echo htmlspecialchars(queue_history_type_label($queueRow['queue_type'] ?? '')); ?></span></td>
                                 <td data-label="Service"><span class="history-cell-clamp"><?php echo htmlspecialchars((string) ($queueRow['service'] ?? 'General Consultation')); ?></span></td>
                                 <td data-label="Priority"><?php echo queue_history_priority_badges_markup($queueRow['priority_type'] ?? ''); ?></td>
                                 <td data-label="Time Added"><?php echo htmlspecialchars(queue_history_time_label($queueRow['time_added'] ?? null)); ?></td>
@@ -643,7 +634,6 @@ include 'includes/header.php';
                                 <tr>
                                     <th>Queue No.</th>
                                     <th>Patient Name</th>
-                                    <th>Type</th>
                                     <th>Service</th>
                                     <th>Priority</th>
                                     <th>Time Added</th>
@@ -657,7 +647,6 @@ include 'includes/header.php';
                                     <tr>
                                         <td class="queue-number"><?php echo htmlspecialchars((string) $queueRow['queue_number']); ?></td>
                                         <td><?php echo htmlspecialchars((string) $queueRow['patient_name']); ?></td>
-                                        <td><span class="badge <?php echo htmlspecialchars((string) $queueRow['queue_type']); ?>"><?php echo htmlspecialchars(queue_history_type_label($queueRow['queue_type'] ?? '')); ?></span></td>
                                         <td><?php echo htmlspecialchars((string) ($queueRow['service'] ?? 'General Consultation')); ?></td>
                                         <td><?php echo queue_history_priority_badges_markup($queueRow['priority_type'] ?? ''); ?></td>
                                         <td><?php echo htmlspecialchars(queue_history_time_label($queueRow['time_added'] ?? null)); ?></td>
