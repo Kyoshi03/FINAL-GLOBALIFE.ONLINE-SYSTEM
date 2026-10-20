@@ -1747,14 +1747,14 @@ include 'includes/header.php';
     <section id="verification-success-modal" class="registration-modal" role="dialog" aria-modal="true" aria-labelledby="verification-success-title" aria-hidden="true">
         <div class="registration-dialog">
             <div class="registration-modal-head">
-                <h2 id="verification-success-title">Account verified</h2>
+                <h2 id="verification-success-title">Account created</h2>
                 <button type="button" class="registration-modal-close" data-verification-success-close aria-label="Close verification success">&times;</button>
             </div>
             <div class="verification-success-body">
                 <div class="verification-success-icon" aria-hidden="true">&#10003;</div>
-                <h3>Account verified</h3>
-                <p>Your account was verified successfully. Please log in to continue.</p>
-                <button type="button" id="verification-success-login" class="patient-submit-btn verification-success-login">Go to log in</button>
+                <h3>You have successfully created an account</h3>
+                <p>Your account is verified and ready to use. Please log in to continue.</p>
+                <button type="button" id="verification-success-login" class="patient-submit-btn verification-success-login">Back to Sign In</button>
             </div>
         </div>
     </section>
