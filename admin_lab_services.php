@@ -114,8 +114,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             admin_lab_redirect($id > 0 ? ['edit' => $id] : []);
         }
 
-        if ($opdRaw === '' || !is_numeric($opdRaw) || (float) $opdRaw <= 0) {
-            $_SESSION['admin_lab_service_error'] = 'OPD price is required and must be greater than 0.';
+        if ($opdRaw === '' || !is_numeric($opdRaw) || (float) $opdRaw < 1) {
+            $_SESSION['admin_lab_service_error'] = 'OPD price is required and must be at least 1.';
             if ($action === 'add_service') {
                 $_SESSION['admin_lab_service_add_open'] = 1;
             }
@@ -415,7 +415,7 @@ include 'includes/header.php';
                         <label class="field">Category<input type="text" name="category" required list="labCategoryList" placeholder="Example: HEMATOLOGY"></label>
                         <label class="field full">Description<textarea name="description" placeholder="Optional notes for staff"></textarea></label>
                         <label class="field full">Included tests<textarea name="included_tests" placeholder="For packages: CBC, UA, X-Ray, etc."></textarea></label>
-                        <label class="field">OPD price<input type="number" step="0.01" min="0.01" name="opd_price" required value="" placeholder="Enter OPD price"></label>
+                        <label class="field">OPD price<input type="number" step="0.01" min="1" name="opd_price" required value="" placeholder="Enter OPD price"></label>
                         <label class="field">Home service price<input type="number" step="0.01" min="0" name="home_service_price" placeholder="Leave blank if unavailable"></label>
                     </div>
                     <div class="checks" style="margin-top:16px;"><label><input type="checkbox" name="is_package"> Package deal <small>(leave unchecked for an individual laboratory test)</small></label><label><input type="checkbox" name="is_active" checked> Active in booking</label></div>
@@ -435,7 +435,7 @@ include 'includes/header.php';
                         <label class="field">Category<input type="text" name="category" id="edit_service_category" required list="labCategoryList" value="<?php echo htmlspecialchars($editRow['category'] ?? ''); ?>" placeholder="Example: HEMATOLOGY"></label>
                         <label class="field full">Description<textarea name="description" id="edit_service_description" placeholder="Optional notes for staff"><?php echo htmlspecialchars($editRow['description'] ?? ''); ?></textarea></label>
                         <label class="field full">Included tests<textarea name="included_tests" id="edit_service_included" placeholder="For packages: CBC, UA, X-Ray, etc."><?php echo htmlspecialchars($editRow['included_tests'] ?? ''); ?></textarea></label>
-                        <label class="field">OPD price<input type="number" step="0.01" min="0.01" name="opd_price" id="edit_service_opd" required value="<?php echo htmlspecialchars((string) ($editRow['opd_price'] ?? '')); ?>"></label>
+                        <label class="field">OPD price<input type="number" step="0.01" min="1" name="opd_price" id="edit_service_opd" required value="<?php echo ((float) ($editRow['opd_price'] ?? 0) >= 1) ? htmlspecialchars((string) $editRow['opd_price']) : ''; ?>"></label>
                         <label class="field">Home service price<input type="number" step="0.01" min="0" name="home_service_price" id="edit_service_home" value="<?php echo isset($editRow['home_service_price']) && $editRow['home_service_price'] !== null ? htmlspecialchars((string) $editRow['home_service_price']) : ''; ?>" placeholder="Leave blank if unavailable"></label>
                     </div>
                     <div class="checks" style="margin-top:16px;"><label><input type="checkbox" name="is_package" id="edit_service_package" <?php echo !empty($editRow['is_package']) ? 'checked' : ''; ?>> Package deal</label><label><input type="checkbox" name="is_active" id="edit_service_active" <?php echo !isset($editRow['is_active']) || !empty($editRow['is_active']) ? 'checked' : ''; ?>> Active in booking</label></div>
@@ -488,7 +488,8 @@ include 'includes/header.php';
             document.getElementById('edit_service_category').value = btn.getAttribute('data-service-category') || '';
             document.getElementById('edit_service_description').value = btn.getAttribute('data-service-description') || '';
             document.getElementById('edit_service_included').value = btn.getAttribute('data-service-included') || '';
-            document.getElementById('edit_service_opd').value = btn.getAttribute('data-service-opd') || '';
+            const serviceOpd = parseFloat(btn.getAttribute('data-service-opd') || '');
+            document.getElementById('edit_service_opd').value = Number.isFinite(serviceOpd) && serviceOpd >= 1 ? serviceOpd : '';
             document.getElementById('edit_service_home').value = btn.getAttribute('data-service-home') || '';
             document.getElementById('edit_service_package').checked = (btn.getAttribute('data-service-package') || '0') === '1';
             document.getElementById('edit_service_active').checked = (btn.getAttribute('data-service-active') || '0') === '1';
