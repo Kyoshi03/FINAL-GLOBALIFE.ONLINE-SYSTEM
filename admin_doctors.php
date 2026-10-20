@@ -507,7 +507,7 @@ body {
 
 .ad-hero h1 {
     margin: 0;
-    color: #fff;
+    color: #fff !important;
     font-size: 2.1rem;
     line-height: 1.15;
 }
