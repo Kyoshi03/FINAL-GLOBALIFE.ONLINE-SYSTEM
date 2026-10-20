@@ -72,31 +72,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'reset_password') {
         $userId = (int) ($_SESSION['pw_reset_user_id'] ?? 0);
         $email = $_SESSION['pw_reset_email'] ?? '';
-        if ($userId <= 0 || empty($_SESSION['pw_reset_verified'])) {
+        $updatePasswordClicked = isset($_POST['update_password']) && $_POST['update_password'] === '1';
+        if (!$updatePasswordClicked) {
+            $error = 'Click Update password to apply the new password.';
+            $step = 'reset';
+        } elseif ($userId <= 0 || empty($_SESSION['pw_reset_verified'])) {
             header('Location: ' . $forgotPasswordAction);
             exit();
-        }
-        $password = $_POST['password'] ?? '';
-        $confirm = $_POST['confirm_password'] ?? '';
-        if ($password !== $confirm) {
-            $error = 'Passwords do not match.';
-            $step = 'reset';
         } else {
-            $pwErrors = pw_reset_validate_password($password);
-            if ($pwErrors) {
-                $error = implode(' ', $pwErrors);
-                $step = 'reset';
-            } elseif (!pw_reset_update_password($userId, $password)) {
-                $error = 'Could not update password. Please try again.';
+            $password = $_POST['password'] ?? '';
+            $confirm = $_POST['confirm_password'] ?? '';
+            if ($password !== $confirm) {
+                $error = 'Passwords do not match.';
                 $step = 'reset';
             } else {
-                unset($_SESSION['pw_reset_email'], $_SESSION['pw_reset_verified'], $_SESSION['pw_reset_user_id']);
-                if ($isForgotPasswordModal) {
-                    echo '<script>window.top.location.replace(' . json_encode('index.php?reset=1&login=1#patient-login') . ');</script>';
+                $pwErrors = pw_reset_validate_password($password);
+                if ($pwErrors) {
+                    $error = implode(' ', $pwErrors);
+                    $step = 'reset';
+                } elseif (!pw_reset_update_password($userId, $password)) {
+                    $error = 'Could not update password. Please try again.';
+                    $step = 'reset';
+                } else {
+                    unset($_SESSION['pw_reset_email'], $_SESSION['pw_reset_verified'], $_SESSION['pw_reset_user_id']);
+                    if ($isForgotPasswordModal) {
+                        echo '<script>window.top.location.replace(' . json_encode('index.php?reset=1&login=1#patient-login') . ');</script>';
+                        exit();
+                    }
+                    header('Location: index.php?reset=1&login=1#patient-login');
                     exit();
                 }
-                header('Location: index.php?reset=1&login=1#patient-login');
-                exit();
             }
         }
     }
@@ -527,7 +532,7 @@ include 'includes/header.php';
                             <a href="<?php echo htmlspecialchars($backHref); ?>" <?php echo $backAttributes; ?>>← Back</a>
                             <span>Step <?php echo $stepNumber; ?> of 3</span>
                         </div>
-                        <button type="submit" class="login-btn-form">Update password</button>
+                        <button type="submit" name="update_password" value="1" class="login-btn-form">Update password</button>
                     </form>
                 <?php endif; ?>
 
