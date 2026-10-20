@@ -2245,7 +2245,11 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             right: 8px;
             bottom: 8px;
             display: flex;
+            flex-direction: row;
             align-items: stretch;
+            height: 86px;
+            max-height: 86px;
+            box-sizing: border-box;
             gap: 4px;
             padding: 6px;
             overflow-x: auto;
