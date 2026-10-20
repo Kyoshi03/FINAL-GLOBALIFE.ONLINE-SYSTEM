@@ -355,7 +355,9 @@ $reportLogoPath = clinic_info_logo_web_path($clinicInfo);
 $reportLogoFilePath = clinic_info_logo_file_path($clinicInfo);
 $allHistoryRows = [];
 if ($dateRangeError === '') {
-    $where = "WHERE q.queue_date BETWEEN ? AND ? AND q.status IN ('completed', 'cancelled')";
+    $where = "WHERE q.queue_date BETWEEN ? AND ?
+        AND q.queue_type = 'walk_in'
+        AND q.status IN ('completed', 'cancelled')";
     $types = 'ss';
     $params = [$dateFrom, $dateTo];
 
