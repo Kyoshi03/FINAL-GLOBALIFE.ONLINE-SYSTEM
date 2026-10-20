@@ -228,6 +228,21 @@ function queue_priority_type_options(): array {
     return ['senior', 'pregnant', 'pwd'];
 }
 
+function queue_patient_is_senior(array $patient): bool {
+    $dateOfBirth = trim((string) ($patient['date_of_birth'] ?? ''));
+    if ($dateOfBirth !== '' && $dateOfBirth !== '0000-00-00') {
+        try {
+            $birthDate = new DateTimeImmutable($dateOfBirth);
+            $todayDate = new DateTimeImmutable('today', new DateTimeZone('Asia/Manila'));
+            return $birthDate <= $todayDate && $birthDate->diff($todayDate)->y >= 60;
+        } catch (Throwable $exception) {
+            // Fall back to the stored age when the birth date is unavailable or invalid.
+        }
+    }
+
+    return (int) ($patient['age'] ?? 0) >= 60;
+}
+
 function queue_priority_types(?string $priority): array {
     $rawValues = preg_split('/[,|]+/', strtolower(trim((string) $priority))) ?: [];
     $values = array_map('trim', $rawValues);
@@ -517,7 +532,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['queue_action'])) {
         $appointmentId = (int) ($_POST['appointment_id'] ?? 0);
         $queueType = (string) ($_POST['queue_type'] ?? 'walk_in');
         $queueType = $queueType === 'online' ? 'online' : 'walk_in';
-        $priorityType = queue_priority_storage(queue_priority_types_from_input($_POST['priority_types'] ?? []));
+        $priorityTypes = queue_priority_types_from_input($_POST['priority_types'] ?? []);
+        $priorityType = queue_priority_storage($priorityTypes);
         $serviceCategory = trim((string) ($_POST['service_category'] ?? ''));
         $laboratoryServiceIds = is_array($_POST['laboratory_service_ids'] ?? null) ? $_POST['laboratory_service_ids'] : [];
         $selectedLabServices = $serviceCategory === 'Laboratory Tests'
@@ -574,11 +590,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['queue_action'])) {
             $queueType = 'online';
         }
 
-        $patientStmt = $conn->prepare("SELECT id FROM users WHERE id = ? AND role = 'patient' LIMIT 1");
+        $patientStmt = $conn->prepare("SELECT id, date_of_birth, age FROM users WHERE id = ? AND role = 'patient' LIMIT 1");
         $patientStmt->bind_param('i', $patientId);
         $patientStmt->execute();
-        $patientExists = (bool) $patientStmt->get_result()->fetch_assoc();
+        $patientRecord = $patientStmt->get_result()->fetch_assoc();
+        $patientExists = is_array($patientRecord);
         $patientStmt->close();
+
+        if ($patientExists && queue_patient_is_senior($patientRecord)) {
+            $priorityTypes = ['senior'];
+            $priorityType = queue_priority_storage($priorityTypes);
+        }
 
         if (!$serviceIsAvailable) {
             $_SESSION['error'] = 'Selected service is not available right now.';
@@ -851,7 +873,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['queue_action'])) {
 
 $queuePatients = [];
 $patientNameSql = dbUsersNameExpression();
-$patientResult = $conn->query("SELECT id, {$patientNameSql} AS full_name, phone, email FROM users WHERE role = 'patient' AND COALESCE(is_active, 1) = 1 ORDER BY {$patientNameSql} ASC LIMIT 300");
+$patientResult = $conn->query("SELECT id, {$patientNameSql} AS full_name, phone, email, date_of_birth, age FROM users WHERE role = 'patient' AND COALESCE(is_active, 1) = 1 ORDER BY {$patientNameSql} ASC LIMIT 300");
 if ($patientResult) {
     $queuePatients = $patientResult->fetch_all(MYSQLI_ASSOC);
 }
@@ -1276,6 +1298,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var patientName = document.getElementById("queuePatientName");
     var patientCode = document.getElementById("queuePatientCode");
     var patientContact = document.getElementById("queuePatientContact");
+    var priorityOptions = Array.prototype.slice.call(document.querySelectorAll("input[name=\"priority_types[]\"]"));
     var queueAddForm = document.getElementById("queueAddForm");
     var serviceCategory = document.getElementById("queueServiceCategory");
     var serviceSubcategory = document.getElementById("queueServiceSubcategory");
@@ -1365,6 +1388,14 @@ document.addEventListener("DOMContentLoaded", function () {
         if (patientName) patientName.value = option ? (option.getAttribute("data-name") || "") : "";
         if (patientCode) patientCode.value = option ? (option.getAttribute("data-patient-code") || "") : "";
         if (patientContact) patientContact.value = option ? (option.getAttribute("data-contact") || "") : "";
+        var isSenior = option && option.getAttribute("data-is-senior") === "1";
+        priorityOptions.forEach(function(priorityOption) {
+            priorityOption.checked = false;
+        });
+        var seniorOption = priorityOptions.find(function(priorityOption) {
+            return priorityOption.value === "senior";
+        });
+        if (seniorOption) seniorOption.checked = Boolean(isSenior);
     }
 
     function filterPatients() {
@@ -1987,6 +2018,7 @@ include 'includes/header.php';
                                     data-name="<?php echo htmlspecialchars($patientName, ENT_QUOTES, 'UTF-8'); ?>"
                                     data-contact="<?php echo htmlspecialchars($patientContact, ENT_QUOTES, 'UTF-8'); ?>"
                                     data-patient-code="<?php echo htmlspecialchars($patientCode, ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-is-senior="<?php echo queue_patient_is_senior($patient) ? '1' : '0'; ?>"
                                 >
                                     <strong><?php echo htmlspecialchars($patientName); ?></strong>
                                     <span><?php echo htmlspecialchars($patientCode . ($patientContact !== '' ? ' | ' . $patientContact : '')); ?></span>
