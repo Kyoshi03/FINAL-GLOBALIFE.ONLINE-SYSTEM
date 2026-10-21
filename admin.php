@@ -3207,6 +3207,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 cancelReasonInput.required = !!needsReason;
             }
             if (cancelDetailsInput) cancelDetailsInput.value = "";
+            syncConfirmCancelDetailsField();
             if (cancelReasonError) cancelReasonError.classList.remove("is-open");
             confirmModal.classList.add("is-open");
             confirmModal.setAttribute("aria-hidden", "false");
@@ -3223,6 +3224,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var confirmCancelReasonWrap = document.getElementById("adminCancelReasonWrap");
     var confirmCancelReasonInput = document.getElementById("adminCancelReason");
     var confirmCancelDetailsInput = document.getElementById("adminCancelDetails");
+    var confirmCancelDetailsField = document.querySelector("[data-cancel-details-field]");
     var confirmCancelReasonError = document.getElementById("adminCancelReasonError");
     var actionSuccessModal = document.getElementById("adminActionSuccessModal");
     var actionSuccessTitle = document.getElementById("adminActionSuccessTitle");
@@ -3238,8 +3240,16 @@ document.addEventListener("DOMContentLoaded", function () {
         if (confirmCancelReasonWrap) confirmCancelReasonWrap.classList.remove("is-open");
         if (confirmCancelReasonInput) confirmCancelReasonInput.value = "";
         if (confirmCancelDetailsInput) confirmCancelDetailsInput.value = "";
+        if (confirmCancelDetailsField) confirmCancelDetailsField.style.display = "none";
         if (confirmCancelReasonError) confirmCancelReasonError.classList.remove("is-open");
     }
+
+    function syncConfirmCancelDetailsField() {
+        var show = confirmCancelReasonInput && confirmCancelReasonInput.value === "Other reason";
+        if (confirmCancelDetailsField) confirmCancelDetailsField.style.display = show ? "" : "none";
+        if (!show && confirmCancelDetailsInput) confirmCancelDetailsInput.value = "";
+    }
+    if (confirmCancelReasonInput) confirmCancelReasonInput.addEventListener("change", syncConfirmCancelDetailsField);
 
     function showActionSuccess(status, message) {
         closeModal();
@@ -4184,8 +4194,10 @@ include 'includes/header.php';
                     <option value="Emergency or urgent closure">Emergency or urgent closure</option>
                     <option value="Other reason">Other reason</option>
                 </select>
-                <label for="adminCancelDetails">Additional details <span>(optional)</span></label>
-                <textarea id="adminCancelDetails" maxlength="1000" placeholder="Add more details if needed"></textarea>
+                <div class="cancel-details-field" data-cancel-details-field style="display:none;">
+                    <label for="adminCancelDetails">Additional details <span>(optional)</span></label>
+                    <textarea id="adminCancelDetails" maxlength="1000" placeholder="Add more details if needed"></textarea>
+                </div>
                 <small id="adminCancelReasonError">Please add a reason before continuing.</small>
             </div>
             <div class="admin-modal-actions">

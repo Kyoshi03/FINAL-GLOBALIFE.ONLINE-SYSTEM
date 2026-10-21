@@ -140,6 +140,9 @@ if ($new_status === 'cancelled') {
     if (strlen($cancellationDetails) > 1000) {
         $cancellationDetails = substr($cancellationDetails, 0, 1000);
     }
+    if ($cancellationReason !== 'Other reason') {
+        $cancellationDetails = '';
+    }
 }
 
 // Update appointment status

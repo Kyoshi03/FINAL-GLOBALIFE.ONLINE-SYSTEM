@@ -2259,6 +2259,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var cancelReasonWrap = document.getElementById("doctorCancelReasonWrap");
     var cancelReasonInput = document.getElementById("doctorCancelReason");
     var cancelDetailsInput = document.getElementById("doctorCancelDetails");
+    var cancelDetailsField = document.querySelector("[data-cancel-details-field]");
     var cancelReasonError = document.getElementById("doctorCancelReasonError");
     var successModal = document.getElementById("doctorSuccessModal");
     var successTitle = document.getElementById("doctorSuccessTitle");
@@ -2314,8 +2315,16 @@ document.addEventListener("DOMContentLoaded", function () {
         if (cancelReasonWrap) cancelReasonWrap.classList.remove("is-open");
         if (cancelReasonInput) cancelReasonInput.value = "";
         if (cancelDetailsInput) cancelDetailsInput.value = "";
+        if (cancelDetailsField) cancelDetailsField.style.display = "none";
         if (cancelReasonError) cancelReasonError.classList.remove("is-open");
     }
+
+    function syncCancelDetailsField() {
+        var show = cancelReasonInput && cancelReasonInput.value === "Other reason";
+        if (cancelDetailsField) cancelDetailsField.style.display = show ? "" : "none";
+        if (!show && cancelDetailsInput) cancelDetailsInput.value = "";
+    }
+    if (cancelReasonInput) cancelReasonInput.addEventListener("change", syncCancelDetailsField);
 
     function showSuccessModal(status, message) {
         if (successTitle) {
@@ -2348,6 +2357,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 cancelReasonInput.required = !!needsReason;
             }
             if (cancelDetailsInput) cancelDetailsInput.value = "";
+            syncCancelDetailsField();
             if (cancelReasonError) cancelReasonError.classList.remove("is-open");
             confirmModal.classList.add("is-open");
             confirmModal.setAttribute("aria-hidden", "false");
@@ -3334,8 +3344,10 @@ include 'includes/header.php';
                     <option value="Emergency or urgent closure">Emergency or urgent closure</option>
                     <option value="Other reason">Other reason</option>
                 </select>
-                <label for="doctorCancelDetails">Additional details <span>(optional)</span></label>
-                <textarea id="doctorCancelDetails" maxlength="1000" placeholder="Add more details if needed"></textarea>
+                <div class="cancel-details-field" data-cancel-details-field style="display:none;">
+                    <label for="doctorCancelDetails">Additional details <span>(optional)</span></label>
+                    <textarea id="doctorCancelDetails" maxlength="1000" placeholder="Add more details if needed"></textarea>
+                </div>
                 <small id="doctorCancelReasonError">Please add a reason before continuing.</small>
             </div>
             <div class="doctor-confirm-actions">

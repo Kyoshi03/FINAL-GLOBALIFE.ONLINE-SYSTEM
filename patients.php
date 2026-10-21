@@ -339,6 +339,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['patient_action'] ?? '') ==
         $cancelMessage = 'Please select a valid cancellation reason.';
         $_SESSION['patient_dashboard_error'] = $cancelMessage;
     } else {
+        if ($cancellationReason !== 'Other reason') {
+            $cancellationDetails = '';
+        }
         $cancelStatus = 'cancelled';
         $cancelledByRole = 'patient';
         $cancelledByUserId = (int) ($currentUser['id'] ?? 0);
@@ -5320,8 +5323,10 @@ include 'includes/header.php';
                     <option value="Found another clinic">Found another clinic</option>
                     <option value="Other reason">Other reason</option>
                 </select>
-                <label for="patientCancelDetails">Additional details <span>(optional)</span></label>
-                <textarea id="patientCancelDetails" maxlength="1000" placeholder="Add more details if needed"></textarea>
+                <div class="cancel-details-field" data-cancel-details-field style="display:none;">
+                    <label for="patientCancelDetails">Additional details <span>(optional)</span></label>
+                    <textarea id="patientCancelDetails" maxlength="1000" placeholder="Add more details if needed"></textarea>
+                </div>
                 <div class="patient-cancel-error" id="patientCancelReasonError">Please add a reason before continuing.</div>
             </div>
             <div class="patient-appointment-actions">
@@ -5631,6 +5636,7 @@ include 'includes/header.php';
         const cancelText = document.getElementById('patientCancelText');
         const cancelReason = document.getElementById('patientCancelReason');
         const cancelDetails = document.getElementById('patientCancelDetails');
+        const cancelDetailsField = document.querySelector('[data-cancel-details-field]');
         const cancelReasonError = document.getElementById('patientCancelReasonError');
         const cancelYes = document.getElementById('patientCancelYes');
         let pendingCancelForm = null;
@@ -5667,8 +5673,17 @@ include 'includes/header.php';
             pendingCancelForm = null;
             if (cancelReason) cancelReason.value = '';
             if (cancelDetails) cancelDetails.value = '';
+            syncCancelDetailsField();
             if (cancelReasonError) cancelReasonError.classList.remove('is-open');
         }
+
+        function syncCancelDetailsField() {
+            const show = cancelReason && cancelReason.value === 'Other reason';
+            if (cancelDetailsField) cancelDetailsField.style.display = show ? '' : 'none';
+            if (!show && cancelDetails) cancelDetails.value = '';
+        }
+
+        if (cancelReason) cancelReason.addEventListener('change', syncCancelDetailsField);
 
         function showCancelSuccessModal() {
             shouldReloadAfterSuccess = true;
@@ -5772,6 +5787,7 @@ include 'includes/header.php';
                 }
                 if (cancelReason) cancelReason.value = '';
                 if (cancelDetails) cancelDetails.value = '';
+                syncCancelDetailsField();
                 if (cancelReasonError) cancelReasonError.classList.remove('is-open');
                 openPatientModal(cancelModal);
                 if (cancelReason) {

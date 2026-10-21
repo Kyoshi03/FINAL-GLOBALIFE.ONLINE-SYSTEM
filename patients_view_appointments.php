@@ -2129,8 +2129,10 @@ include __DIR__ . '/includes/header.php';
                 <option value="Found another clinic">Found another clinic</option>
                 <option value="Other reason">Other reason</option>
             </select>
-            <label for="statusCancelDetails">Additional details <span>(optional)</span></label>
-            <textarea id="statusCancelDetails" maxlength="1000" placeholder="Add more details if needed"></textarea>
+            <div class="cancel-details-field" data-cancel-details-field style="display:none;">
+                <label for="statusCancelDetails">Additional details <span>(optional)</span></label>
+                <textarea id="statusCancelDetails" maxlength="1000" placeholder="Add more details if needed"></textarea>
+            </div>
             <div class="cancel-reason-error" id="statusCancelReasonError">Please add a reason before continuing.</div>
         </div>
         <div class="appointment-modal-actions" style="padding-top:20px;">
@@ -2183,6 +2185,7 @@ include __DIR__ . '/includes/header.php';
     var cancelReasonWrap = document.getElementById('statusCancelReasonWrap');
     var cancelReasonInput = document.getElementById('statusCancelReason');
     var cancelDetailsInput = document.getElementById('statusCancelDetails');
+    var cancelDetailsField = document.querySelector('[data-cancel-details-field]');
     var cancelReasonError = document.getElementById('statusCancelReasonError');
     var pendingForm = null;
     var searchInput = document.getElementById('appointmentSearch');
@@ -2227,9 +2230,16 @@ include __DIR__ . '/includes/header.php';
         pendingForm = null;
         if (cancelReasonInput) cancelReasonInput.value = '';
         if (cancelDetailsInput) cancelDetailsInput.value = '';
+        syncCancelDetailsField();
         if (cancelReasonWrap) cancelReasonWrap.classList.remove('is-open');
         if (cancelReasonError) cancelReasonError.classList.remove('is-open');
     }
+    function syncCancelDetailsField() {
+        var show = cancelReasonInput && cancelReasonInput.value === 'Other reason';
+        if (cancelDetailsField) cancelDetailsField.style.display = show ? '' : 'none';
+        if (!show && cancelDetailsInput) cancelDetailsInput.value = '';
+    }
+    if (cancelReasonInput) cancelReasonInput.addEventListener('change', syncCancelDetailsField);
     function text(value) {
         return value === undefined || value === null || value === '' ? 'N/A' : String(value);
     }
@@ -2618,6 +2628,7 @@ include __DIR__ . '/includes/header.php';
                 cancelReasonInput.required = !!needsReason;
             }
             if (cancelDetailsInput) cancelDetailsInput.value = '';
+            syncCancelDetailsField();
             if (cancelReasonError) cancelReasonError.classList.remove('is-open');
             openModal(confirmModal);
             if (needsReason && cancelReasonInput) {
