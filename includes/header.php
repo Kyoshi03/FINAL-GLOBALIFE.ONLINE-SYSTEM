@@ -3112,18 +3112,23 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
         $topbarMarkNotificationsUrl = $topbarRole === 'admin'
             ? 'mark_admin_notifications.php'
             : ($topbarRole === 'doctor' ? 'mark_clinic_notifications.php' : 'mark_patient_notifications.php');
+        $hidePatientAppointmentsTopbarTitle = $topbarRole === 'patient'
+            && $currentPage === 'patients_view_appointments.php'
+            && strtolower(trim((string) ($_GET['view'] ?? 'active'))) !== 'history';
         ?>
         <div class="patient-app-topbar" aria-label="Workspace toolbar">
-            <div class="topbar-breadcrumb<?php echo $topbarParentTitle === '' ? ' is-title-only' : ''; ?>" aria-label="Page location">
-                <?php if ($topbarParentTitle !== ''): ?>
-                    <span><?php echo htmlspecialchars($topbarParentTitle); ?></span>
-                    <span class="topbar-chevron" aria-hidden="true">
-                        <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-                    </span>
-                <?php endif; ?>
-                <strong class="topbar-current"><?php echo htmlspecialchars($patientTopbarTitle); ?></strong>
-            </div>
-            <h2><?php echo htmlspecialchars($patientTopbarTitle); ?></h2>
+            <?php if (!$hidePatientAppointmentsTopbarTitle): ?>
+                <div class="topbar-breadcrumb<?php echo $topbarParentTitle === '' ? ' is-title-only' : ''; ?>" aria-label="Page location">
+                    <?php if ($topbarParentTitle !== ''): ?>
+                        <span><?php echo htmlspecialchars($topbarParentTitle); ?></span>
+                        <span class="topbar-chevron" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+                        </span>
+                    <?php endif; ?>
+                    <strong class="topbar-current"><?php echo htmlspecialchars($patientTopbarTitle); ?></strong>
+                </div>
+                <h2><?php echo htmlspecialchars($patientTopbarTitle); ?></h2>
+            <?php endif; ?>
             <div class="patient-topbar-actions">
                 <?php if ($topbarCalendarHref !== ''): ?>
                     <a href="<?php echo htmlspecialchars($topbarCalendarHref); ?>" class="patient-round-btn topbar-calendar-link<?php echo in_array($currentPage, ['patient_calendar.php', 'admin_calendar.php', 'calendar.php'], true) ? ' is-active' : ''; ?>" aria-label="Open clinic calendar" title="Calendar">
