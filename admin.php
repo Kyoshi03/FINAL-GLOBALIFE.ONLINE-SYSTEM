@@ -539,10 +539,6 @@ body {
 }
 
 .admin-hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 260px;
-    gap: 16px;
-    align-items: stretch;
     margin-bottom: 18px;
 }
 
@@ -558,12 +554,84 @@ body {
 }
 
 .hero-main {
-    background: linear-gradient(135deg, #0077b6 0%, #064b9f 100%);
+    position: relative;
+    min-height: 238px;
+    overflow: hidden;
+    border-color: rgba(255, 255, 255, 0.35);
+    border-radius: 18px;
+    background: linear-gradient(115deg, #24c4c5 0%, #36b7e5 52%, #63c9ec 100%);
     color: #ffffff;
-    padding: 28px 32px;
+    padding: 30px 42px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.admin-hero-copy {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    min-width: 0;
+}
+
+.admin-hero-avatar {
     display: grid;
-    align-content: center;
-    gap: 8px;
+    place-items: center;
+    flex: 0 0 128px;
+    width: 128px;
+    height: 128px;
+    border: 5px solid rgba(255, 255, 255, 0.88);
+    border-radius: 50%;
+    background: rgba(238, 248, 255, 0.92);
+    color: #0874b8;
+    font-size: 2.35rem;
+    font-weight: 950;
+    box-shadow: 0 12px 24px rgba(6, 92, 143, 0.14);
+}
+
+.admin-hero-text {
+    min-width: 0;
+}
+
+.admin-hero-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    margin-top: 18px;
+    padding: 10px 24px;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 10px;
+    background: #ffffff;
+    color: #0874b8;
+    font-weight: 950;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-hero-action:hover,
+.admin-hero-action:focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(6, 92, 143, 0.18);
+    outline: none;
+}
+
+.admin-hero-art {
+    position: relative;
+    z-index: 1;
+    flex: 0 1 470px;
+    width: min(44%, 470px);
+    min-width: 300px;
+}
+
+.admin-hero-art svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(0 12px 16px rgba(6, 92, 143, 0.12));
 }
 
 .eyebrow {
@@ -578,7 +646,7 @@ body {
 .hero-main h1 {
     margin: 0;
     color: #ffffff;
-    font-size: 2rem;
+    font-size: 2.2rem;
     line-height: 1.15;
 }
 
@@ -2811,6 +2879,37 @@ body {
         padding: 18px 12px 36px;
     }
 
+    .hero-main {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 24px;
+    }
+
+    .admin-hero-copy {
+        align-items: flex-start;
+        gap: 16px;
+        width: 100%;
+    }
+
+    .admin-hero-avatar {
+        flex-basis: 76px;
+        width: 76px;
+        height: 76px;
+        border-width: 3px;
+        font-size: 1.4rem;
+    }
+
+    .hero-main h1 {
+        font-size: 1.7rem;
+    }
+
+    .admin-hero-art {
+        align-self: flex-end;
+        width: min(100%, 340px);
+        min-width: 0;
+        margin-top: 4px;
+    }
+
     .panel.trend-panel {
         padding: 20px 16px 16px;
     }
@@ -3714,19 +3813,61 @@ include 'includes/header.php';
 <main class="admin-wrap">
     <section class="admin-hero">
         <div class="hero-main">
-            <p class="eyebrow">Clinic overview</p>
-            <h1>Administrator Dashboard</h1>
-            <p>Welcome back. Here is what needs attention in the clinic today.</p>
-        </div>
-        <aside class="hero-side" aria-label="Current admin">
-            <div class="clinic-illustration" aria-hidden="true">
-                <span class="tube one"></span>
-                <span class="tube two"></span>
-                <span class="tube three"></span>
-                <span class="clipboard"></span>
-                <span class="leaf"></span>
+            <div class="admin-hero-copy">
+                <div class="admin-hero-avatar" aria-hidden="true">AD</div>
+                <div class="admin-hero-text">
+                    <p class="eyebrow">Clinic overview</p>
+                    <h1>Welcome back, Admin</h1>
+                    <p>Manage appointments and today's queue.</p>
+                    <a class="admin-hero-action" href="admin_view_appointments.php">View Appointments</a>
+                </div>
             </div>
-        </aside>
+            <div class="admin-hero-art" aria-hidden="true">
+                <svg viewBox="0 0 520 240" role="presentation">
+                    <path d="M34 163c42-55 94-45 125-12-35 8-73 33-91 67-14-13-24-32-34-55z" fill="#119ebc" opacity=".52"/>
+                    <path d="M104 185c-2-42 28-69 64-73-5 35-5 67-22 96-16-4-30-12-42-23z" fill="#0c8db2" opacity=".62"/>
+                    <path d="M438 158c18-48 52-66 78-61-12 22-18 48-48 76-12-3-22-8-30-15z" fill="#118eae" opacity=".55"/>
+                    <path d="M405 187c22-35 58-43 91-29-25 17-43 39-74 51-7-7-12-14-17-22z" fill="#087fa8" opacity=".64"/>
+                    <g>
+                        <rect x="112" y="55" width="210" height="142" rx="18" fill="#f9fdff" opacity=".96"/>
+                        <rect x="112" y="55" width="210" height="43" rx="18" fill="#ffffff"/>
+                        <rect x="112" y="79" width="210" height="19" fill="#26b9ce"/>
+                        <rect x="137" y="37" width="12" height="39" rx="6" fill="#eafaff"/>
+                        <rect x="285" y="37" width="12" height="39" rx="6" fill="#eafaff"/>
+                        <g fill="#bcebf2">
+                            <rect x="139" y="115" width="28" height="23" rx="6"/>
+                            <rect x="181" y="115" width="28" height="23" rx="6"/>
+                            <rect x="223" y="115" width="28" height="23" rx="6"/>
+                            <rect x="265" y="115" width="28" height="23" rx="6"/>
+                            <rect x="139" y="151" width="28" height="23" rx="6"/>
+                            <rect x="181" y="151" width="28" height="23" rx="6"/>
+                            <rect x="223" y="151" width="28" height="23" rx="6"/>
+                        </g>
+                        <rect x="265" y="151" width="28" height="23" rx="6" fill="#087fc0"/>
+                    </g>
+                    <g transform="rotate(7 363 126)">
+                        <rect x="318" y="66" width="138" height="150" rx="12" fill="#eefaff" stroke="#075d9b" stroke-width="7"/>
+                        <rect x="342" y="52" width="58" height="21" rx="7" fill="#0874b8"/>
+                        <circle cx="371" cy="52" r="6" fill="#0874b8"/>
+                        <g fill="#27b9cf">
+                            <rect x="338" y="93" width="25" height="25" rx="6"/>
+                            <rect x="338" y="132" width="25" height="25" rx="6"/>
+                            <rect x="338" y="171" width="25" height="25" rx="6"/>
+                        </g>
+                        <g fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m344 106 6 6 10-12"/>
+                            <path d="m344 145 6 6 10-12"/>
+                            <path d="m344 184 6 6 10-12"/>
+                        </g>
+                        <g stroke="#7dd7e5" stroke-width="7" stroke-linecap="round">
+                            <path d="M376 104h50"/>
+                            <path d="M376 143h50"/>
+                            <path d="M376 182h50"/>
+                        </g>
+                    </g>
+                </svg>
+            </div>
+        </div>
     </section>
 
     <?php if ($message): ?>
