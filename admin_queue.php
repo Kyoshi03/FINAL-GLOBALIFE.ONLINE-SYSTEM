@@ -139,7 +139,8 @@ function queue_sync_confirmed_appointments(mysqli $conn, string $date): void {
 
     try {
         $patientNameSql = dbUsersNameExpression('p');
-        $stmt = $conn->prepare("SELECT a.id, a.patient_id, a.appointment_time, a.booking_type, a.notes, a.total_display_price
+        $stmt = $conn->prepare("SELECT a.id, a.patient_id, a.appointment_time, a.booking_type, a.notes, a.total_display_price,
+                                       p.date_of_birth, p.age
             FROM appointments a
             JOIN users p ON p.id = a.patient_id
             LEFT JOIN clinic_queue q ON q.appointment_id = a.id AND q.queue_date = ?
@@ -164,17 +165,18 @@ function queue_sync_confirmed_appointments(mysqli $conn, string $date): void {
             $appointmentId = (int) ($appointment['id'] ?? 0);
             $service = queue_services_text($appointment);
             $serviceTotal = (float) ($appointment['total_display_price'] ?? 0);
+            $priorityType = queue_patient_is_senior($appointment) ? 'senior' : '';
             if ($patientId <= 0 || $appointmentId <= 0 || $service === '') {
                 continue;
             }
 
             $insertStmt = $conn->prepare("INSERT INTO clinic_queue
                 (queue_date, queue_type, queue_number, patient_id, appointment_id, service, service_total, priority_type, status)
-                VALUES (?, 'online', ?, ?, ?, ?, ?, '', 'waiting')");
+                VALUES (?, 'online', ?, ?, ?, ?, ?, ?, 'waiting')");
             if (!$insertStmt) {
                 continue;
             }
-            $insertStmt->bind_param('ssiisd', $date, $queueNumber, $patientId, $appointmentId, $service, $serviceTotal);
+            $insertStmt->bind_param('ssiisds', $date, $queueNumber, $patientId, $appointmentId, $service, $serviceTotal, $priorityType);
             $insertStmt->execute();
             $insertStmt->close();
         }
@@ -241,6 +243,18 @@ function queue_patient_is_senior(array $patient): bool {
     }
 
     return (int) ($patient['age'] ?? 0) >= 60;
+}
+
+function queue_sync_senior_priorities(mysqli $conn): void {
+    $conn->query("UPDATE clinic_queue q
+        INNER JOIN users p ON p.id = q.patient_id
+        SET q.priority_type = 'senior'
+        WHERE TRIM(COALESCE(q.priority_type, '')) = ''
+          AND (
+              (p.date_of_birth IS NOT NULL AND p.date_of_birth <> '0000-00-00'
+               AND TIMESTAMPDIFF(YEAR, p.date_of_birth, CURDATE()) >= 60)
+              OR COALESCE(p.age, 0) >= 60
+          )");
 }
 
 function queue_priority_types(?string $priority): array {
@@ -512,6 +526,7 @@ $conn = getDBConnection();
 queue_init_schema($conn);
 init_doctor_schema_and_accounts($conn);
 queue_reconcile_linked_appointments($conn);
+queue_sync_senior_priorities($conn);
 queue_sync_confirmed_appointments($conn, $today);
 
 $message = $_SESSION['success'] ?? '';

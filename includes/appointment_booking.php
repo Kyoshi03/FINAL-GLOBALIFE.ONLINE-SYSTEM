@@ -288,6 +288,7 @@ function appointment_init_queue_schema(mysqli $conn): void {
         patient_id INT NOT NULL,
         appointment_id INT DEFAULT NULL,
         service VARCHAR(160) NOT NULL DEFAULT 'General Consultation',
+        priority_type VARCHAR(100) NOT NULL DEFAULT '',
         status ENUM('waiting','serving','completed','cancelled') NOT NULL DEFAULT 'waiting',
         time_added DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         time_called DATETIME DEFAULT NULL,
@@ -301,6 +302,10 @@ function appointment_init_queue_schema(mysqli $conn): void {
     $statusColumn = $statusResult ? $statusResult->fetch_assoc() : null;
     if ($statusColumn && strpos((string) ($statusColumn['Type'] ?? ''), "'cancelled'") === false) {
         $conn->query("ALTER TABLE clinic_queue MODIFY COLUMN status ENUM('waiting','serving','completed','cancelled') NOT NULL DEFAULT 'waiting'");
+    }
+    $priorityResult = $conn->query("SHOW COLUMNS FROM clinic_queue LIKE 'priority_type'");
+    if (!$priorityResult || $priorityResult->num_rows === 0) {
+        $conn->query("ALTER TABLE clinic_queue ADD COLUMN priority_type VARCHAR(100) NOT NULL DEFAULT '' AFTER service");
     }
     $conn->query("CREATE TABLE IF NOT EXISTS clinic_queue_services (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -383,6 +388,33 @@ function appointment_next_online_queue_number(mysqli $conn, string $date): strin
     return 'O-' . str_pad((string) $next, 3, '0', STR_PAD_LEFT);
 }
 
+function appointment_patient_is_senior(mysqli $conn, int $patientId): bool {
+    if ($patientId <= 0) {
+        return false;
+    }
+    $stmt = $conn->prepare('SELECT date_of_birth, age FROM users WHERE id = ? AND role = \'patient\' LIMIT 1');
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('i', $patientId);
+    $stmt->execute();
+    $patient = $stmt->get_result()->fetch_assoc() ?: [];
+    $stmt->close();
+
+    $dateOfBirth = trim((string) ($patient['date_of_birth'] ?? ''));
+    if ($dateOfBirth !== '' && $dateOfBirth !== '0000-00-00') {
+        try {
+            $birthDate = new DateTimeImmutable($dateOfBirth);
+            $todayDate = new DateTimeImmutable('today', new DateTimeZone('Asia/Manila'));
+            return $birthDate <= $todayDate && $birthDate->diff($todayDate)->y >= 60;
+        } catch (Throwable $e) {
+            // Fall back to the stored age when the birth date is invalid.
+        }
+    }
+
+    return (int) ($patient['age'] ?? 0) >= 60;
+}
+
 function appointment_create_online_queue(mysqli $conn, int $appointmentId, int $patientId, string $date, string $service): string {
     $existingStmt = $conn->prepare("SELECT queue_number FROM clinic_queue WHERE appointment_id = ? AND status <> 'cancelled' LIMIT 1");
     $existingStmt->bind_param('i', $appointmentId);
@@ -395,8 +427,9 @@ function appointment_create_online_queue(mysqli $conn, int $appointmentId, int $
 
     $queueNumber = appointment_next_online_queue_number($conn, $date);
     $queueType = 'online';
-    $insertStmt = $conn->prepare("INSERT INTO clinic_queue (queue_date, queue_type, queue_number, patient_id, appointment_id, service, status) VALUES (?, ?, ?, ?, ?, ?, 'waiting')");
-    $insertStmt->bind_param('sssiis', $date, $queueType, $queueNumber, $patientId, $appointmentId, $service);
+    $priorityType = appointment_patient_is_senior($conn, $patientId) ? 'senior' : '';
+    $insertStmt = $conn->prepare("INSERT INTO clinic_queue (queue_date, queue_type, queue_number, patient_id, appointment_id, service, priority_type, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'waiting')");
+    $insertStmt->bind_param('sssiiss', $date, $queueType, $queueNumber, $patientId, $appointmentId, $service, $priorityType);
     if (!$insertStmt->execute()) {
         throw new RuntimeException('Could not generate the queue number.');
     }
