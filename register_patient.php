@@ -498,7 +498,7 @@ $additionalStyles = '
     }
     .name-grid {
         display: grid;
-        grid-template-columns: 1.5fr 1fr 1.7fr 0.7fr;
+        grid-template-columns: 1.35fr 1fr 1.55fr 1fr;
         gap: 16px;
         margin-bottom: 15px;
     }
@@ -589,6 +589,11 @@ $additionalStyles = '
         cursor: pointer;
         color-scheme: light;
         transition: border-color 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .name-grid .suffix-select {
+        min-width: 0;
+        padding-right: 34px;
+        text-overflow: ellipsis;
     }
     .form-group input[type="password"] {
         padding-right: 50px;
@@ -1739,7 +1744,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                     </svg>
                                     <?php $selectedSuffix = !empty($success) ? '' : trim((string) ($_POST['suffix'] ?? '')); ?>
-                                    <select id="suffix" name="suffix" aria-label="Select suffix">
+                                    <select id="suffix" name="suffix" class="suffix-select" aria-label="Select suffix">
                                         <option value="" <?php echo $selectedSuffix === '' ? 'selected' : ''; ?>>Select suffix</option>
                                         <?php foreach ($suffixOptions as $suffixOption): ?>
                                             <option value="<?php echo htmlspecialchars($suffixOption); ?>" <?php echo strcasecmp($selectedSuffix, $suffixOption) === 0 ? 'selected' : ''; ?>><?php echo htmlspecialchars($suffixOption); ?></option>

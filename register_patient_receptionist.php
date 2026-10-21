@@ -357,6 +357,11 @@ $additionalStyles = '
         color-scheme: light;
         transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
     }
+    .form-group select.suffix-select {
+        min-width: 0;
+        padding-right: 36px;
+        text-overflow: ellipsis;
+    }
     .form-group input::placeholder,
     .form-group textarea::placeholder {
         color: #8aa0ad;
@@ -1141,7 +1146,7 @@ include 'includes/header.php';
                             </div>
                             <div class="form-group">
                                 <label for="suffix">Suffix <span class="optional">(optional)</span></label>
-                                <select id="suffix" name="suffix">
+                                <select id="suffix" name="suffix" class="suffix-select">
                                     <option value="" <?php echo rpr_selected('suffix', '') ? 'selected' : ''; ?>>Select suffix</option>
                                     <?php foreach ($rprSuffixOptions as $suffixOption): ?>
                                         <option value="<?php echo htmlspecialchars($suffixOption); ?>" <?php echo strcasecmp((string) ($_POST['suffix'] ?? ''), $suffixOption) === 0 ? 'selected' : ''; ?>><?php echo htmlspecialchars($suffixOption); ?></option>

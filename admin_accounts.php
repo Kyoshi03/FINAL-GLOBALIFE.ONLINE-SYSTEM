@@ -409,6 +409,7 @@ body{background:#f4f8fb;color:#1f343d}
 .doctor-field{display:grid;gap:6px;margin-bottom:11px}
 .doctor-field label{color:#5f7280;font-size:.82rem;font-weight:950}
 .doctor-field input,.doctor-field select{width:100%;min-height:42px;box-sizing:border-box;border:1px solid #cfe0e9;border-radius:7px;background:#fff;color:#183b4d;padding:9px 11px;font:inherit}
+.doctor-field select.suffix-select{min-width:0;padding-right:34px;text-overflow:ellipsis}
 .doctor-slot-row{display:grid;grid-template-columns:minmax(135px,.9fr) minmax(130px,1fr) minmax(130px,1fr) auto;gap:10px;align-items:end;margin-bottom:10px}
 .doctor-modal-actions{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:10px;margin-top:12px}
 .patient-detail-modal-card{width:min(980px,100%);max-height:90vh;overflow:auto;border-radius:16px;position:relative;box-shadow:0 28px 80px rgba(7,24,38,.22)}
@@ -1246,7 +1247,7 @@ include 'includes/header.php';
                                                 <?php $currentDoctorSuffix = trim((string) ($user['suffix'] ?? '')); ?>
                                                 <div class="doctor-field">
                                                     <label>Suffix</label>
-                                                    <select name="suffix">
+                                                    <select name="suffix" class="suffix-select">
                                                         <option value="" <?php echo $currentDoctorSuffix === '' ? 'selected' : ''; ?>>Select suffix</option>
                                                         <?php foreach ($suffixOptions as $suffixOption): ?>
                                                             <option value="<?php echo htmlspecialchars($suffixOption); ?>" <?php echo strcasecmp($currentDoctorSuffix, $suffixOption) === 0 ? 'selected' : ''; ?>><?php echo htmlspecialchars($suffixOption); ?></option>
