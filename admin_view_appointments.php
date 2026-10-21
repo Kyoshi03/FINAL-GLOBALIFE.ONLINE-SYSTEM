@@ -1142,6 +1142,93 @@ $additionalStyles = patientAvatarStyles() . '
         background:#eee7ff;
         border-color:#bfa7ea;
     }
+    .request-actions {
+        position:relative;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        width:100%;
+        min-width:0;
+        max-width:210px;
+        margin-inline:auto;
+    }
+    .request-menu-trigger {
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        width:38px;
+        height:34px;
+        padding:0 0 5px;
+        border:1px solid #cfe1ee;
+        border-radius:8px;
+        color:#0b4f80;
+        background:#f8fcff;
+        font:inherit;
+        font-size:1.35rem;
+        font-weight:950;
+        line-height:1;
+        cursor:pointer;
+    }
+    .request-menu-trigger:hover,
+    .request-menu-trigger:focus-visible,
+    .request-actions.is-open .request-menu-trigger {
+        border-color:#8ed9ef;
+        background:#eaf8ff;
+        outline:none;
+    }
+    .request-actions-menu {
+        position:absolute;
+        top:calc(100% + 6px);
+        right:0;
+        z-index:100;
+        display:none;
+        width:156px;
+        max-width:calc(100vw - 24px);
+        padding:5px;
+        border:1px solid #cfe1ee;
+        border-radius:8px;
+        background:#fff;
+        box-shadow:0 12px 28px rgba(7,59,76,.18);
+    }
+    .request-actions.is-open .request-actions-menu {
+        display:grid;
+        gap:3px;
+    }
+    .request-actions-menu form,
+    .request-actions-menu > button {
+        width:100%;
+        min-width:0;
+        margin:0;
+    }
+    .request-menu-item {
+        display:block;
+        min-height:34px;
+        padding:7px 10px;
+        border:1px solid transparent;
+        border-radius:6px;
+        color:#0b4f80;
+        background:#fff;
+        font:inherit;
+        font-size:.76rem;
+        font-weight:850;
+        line-height:1.1;
+        text-align:left;
+        cursor:pointer;
+    }
+    .request-menu-item:hover,
+    .request-menu-item:focus-visible {
+        border-color:#cfe1ee;
+        background:#eef8ff;
+        outline:none;
+    }
+    .request-menu-item.confirm { color:#126b3a; }
+    .request-menu-item.cancel { color:#b42335; }
+    .request-menu-item.reschedule { color:#9a6700; }
+    .request-menu-item.details { color:#475569; }
+    .request-menu-item.details:hover,
+    .request-menu-item.details:focus-visible { background:#f1f5f9; }
+    .request-menu-item.pwd-id { color:#5b3a91; }
+    .request-action-form { display:block; }
     .appointment-modal-actions .btn-view {
         background:#0077b6;
         color:#fff;
@@ -1485,6 +1572,8 @@ $additionalStyles = patientAvatarStyles() . '
         .appointments-table td::before { flex: 0 0 38%; content: attr(data-label); color: #708792; font-size: .7rem; font-weight: 800; letter-spacing: .04em; text-align: left; text-transform: uppercase; }
         .appointments-table td:last-child { border-bottom: 0; }
         .appointments-table td .action-buttons { flex: 1; justify-content: flex-end; }
+        .appointments-table td .request-actions { max-width: none; }
+        .appointments-table td .request-actions-menu { right: auto; left: 50%; transform: translateX(-50%); }
         .admin-history-filters, .appointment-custom-range { grid-template-columns: 1fr; }
         .appointment-filter-actions { justify-content: flex-start; }
     }
@@ -2214,56 +2303,58 @@ include __DIR__ . '/includes/header.php';
                                 </div>
                             </td>
                             <td data-label="Actions">
-                                <div class="action-buttons <?php echo $canReviewReschedule ? 'reschedule-actions' : (((($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation')) && $appointment['status'] === 'pending') ? 'pending-actions' : ''); ?><?php echo $hasPwdId ? ' has-pwd-id' : ''; ?>">
-                                    <button type="button" class="btn btn-details" data-open-details>View</button>
-                                    <?php if ($hasPwdId && $patientId > 0): ?>
-                                        <button type="button" class="btn btn-pwd-id" data-view-pwd-id
-                                            data-patient-id="<?php echo $patientId; ?>"
-                                            data-patient-name="<?php echo htmlspecialchars((string) ($patientDisplay['patient_name'] ?? 'Patient'), ENT_QUOTES, 'UTF-8'); ?>">View PWD ID</button>
-                                    <?php endif; ?>
-                                    <?php if ($canAdminReschedule): ?>
-                                        <button type="button" class="btn btn-reschedule"
-                                            data-open-reschedule
-                                            data-appointment-id="<?php echo (int) ($appointment['id'] ?? 0); ?>"
-                                            data-reschedule-date="<?php echo htmlspecialchars((string) ($appointment['appointment_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                                            data-reschedule-time="<?php echo htmlspecialchars((string) ($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                                            data-reschedule-label="Current schedule: <?php echo htmlspecialchars($formattedDate . ' at ' . $formattedTime, ENT_QUOTES, 'UTF-8'); ?>"
-                                            data-reschedule-mode="admin">Reschedule</button>
-                                    <?php endif; ?>
-                                    <?php if ($canReviewReschedule): ?>
-                                        <small class="reschedule-review-note"><strong>Pending reschedule</strong><br><span>Approval required</span></small>
-                                        <form method="POST" action="process_reschedule_request.php" class="reschedule-action-form">
-                                            <input type="hidden" name="request_id" value="<?php echo (int) $appointment['reschedule_request_id']; ?>">
-                                            <input type="hidden" name="action" value="approve">
-                                            <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
-                                            <button type="submit" class="btn btn-confirm" data-confirm-message="Approve this reschedule request?">Approve</button>
-                                        </form>
-                                        <button type="button" class="btn btn-cancel" data-open-rejection data-request-id="<?php echo (int) $appointment['reschedule_request_id']; ?>" data-return-url="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">Reject</button>
-                                    <?php endif; ?>
-                                    <?php if (($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation' && $appointment['status'] === 'pending')): ?>
-                                        <?php if ($appointment['status'] === 'pending'): ?>
-                                            <form method="POST" action="update_appointment_status.php" class="confirm-action">
-                                                <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
-                                                <input type="hidden" name="status" value="confirmed">
+                                <div class="request-actions" data-action-menu>
+                                    <button type="button" class="request-menu-trigger" aria-label="Open actions for <?php echo htmlspecialchars((string) ($patientDisplay['patient_name'] ?? 'Patient'), ENT_QUOTES, 'UTF-8'); ?>" aria-haspopup="menu" aria-expanded="false" data-action-menu-trigger>&#8943;</button>
+                                    <div class="request-actions-menu" role="menu" aria-label="Appointment actions">
+                                        <?php if (($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation' && $appointment['status'] === 'pending')): ?>
+                                            <?php if ($appointment['status'] === 'pending'): ?>
+                                                <form method="POST" action="update_appointment_status.php" class="request-action-form">
+                                                    <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
+                                                    <input type="hidden" name="status" value="confirmed">
+                                                    <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
+                                                    <button type="submit" class="request-menu-item confirm" role="menuitem" data-confirm-message="Are you sure you want to confirm this appointment?">Confirm</button>
+                                                </form>
+                                                <form method="POST" action="update_appointment_status.php" class="request-action-form">
+                                                    <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
+                                                    <input type="hidden" name="status" value="cancelled">
+                                                    <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
+                                                    <button type="submit" class="request-menu-item cancel" role="menuitem" data-confirm-message="Are you sure you want to cancel this appointment?">Cancel</button>
+                                                </form>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                        <?php if ($canAdminReschedule): ?>
+                                            <button type="button" class="request-menu-item reschedule" role="menuitem"
+                                                data-open-reschedule
+                                                data-appointment-id="<?php echo (int) ($appointment['id'] ?? 0); ?>"
+                                                data-reschedule-date="<?php echo htmlspecialchars((string) ($appointment['appointment_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                                data-reschedule-time="<?php echo htmlspecialchars((string) ($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                                data-reschedule-label="Current schedule: <?php echo htmlspecialchars($formattedDate . ' at ' . $formattedTime, ENT_QUOTES, 'UTF-8'); ?>"
+                                                data-reschedule-mode="admin">Reschedule</button>
+                                        <?php endif; ?>
+                                        <?php if ($canReviewReschedule): ?>
+                                            <form method="POST" action="process_reschedule_request.php" class="request-action-form">
+                                                <input type="hidden" name="request_id" value="<?php echo (int) $appointment['reschedule_request_id']; ?>">
+                                                <input type="hidden" name="action" value="approve">
                                                 <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
-                                                <button type="submit" class="btn btn-confirm" data-confirm-message="Are you sure you want to confirm this appointment?">Confirm</button>
+                                                <button type="submit" class="request-menu-item confirm" role="menuitem" data-confirm-message="Approve this reschedule request?">Approve</button>
                                             </form>
-                                            <form method="POST" action="update_appointment_status.php" class="decline-action">
+                                            <button type="button" class="request-menu-item cancel" role="menuitem" data-open-rejection data-request-id="<?php echo (int) $appointment['reschedule_request_id']; ?>" data-return-url="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">Reject</button>
+                                        <?php endif; ?>
+                                        <button type="button" class="request-menu-item details" role="menuitem" data-open-details>Details</button>
+                                        <?php if ($hasPwdId && $patientId > 0): ?>
+                                            <button type="button" class="request-menu-item pwd-id" role="menuitem" data-view-pwd-id
+                                                data-patient-id="<?php echo $patientId; ?>"
+                                                data-patient-name="<?php echo htmlspecialchars((string) ($patientDisplay['patient_name'] ?? 'Patient'), ENT_QUOTES, 'UTF-8'); ?>">View PWD ID</button>
+                                        <?php endif; ?>
+                                        <?php if ($userRole === 'patient' && $appointment['status'] === 'pending'): ?>
+                                            <form method="POST" action="update_appointment_status.php" class="request-action-form">
                                                 <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
                                                 <input type="hidden" name="status" value="cancelled">
                                                 <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
-                                                <button type="submit" class="btn btn-cancel" data-confirm-message="Are you sure you want to cancel this appointment?">Cancel</button>
+                                                <button type="submit" class="request-menu-item cancel" role="menuitem" data-confirm-message="Are you sure you want to cancel this appointment?">Cancel</button>
                                             </form>
                                         <?php endif; ?>
-                                    <?php endif; ?>
-                                    <?php if ($userRole === 'patient' && $appointment['status'] === 'pending'): ?>
-                                        <form method="POST" action="update_appointment_status.php" style="display:inline;">
-                                            <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
-                                            <input type="hidden" name="status" value="cancelled">
-                                            <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
-                                            <button type="submit" class="btn btn-cancel" data-confirm-message="Are you sure you want to cancel this appointment?">Cancel</button>
-                                        </form>
-                                    <?php endif; ?>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -2906,6 +2997,36 @@ include __DIR__ . '/includes/header.php';
             if (event.target === pwdIdModal) closePwdIdModal();
         });
     }
+    var actionMenus = Array.prototype.slice.call(document.querySelectorAll('[data-action-menu]'));
+    function closeActionMenus(except) {
+        actionMenus.forEach(function(menu) {
+            if (menu !== except) {
+                menu.classList.remove('is-open');
+                var trigger = menu.querySelector('[data-action-menu-trigger]');
+                if (trigger) trigger.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
+    actionMenus.forEach(function(menu) {
+        var trigger = menu.querySelector('[data-action-menu-trigger]');
+        if (!trigger) return;
+        trigger.addEventListener('click', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            var shouldOpen = !menu.classList.contains('is-open');
+            closeActionMenus(menu);
+            menu.classList.toggle('is-open', shouldOpen);
+            trigger.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+        });
+        menu.querySelectorAll('[role="menuitem"]').forEach(function(item) {
+            item.addEventListener('click', function() {
+                closeActionMenus();
+            });
+        });
+    });
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('[data-action-menu]')) closeActionMenus();
+    });
     document.querySelectorAll('.appointment-row').forEach(function(row) {
         row.addEventListener('click', function(event) {
             if (event.target.closest('button, a, form')) return;
@@ -3091,7 +3212,10 @@ include __DIR__ . '/includes/header.php';
         });
     });
     document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') closeAll();
+        if (event.key === 'Escape') {
+            closeActionMenus();
+            closeAll();
+        }
     });
 })();
 </script>
