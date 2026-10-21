@@ -245,6 +245,8 @@ function clinic_send_sms_code(string $phone, string $code, string $purpose): arr
         $label = 'appointment confirmation';
     } elseif ($purpose === 'profile_update') {
         $label = 'profile change';
+    } elseif ($purpose === 'password_reset') {
+        $label = 'password reset';
     } else {
         $label = 'account verification';
     }

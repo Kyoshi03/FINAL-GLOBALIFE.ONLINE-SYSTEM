@@ -11,11 +11,14 @@ $forgotPasswordAction = 'forgot_password.php' . ($isForgotPasswordModal ? '?moda
 $step = 'request';
 $error = '';
 $success = '';
-$emailValue = '';
+$recoveryMethod = in_array($_POST['recovery_method'] ?? ($_SESSION['pw_reset_channel'] ?? 'email'), ['email', 'sms'], true)
+    ? (string) ($_POST['recovery_method'] ?? ($_SESSION['pw_reset_channel'] ?? 'email'))
+    : 'email';
+$contactValue = trim((string) ($_POST['contact'] ?? ''));
 
 if (!empty($_SESSION['pw_reset_verified']) && !empty($_SESSION['pw_reset_user_id'])) {
     $step = 'reset';
-} elseif (!empty($_SESSION['pw_reset_email'])) {
+} elseif (!empty($_SESSION['pw_reset_contact_key'])) {
     $step = 'verify';
 }
 
@@ -23,43 +26,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
     if ($action === 'request_code') {
-        $emailValue = trim($_POST['email'] ?? '');
-        if ($emailValue === '' || !filter_var($emailValue, FILTER_VALIDATE_EMAIL)) {
-            $error = 'Please enter a valid email address.';
+        $recoveryMethod = ($_POST['recovery_method'] ?? 'email') === 'sms' ? 'sms' : 'email';
+        $contactValue = trim((string) ($_POST['contact'] ?? ''));
+        $contactIsValid = $recoveryMethod === 'email'
+            ? filter_var($contactValue, FILTER_VALIDATE_EMAIL)
+            : clinic_sms_normalize_phone($contactValue) !== null;
+        if ($contactValue === '' || !$contactIsValid) {
+            $error = $recoveryMethod === 'sms'
+                ? 'Please enter a valid registered mobile number.'
+                : 'Please enter a valid email address.';
             $step = 'request';
         } else {
-            $result = pw_reset_issue_code($emailValue);
+            $result = pw_reset_issue_code($contactValue, $recoveryMethod);
             if (!$result['ok']) {
                 $error = $result['error'];
                 $step = 'request';
             } else {
+                $_SESSION['pw_reset_channel'] = $result['channel'];
+                $_SESSION['pw_reset_contact_key'] = $result['contact_key'];
                 $_SESSION['pw_reset_email'] = $result['email'];
+                $_SESSION['pw_reset_phone'] = $result['phone'];
                 unset($_SESSION['pw_reset_verified'], $_SESSION['pw_reset_user_id']);
                 header('Location: forgot_password.php?step=verify&sent=1' . ($isForgotPasswordModal ? '&modal=1' : ''));
                 exit();
             }
         }
     } elseif ($action === 'resend_code') {
-        $email = $_SESSION['pw_reset_email'] ?? '';
-        if ($email === '') {
+        $channel = $_SESSION['pw_reset_channel'] ?? 'email';
+        $contact = $channel === 'sms' ? ($_SESSION['pw_reset_phone'] ?? '') : ($_SESSION['pw_reset_email'] ?? '');
+        if ($contact === '') {
             header('Location: ' . $forgotPasswordAction);
             exit();
         }
-        $result = pw_reset_issue_code($email);
+        $result = pw_reset_issue_code($contact, $channel);
         if (!$result['ok']) {
             $error = $result['error'];
         } else {
-            $success = 'A new code was sent to ' . pw_reset_mask_email($email) . '.';
+            $success = $channel === 'sms'
+                ? 'A new code was sent to ' . pw_reset_mask_phone($contact) . '.'
+                : 'A new code was sent to ' . pw_reset_mask_email($contact) . '.';
         }
         $step = 'verify';
     } elseif ($action === 'verify_code') {
-        $email = $_SESSION['pw_reset_email'] ?? '';
+        $contactKey = $_SESSION['pw_reset_contact_key'] ?? '';
         $code = $_POST['code'] ?? '';
-        if ($email === '') {
+        if ($contactKey === '') {
             header('Location: ' . $forgotPasswordAction);
             exit();
         }
-        $verify = pw_reset_verify_code($email, $code);
+        $verify = pw_reset_verify_code($contactKey, $code);
         if (!$verify['ok']) {
             $error = $verify['error'];
             $step = 'verify';
@@ -94,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = 'Could not update password. Please try again.';
                     $step = 'reset';
                 } else {
-                    unset($_SESSION['pw_reset_email'], $_SESSION['pw_reset_verified'], $_SESSION['pw_reset_user_id']);
+                    unset($_SESSION['pw_reset_channel'], $_SESSION['pw_reset_contact_key'], $_SESSION['pw_reset_email'], $_SESSION['pw_reset_phone'], $_SESSION['pw_reset_verified'], $_SESSION['pw_reset_user_id']);
                     if ($isForgotPasswordModal) {
                         echo '<script>window.top.location.replace(' . json_encode('index.php?reset=1&login=1#patient-login') . ');</script>';
                         exit();
@@ -111,10 +126,10 @@ if (isset($_GET['step'])) {
     $allowed = ['request', 'verify', 'reset'];
     $g = $_GET['step'];
     if (in_array($g, $allowed, true)) {
-        if ($g === 'verify' && empty($_SESSION['pw_reset_email'])) {
+        if ($g === 'verify' && empty($_SESSION['pw_reset_contact_key'])) {
             $step = 'request';
         } elseif ($g === 'reset' && (empty($_SESSION['pw_reset_verified']) || empty($_SESSION['pw_reset_user_id']))) {
-            $step = empty($_SESSION['pw_reset_email']) ? 'request' : 'verify';
+            $step = empty($_SESSION['pw_reset_contact_key']) ? 'request' : 'verify';
         } else {
             $step = $g;
         }
@@ -122,13 +137,20 @@ if (isset($_GET['step'])) {
 }
 
 if (isset($_GET['sent']) && $step === 'verify' && $success === '') {
-    $email = $_SESSION['pw_reset_email'] ?? '';
-    if ($email !== '') {
-        $success = 'We sent a 6-digit code to ' . pw_reset_mask_email($email) . '. Check your inbox and spam folder.';
+    $channel = $_SESSION['pw_reset_channel'] ?? 'email';
+    $contact = $channel === 'sms' ? ($_SESSION['pw_reset_phone'] ?? '') : ($_SESSION['pw_reset_email'] ?? '');
+    if ($contact !== '') {
+        $maskedContact = $channel === 'sms' ? pw_reset_mask_phone($contact) : pw_reset_mask_email($contact);
+        $deliveryName = $channel === 'sms' ? 'phone' : 'inbox and spam folder';
+        $success = 'We sent a 6-digit code to ' . $maskedContact . '. Check your ' . $deliveryName . '.';
     }
 }
 
-$maskedEmail = isset($_SESSION['pw_reset_email']) ? pw_reset_mask_email($_SESSION['pw_reset_email']) : '';
+$resetChannel = $_SESSION['pw_reset_channel'] ?? 'email';
+$resetContact = $resetChannel === 'sms' ? ($_SESSION['pw_reset_phone'] ?? '') : ($_SESSION['pw_reset_email'] ?? '');
+$maskedContact = $resetContact !== ''
+    ? ($resetChannel === 'sms' ? pw_reset_mask_phone($resetContact) : pw_reset_mask_email($resetContact))
+    : '';
 $stepNumber = ['request' => 1, 'verify' => 2, 'reset' => 3][$step] ?? 1;
 $previousStep = $step === 'verify' ? 'request' : ($step === 'reset' ? 'verify' : '');
 $backHref = $step === 'request'
@@ -214,6 +236,22 @@ $additionalStyles = '
         background: #f8f9fa;
     }
     .form-group input:focus {
+        outline: none;
+        border-color: #48cae4;
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(72, 202, 228, 0.15);
+    }
+    .recovery-method {
+        width: 100%;
+        padding: 14px 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        font-size: 1rem;
+        box-sizing: border-box;
+        background: #f8f9fa;
+        color: #333;
+    }
+    .recovery-method:focus {
         outline: none;
         border-color: #48cae4;
         background: #fff;
@@ -433,7 +471,7 @@ include 'includes/header.php';
             <div class="forgot-content">
                 <img src="globalife.png" alt="Globalife Medical Laboratory &amp; Polyclinic" class="forgot-logo">
                 <h2>Reset your password</h2>
-                <p class="login-subtitle">Enter your registered email to receive a secure verification code.</p>
+                <p class="login-subtitle">Choose your registered email or mobile number to receive a secure verification code.</p>
 
                 <?php if ($error): ?>
                     <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
@@ -446,14 +484,21 @@ include 'includes/header.php';
                     <form method="POST" action="<?php echo htmlspecialchars($forgotPasswordAction); ?>" class="forgot-form">
                         <input type="hidden" name="action" value="request_code">
                         <div class="form-group">
-                            <label for="email">Registered email address</label>
+                            <label for="recovery_method">Send verification code via</label>
+                            <select id="recovery_method" name="recovery_method" class="recovery-method" autocomplete="off">
+                                <option value="email"<?php echo $recoveryMethod === 'email' ? ' selected' : ''; ?>>Registered email</option>
+                                <option value="sms"<?php echo $recoveryMethod === 'sms' ? ' selected' : ''; ?>>Registered mobile number</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="recovery_contact" id="recoveryContactLabel"><?php echo $recoveryMethod === 'sms' ? 'Registered mobile number' : 'Registered email address'; ?></label>
                             <input
-                                type="email"
-                                id="email"
-                                name="email"
-                                value="<?php echo htmlspecialchars($emailValue); ?>"
-                                placeholder="you@example.com"
-                                autocomplete="email"
+                                type="<?php echo $recoveryMethod === 'sms' ? 'tel' : 'email'; ?>"
+                                id="recovery_contact"
+                                name="contact"
+                                value="<?php echo htmlspecialchars($contactValue); ?>"
+                                placeholder="<?php echo $recoveryMethod === 'sms' ? '09171234567' : 'you@example.com'; ?>"
+                                autocomplete="<?php echo $recoveryMethod === 'sms' ? 'tel' : 'email'; ?>"
                                 required
                                 autofocus
                             >
@@ -485,7 +530,7 @@ include 'includes/header.php';
                             >
                         </div>
                         <p class="login-subtitle" style="margin-top: -8px; margin-bottom: 10px;">
-                            Code sent to <strong><?php echo htmlspecialchars($maskedEmail); ?></strong>
+                            Code sent to <strong><?php echo htmlspecialchars($maskedContact); ?></strong>
                         </p>
                         <div class="forgot-step-nav">
                             <a href="<?php echo htmlspecialchars($backHref); ?>" <?php echo $backAttributes; ?>>← Back</a>
@@ -542,6 +587,21 @@ include 'includes/header.php';
     <script>
         (function () {
             var eyeOpenIcon = '<path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path><circle cx="12" cy="12" r="3"></circle>';
+            var recoveryMethod = document.getElementById('recovery_method');
+            var recoveryContact = document.getElementById('recovery_contact');
+            var recoveryContactLabel = document.getElementById('recoveryContactLabel');
+            if (recoveryMethod && recoveryContact && recoveryContactLabel) {
+                recoveryMethod.addEventListener('change', function () {
+                    var isSms = recoveryMethod.value === 'sms';
+                    recoveryContact.value = '';
+                    recoveryContact.type = isSms ? 'tel' : 'email';
+                    recoveryContact.placeholder = isSms ? '09171234567' : 'you@example.com';
+                    recoveryContact.autocomplete = isSms ? 'tel' : 'email';
+                    recoveryContactLabel.textContent = isSms ? 'Registered mobile number' : 'Registered email address';
+                    recoveryContact.focus();
+                });
+            }
+
             var eyeClosedIcon = '<path d="M3 3l18 18"></path><path d="M10.58 10.58a2 2 0 002.83 2.83"></path><path d="M9.88 5.09A10.7 10.7 0 0112 5c4.48 0 8.27 2.94 9.54 7a10.7 10.7 0 01-3.04 4.27"></path><path d="M6.61 6.61A10.7 10.7 0 002.46 12c1.27 4.06 5.06 7 9.54 7 1.01 0 1.98-.16 2.88-.45"></path>';
             document.querySelectorAll('[data-password-toggle]').forEach(function (toggle) {
                 var input = document.getElementById(toggle.getAttribute('data-password-toggle'));
