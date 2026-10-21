@@ -1248,15 +1248,19 @@ body {
 }
 
 .appointment-request-table th:nth-child(1),
-.appointment-request-table td:nth-child(1) { width: 27%; }
+.appointment-request-table td:nth-child(1) { width: 30%; }
 .appointment-request-table th:nth-child(2),
-.appointment-request-table td:nth-child(2) { width: 18%; }
+.appointment-request-table td:nth-child(2) { width: 20%; }
 .appointment-request-table th:nth-child(3),
-.appointment-request-table td:nth-child(3) { width: 18%; }
+.appointment-request-table td:nth-child(3) { width: 20%; }
 .appointment-request-table th:nth-child(4),
-.appointment-request-table td:nth-child(4) { width: 12%; }
+.appointment-request-table td:nth-child(4) { width: 16%; }
 .appointment-request-table th:nth-child(5),
-.appointment-request-table td:nth-child(5) { width: 25%; }
+.appointment-request-table td:nth-child(5) { width: 14%; text-align: center; }
+
+.appointment-request-table th:nth-child(5) {
+    text-align: center;
+}
 
 .appointment-request-table-wrap {
     overflow: visible;
@@ -1536,7 +1540,7 @@ body {
     position: relative;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: center;
     width: 100%;
     min-width: 0;
     max-width: 210px;
