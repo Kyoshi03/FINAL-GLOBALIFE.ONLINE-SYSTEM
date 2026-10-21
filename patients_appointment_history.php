@@ -1,3 +1,6 @@
 <?php
-$_GET['view'] = 'history';
-require __DIR__ . '/patients_view_appointments.php';
+require_once __DIR__ . '/includes/session.php';
+checkRole('patient');
+
+header('Location: patients.php#recentHistoryPanel');
+exit();

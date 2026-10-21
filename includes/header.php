@@ -2994,7 +2994,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                             <span class="nav-label">Appointments</span>
                         </a>
                         <?php
-                        $patientHistoryPages = ['patients_appointment_history.php', 'patients_queue_history.php'];
+                        $patientHistoryPages = ['patients_queue_history.php'];
                         $isPatientHistoryPage = in_array(basename($_SERVER['PHP_SELF']), $patientHistoryPages, true);
                         ?>
                         <div class="nav-settings-group patient-history-group <?php echo $isPatientHistoryPage ? 'is-current' : ''; ?>">
@@ -3005,7 +3005,6 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                             </button>
                             <div class="nav-submenu" id="patientHistorySubmenu">
                                 <div class="nav-submenu-inner">
-                                    <a href="patients_appointment_history.php" class="nav-subitem <?php echo basename($_SERVER['PHP_SELF']) === 'patients_appointment_history.php' ? 'active' : ''; ?>">Appointment History</a>
                                     <a href="patients_queue_history.php" class="nav-subitem <?php echo basename($_SERVER['PHP_SELF']) === 'patients_queue_history.php' ? 'active' : ''; ?>">Queue History</a>
                                 </div>
                             </div>
@@ -3055,7 +3054,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             $patientTopbarTitle = 'Book Appointment';
             $patientTopbarProfileHref = 'patients.php?profile=1';
             $patientTopbarSettingsHref = 'patients.php?profile=1';
-        } elseif (in_array($currentPage, ['admin_view_appointments.php', 'doctor_view_appointments.php', 'patients_view_appointments.php', 'patients_appointment_history.php'], true)) {
+        } elseif (in_array($currentPage, ['admin_view_appointments.php', 'doctor_view_appointments.php', 'patients_view_appointments.php'], true)) {
             $patientTopbarTitle = ($currentUser['role'] ?? '') === 'patient'
                 ? ((strtolower(trim((string) ($_GET['view'] ?? 'active'))) === 'history') ? 'Appointment History' : 'My Appointments')
                 : 'Appointments';
