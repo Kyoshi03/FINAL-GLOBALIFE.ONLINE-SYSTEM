@@ -21,6 +21,7 @@ $dayNames = [
     6 => 'Saturday',
     7 => 'Sunday',
 ];
+$suffixOptions = ['Jr', 'Sr', 'II', 'III', 'IV', 'V'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['account_action'] ?? '') === 'toggle_user') {
     $userId = (int) ($_POST['user_id'] ?? 0);
@@ -72,6 +73,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['account_action'] ?? '') ==
 
     if ($userId <= 0 || $firstName === '' || $lastName === '') {
         $_SESSION['error'] = 'Complete the doctor name before saving.';
+    } elseif ($suffix !== '' && !in_array(strtoupper($suffix), array_map('strtoupper', $suffixOptions), true)) {
+        $_SESSION['error'] = 'Please choose a valid suffix.';
     } else {
         $stmt = $conn->prepare("UPDATE users SET first_name = ?, middle_name = ?, last_name = ?, suffix = ?, specialty = ?, email = ?, phone = ? WHERE id = ? AND role = 'doctor'");
         $stmt->bind_param('sssssssi', $firstName, $middleName, $lastName, $suffix, $specialty, $email, $phone, $userId);
@@ -1240,7 +1243,16 @@ include 'includes/header.php';
                                                 <div class="doctor-field"><label>First name</label><input name="first_name" value="<?php echo htmlspecialchars((string) ($user['first_name'] ?? '')); ?>" maxlength="15" required></div>
                                                 <div class="doctor-field"><label>Middle name</label><input name="middle_name" value="<?php echo htmlspecialchars((string) ($user['middle_name'] ?? '')); ?>" maxlength="1"></div>
                                                 <div class="doctor-field"><label>Last name</label><input name="last_name" value="<?php echo htmlspecialchars((string) ($user['last_name'] ?? '')); ?>" maxlength="15" required></div>
-                                                <div class="doctor-field"><label>Suffix</label><input name="suffix" value="<?php echo htmlspecialchars((string) ($user['suffix'] ?? '')); ?>" maxlength="3"></div>
+                                                <?php $currentDoctorSuffix = trim((string) ($user['suffix'] ?? '')); ?>
+                                                <div class="doctor-field">
+                                                    <label>Suffix</label>
+                                                    <select name="suffix">
+                                                        <option value="" <?php echo $currentDoctorSuffix === '' ? 'selected' : ''; ?>>Select suffix</option>
+                                                        <?php foreach ($suffixOptions as $suffixOption): ?>
+                                                            <option value="<?php echo htmlspecialchars($suffixOption); ?>" <?php echo strcasecmp($currentDoctorSuffix, $suffixOption) === 0 ? 'selected' : ''; ?>><?php echo htmlspecialchars($suffixOption); ?></option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                </div>
                                             </div>
                                             <?php
                                             $currentDoctorSpecialty = trim((string) ($user['specialty'] ?? ''));

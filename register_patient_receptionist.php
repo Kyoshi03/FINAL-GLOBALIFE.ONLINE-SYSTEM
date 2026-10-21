@@ -31,7 +31,7 @@ $success = '';
 $rprFirstNameMax = 15;
 $rprMiddleNameMax = 1;
 $rprLastNameMax = 15;
-$rprSuffixMax = 3;
+$rprSuffixOptions = ['Jr', 'Sr', 'II', 'III', 'IV', 'V'];
 $latestAllowedDob = (new DateTimeImmutable('today'))->modify('-18 years')->format('Y-m-d');
 
 function rpr_value(string $key): string {
@@ -99,7 +99,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $firstNameLength = clinic_name_letter_count($first_name);
     $middleNameLength = clinic_name_letter_count($middle_name);
     $lastNameLength = clinic_name_letter_count($last_name);
-    $suffixLength = clinic_name_letter_count($suffix);
 
     if (empty($first_name) || empty($last_name) || empty($gender) || empty($date_of_birth) || empty($province) || empty($barangay) || empty($city) || empty($username) || empty($password) || empty($confirm_password)) {
         $error = 'Please fill in all required fields.';
@@ -119,8 +118,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Middle name must be exactly 1 letter.';
     } elseif ($lastNameLength > $rprLastNameMax) {
         $error = 'Last name must not exceed ' . $rprLastNameMax . ' letters.';
-    } elseif ($suffix !== '' && $suffixLength > $rprSuffixMax) {
-        $error = 'Suffix must not exceed ' . $rprSuffixMax . ' letters.';
+    } elseif ($suffix !== '' && !in_array(strtoupper($suffix), array_map('strtoupper', $rprSuffixOptions), true)) {
+        $error = 'Please choose a valid suffix.';
     } elseif (!$birthDateIsValid || $date_of_birth > $latestAllowedDob) {
         $error = 'You must be at least 18 years old to register.';
     } elseif ($password !== $confirm_password) {
@@ -1142,8 +1141,13 @@ include 'includes/header.php';
                             </div>
                             <div class="form-group">
                                 <label for="suffix">Suffix <span class="optional">(optional)</span></label>
-                                <input type="text" id="suffix" name="suffix" maxlength="<?php echo $rprSuffixMax; ?>" placeholder="Jr" value="<?php echo rpr_value('suffix'); ?>">
-                                <span class="field-hint">Optional, up to <?php echo $rprSuffixMax; ?> letters.</span>
+                                <select id="suffix" name="suffix">
+                                    <option value="" <?php echo rpr_selected('suffix', '') ? 'selected' : ''; ?>>Select suffix</option>
+                                    <?php foreach ($rprSuffixOptions as $suffixOption): ?>
+                                        <option value="<?php echo htmlspecialchars($suffixOption); ?>" <?php echo strcasecmp((string) ($_POST['suffix'] ?? ''), $suffixOption) === 0 ? 'selected' : ''; ?>><?php echo htmlspecialchars($suffixOption); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <span class="field-hint">Optional</span>
                             </div>
                         </div>
 

@@ -47,6 +47,7 @@ $registeredDisplayName = '';
 $todayDate = (new DateTimeImmutable('today'))->format('Y-m-d');
 $latestAllowedDob = (new DateTimeImmutable('today'))->modify('-18 years')->format('Y-m-d');
 $latestAllowedDobYear = (int) substr($latestAllowedDob, 0, 4);
+$suffixOptions = ['Jr', 'Sr', 'II', 'III', 'IV', 'V'];
 
 function register_patient_normalize_text(string $value): string {
     $value = trim(preg_replace('/\s+/u', ' ', $value) ?? '');
@@ -241,12 +242,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Last name must not exceed 15 letters.';
     } elseif (!preg_match('/^[\p{L}\s\'-]+$/u', $last_name)) {
         $error = 'Last name may only contain letters, spaces, hyphens, or apostrophes.';
-    } elseif ($suffix !== '' && register_patient_letter_count($suffix) < 1) {
-        $error = 'Suffix must contain at least 1 letter.';
-    } elseif ($suffix !== '' && register_patient_letter_count($suffix) > 3) {
-        $error = 'Suffix must not exceed 3 letters.';
-    } elseif ($suffix !== '' && !preg_match('/^[\p{L}]+$/u', $suffix)) {
-        $error = 'Suffix must contain letters only.';
+    } elseif ($suffix !== '' && !in_array(strtoupper($suffix), array_map('strtoupper', $suffixOptions), true)) {
+        $error = 'Please choose a valid suffix.';
     } elseif (!$birthDateIsValid || $date_of_birth > $latestAllowedDob) {
         $error = 'You must be at least 18 years old to register.';
         $showAgeWarningPopup = true;
@@ -1741,9 +1738,15 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                                     <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                     </svg>
-                                    <input type="text" id="suffix" name="suffix" placeholder="Jr" maxlength="3" value="<?php echo (!empty($success) ? '' : (isset($_POST['suffix']) ? htmlspecialchars($_POST['suffix']) : '')); ?>" style="text-transform: uppercase;">
+                                    <?php $selectedSuffix = !empty($success) ? '' : trim((string) ($_POST['suffix'] ?? '')); ?>
+                                    <select id="suffix" name="suffix" aria-label="Select suffix">
+                                        <option value="" <?php echo $selectedSuffix === '' ? 'selected' : ''; ?>>Select suffix</option>
+                                        <?php foreach ($suffixOptions as $suffixOption): ?>
+                                            <option value="<?php echo htmlspecialchars($suffixOption); ?>" <?php echo strcasecmp($selectedSuffix, $suffixOption) === 0 ? 'selected' : ''; ?>><?php echo htmlspecialchars($suffixOption); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
                                 </div>
-                                <span class="field-hint">3 letters max. <span id="suffixCounter">0/3</span></span>
+                                <span class="field-hint">Optional</span>
                             </div>
                         </div>
                     </div>
@@ -2404,11 +2407,9 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
             const firstNameInput = document.getElementById('first_name');
             const middleNameInput = document.getElementById('middle_name');
             const lastNameInput = document.getElementById('last_name');
-            const suffixInput = document.getElementById('suffix');
             const firstNameCounter = document.getElementById('firstNameCounter');
             const middleNameCounter = document.getElementById('middleNameCounter');
             const lastNameCounter = document.getElementById('lastNameCounter');
-            const suffixCounter = document.getElementById('suffixCounter');
             const phoneInput = document.getElementById('phone');
             const phoneRequiredMark = document.getElementById('phoneRequiredMark');
             const emailInput = document.getElementById('email');
@@ -2516,8 +2517,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
             const nameFieldConfigs = [
                 [firstNameInput, firstNameCounter, 15, { allowSeparators: true, forceUppercase: false }],
                 [middleNameInput, middleNameCounter, 15, { allowSeparators: true, forceUppercase: false }],
-                [lastNameInput, lastNameCounter, 15, { allowSeparators: true, forceUppercase: false }],
-                [suffixInput, suffixCounter, 3, { allowSeparators: false, forceUppercase: true }]
+                [lastNameInput, lastNameCounter, 15, { allowSeparators: true, forceUppercase: false }]
             ];
 
             nameFieldConfigs.forEach(([input, counter, maxLetters, options]) => {
