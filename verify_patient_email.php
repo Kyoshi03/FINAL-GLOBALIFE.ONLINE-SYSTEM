@@ -146,11 +146,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $emergencyNumber = (string) $patient['emergency_contact_number'];
                 $insert = $conn->prepare(
                     'INSERT INTO users (
-                        username, password, first_name, middle_name, last_name, suffix, role, email, phone, gender,
+                        username, password, first_name, middle_name, last_name, suffix, role, is_active, email, phone, gender,
                         date_of_birth, age, civil_status, pwd_type, pwd_details, pwd_id_path, address, barangay, city,
                         emergency_contact_name, emergency_contact_relationship,
                         emergency_contact_number
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
                 );
                 $pwdIdPath = $pwdType === '' ? null : $pwdPendingPath;
                 $bindTypes = str_repeat('s', 11) . 'i' . str_repeat('s', 10);
