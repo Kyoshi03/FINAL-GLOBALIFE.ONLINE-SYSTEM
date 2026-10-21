@@ -1810,6 +1810,10 @@ $additionalStyles = patientAvatarStyles() . '
     .appointments-table td:nth-child(4) { width: 10%; }
     .appointments-table th:nth-child(5),
     .appointments-table td:nth-child(5) { width: 18%; }
+    @media (min-width: 761px) {
+        .appointments-table th:nth-child(5),
+        .appointments-table td.appointments-services { text-align: center; }
+    }
     .appointments-table .action-buttons {
         display: flex;
         align-items: center;
