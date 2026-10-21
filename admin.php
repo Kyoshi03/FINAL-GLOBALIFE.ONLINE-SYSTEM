@@ -1259,8 +1259,7 @@ body {
 .appointment-request-table td:nth-child(5) { width: 25%; }
 
 .appointment-request-table-wrap {
-    overflow-x: hidden;
-    overflow-y: hidden;
+    overflow: visible;
 }
 
 .appointment-request-table .queue-patient,
@@ -1534,60 +1533,176 @@ body {
 }
 
 .request-actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    position: relative;
+    display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: flex-end;
     width: 100%;
     min-width: 0;
     max-width: 210px;
 }
 
-.request-actions form {
+.request-menu-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 34px;
+    padding: 0 0 5px;
+    border: 1px solid #cfe1ee;
+    border-radius: 8px;
+    color: #0b4f80;
+    background: #f8fcff;
+    font: inherit;
+    font-size: 1.35rem;
+    font-weight: 950;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.request-menu-trigger:hover,
+.request-menu-trigger:focus-visible,
+.request-actions.is-open .request-menu-trigger {
+    border-color: #8ed9ef;
+    background: #eaf8ff;
+    outline: none;
+}
+
+.request-actions-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 100;
+    display: none;
+    width: 156px;
+    padding: 5px;
+    border: 1px solid #cfe1ee;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 12px 28px rgba(7, 59, 76, .18);
+}
+
+.request-actions.is-open .request-actions-menu {
+    display: grid;
+    gap: 3px;
+}
+
+.request-actions-menu form,
+.request-actions-menu > button {
+    width: 100%;
+    min-width: 0;
     margin: 0;
-    width: 100%;
-    min-width: 0;
 }
 
-.request-actions .btn {
-    width: 100%;
-    min-width: 0;
-    min-height: 30px;
-    padding: 5px 4px;
-    font-size: 0.68rem;
-    line-height: 1.05;
-    white-space: nowrap;
+.request-actions-menu .request-menu-item {
+    display: block;
+    min-height: 34px;
+    padding: 7px 10px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: #0b4f80;
+    background: #fff;
+    font: inherit;
+    font-size: .76rem;
+    font-weight: 850;
+    line-height: 1.1;
+    text-align: left;
+    cursor: pointer;
 }
 
-.request-actions .request-confirm-action {
-    grid-column: 1;
-    grid-row: 1;
+.request-actions-menu .request-menu-item:hover,
+.request-actions-menu .request-menu-item:focus-visible {
+    border-color: #cfe1ee;
+    background: #eef8ff;
+    outline: none;
 }
 
+.request-actions-menu .request-menu-item.confirm {
+    color: #126b3a;
+}
+
+.request-actions-menu .request-menu-item.cancel {
+    color: #b42335;
+}
+
+.request-actions-menu .request-menu-item.details {
+    color: #475569;
+}
+
+.request-actions-menu .request-menu-item.details:hover,
+.request-actions-menu .request-menu-item.details:focus-visible {
+    background: #f1f5f9;
+}
+
+.request-actions .request-confirm-action,
 .request-actions .request-cancel-action {
-    grid-column: 2;
-    grid-row: 1;
+    display: block;
 }
 
 .request-actions .request-details-btn {
-    grid-column: 1;
-    grid-row: 2;
-    background: #f1f5f9;
-    border-color: #cbd5e1;
+    background: transparent;
+    border-color: transparent;
     color: #475569;
-    font-size: 0.75rem;
-}
-
-.request-actions .request-details-btn:hover {
-    background: #e2e8f0;
-    border-color: #94a3b8;
-    color: #1e3a5f;
 }
 
 @media (max-width: 760px) {
-    .request-actions .btn {
-        white-space: normal;
-        overflow-wrap: anywhere;
+    .appointment-request-table {
+        display: block;
+        min-width: 0;
+    }
+
+    .appointment-request-table thead {
+        display: none;
+    }
+
+    .appointment-request-table,
+    .appointment-request-table tbody,
+    .appointment-request-table tr,
+    .appointment-request-table td {
+        width: 100%;
+        display: block;
+        box-sizing: border-box;
+    }
+
+    .appointment-request-table tr {
+        position: relative;
+        padding: 12px;
+        border-bottom: 1px solid #e6eef4;
+    }
+
+    .appointment-request-table tr:last-child {
+        border-bottom: 0;
+    }
+
+    .appointment-request-table td {
+        width: 100% !important;
+        padding: 6px 0;
+        border-bottom: 0;
+    }
+
+    .appointment-request-table td::before {
+        display: block;
+        margin-bottom: 3px;
+        color: #466779;
+        font-size: .7rem;
+        font-weight: 950;
+        text-transform: uppercase;
+    }
+
+    .appointment-request-table td:nth-child(1)::before { content: "Patient"; }
+    .appointment-request-table td:nth-child(2)::before { content: "Service"; }
+    .appointment-request-table td:nth-child(3)::before { content: "Schedule"; }
+    .appointment-request-table td:nth-child(4)::before { content: "Status"; }
+    .appointment-request-table td:nth-child(5)::before { content: "Actions"; }
+
+    .request-actions {
+        justify-content: flex-start;
+        max-width: none;
+    }
+
+    .request-actions-menu {
+        right: auto;
+        left: 0;
     }
 }
 
@@ -3359,6 +3474,36 @@ document.addEventListener("DOMContentLoaded", function () {
         button.addEventListener("click", closeConfirmActionModal);
     });
 
+    var actionMenus = Array.prototype.slice.call(document.querySelectorAll("[data-action-menu]"));
+    function closeActionMenus(except) {
+        actionMenus.forEach(function (menu) {
+            if (menu !== except) {
+                menu.classList.remove("is-open");
+                var trigger = menu.querySelector("[data-action-menu-trigger]");
+                if (trigger) trigger.setAttribute("aria-expanded", "false");
+            }
+        });
+    }
+    actionMenus.forEach(function (menu) {
+        var trigger = menu.querySelector("[data-action-menu-trigger]");
+        if (!trigger) return;
+        trigger.addEventListener("click", function (event) {
+            event.preventDefault();
+            var shouldOpen = !menu.classList.contains("is-open");
+            closeActionMenus(menu);
+            menu.classList.toggle("is-open", shouldOpen);
+            trigger.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+        });
+        menu.querySelectorAll("[role=menuitem]").forEach(function (item) {
+            item.addEventListener("click", function () {
+                closeActionMenus();
+            });
+        });
+    });
+    document.addEventListener("click", function (event) {
+        if (!event.target.closest("[data-action-menu]")) closeActionMenus();
+    });
+
     if (confirmActionModal) {
         confirmActionModal.addEventListener("click", function (event) {
             if (event.target === confirmActionModal) closeConfirmActionModal();
@@ -3374,7 +3519,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     document.addEventListener("keydown", function (event) {
-        if (event.key === "Escape") closeConfirmActionModal();
+        if (event.key === "Escape") {
+            closeActionMenus();
+            closeConfirmActionModal();
+        }
     });
 
     var queueSearchInput = document.getElementById("queueSearchInput");
@@ -3677,39 +3825,43 @@ include 'includes/header.php';
                                         </td>
                                         <td><span class="badge <?php echo htmlspecialchars($requestStatus); ?>"><?php echo htmlspecialchars($requestStatusLabel); ?></span></td>
                                         <td>
-                                            <div class="request-actions">
-                                                <button
-                                                    type="button"
-                                                    class="btn secondary request-details-btn"
-                                                    data-admin-appointment
-                                                    data-id="<?php echo (int) $appointment['id']; ?>"
-                                                    data-patient="<?php echo htmlspecialchars((string) $appointment['patient_name'], ENT_QUOTES, 'UTF-8'); ?>"
-                                                    data-contact="<?php echo htmlspecialchars($requestContact, ENT_QUOTES, 'UTF-8'); ?>"
-                                                    data-doctor="<?php echo htmlspecialchars($requestDoctor, ENT_QUOTES, 'UTF-8'); ?>"
-                                                    data-schedule="<?php echo htmlspecialchars($requestSchedule, ENT_QUOTES, 'UTF-8'); ?>"
-                                                    data-type="<?php echo htmlspecialchars(admin_booking_label($appointment['booking_type'] ?? null), ENT_QUOTES, 'UTF-8'); ?>"
-                                                    data-booking-type="<?php echo htmlspecialchars($requestBookingType, ENT_QUOTES, 'UTF-8'); ?>"
-                                                    data-services="<?php echo htmlspecialchars($requestServicesWithPrices, ENT_QUOTES, 'UTF-8'); ?>"
-                                                    data-status="<?php echo htmlspecialchars($requestStatus, ENT_QUOTES, 'UTF-8'); ?>"
-                                                    data-status-label="<?php echo htmlspecialchars($requestStatusLabel, ENT_QUOTES, 'UTF-8'); ?>"
-                                                    data-notes="<?php echo htmlspecialchars($requestPriceDetails, ENT_QUOTES, 'UTF-8'); ?>"
-                                                    data-cancel-reason="<?php echo htmlspecialchars((string) (($appointment['cancellation_reason'] ?? '') ?: 'None'), ENT_QUOTES, 'UTF-8'); ?>"
-                                                    data-cancel-details="<?php echo htmlspecialchars((string) (($appointment['cancellation_details'] ?? '') ?: 'None'), ENT_QUOTES, 'UTF-8'); ?>"
-                                                >Details</button>
-                                                <?php if ($adminCanRespond): ?>
-                                                    <form method="post" action="update_appointment_status.php" class="request-confirm-action">
-                                                        <input type="hidden" name="appointment_id" value="<?php echo (int) $appointment['id']; ?>">
-                                                        <input type="hidden" name="status" value="confirmed">
-                                                        <input type="hidden" name="return_url" value="admin.php">
-                                                        <button class="btn secondary" type="submit" data-confirm-message="Are you sure you want to confirm this appointment request?">Confirm</button>
-                                                    </form>
-                                                    <form method="post" action="update_appointment_status.php" class="request-cancel-action">
-                                                        <input type="hidden" name="appointment_id" value="<?php echo (int) $appointment['id']; ?>">
-                                                        <input type="hidden" name="status" value="cancelled">
-                                                        <input type="hidden" name="return_url" value="admin.php">
-                                                        <button class="btn danger" type="submit" data-confirm-message="Are you sure you want to cancel this appointment request?">Cancel</button>
-                                                    </form>
-                                                <?php endif; ?>
+                                            <div class="request-actions" data-action-menu>
+                                                <button type="button" class="request-menu-trigger" aria-label="Open actions for <?php echo htmlspecialchars((string) $appointment['patient_name'], ENT_QUOTES, 'UTF-8'); ?>" aria-haspopup="menu" aria-expanded="false" data-action-menu-trigger>&#8943;</button>
+                                                <div class="request-actions-menu" role="menu" aria-label="Appointment actions">
+                                                    <?php if ($adminCanRespond): ?>
+                                                        <form method="post" action="update_appointment_status.php" class="request-confirm-action">
+                                                            <input type="hidden" name="appointment_id" value="<?php echo (int) $appointment['id']; ?>">
+                                                            <input type="hidden" name="status" value="confirmed">
+                                                            <input type="hidden" name="return_url" value="admin.php">
+                                                            <button class="request-menu-item confirm" type="submit" role="menuitem" data-confirm-message="Are you sure you want to confirm this appointment request?">Confirm</button>
+                                                        </form>
+                                                        <form method="post" action="update_appointment_status.php" class="request-cancel-action">
+                                                            <input type="hidden" name="appointment_id" value="<?php echo (int) $appointment['id']; ?>">
+                                                            <input type="hidden" name="status" value="cancelled">
+                                                            <input type="hidden" name="return_url" value="admin.php">
+                                                            <button class="request-menu-item cancel" type="submit" role="menuitem" data-confirm-message="Are you sure you want to cancel this appointment request?">Cancel</button>
+                                                        </form>
+                                                    <?php endif; ?>
+                                                    <button
+                                                        type="button"
+                                                        class="request-menu-item details request-details-btn"
+                                                        role="menuitem"
+                                                        data-admin-appointment
+                                                        data-id="<?php echo (int) $appointment['id']; ?>"
+                                                        data-patient="<?php echo htmlspecialchars((string) $appointment['patient_name'], ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-contact="<?php echo htmlspecialchars($requestContact, ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-doctor="<?php echo htmlspecialchars($requestDoctor, ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-schedule="<?php echo htmlspecialchars($requestSchedule, ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-type="<?php echo htmlspecialchars(admin_booking_label($appointment['booking_type'] ?? null), ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-booking-type="<?php echo htmlspecialchars($requestBookingType, ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-services="<?php echo htmlspecialchars($requestServicesWithPrices, ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-status="<?php echo htmlspecialchars($requestStatus, ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-status-label="<?php echo htmlspecialchars($requestStatusLabel, ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-notes="<?php echo htmlspecialchars($requestPriceDetails, ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-cancel-reason="<?php echo htmlspecialchars((string) (($appointment['cancellation_reason'] ?? '') ?: 'None'), ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-cancel-details="<?php echo htmlspecialchars((string) (($appointment['cancellation_details'] ?? '') ?: 'None'), ENT_QUOTES, 'UTF-8'); ?>"
+                                                    >Details</button>
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>
