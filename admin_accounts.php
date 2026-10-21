@@ -154,7 +154,7 @@ $result = $conn->query(
     "SELECT id, username, {$userNameSql} AS full_name, first_name, middle_name, last_name, suffix,
             CASE WHEN role = 'receptionist' THEN 'admin' ELSE role END AS role,
             email, phone, profile_photo, profile_updated_at,
-            gender, date_of_birth, age, civil_status, address, barangay, city,
+            gender, date_of_birth, age, civil_status, pwd_type, address, barangay, city,
             emergency_contact_name, emergency_contact_relationship, emergency_contact_number,
             created_at, COALESCE(is_active, 1) AS is_active
      FROM users
@@ -218,6 +218,22 @@ function admin_accounts_patient_date(?string $value): string
 {
     $value = trim((string) $value);
     return $value !== '' ? $value : 'Not provided';
+}
+
+function admin_accounts_patient_is_senior(array $patient): bool
+{
+    $dateOfBirth = trim((string) ($patient['date_of_birth'] ?? ''));
+    if ($dateOfBirth !== '' && $dateOfBirth !== '0000-00-00') {
+        try {
+            $birthDate = new DateTimeImmutable($dateOfBirth);
+            $todayDate = new DateTimeImmutable('today', new DateTimeZone('Asia/Manila'));
+            return $birthDate <= $todayDate && $birthDate->diff($todayDate)->y >= 60;
+        } catch (Throwable $exception) {
+            // Fall back to the stored age when the birth date is unavailable or invalid.
+        }
+    }
+
+    return (int) ($patient['age'] ?? 0) >= 60;
 }
 
 function admin_accounts_status_label(string $status): string
@@ -286,6 +302,13 @@ foreach ($users as $user) {
         continue;
     }
     $patientId = (int) $user['id'];
+    $priorityTypes = [];
+    if (admin_accounts_patient_is_senior($user)) {
+        $priorityTypes[] = 'senior';
+    }
+    if (trim((string) ($user['pwd_type'] ?? '')) !== '') {
+        $priorityTypes[] = 'pwd';
+    }
     $photoUrl = patientProfilePhotoUrl($user['profile_photo'] ?? null, $user['profile_updated_at'] ?? null);
     $appointments = [];
     foreach ($patientAppointments[$patientId] ?? [] as $appointment) {
@@ -308,6 +331,7 @@ foreach ($users as $user) {
         'gender' => admin_accounts_patient_value($user['gender'] ?? null),
         'age' => (isset($user['age']) && $user['age'] !== null && $user['age'] !== '') ? (string) (int) $user['age'] : 'Not provided',
         'date_of_birth' => admin_accounts_patient_date($user['date_of_birth'] ?? null),
+        'priority_types' => $priorityTypes,
         'civil_status' => admin_accounts_patient_value($user['civil_status'] ?? null),
         'address' => admin_accounts_patient_value($user['address'] ?? null),
         'location' => admin_accounts_patient_value(trim(implode(', ', array_filter([
@@ -430,6 +454,10 @@ body{background:#f4f8fb;color:#1f343d}
 .patient-status-badge.active{background:#e6f6ec;color:#168a45}
 .patient-status-badge.inactive{background:#fdecef;color:#b42318}
 .patient-status-badge .status-dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+.patient-priority-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.patient-priority-list:empty{display:none}
+.patient-priority-badge{display:inline-flex;align-items:center;min-height:28px;border-radius:999px;padding:4px 12px;font-size:.70rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.patient-priority-badge.priority-senior,.patient-priority-badge.priority-pwd{background:#eee7ff;color:#5b3a91}
 .patient-detail-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;padding:0;background:#fff}
 .patient-detail-panel{padding:22px 24px 24px;border-right:1px solid #e8eef2;min-height:100%}
 .patient-detail-panel:last-child{border-right:0}
@@ -705,6 +733,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const patientModalName = document.getElementById("patientModalName");
     const patientModalMeta = document.getElementById("patientModalMeta");
     const patientModalStatus = document.getElementById("patientModalStatus");
+    const patientModalPriority = document.getElementById("patientModalPriority");
     const patientModalInfo = document.getElementById("patientModalInfo");
     const patientModalAppointments = document.getElementById("patientModalAppointments");
     const patientAppointmentSearch = document.getElementById("patientAppointmentSearch");
@@ -786,6 +815,17 @@ document.addEventListener("DOMContentLoaded", function () {
                 \'<span class="patient-info-label">\' + escapeHtml(item.label) + "</span>" +
                 \'<span class="patient-info-value\' + emptyClass + \'">\' + escapeHtml(item.value) + "</span>" +
             "</div>";
+        }).join("");
+    }
+
+    function renderPatientPriority(profile) {
+        if (!patientModalPriority) return;
+        const labels = { senior: "SENIOR", pwd: "PWD" };
+        const types = Array.isArray(profile.priority_types) ? profile.priority_types : [];
+        patientModalPriority.innerHTML = types.filter(function (type) {
+            return Object.prototype.hasOwnProperty.call(labels, type);
+        }).map(function (type) {
+            return \'<span class="patient-priority-badge priority-\' + escapeHtml(type) + \'">\' + escapeHtml(labels[type]) + \'</span>\';
         }).join("");
     }
 
@@ -1002,6 +1042,7 @@ document.addEventListener("DOMContentLoaded", function () {
             patientModalStatus.className = "patient-status-badge " + (active ? "active" : "inactive");
             patientModalStatus.innerHTML = \'<span class="status-dot" aria-hidden="true"></span><span>\' + (active ? "Active" : "Disabled") + "</span>";
         }
+        renderPatientPriority(profile);
         if (patientModalAvatar) {
             if (profile.photo) {
                 patientModalAvatar.innerHTML = \'<img src="\' + escapeHtml(profile.photo) + \'" alt="">\';
@@ -1332,6 +1373,7 @@ include 'includes/header.php';
                     <div class="patient-detail-status">
                         <span class="patient-status-badge active" id="patientModalStatus"><span class="status-dot" aria-hidden="true"></span><span>Active</span></span>
                     </div>
+                    <div class="patient-priority-list" id="patientModalPriority" aria-label="Patient priority types"></div>
                 </div>
             </div>
             <div class="patient-detail-body">
