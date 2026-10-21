@@ -68,6 +68,10 @@ if ($userRole === 'patient') {
                             {$patientNameSql} as patient_name,
                             p.profile_photo,
                             p.profile_updated_at,
+                            p.age,
+                            p.date_of_birth,
+                            p.pwd_type,
+                            p.pwd_id_path,
                             {$doctorNameSql} as doctor_name,
                             q.queue_number,
                             rr.id AS reschedule_request_id, rr.original_date AS reschedule_original_date,
@@ -96,6 +100,10 @@ if ($userRole === 'patient') {
                             {$patientNameSql} as patient_name,
                             p.profile_photo,
                             p.profile_updated_at,
+                            p.age,
+                            p.date_of_birth,
+                            p.pwd_type,
+                            p.pwd_id_path,
                             {$doctorNameSql} as doctor_name,
                             q.queue_number,
                             rr.id AS reschedule_request_id, rr.original_date AS reschedule_original_date,
@@ -138,6 +146,40 @@ if (!in_array($initialStatusFilter, $allowedStatusFilters, true)) {
 function admin_appointment_valid_date(string $date): bool {
     $dateObject = DateTime::createFromFormat('!Y-m-d', $date);
     return $dateObject instanceof DateTime && $dateObject->format('Y-m-d') === $date;
+}
+
+function admin_patient_is_senior(array $patient): bool {
+    $dateOfBirth = trim((string) ($patient['date_of_birth'] ?? ''));
+    if ($dateOfBirth !== '' && $dateOfBirth !== '0000-00-00') {
+        try {
+            $birthDate = new DateTimeImmutable($dateOfBirth);
+            $todayDate = new DateTimeImmutable('today', new DateTimeZone('Asia/Manila'));
+            return $birthDate <= $todayDate && $birthDate->diff($todayDate)->y >= 60;
+        } catch (Throwable $exception) {
+            // Fall back to the stored age when the birth date is unavailable or invalid.
+        }
+    }
+
+    return (int) ($patient['age'] ?? 0) >= 60;
+}
+
+function admin_priority_badges_markup(array $patient): string {
+    $types = [];
+    if (admin_patient_is_senior($patient)) {
+        $types[] = 'senior';
+    }
+    if (trim((string) ($patient['pwd_type'] ?? '')) !== '') {
+        $types[] = 'pwd';
+    }
+    if ($types === []) {
+        return '<span class="queue-priority-empty">—</span>';
+    }
+
+    $badges = [];
+    foreach ($types as $type) {
+        $badges[] = '<span class="status-badge priority-' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars(strtoupper($type), ENT_QUOTES, 'UTF-8') . '</span>';
+    }
+    return implode(' ', $badges);
 }
 
 function admin_appointment_service_label(array $appointment): string {
@@ -993,6 +1035,22 @@ $additionalStyles = patientAvatarStyles() . '
         background:#fff4d6;
         color:#9a6700;
     }
+    .status-badge.priority-senior,
+    .status-badge.priority-pwd {
+        background:#eee7ff;
+        color:#5b3a91;
+    }
+    .queue-priority-empty {
+        color:#7890a1;
+        font-weight:800;
+    }
+    .appointment-priority-cell {
+        text-align:center;
+        white-space:nowrap;
+    }
+    .appointment-priority-cell .status-badge {
+        margin:2px;
+    }
     .status-stack {
         display:flex;
         flex-direction:column;
@@ -1075,6 +1133,15 @@ $additionalStyles = patientAvatarStyles() . '
         background:#f3faff;
         border-color:#0f7cc2;
     }
+    .btn-pwd-id {
+        background:#f4eeff;
+        color:#5b3a91;
+        border:1px solid #d9c9f5;
+    }
+    .btn-pwd-id:hover {
+        background:#eee7ff;
+        border-color:#bfa7ea;
+    }
     .appointment-modal-actions .btn-view {
         background:#0077b6;
         color:#fff;
@@ -1137,6 +1204,10 @@ $additionalStyles = patientAvatarStyles() . '
     .cancel-reason-error { display:none; margin-top:7px; color:#b4232d; font-size:.86rem; font-weight:700; }
     .cancel-reason-error.is-open { display:block; }
     .appointment-modal-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 0 24px 24px; }
+    .pwd-id-modal-card { width: min(820px, 100%); max-height: calc(100vh - 36px); }
+    .pwd-id-modal-body { display:grid; place-items:center; min-height:260px; max-height:calc(100vh - 190px); padding:22px; overflow:auto; background:#f8fcff; }
+    .pwd-id-modal-body img { display:block; max-width:100%; max-height:calc(100vh - 250px); width:auto; height:auto; object-fit:contain; border:1px solid #cfe1ee; border-radius:8px; background:#fff; }
+    .pwd-id-modal-message { margin:0; color:#60758a; font-weight:700; text-align:center; }
     .appointment-success-card { width: min(420px, 100%); text-align: center; }
     .appointment-success-body { padding: 30px 28px 28px; }
     .appointment-success-icon { display: inline-grid; place-items: center; width: 64px; height: 64px; margin-bottom: 16px; border-radius: 50%; background: #dcf7e7; color: #148047; font-size: 2rem; font-weight: 950; }
@@ -1394,12 +1465,13 @@ $additionalStyles = patientAvatarStyles() . '
     .appointments-table { width: 100%; min-width: 0; table-layout: fixed; }
     .appointments-table th,
     .appointments-table td { padding: 11px 8px; overflow-wrap: anywhere; }
-    .appointments-table th:nth-child(1), .appointments-table td:nth-child(1) { width: 21%; }
-    .appointments-table th:nth-child(2), .appointments-table td:nth-child(2) { width: 15%; }
-    .appointments-table th:nth-child(3), .appointments-table td:nth-child(3) { width: 18%; }
-    .appointments-table th:nth-child(4), .appointments-table td:nth-child(4) { width: 24%; }
-    .appointments-table th:nth-child(5), .appointments-table td:nth-child(5) { width: 10%; text-align: center; }
-    .appointments-table th:nth-child(6), .appointments-table td:nth-child(6) { width: 12%; text-align: center; }
+    .appointments-table th:nth-child(1), .appointments-table td:nth-child(1) { width: 19%; }
+    .appointments-table th:nth-child(2), .appointments-table td:nth-child(2) { width: 13%; }
+    .appointments-table th:nth-child(3), .appointments-table td:nth-child(3) { width: 16%; }
+    .appointments-table th:nth-child(4), .appointments-table td:nth-child(4) { width: 11%; text-align: center; }
+    .appointments-table th:nth-child(5), .appointments-table td:nth-child(5) { width: 21%; }
+    .appointments-table th:nth-child(6), .appointments-table td:nth-child(6) { width: 8%; text-align: center; }
+    .appointments-table th:nth-child(7), .appointments-table td:nth-child(7) { width: 12%; text-align: center; }
     .appointments-table .status-badge { padding: 4px 7px; font-size: .62rem; }
     .appointments-table .action-buttons { justify-content: center; gap: 6px; }
     .appointments-table .action-buttons .btn { padding: 6px 8px; font-size: .72rem; }
@@ -1639,14 +1711,16 @@ $additionalStyles = patientAvatarStyles() . '
         }
     }
     /* Keep appointment actions centered and consistent across every row. */
-    .appointments-table th:nth-child(6),
-    .appointments-table td:nth-child(6) {
-        width: 18%;
+    .appointments-table th:nth-child(7),
+    .appointments-table td:nth-child(7) {
+        width: 16%;
         text-align: center;
         vertical-align: middle;
     }
     .appointments-table th:nth-child(4),
-    .appointments-table td:nth-child(4) { width: 18%; }
+    .appointments-table td:nth-child(4) { width: 10%; }
+    .appointments-table th:nth-child(5),
+    .appointments-table td:nth-child(5) { width: 18%; }
     .appointments-table .action-buttons {
         display: flex;
         align-items: center;
@@ -1668,6 +1742,13 @@ $additionalStyles = patientAvatarStyles() . '
     }
     .appointments-table .action-buttons:not(.pending-actions) .btn {
         min-width: 84px;
+    }
+    .appointments-table .action-buttons.has-pwd-id {
+        flex-wrap: wrap;
+    }
+    .appointments-table .action-buttons.has-pwd-id > .btn-pwd-id {
+        flex: 1 0 100%;
+        min-width: 0;
     }
     .appointments-table .action-buttons.pending-actions {
         display: grid;
@@ -1723,6 +1804,10 @@ $additionalStyles = patientAvatarStyles() . '
         min-width: 0;
         justify-self: stretch;
     }
+    .appointments-table .action-buttons.pending-actions > .btn-pwd-id {
+        grid-column: 1 / -1;
+        grid-row: auto;
+    }
     .appointments-table .action-buttons.reschedule-actions {
         display: grid;
         grid-template-columns: 150px;
@@ -1734,6 +1819,7 @@ $additionalStyles = patientAvatarStyles() . '
         justify-content: center;
     }
     .appointments-table .action-buttons.reschedule-actions > .btn-details,
+    .appointments-table .action-buttons.reschedule-actions > .btn-pwd-id,
     .appointments-table .action-buttons.reschedule-actions > .reschedule-review-note,
     .appointments-table .action-buttons.reschedule-actions > form {
         grid-column: 1;
@@ -1747,6 +1833,11 @@ $additionalStyles = patientAvatarStyles() . '
         width: 126px !important;
         max-width: 126px !important;
         flex-basis: 126px;
+    }
+    .appointments-table .action-buttons.reschedule-actions > .btn-pwd-id {
+        width: 150px !important;
+        max-width: 150px !important;
+        flex-basis: 150px;
     }
     .appointments-table .action-buttons.reschedule-actions > form {
         display: block !important;
@@ -1964,6 +2055,7 @@ include __DIR__ . '/includes/header.php';
                             <th>Patient</th>
                             <th>Doctor</th>
                             <th>Schedule</th>
+                            <th>Priority type</th>
                             <th>Service</th>
                             <th>Status</th>
                             <th>Actions</th>
@@ -1977,6 +2069,9 @@ include __DIR__ . '/includes/header.php';
                         $appTime = new DateTime($appointment['appointment_time']);
                         $formattedTime = $appTime->format('g:i A');
                         $patientDisplay = mergeAppointmentPatientProfile($appointment, $patientsById);
+                        $priorityBadges = admin_priority_badges_markup($appointment);
+                        $hasPwdId = trim((string) ($appointment['pwd_id_path'] ?? '')) !== '';
+                        $patientId = (int) ($appointment['patient_id'] ?? 0);
                         $notesFull = trim((string) ($appointment['notes'] ?? ''));
                         $servicesText = appointment_detail_services_text($appointment);
                         $totalAmount = isset($appointment['total_display_price']) && $appointment['total_display_price'] !== null
@@ -2103,6 +2198,7 @@ include __DIR__ . '/includes/header.php';
                                     </small>
                                 <?php endif; ?>
                             </td>
+                            <td data-label="Priority type" class="appointment-priority-cell"><?php echo $priorityBadges; ?></td>
                             <td data-label="Service" class="appointments-services"><?php echo htmlspecialchars($servicesText); ?></td>
                             <td data-label="Status">
                                 <div class="status-stack">
@@ -2118,8 +2214,13 @@ include __DIR__ . '/includes/header.php';
                                 </div>
                             </td>
                             <td data-label="Actions">
-                                <div class="action-buttons <?php echo $canReviewReschedule ? 'reschedule-actions' : (((($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation')) && $appointment['status'] === 'pending') ? 'pending-actions' : ''); ?>">
+                                <div class="action-buttons <?php echo $canReviewReschedule ? 'reschedule-actions' : (((($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation')) && $appointment['status'] === 'pending') ? 'pending-actions' : ''); ?><?php echo $hasPwdId ? ' has-pwd-id' : ''; ?>">
                                     <button type="button" class="btn btn-details" data-open-details>View</button>
+                                    <?php if ($hasPwdId && $patientId > 0): ?>
+                                        <button type="button" class="btn btn-pwd-id" data-view-pwd-id
+                                            data-patient-id="<?php echo $patientId; ?>"
+                                            data-patient-name="<?php echo htmlspecialchars((string) ($patientDisplay['patient_name'] ?? 'Patient'), ENT_QUOTES, 'UTF-8'); ?>">View PWD ID</button>
+                                    <?php endif; ?>
                                     <?php if ($canAdminReschedule): ?>
                                         <button type="button" class="btn btn-reschedule"
                                             data-open-reschedule
@@ -2258,6 +2359,25 @@ include __DIR__ . '/includes/header.php';
     </div>
 </div>
 
+<div class="appointment-modal" id="pwdIdModal" aria-hidden="true">
+    <div class="appointment-modal-card pwd-id-modal-card" role="dialog" aria-modal="true" aria-labelledby="pwdIdTitle">
+        <div class="appointment-modal-head">
+            <div>
+                <h3 id="pwdIdTitle">PWD ID</h3>
+                <p>Private patient document</p>
+            </div>
+            <button type="button" class="modal-close" data-close-pwd-id aria-label="Close">&times;</button>
+        </div>
+        <div class="pwd-id-modal-body">
+            <img id="pwdIdPreview" alt="PWD ID" hidden>
+            <p id="pwdIdMessage" class="pwd-id-modal-message">Loading PWD ID...</p>
+        </div>
+        <div class="appointment-modal-actions">
+            <button type="button" class="btn btn-light" data-close-pwd-id>Close</button>
+        </div>
+    </div>
+</div>
+
 <div class="appointment-modal" id="statusConfirmModal" aria-hidden="true">
     <div class="appointment-modal-card" role="dialog" aria-modal="true" aria-labelledby="statusConfirmTitle">
         <div class="appointment-modal-head">
@@ -2359,6 +2479,10 @@ include __DIR__ . '/includes/header.php';
     var detailSummary = document.getElementById('appointmentDetailSummary');
     var detailNotes = document.getElementById('appointmentDetailNotes');
     var detailSub = document.getElementById('appointmentDetailsSub');
+    var pwdIdModal = document.getElementById('pwdIdModal');
+    var pwdIdTitle = document.getElementById('pwdIdTitle');
+    var pwdIdPreview = document.getElementById('pwdIdPreview');
+    var pwdIdMessage = document.getElementById('pwdIdMessage');
     var confirmModal = document.getElementById('statusConfirmModal');
     var rejectionModal = document.getElementById('rescheduleRejectionModal');
     var rejectionForm = document.getElementById('rescheduleRejectionForm');
@@ -2413,8 +2537,20 @@ include __DIR__ . '/includes/header.php';
         modal.classList.remove('is-open');
         modal.setAttribute('aria-hidden', 'true');
     }
+    function closePwdIdModal() {
+        closeModal(pwdIdModal);
+        if (pwdIdPreview) {
+            pwdIdPreview.hidden = true;
+            pwdIdPreview.removeAttribute('src');
+        }
+        if (pwdIdMessage) {
+            pwdIdMessage.hidden = false;
+            pwdIdMessage.textContent = 'Loading PWD ID...';
+        }
+    }
     function closeAll() {
         closeModal(detailModal);
+        closePwdIdModal();
         closeModal(confirmModal);
         closeModal(rejectionModal);
         closeModal(successModal);
@@ -2731,6 +2867,45 @@ include __DIR__ . '/includes/header.php';
             showDetails(button.closest('[data-appointment]'));
         });
     });
+    document.querySelectorAll('[data-view-pwd-id]').forEach(function(button) {
+        button.addEventListener('click', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            var patientId = button.getAttribute('data-patient-id') || '';
+            if (!patientId || !pwdIdModal || !pwdIdPreview) return;
+            if (pwdIdTitle) {
+                var patientName = button.getAttribute('data-patient-name') || 'Patient';
+                pwdIdTitle.textContent = 'PWD ID - ' + patientName;
+            }
+            pwdIdPreview.hidden = true;
+            pwdIdPreview.removeAttribute('src');
+            if (pwdIdMessage) {
+                pwdIdMessage.hidden = false;
+                pwdIdMessage.textContent = 'Loading PWD ID...';
+            }
+            pwdIdPreview.onload = function() {
+                pwdIdPreview.hidden = false;
+                if (pwdIdMessage) pwdIdMessage.hidden = true;
+            };
+            pwdIdPreview.onerror = function() {
+                pwdIdPreview.hidden = true;
+                if (pwdIdMessage) {
+                    pwdIdMessage.hidden = false;
+                    pwdIdMessage.textContent = 'PWD ID is unavailable or access was denied.';
+                }
+            };
+            pwdIdPreview.src = 'pwd_id.php?patient_id=' + encodeURIComponent(patientId) + '&v=' + Date.now();
+            openModal(pwdIdModal);
+        });
+    });
+    document.querySelectorAll('[data-close-pwd-id]').forEach(function(button) {
+        button.addEventListener('click', closePwdIdModal);
+    });
+    if (pwdIdModal) {
+        pwdIdModal.addEventListener('click', function(event) {
+            if (event.target === pwdIdModal) closePwdIdModal();
+        });
+    }
     document.querySelectorAll('.appointment-row').forEach(function(row) {
         row.addEventListener('click', function(event) {
             if (event.target.closest('button, a, form')) return;
