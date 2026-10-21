@@ -43,6 +43,40 @@ function admin_time_label(?string $time): string {
     return $stamp ? date('g:i A', $stamp) : '--';
 }
 
+function admin_patient_is_senior(array $patient): bool {
+    $dateOfBirth = trim((string) ($patient['date_of_birth'] ?? ''));
+    if ($dateOfBirth !== '' && $dateOfBirth !== '0000-00-00') {
+        try {
+            $birthDate = new DateTimeImmutable($dateOfBirth);
+            $todayDate = new DateTimeImmutable('today', new DateTimeZone('Asia/Manila'));
+            return $birthDate <= $todayDate && $birthDate->diff($todayDate)->y >= 60;
+        } catch (Throwable $exception) {
+            // Fall back to the stored age when the birth date is unavailable or invalid.
+        }
+    }
+
+    return (int) ($patient['age'] ?? 0) >= 60;
+}
+
+function admin_priority_badges_markup(array $patient): string {
+    $types = [];
+    if (admin_patient_is_senior($patient)) {
+        $types[] = 'senior';
+    }
+    if (trim((string) ($patient['pwd_type'] ?? '')) !== '') {
+        $types[] = 'pwd';
+    }
+    if ($types === []) {
+        return '<span class="queue-priority-empty">—</span>';
+    }
+
+    $badges = [];
+    foreach ($types as $type) {
+        $badges[] = '<span class="badge priority-' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars(strtoupper($type), ENT_QUOTES, 'UTF-8') . '</span>';
+    }
+    return implode(' ', $badges);
+}
+
 function admin_valid_trend_date(string $date): bool {
     $parsed = DateTimeImmutable::createFromFormat('!Y-m-d', $date);
     $errors = DateTimeImmutable::getLastErrors();
@@ -318,6 +352,9 @@ $requestStmt = $conn->prepare("SELECT a.id, a.appointment_date, a.appointment_ti
                                 {$patientNameSql} AS patient_name,
                                 p.phone AS patient_phone,
                                 p.email AS patient_email,
+                                p.age,
+                                p.date_of_birth,
+                                p.pwd_type,
                                 p.profile_photo,
                                 p.profile_updated_at,
                                 {$doctorNameSql} AS doctor_name
@@ -1248,17 +1285,19 @@ body {
 }
 
 .appointment-request-table th:nth-child(1),
-.appointment-request-table td:nth-child(1) { width: 30%; }
+.appointment-request-table td:nth-child(1) { width: 28%; }
 .appointment-request-table th:nth-child(2),
-.appointment-request-table td:nth-child(2) { width: 20%; }
+.appointment-request-table td:nth-child(2) { width: 18%; }
 .appointment-request-table th:nth-child(3),
-.appointment-request-table td:nth-child(3) { width: 20%; }
+.appointment-request-table td:nth-child(3) { width: 18%; }
 .appointment-request-table th:nth-child(4),
-.appointment-request-table td:nth-child(4) { width: 16%; }
+.appointment-request-table td:nth-child(4) { width: 13%; }
 .appointment-request-table th:nth-child(5),
-.appointment-request-table td:nth-child(5) { width: 14%; text-align: center; }
+.appointment-request-table td:nth-child(5) { width: 13%; }
+.appointment-request-table th:nth-child(6),
+.appointment-request-table td:nth-child(6) { width: 10%; text-align: center; }
 
-.appointment-request-table th:nth-child(5) {
+.appointment-request-table th:nth-child(6) {
     text-align: center;
 }
 
@@ -1697,16 +1736,18 @@ body {
     .appointment-request-table td:nth-child(2)::before { content: "Service"; }
     .appointment-request-table td:nth-child(3)::before { content: "Schedule"; }
     .appointment-request-table td:nth-child(4)::before { content: "Status"; }
-    .appointment-request-table td:nth-child(5)::before { content: "Actions"; }
+    .appointment-request-table td:nth-child(5)::before { content: "Priority"; }
+    .appointment-request-table td:nth-child(6)::before { content: "Actions"; }
 
     .request-actions {
-        justify-content: flex-start;
+        justify-content: center;
         max-width: none;
     }
 
     .request-actions-menu {
         right: auto;
-        left: 0;
+        left: 50%;
+        transform: translateX(-50%);
     }
 }
 
@@ -2632,6 +2673,17 @@ body {
 .badge.completed {
     background: #e8f4f8;
     color: #0b4f80;
+}
+
+.badge.priority-senior,
+.badge.priority-pwd {
+    background: #eee7ff;
+    color: #5b3a91;
+}
+
+.queue-priority-empty {
+    color: #7890a1;
+    font-weight: 800;
 }
 
 .badge.cancelled,
@@ -3782,6 +3834,7 @@ include 'includes/header.php';
                                     <th>Patient</th>
                                     <th>Service</th>
                                     <th class="request-schedule">Schedule</th>
+                                    <th>Priority type</th>
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
@@ -3806,6 +3859,7 @@ include 'includes/header.php';
                                     $requestBookingType = (string) ($appointment['booking_type'] ?? '');
                                     $requestBookingLabel = admin_booking_label($requestBookingType);
                                     $adminCanRespond = $requestBookingType !== 'consultation';
+                                    $requestPriorityBadges = admin_priority_badges_markup($appointment);
                                     ?>
                                     <tr>
                                         <td>
@@ -3826,6 +3880,9 @@ include 'includes/header.php';
                                         <td class="request-schedule">
                                             <strong><?php echo htmlspecialchars($requestDate); ?></strong>
                                             <span><?php echo htmlspecialchars($requestTime); ?></span>
+                                        </td>
+                                        <td class="request-priority">
+                                            <?php echo $requestPriorityBadges; ?>
                                         </td>
                                         <td><span class="badge <?php echo htmlspecialchars($requestStatus); ?>"><?php echo htmlspecialchars($requestStatusLabel); ?></span></td>
                                         <td>
