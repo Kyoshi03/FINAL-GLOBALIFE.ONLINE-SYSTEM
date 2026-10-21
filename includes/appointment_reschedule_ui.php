@@ -41,8 +41,9 @@
 .reschedule-reason-field { margin:0 0 12px; }
 .reschedule-reason-field[hidden] { display:none !important; }
 .reschedule-reason-field label { display:block; margin:0 0 6px; color:#315c70; font-weight:800; font-size:.9rem; }
-.reschedule-reason-field textarea { width:100%; min-height:72px; box-sizing:border-box; padding:10px 12px; border:1px solid #cfe3f2; border-radius:10px; color:#10233f; background:#fff; font:inherit; resize:vertical; }
-.reschedule-reason-field textarea:focus { outline:none; border-color:#0f7cc2; box-shadow:0 0 0 4px rgba(15,124,194,.1); }
+.reschedule-reason-field select, .reschedule-reason-field textarea { width:100%; min-height:46px; box-sizing:border-box; padding:10px 12px; border:1px solid #cfe3f2; border-radius:10px; color:#10233f; background:#fff; font:inherit; }
+.reschedule-reason-field textarea { min-height:72px; resize:vertical; }
+.reschedule-reason-field select:focus, .reschedule-reason-field textarea:focus { outline:none; border-color:#0f7cc2; box-shadow:0 0 0 4px rgba(15,124,194,.1); }
 .reschedule-availability { min-height:18px; margin:0 0 11px; padding:7px 10px; border-radius:8px; background:#f2f8fc; color:#42657a; font-size:.78rem; line-height:1.35; }
 .reschedule-availability.is-loading { color:#6e7d87; }
 .reschedule-availability.is-error { background:#fff3f3; color:#a52835; }
@@ -202,9 +203,25 @@ $rescheduleMinTime = $rescheduleNow->modify('+1 minute')->format('H:i');
             <input type="hidden" name="return_url" value="<?php echo htmlspecialchars((string) $appointmentPage, ENT_QUOTES, 'UTF-8'); ?>">
             <div class="reschedule-body">
                 <p class="reschedule-note" id="appointmentRescheduleNotice">Your appointment is already confirmed. Your current schedule will remain active until the reschedule request is approved.</p>
-                <div class="reschedule-reason-field" id="appointmentRescheduleReasonField">
-                    <label for="appointmentRescheduleReason">Reason for rescheduling (Optional)</label>
-                    <textarea id="appointmentRescheduleReason" name="reason" maxlength="300" placeholder="Briefly explain why you need to change your schedule."></textarea>
+                <div class="reschedule-reason-field" id="appointmentRescheduleReasonField" hidden>
+                    <label for="appointmentReschedulePatientReason" id="appointmentRescheduleReasonLabel">Reason for rescheduling</label>
+                    <select id="appointmentReschedulePatientReason" aria-label="Patient reschedule reason">
+                        <option value="">Select a reason</option>
+                        <?php foreach (appointment_reschedule_reasons('patient') as $reasonOption): ?>
+                            <option value="<?php echo htmlspecialchars($reasonOption, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($reasonOption); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <select id="appointmentRescheduleAdminReason" aria-label="Admin reschedule reason" hidden>
+                        <option value="">Select an admin reason</option>
+                        <?php foreach (appointment_reschedule_reasons('admin') as $reasonOption): ?>
+                            <option value="<?php echo htmlspecialchars($reasonOption, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($reasonOption); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <input type="hidden" id="appointmentRescheduleReason" name="reason" value="">
+                    <div id="appointmentRescheduleReasonDetailsField" hidden style="margin-top:8px;">
+                        <label for="appointmentRescheduleReasonDetails">Additional details (Optional)</label>
+                        <textarea id="appointmentRescheduleReasonDetails" name="reason_details" maxlength="1000" placeholder="Add more details if needed."></textarea>
+                    </div>
                 </div>
                 <p class="reschedule-availability is-loading" id="appointmentRescheduleAvailability" aria-live="polite">Checking the doctor's available dates...</p>
                 <div class="reschedule-calendar-panel" id="appointmentRescheduleCalendarPanel" aria-label="Doctor availability calendar">
@@ -250,6 +267,7 @@ $rescheduleMinTime = $rescheduleNow->modify('+1 minute')->format('H:i');
 <?php
 $rescheduleSuccessMessage = trim((string) ($_SESSION['reschedule_success'] ?? ''));
 $rescheduleErrorMessage = trim((string) ($_SESSION['reschedule_error'] ?? ''));
+$rescheduleSuccessIsDirect = $rescheduleSuccessMessage !== '' && stripos($rescheduleSuccessMessage, 'Appointment rescheduled successfully') !== false;
 unset($_SESSION['reschedule_success']);
 unset($_SESSION['reschedule_error']);
 ?>
@@ -259,8 +277,8 @@ unset($_SESSION['reschedule_error']);
     <div class="reschedule-success-card">
         <div class="reschedule-success-body">
             <span class="reschedule-success-icon" aria-hidden="true">&#10003;</span>
-            <h3 id="rescheduleSuccessTitle">Request submitted</h3>
-            <p id="rescheduleSuccessText">Your original Confirmed appointment remains active while the clinic reviews your requested schedule.</p>
+            <h3 id="rescheduleSuccessTitle"><?php echo $rescheduleSuccessIsDirect ? 'Appointment rescheduled' : 'Request submitted'; ?></h3>
+            <p id="rescheduleSuccessText"><?php echo $rescheduleSuccessIsDirect ? 'The appointment schedule was updated and the patient was notified.' : 'Your original Confirmed appointment remains active while the clinic reviews your requested schedule.'; ?></p>
             <button type="button" class="btn btn-primary" id="rescheduleSuccessOk">OK</button>
         </div>
     </div>
@@ -292,6 +310,11 @@ unset($_SESSION['reschedule_error']);
     var submitButton = document.getElementById('appointmentRescheduleSubmit');
     var reasonField = document.getElementById('appointmentRescheduleReasonField');
     var reasonInput = document.getElementById('appointmentRescheduleReason');
+    var patientReasonSelect = document.getElementById('appointmentReschedulePatientReason');
+    var adminReasonSelect = document.getElementById('appointmentRescheduleAdminReason');
+    var reasonLabel = document.getElementById('appointmentRescheduleReasonLabel');
+    var reasonDetailsField = document.getElementById('appointmentRescheduleReasonDetailsField');
+    var reasonDetailsInput = document.getElementById('appointmentRescheduleReasonDetails');
     var calendarPanel = document.getElementById('appointmentRescheduleCalendarPanel');
     var calendarGrid = document.getElementById('appointmentRescheduleCalendarGrid');
     var monthLabel = document.getElementById('appointmentRescheduleMonthLabel');
@@ -313,6 +336,33 @@ unset($_SESSION['reschedule_error']);
     var availability = null;
     var availabilityRequest = null;
     var calendarMonth = null;
+    var activeReasonSelect = null;
+
+    function syncReasonDetails() {
+        var showDetails = reasonInput && reasonInput.value === 'Other reason';
+        if (reasonDetailsField) reasonDetailsField.hidden = !showDetails;
+        if (!showDetails && reasonDetailsInput) reasonDetailsInput.value = '';
+    }
+
+    function syncReasonFields(mode) {
+        var showReason = mode !== 'pending';
+        var adminMode = mode === 'admin';
+        activeReasonSelect = adminMode ? adminReasonSelect : patientReasonSelect;
+        if (reasonField) reasonField.hidden = !showReason;
+        if (patientReasonSelect) {
+            patientReasonSelect.hidden = !showReason || adminMode;
+            patientReasonSelect.required = showReason && !adminMode;
+            if (!adminMode) patientReasonSelect.value = '';
+        }
+        if (adminReasonSelect) {
+            adminReasonSelect.hidden = !showReason || !adminMode;
+            adminReasonSelect.required = showReason && adminMode;
+            if (!adminMode) adminReasonSelect.value = '';
+        }
+        if (reasonLabel) reasonLabel.textContent = adminMode ? 'Admin reason for rescheduling' : 'Reason for rescheduling';
+        if (reasonInput) reasonInput.value = showReason && activeReasonSelect ? activeReasonSelect.value : '';
+        syncReasonDetails();
+    }
 
     function parseDateValue(value) {
         var parts = String(value || '').split('-').map(Number);
@@ -680,6 +730,10 @@ unset($_SESSION['reschedule_error']);
         modal.classList.remove('is-open');
         modal.setAttribute('aria-hidden', 'true');
         if (reasonInput) reasonInput.value = '';
+        if (patientReasonSelect) patientReasonSelect.value = '';
+        if (adminReasonSelect) adminReasonSelect.value = '';
+        if (reasonDetailsInput) reasonDetailsInput.value = '';
+        syncReasonDetails();
     }
     document.querySelectorAll('[data-open-reschedule]').forEach(function (button) {
         button.addEventListener('click', function (event) {
@@ -700,13 +754,15 @@ unset($_SESSION['reschedule_error']);
             timeInput.setCustomValidity('');
             var current = button.getAttribute('data-reschedule-label') || 'Current appointment schedule';
             var editMode = button.getAttribute('data-reschedule-mode') || 'confirmed';
+            var reasonMode = editMode === 'admin' ? 'admin' : (editMode === 'pending' ? 'pending' : 'patient');
             if (title) title.textContent = 'Reschedule appointment';
-            if (reasonField) reasonField.hidden = editMode === 'pending';
-            if (reasonInput) reasonInput.value = '';
+            syncReasonFields(reasonMode);
             if (notice) notice.textContent = editMode === 'pending'
                 ? 'This appointment is not yet confirmed. You can change your schedule before confirmation.'
-                : 'This appointment is already confirmed. Your current schedule will remain active until the reschedule request is approved.';
-            if (submitButton) submitButton.textContent = editMode === 'pending' ? 'Save Schedule' : 'Submit Request';
+                : (editMode === 'admin'
+                    ? 'Choose a new schedule and explain why the clinic needs to move this appointment.'
+                    : 'This appointment is already confirmed. Your current schedule will remain active until the reschedule request is approved.');
+            if (submitButton) submitButton.textContent = editMode === 'pending' ? 'Save Schedule' : (editMode === 'admin' ? 'Save Reschedule' : 'Submit Request');
             if (currentText) currentText.textContent = current;
             modal.classList.add('is-open');
             modal.setAttribute('aria-hidden', 'false');
@@ -715,6 +771,14 @@ unset($_SESSION['reschedule_error']);
                 if (dateChoicesField && !dateChoicesField.hidden) dateChoices.focus();
                 else dateInput.focus();
             }, 50);
+        });
+    });
+    [patientReasonSelect, adminReasonSelect].forEach(function (select) {
+        if (!select) return;
+        select.addEventListener('change', function () {
+            if (activeReasonSelect !== select) return;
+            if (reasonInput) reasonInput.value = select.value;
+            syncReasonDetails();
         });
     });
     dateInput.addEventListener('change', function () {
@@ -750,6 +814,14 @@ unset($_SESSION['reschedule_error']);
         if (availability && availability.booking_type === 'consultation') setSubmitEnabled(updateAvailabilityForSelection());
     });
     form.addEventListener('submit', function (event) {
+        if (activeReasonSelect && !reasonField.hidden) {
+            if (reasonInput) reasonInput.value = activeReasonSelect.value;
+            if (!activeReasonSelect.value) {
+                event.preventDefault();
+                activeReasonSelect.reportValidity();
+                return;
+            }
+        }
         if (availability && availability.booking_type === 'consultation' && !updateAvailabilityForSelection()) {
             event.preventDefault();
             dateInput.reportValidity();

@@ -348,6 +348,7 @@ $rescheduleRequestStmt = $conn->prepare("SELECT r.id AS reschedule_request_id,
                                 r.requested_date,
                                 r.requested_time,
                                 r.reason AS reschedule_reason,
+                                r.reason_details AS reschedule_reason_details,
                                 r.created_at,
                                 a.patient_id,
                                 a.booking_type,
@@ -1402,6 +1403,10 @@ body {
 .admin-rejection-reason label { display: block; margin-bottom: 8px; color: #073b4c; font-weight: 900; }
 .admin-rejection-reason textarea { width: 100%; min-height: 120px; box-sizing: border-box; padding: 12px; border: 1px solid #d4e6f5; border-radius: 8px; resize: vertical; color: #1f343d; background: #fbfdff; font: inherit; line-height: 1.45; }
 .admin-rejection-reason textarea:focus { border-color: #0f7cc2; box-shadow: 0 0 0 4px rgba(15,124,194,.1); outline: none; }
+.admin-rejection-reason select { width: 100%; min-height: 46px; box-sizing: border-box; padding: 10px 12px; border: 1px solid #d4e6f5; border-radius: 8px; color: #1f343d; background: #fbfdff; font: inherit; }
+.admin-rejection-reason select:focus { border-color: #0f7cc2; box-shadow: 0 0 0 4px rgba(15,124,194,.1); outline: none; }
+.admin-rejection-details-field { margin-top: 12px; }
+.admin-rejection-details-field[hidden] { display: none; }
 .admin-rejection-error { display: none; margin: 7px 0 0; color: #9d1c2c; font-weight: 800; }
 .admin-rejection-error.is-open { display: block; }
 
@@ -3059,6 +3064,8 @@ document.addEventListener("DOMContentLoaded", function () {
     var rejectionRequestId = document.getElementById("rescheduleRejectionRequestId");
     var rejectionReturnUrl = document.getElementById("rescheduleRejectionReturnUrl");
     var rejectionReason = document.getElementById("rescheduleRejectionReason");
+    var rejectionDetails = document.getElementById("rescheduleRejectionDetails");
+    var rejectionDetailsField = document.getElementById("rescheduleRejectionDetailsField");
     var rejectionError = document.getElementById("rescheduleRejectionError");
     if (!modal) return;
 
@@ -3159,10 +3166,17 @@ document.addEventListener("DOMContentLoaded", function () {
             if (rejectionRequestId) rejectionRequestId.value = button.getAttribute("data-request-id") || "";
             if (rejectionReturnUrl) rejectionReturnUrl.value = button.getAttribute("data-return-url") || "";
             if (rejectionReason) rejectionReason.value = "";
+            if (rejectionDetails) rejectionDetails.value = "";
+            if (rejectionDetailsField) rejectionDetailsField.hidden = true;
             if (rejectionError) rejectionError.classList.remove("is-open");
             if (rejectionModal) { rejectionModal.classList.add("is-open"); rejectionModal.setAttribute("aria-hidden", "false"); }
             if (rejectionReason) window.setTimeout(function () { rejectionReason.focus(); }, 80);
         });
+    });
+    if (rejectionReason) rejectionReason.addEventListener("change", function () {
+        var show = rejectionReason.value === "Other reason";
+        if (rejectionDetailsField) rejectionDetailsField.hidden = !show;
+        if (!show && rejectionDetails) rejectionDetails.value = "";
     });
     document.querySelectorAll("[data-close-rejection-modal]").forEach(function (button) {
         button.addEventListener("click", function () {
@@ -3181,6 +3195,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
         if (rejectionReason) rejectionReason.value = value;
+        if (value !== "Other reason" && rejectionDetails) rejectionDetails.value = "";
     });
     document.querySelectorAll("[data-confirm-message]").forEach(function (button) {
         button.addEventListener("click", function (event) {
@@ -3813,7 +3828,7 @@ include 'includes/header.php';
                                                         data-reschedule-pending="1"
                                                         data-original-schedule="<?php echo htmlspecialchars($rescheduleOriginal, ENT_QUOTES, 'UTF-8'); ?>"
                                                         data-requested-schedule="<?php echo htmlspecialchars($rescheduleRequested, ENT_QUOTES, 'UTF-8'); ?>"
-                                                        data-reschedule-reason="<?php echo htmlspecialchars(trim((string) ($request['reschedule_reason'] ?? '')) ?: 'Not provided', ENT_QUOTES, 'UTF-8'); ?>"
+                                                        data-reschedule-reason="<?php echo htmlspecialchars(trim((string) ($request['reschedule_reason'] ?? '')) ?: 'Not provided', ENT_QUOTES, 'UTF-8'); ?><?php echo trim((string) ($request['reschedule_reason_details'] ?? '')) !== '' ? htmlspecialchars(' - ' . trim((string) $request['reschedule_reason_details']), ENT_QUOTES, 'UTF-8') : ''; ?>"
                                                     >Details</button>
                                                     <form method="post" action="process_reschedule_request.php">
                                                         <input type="hidden" name="request_id" value="<?php echo (int) ($request['reschedule_request_id'] ?? 0); ?>">
@@ -4163,7 +4178,16 @@ include 'includes/header.php';
                     <input type="hidden" name="action" value="reject">
                     <input type="hidden" name="return_url" id="rescheduleRejectionReturnUrl">
                     <label for="rescheduleRejectionReason">Reason for Rejection</label>
-                    <textarea id="rescheduleRejectionReason" name="rejection_reason" maxlength="300" required placeholder="Explain why this reschedule request cannot be approved."></textarea>
+                    <select id="rescheduleRejectionReason" name="rejection_reason" required>
+                        <option value="">Select a reason</option>
+                        <?php foreach (appointment_reschedule_reasons('admin') as $reasonOption): ?>
+                            <option value="<?php echo htmlspecialchars($reasonOption, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($reasonOption); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <div class="admin-rejection-details-field" id="rescheduleRejectionDetailsField" hidden>
+                        <label for="rescheduleRejectionDetails">Additional details (Optional)</label>
+                        <textarea id="rescheduleRejectionDetails" name="rejection_details" maxlength="1000" placeholder="Add more details if needed."></textarea>
+                    </div>
                     <small class="admin-rejection-error" id="rescheduleRejectionError">Please enter a reason.</small>
                 </div>
                 <div class="admin-modal-actions"><button class="btn secondary" type="button" data-close-rejection-modal>Back</button><button class="btn danger" type="submit">Confirm Rejection</button></div>

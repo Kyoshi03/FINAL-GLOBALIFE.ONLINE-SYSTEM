@@ -12,10 +12,13 @@ function appointment_reschedule_init_schema(mysqli $conn): void {
         requested_date DATE NOT NULL,
         requested_time TIME NOT NULL,
         reason VARCHAR(300) DEFAULT NULL,
+        reason_details TEXT DEFAULT NULL,
+        requested_by_role VARCHAR(20) NOT NULL DEFAULT 'patient',
         status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
         reviewed_by INT DEFAULT NULL,
         reviewed_at DATETIME DEFAULT NULL,
         rejection_reason VARCHAR(500) DEFAULT NULL,
+        rejection_details TEXT DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE,
@@ -37,11 +40,50 @@ function appointment_reschedule_init_schema(mysqli $conn): void {
     if (!dbColumnExists($conn, 'appointment_reschedule_requests', 'rejection_reason')) {
         $conn->query("ALTER TABLE appointment_reschedule_requests ADD COLUMN rejection_reason VARCHAR(500) DEFAULT NULL AFTER reviewed_at");
     }
+    if (!dbColumnExists($conn, 'appointment_reschedule_requests', 'reason_details')) {
+        $conn->query("ALTER TABLE appointment_reschedule_requests ADD COLUMN reason_details TEXT DEFAULT NULL AFTER reason");
+    }
+    if (!dbColumnExists($conn, 'appointment_reschedule_requests', 'requested_by_role')) {
+        $conn->query("ALTER TABLE appointment_reschedule_requests ADD COLUMN requested_by_role VARCHAR(20) NOT NULL DEFAULT 'patient' AFTER reason_details");
+    }
+    if (!dbColumnExists($conn, 'appointment_reschedule_requests', 'rejection_details')) {
+        $conn->query("ALTER TABLE appointment_reschedule_requests ADD COLUMN rejection_details TEXT DEFAULT NULL AFTER rejection_reason");
+    }
+    $conn->query("UPDATE appointment_reschedule_requests r
+        INNER JOIN users u ON u.id = r.requested_by
+        SET r.requested_by_role = COALESCE(NULLIF(r.requested_by_role, ''), u.role)
+        WHERE r.requested_by_role IS NULL OR r.requested_by_role = '' OR r.requested_by_role = 'patient'");
     $conn->query("UPDATE appointment_reschedule_requests r
         INNER JOIN appointments a ON a.id = r.appointment_id
         SET r.original_date = COALESCE(r.original_date, a.appointment_date),
             r.original_time = COALESCE(r.original_time, a.appointment_time)
         WHERE r.original_date IS NULL OR r.original_time IS NULL");
+}
+
+function appointment_reschedule_reasons(string $role): array {
+    $role = strtolower(trim($role));
+    if ($role === 'patient') {
+        return [
+            'Schedule conflict',
+            'Medical appointment or emergency',
+            'Transportation problem',
+            'Work or school conflict',
+            'Personal reason',
+            'Other reason',
+        ];
+    }
+    return [
+        'Doctor unavailable',
+        'Clinic schedule adjustment',
+        'Clinic closed or emergency closure',
+        'Schedule conflict',
+        'Service unavailable',
+        'Other reason',
+    ];
+}
+
+function appointment_reschedule_reason_is_valid(string $reason, string $role): bool {
+    return in_array(trim($reason), appointment_reschedule_reasons($role), true);
 }
 
 function appointment_reschedule_pending_join_sql(): string {
@@ -68,6 +110,19 @@ function appointment_reschedule_rejected_join_sql(): string {
             GROUP BY appointment_id
         ) latest ON latest.id = r.id
     ) rrh ON rrh.appointment_id = a.id";
+}
+
+function appointment_reschedule_admin_join_sql(): string {
+    return "LEFT JOIN (
+        SELECT r.*
+        FROM appointment_reschedule_requests r
+        INNER JOIN (
+            SELECT appointment_id, MAX(id) AS id
+            FROM appointment_reschedule_requests
+            WHERE status = 'approved' AND requested_by_role = 'admin'
+            GROUP BY appointment_id
+        ) latest ON latest.id = r.id
+    ) rra ON rra.appointment_id = a.id";
 }
 
 function appointment_reschedule_normalize_time(string $time): string {
@@ -237,16 +292,25 @@ function appointment_reschedule_notify_patient(mysqli $conn, array $request, str
     if ($patientId <= 0 || $appointmentId <= 0) return;
     $original = appointment_reschedule_request_date_label((string) ($request['appointment_date'] ?? ''), (string) ($request['appointment_time'] ?? ''));
     $requested = appointment_reschedule_request_date_label((string) ($request['requested_date'] ?? ''), (string) ($request['requested_time'] ?? ''));
-    if ($event === 'requested') {
+    $reason = trim((string) ($request['reason'] ?? ''));
+    $details = trim((string) ($request['reason_details'] ?? ''));
+    $reasonText = $reason !== '' ? $reason : 'Not provided';
+    if ($details !== '') $reasonText .= ' - ' . $details;
+    if ($event === 'admin_rescheduled') {
+        $title = 'Appointment rescheduled by the clinic';
+        $message = "The clinic moved your appointment from {$original} to {$requested}. Reason: {$reasonText}.";
+    } elseif ($event === 'requested') {
         $title = 'Reschedule request submitted';
-        $message = "Your request to move the appointment from {$original} to {$requested} is pending approval. Your original confirmed schedule remains active.";
+        $message = "Your request to move the appointment from {$original} to {$requested} is pending approval. Your original confirmed schedule remains active. Reason: {$reasonText}.";
     } elseif ($event === 'approved') {
         $title = 'Reschedule request approved';
         $message = "Your reschedule request was approved. Your confirmed appointment is now scheduled for {$requested}.";
     } else {
         $title = 'Reschedule request rejected';
         $rejectionReason = trim((string) ($request['rejection_reason'] ?? ''));
+        $rejectionDetails = trim((string) ($request['rejection_details'] ?? ''));
         $rejectionReason = $rejectionReason !== '' ? $rejectionReason : 'Not provided';
+        if ($rejectionDetails !== '') $rejectionReason .= ' - ' . $rejectionDetails;
         $message = "Your reschedule request to {$requested} was rejected. Your original confirmed appointment on {$original} remains active. Reason: {$rejectionReason}.";
     }
     create_patient_notification($conn, $patientId, 'appointment_reschedule_' . $event, $title, $message, $appointmentId, 'patients_view_appointments.php?highlight=' . $appointmentId);
@@ -258,15 +322,25 @@ function appointment_reschedule_notify_reviewer(mysqli $conn, array $request, st
     $bookingType = strtolower((string) ($request['booking_type'] ?? ''));
     $patientName = trim((string) ($request['patient_name'] ?? 'Patient'));
     $requested = appointment_reschedule_request_date_label((string) ($request['requested_date'] ?? ''), (string) ($request['requested_time'] ?? ''));
-    if ($event === 'requested') {
+    $reason = trim((string) ($request['reason'] ?? ''));
+    $details = trim((string) ($request['reason_details'] ?? ''));
+    $reasonText = $reason !== '' ? $reason : 'Not provided';
+    if ($details !== '') $reasonText .= ' - ' . $details;
+    if ($event === 'admin_rescheduled') {
+        return;
+    } elseif ($event === 'requested') {
         $title = 'Reschedule request pending';
-        $message = "{$patientName} requested to move an appointment to {$requested}. Please review the request.";
+        $message = "{$patientName} requested to move an appointment to {$requested}. Reason: {$reasonText}. Please review the request.";
     } elseif ($event === 'approved') {
         $title = 'Reschedule request approved';
         $message = "{$patientName}'s reschedule request for {$requested} was approved.";
     } else {
         $title = 'Reschedule request rejected';
-        $message = "{$patientName}'s reschedule request for {$requested} was rejected.";
+        $rejectionReason = trim((string) ($request['rejection_reason'] ?? ''));
+        $rejectionDetails = trim((string) ($request['rejection_details'] ?? ''));
+        $rejectionText = $rejectionReason !== '' ? $rejectionReason : 'Not provided';
+        if ($rejectionDetails !== '') $rejectionText .= ' - ' . $rejectionDetails;
+        $message = "{$patientName}'s reschedule request for {$requested} was rejected. Reason: {$rejectionText}.";
     }
     if ($bookingType === 'consultation') {
         create_clinic_notification($conn, null, (int) ($request['doctor_id'] ?? 0), 'appointment_reschedule_' . $event, $title, $message, $appointmentId, 'doctor_view_appointments.php?highlight=' . $appointmentId);

@@ -34,7 +34,11 @@ if ($requestId <= 0 || !in_array($action, ['approve', 'reject'], true)) {
 }
 
 $rejectionReason = trim((string) ($_POST['rejection_reason'] ?? ''));
+$rejectionDetails = trim((string) ($_POST['rejection_details'] ?? ''));
 if ($action === 'reject') {
+    if (!appointment_reschedule_reason_is_valid($rejectionReason, $userRole === 'admin' ? 'admin' : 'doctor')) {
+        reschedule_request_finish(null, $returnUrl, false, 'Please select a valid rejection reason.');
+    }
     $reasonLength = function_exists('mb_strlen') ? mb_strlen($rejectionReason, 'UTF-8') : strlen($rejectionReason);
     if ($rejectionReason === '') {
         reschedule_request_finish(null, $returnUrl, false, 'A reason is required before rejecting the reschedule request.');
@@ -42,14 +46,21 @@ if ($action === 'reject') {
     if ($reasonLength > 300) {
         reschedule_request_finish(null, $returnUrl, false, 'The rejection reason must be 300 characters or fewer.');
     }
+    $detailsLength = function_exists('mb_strlen') ? mb_strlen($rejectionDetails, 'UTF-8') : strlen($rejectionDetails);
+    if ($detailsLength > 1000) {
+        reschedule_request_finish(null, $returnUrl, false, 'Additional rejection details must be 1000 characters or fewer.');
+    }
+    if ($rejectionReason !== 'Other reason') {
+        $rejectionDetails = '';
+    }
 }
 
 $conn = getDBConnection();
 appointment_reschedule_init_schema($conn);
 appointment_init_queue_schema($conn);
 
-$lookup = $conn->prepare(
-    "SELECT r.id, r.appointment_id, r.patient_id, r.requested_date, r.requested_time, r.status AS request_status,
+    $lookup = $conn->prepare(
+    "SELECT r.id, r.appointment_id, r.patient_id, r.requested_date, r.requested_time, r.reason, r.reason_details, r.requested_by_role, r.status AS request_status,
             a.doctor_id, a.appointment_date, a.appointment_time, a.status AS appointment_status, a.booking_type,
             q.status AS queue_status,
             " . dbUsersNameExpression('p') . " AS patient_name
@@ -91,7 +102,7 @@ $message = '';
 try {
     $conn->begin_transaction();
     $locked = $conn->prepare(
-        "SELECT r.id, r.appointment_id, r.patient_id, r.requested_date, r.requested_time, r.status AS request_status,
+        "SELECT r.id, r.appointment_id, r.patient_id, r.requested_date, r.requested_time, r.reason, r.reason_details, r.requested_by_role, r.status AS request_status,
                 a.id AS id, a.doctor_id, a.appointment_date, a.appointment_time, a.status, a.booking_type,
                 q.id AS queue_id, q.queue_date, q.status AS queue_status,
                 " . dbUsersNameExpression('p') . " AS patient_name
@@ -120,14 +131,15 @@ try {
     $reviewerId = (int) ($currentUser['id'] ?? 0);
     $reviewedAt = (new DateTimeImmutable('now', new DateTimeZone('Asia/Manila')))->format('Y-m-d H:i:s');
     if ($action === 'reject') {
-        $update = $conn->prepare("UPDATE appointment_reschedule_requests SET status = 'rejected', reviewed_by = ?, reviewed_at = ?, rejection_reason = ? WHERE id = ? AND status = 'pending'");
-        $update->bind_param('issi', $reviewerId, $reviewedAt, $rejectionReason, $requestId);
+        $update = $conn->prepare("UPDATE appointment_reschedule_requests SET status = 'rejected', reviewed_by = ?, reviewed_at = ?, rejection_reason = ?, rejection_details = ? WHERE id = ? AND status = 'pending'");
+        $update->bind_param('isssi', $reviewerId, $reviewedAt, $rejectionReason, $rejectionDetails, $requestId);
         if (!$update->execute() || $update->affected_rows !== 1) {
             $update->close();
             throw new RuntimeException('The reschedule request changed before it could be rejected.');
         }
         $update->close();
         $request['rejection_reason'] = $rejectionReason;
+        $request['rejection_details'] = $rejectionDetails;
         $conn->commit();
         $message = 'Reschedule request rejected. The original Confirmed appointment remains unchanged.';
     } else {

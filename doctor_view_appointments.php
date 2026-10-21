@@ -33,6 +33,7 @@ $doctorNameSql = dbUsersNameExpression('d');
 $headerDoctorNameSql = dbUsersNameExpression('u');
 $userNameSql = dbUsersNameExpression();
 $rejectedRescheduleJoin = appointment_reschedule_rejected_join_sql();
+$adminRescheduleJoin = appointment_reschedule_admin_join_sql();
 
 // Get appointments based on user role
 if ($userRole === 'patient') {
@@ -42,16 +43,20 @@ if ($userRole === 'patient') {
                                    rr.id AS reschedule_request_id, rr.original_date AS reschedule_original_date,
                                    rr.original_time AS reschedule_original_time,
                                    rr.requested_date AS reschedule_requested_date,
-                                   rr.requested_time AS reschedule_requested_time, rr.reason AS reschedule_reason, rr.status AS reschedule_request_status,
+                                   rr.requested_time AS reschedule_requested_time, rr.reason AS reschedule_reason, rr.reason_details AS reschedule_reason_details, rr.requested_by_role AS reschedule_requested_by_role, rr.status AS reschedule_request_status,
                                    rrh.id AS rejected_reschedule_request_id, rrh.original_date AS rejected_reschedule_original_date,
                                    rrh.original_time AS rejected_reschedule_original_time, rrh.requested_date AS rejected_reschedule_requested_date,
                                    rrh.requested_time AS rejected_reschedule_requested_time, rrh.rejection_reason AS rejected_reschedule_reason,
-                                   rrh.reason AS rejected_reschedule_reason_text
+                                   rrh.rejection_details AS rejected_reschedule_rejection_details, rrh.reason AS rejected_reschedule_reason_text,
+                                   rrh.reason_details AS rejected_reschedule_reason_details, rrh.requested_by_role AS rejected_reschedule_requested_by_role,
+                                   rra.id AS admin_reschedule_request_id, rra.requested_date AS admin_reschedule_requested_date, rra.requested_time AS admin_reschedule_requested_time,
+                                   rra.reason AS admin_reschedule_reason, rra.reason_details AS admin_reschedule_reason_details
                             FROM appointments a 
                             LEFT JOIN users u ON a.doctor_id = u.id 
                             LEFT JOIN clinic_queue q ON q.appointment_id = a.id
                             {$pendingRescheduleJoin}
                             {$rejectedRescheduleJoin}
+                                   {$adminRescheduleJoin}
                             WHERE a.patient_id = ? 
                             ORDER BY a.appointment_date DESC, a.appointment_time DESC");
     $stmt->bind_param("i", $currentUser['id']);
@@ -67,17 +72,21 @@ if ($userRole === 'patient') {
                             rr.id AS reschedule_request_id, rr.original_date AS reschedule_original_date,
                             rr.original_time AS reschedule_original_time,
                             rr.requested_date AS reschedule_requested_date,
-                            rr.requested_time AS reschedule_requested_time, rr.reason AS reschedule_reason, rr.status AS reschedule_request_status,
+                            rr.requested_time AS reschedule_requested_time, rr.reason AS reschedule_reason, rr.reason_details AS reschedule_reason_details, rr.requested_by_role AS reschedule_requested_by_role, rr.status AS reschedule_request_status,
                             rrh.id AS rejected_reschedule_request_id, rrh.original_date AS rejected_reschedule_original_date,
                             rrh.original_time AS rejected_reschedule_original_time, rrh.requested_date AS rejected_reschedule_requested_date,
                             rrh.requested_time AS rejected_reschedule_requested_time, rrh.rejection_reason AS rejected_reschedule_reason,
-                            rrh.reason AS rejected_reschedule_reason_text
+                            rrh.rejection_details AS rejected_reschedule_rejection_details, rrh.reason AS rejected_reschedule_reason_text,
+                            rrh.reason_details AS rejected_reschedule_reason_details, rrh.requested_by_role AS rejected_reschedule_requested_by_role,
+                            rra.id AS admin_reschedule_request_id, rra.requested_date AS admin_reschedule_requested_date, rra.requested_time AS admin_reschedule_requested_time,
+                            rra.reason AS admin_reschedule_reason, rra.reason_details AS admin_reschedule_reason_details
                             FROM appointments a 
                             JOIN users p ON a.patient_id = p.id 
                             LEFT JOIN users d ON a.doctor_id = d.id 
                             LEFT JOIN clinic_queue q ON q.appointment_id = a.id
                             {$pendingRescheduleJoin}
                             {$rejectedRescheduleJoin}
+                            {$adminRescheduleJoin}
                             ORDER BY a.appointment_date DESC, a.appointment_time DESC");
 } elseif ($userRole === 'doctor') {
     $pendingRescheduleJoin = appointment_reschedule_pending_join_sql();
@@ -91,17 +100,21 @@ if ($userRole === 'patient') {
                             rr.id AS reschedule_request_id, rr.original_date AS reschedule_original_date,
                             rr.original_time AS reschedule_original_time,
                             rr.requested_date AS reschedule_requested_date,
-                            rr.requested_time AS reschedule_requested_time, rr.reason AS reschedule_reason, rr.status AS reschedule_request_status,
+                            rr.requested_time AS reschedule_requested_time, rr.reason AS reschedule_reason, rr.reason_details AS reschedule_reason_details, rr.requested_by_role AS reschedule_requested_by_role, rr.status AS reschedule_request_status,
                             rrh.id AS rejected_reschedule_request_id, rrh.original_date AS rejected_reschedule_original_date,
                             rrh.original_time AS rejected_reschedule_original_time, rrh.requested_date AS rejected_reschedule_requested_date,
                             rrh.requested_time AS rejected_reschedule_requested_time, rrh.rejection_reason AS rejected_reschedule_reason,
-                            rrh.reason AS rejected_reschedule_reason_text
+                            rrh.rejection_details AS rejected_reschedule_rejection_details, rrh.reason AS rejected_reschedule_reason_text,
+                            rrh.reason_details AS rejected_reschedule_reason_details, rrh.requested_by_role AS rejected_reschedule_requested_by_role,
+                            rra.id AS admin_reschedule_request_id, rra.requested_date AS admin_reschedule_requested_date, rra.requested_time AS admin_reschedule_requested_time,
+                            rra.reason AS admin_reschedule_reason, rra.reason_details AS admin_reschedule_reason_details
                             FROM appointments a 
                             JOIN users p ON a.patient_id = p.id 
                             LEFT JOIN users d ON a.doctor_id = d.id 
                             LEFT JOIN clinic_queue q ON q.appointment_id = a.id
                             {$pendingRescheduleJoin}
                             {$rejectedRescheduleJoin}
+                           {$adminRescheduleJoin}
                             WHERE a.doctor_id = ?
                               AND a.booking_type = 'consultation'
                             ORDER BY a.appointment_date DESC, a.appointment_time DESC");
@@ -1572,6 +1585,8 @@ include __DIR__ . '/includes/header.php';
                         $rejectedRequestedScheduleLabel = $hasRejectedReschedule ? appointment_reschedule_request_date_label((string) ($appointment['rejected_reschedule_requested_date'] ?? ''), (string) ($appointment['rejected_reschedule_requested_time'] ?? '')) : '';
                         $rejectedRescheduleReason = trim((string) ($appointment['rejected_reschedule_reason'] ?? '')) ?: 'Not provided';
                         $rejectedRescheduleNote = trim((string) ($appointment['rejected_reschedule_reason_text'] ?? '')) ?: 'Not provided';
+                        $rejectedRescheduleReasonDetails = trim((string) ($appointment['rejected_reschedule_rejection_details'] ?? ''));
+                        $rejectedRescheduleNoteDetails = trim((string) ($appointment['rejected_reschedule_reason_details'] ?? ''));
                         $cancellationReason = trim((string) ($appointment['cancellation_reason'] ?? ''));
                         $cancellationDetails = trim((string) ($appointment['cancellation_details'] ?? ''));
                         $queueNumber = trim((string) ($appointment['queue_number'] ?? ''));
@@ -1610,6 +1625,13 @@ include __DIR__ . '/includes/header.php';
                             'rejectedRequestedSchedule' => $rejectedRequestedScheduleLabel,
                             'rejectionReason' => $rejectedRescheduleReason,
                             'rejectedRescheduleReason' => $rejectedRescheduleNote,
+                            'rescheduleReasonDetails' => trim((string) ($appointment['reschedule_reason_details'] ?? '')),
+                            'rescheduleRequestedByRole' => trim((string) ($appointment['reschedule_requested_by_role'] ?? '')),
+                            'rejectionReasonDetails' => $rejectedRescheduleReasonDetails,
+                            'rejectedRescheduleReasonDetails' => $rejectedRescheduleNoteDetails,
+                            'hasAdminReschedule' => !empty($appointment['admin_reschedule_request_id']),
+                            'adminRescheduleReason' => trim((string) ($appointment['admin_reschedule_reason'] ?? '')),
+                            'adminRescheduleReasonDetails' => trim((string) ($appointment['admin_reschedule_reason_details'] ?? '')),
                             'notes' => appointment_detail_notes_text($appointment),
                             'cancellationReason' => $cancellationReason !== '' ? $cancellationReason : 'None',
                             'cancellationDetails' => $cancellationDetails !== '' ? $cancellationDetails : 'None',
@@ -2092,9 +2114,15 @@ include __DIR__ . '/includes/header.php';
             var notesHtml = '';
             if (data.hasPendingReschedule) {
                 notesHtml = '<strong>Reschedule reason</strong><span>' + escapeHtml(data.rescheduleReason) + '</span>';
+                if (data.rescheduleReasonDetails) notesHtml += '<strong style="margin-top:12px;">Additional details</strong><span>' + escapeHtml(data.rescheduleReasonDetails) + '</span>';
             } else if (data.hasRejectedReschedule) {
                 notesHtml = '<strong>Reschedule reason</strong><span>' + escapeHtml(data.rejectedRescheduleReason) + '</span>';
+                if (data.rejectedRescheduleReasonDetails) notesHtml += '<strong style="margin-top:12px;">Reschedule details</strong><span>' + escapeHtml(data.rejectedRescheduleReasonDetails) + '</span>';
                 notesHtml += '<strong style="margin-top:12px;">Rejection reason</strong><span>' + escapeHtml(data.rejectionReason) + '</span>';
+                if (data.rejectionReasonDetails) notesHtml += '<strong style="margin-top:12px;">Rejection details</strong><span>' + escapeHtml(data.rejectionReasonDetails) + '</span>';
+            } else if (data.hasAdminReschedule) {
+                notesHtml = '<strong>Last admin reschedule reason</strong><span>' + escapeHtml(data.adminRescheduleReason || 'Not provided') + '</span>';
+                if (data.adminRescheduleReasonDetails) notesHtml += '<strong style="margin-top:12px;">Additional details</strong><span>' + escapeHtml(data.adminRescheduleReasonDetails) + '</span>';
             } else {
                 notesHtml = '<strong>Notes</strong><span>' + escapeHtml(data.notes) + '</span>';
                 if (data.statusKey === 'cancelled') {
