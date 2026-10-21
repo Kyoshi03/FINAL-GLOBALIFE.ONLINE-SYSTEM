@@ -1,7 +1,6 @@
 <?php
 
 require_once __DIR__ . '/includes/session.php';
-checkAnyRole(['admin', 'doctor']);
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/pwd_id.php';
 
@@ -9,6 +8,22 @@ $patientId = filter_input(INPUT_GET, 'patient_id', FILTER_VALIDATE_INT);
 if (!$patientId || $patientId < 1) {
     http_response_code(400);
     exit('Invalid patient.');
+}
+
+if (!isLoggedIn()) {
+    header('Location: index.php');
+    exit();
+}
+
+$viewerRole = normalizeUserRole((string) ($_SESSION['user_role'] ?? ''));
+if ($viewerRole === 'patient') {
+    if ((int) ($_SESSION['user_id'] ?? 0) !== (int) $patientId) {
+        http_response_code(403);
+        exit('Forbidden.');
+    }
+} elseif (!in_array($viewerRole, ['admin', 'doctor'], true)) {
+    http_response_code(403);
+    exit('Forbidden.');
 }
 
 $conn = getDBConnection();

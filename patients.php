@@ -4,6 +4,7 @@ checkRole('patient');
 
 require_once 'config/database.php';
 require_once 'includes/patient_profile_photo.php';
+require_once 'includes/pwd_id.php';
 require_once 'includes/doctor_medical_fields.php';
 require_once 'includes/password_reset.php';
 require_once 'includes/sms.php';
@@ -317,6 +318,7 @@ appointment_init_cancellation_audit_schema($conn);
 $patientClinicInfo = clinic_info_get($conn);
 $pageTitle = "Patient Dashboard | " . $patientClinicInfo['clinic_name'];
 ensurePatientProfilePhotoColumn($conn);
+pwd_id_cleanup_old_pending_files();
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['patient_action'] ?? '') === 'cancel_appointment') {
     $wantsJson = strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest'
         || strpos((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json') !== false;
@@ -582,6 +584,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['profile_action'] ?? '') ==
     $pendingSensitivePayload = [];
     $removePhoto = ($_POST['remove_profile_photo'] ?? '') === '1';
     $croppedPhoto = trim($_POST['profile_photo_cropped'] ?? '');
+    $pwdIdUpload = $_FILES['profile_pwd_id'] ?? null;
+    $pwdIdReplacementPendingPath = null;
+    $promotedPwdIdPath = null;
+    $currentPwdType = trim((string) ($currentProfileRow['pwd_type'] ?? ''));
+    $currentPwdIdPath = trim((string) ($currentProfileRow['pwd_id_path'] ?? ''));
+    $pwdIdUploadProvided = is_array($pwdIdUpload)
+        && (int) ($pwdIdUpload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+
+    if ($pwdIdUploadProvided) {
+        if ($currentPwdType === '') {
+            $profileError = 'PWD ID replacement is only available for patients with recorded PWD information.';
+        } else {
+            $pwdUploadValidation = pwd_id_validate_upload($pwdIdUpload);
+            if (!$pwdUploadValidation['ok']) {
+                $profileError = (string) ($pwdUploadValidation['error'] ?? 'Please upload a valid PWD ID.');
+            } else {
+                $pwdIdReplacementPendingPath = pwd_id_store_uploaded_file(
+                    $pwdIdUpload,
+                    (string) ($pwdUploadValidation['extension'] ?? 'jpg')
+                );
+                if ($pwdIdReplacementPendingPath === null) {
+                    $profileError = 'The new PWD ID could not be saved. Please choose the image again.';
+                }
+            }
+        }
+    }
 
     if ($dateOfBirth !== '') {
         $parsedBirthDate = DateTime::createFromFormat('!Y-m-d', $dateOfBirth);
@@ -683,7 +711,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['profile_action'] ?? '') ==
                 && $emergencyRelationship === trim((string) ($currentProfileRow['emergency_contact_relationship'] ?? ''))
                 && $emergencyNumber === trim((string) ($currentProfileRow['emergency_contact_number'] ?? ''));
 
-            if ($sameProfileDetails && !$passwordChangeRequested && !$emailChanged && !$phoneChanged && !$removePhoto && $croppedPhoto === '') {
+            if ($sameProfileDetails && !$passwordChangeRequested && !$emailChanged && !$phoneChanged && !$removePhoto && $croppedPhoto === '' && $pwdIdReplacementPendingPath === null) {
                 $_SESSION['patient_profile_message'] = 'No changes were made to your profile.';
                 $_SESSION['patient_profile_no_changes'] = true;
                 $conn->close();
@@ -708,6 +736,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['profile_action'] ?? '') ==
         }
 
         if ($profileError === '') {
+            $conn->begin_transaction();
             $result = updatePatientUserProfile($conn, (int) $currentUser['id'], [
                 'first_name' => $firstName,
                 'middle_name' => $middleName,
@@ -727,6 +756,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['profile_action'] ?? '') ==
                 'emergency_contact_number' => $emergencyNumber,
             ], $newPhotoPath, $removePhoto);
 
+            if ($result['ok'] && $pwdIdReplacementPendingPath !== null) {
+                $promotedPwdIdPath = pwd_id_promote_pending_file($pwdIdReplacementPendingPath);
+                if ($promotedPwdIdPath === null) {
+                    $result = ['ok' => false, 'error' => 'The new PWD ID could not be finalized. Please choose the image again.'];
+                } else {
+                    $pwdPathStmt = $conn->prepare("UPDATE users SET pwd_id_path = ?, profile_updated_at = NOW() WHERE id = ? AND role = 'patient'");
+                    if (!$pwdPathStmt) {
+                        $result = ['ok' => false, 'error' => 'Could not prepare the PWD ID update.'];
+                    } else {
+                        $pwdPathStmt->bind_param('si', $promotedPwdIdPath, $currentUser['id']);
+                        if (!$pwdPathStmt->execute() || $pwdPathStmt->affected_rows < 1) {
+                            $result = ['ok' => false, 'error' => 'Could not save the new PWD ID.'];
+                        }
+                        $pwdPathStmt->close();
+                    }
+                }
+            }
+
+            if ($result['ok'] && $profileError === '') {
+                if (!$conn->commit()) {
+                    $result = ['ok' => false, 'error' => 'Could not finish saving your profile. Please try again.'];
+                }
+            }
+
             if ($result['ok'] && $profileError === '') {
                 $savedDisplayName = patientProfileBuildFullNameFromParts([
                     'first_name' => $firstName,
@@ -736,6 +789,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['profile_action'] ?? '') ==
                 ]);
                 if ($currentPhotoPath !== $newPhotoPath) {
                     patientDeleteProfilePhotoFile($currentPhotoPath);
+                }
+                if ($promotedPwdIdPath !== null && $currentPwdIdPath !== '' && $currentPwdIdPath !== $promotedPwdIdPath) {
+                    pwd_id_delete_file($currentPwdIdPath);
                 }
                 $_SESSION['full_name'] = $savedDisplayName !== '' ? $savedDisplayName : $displayName;
                 if ($pendingSensitivePayload !== []) {
@@ -771,17 +827,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['profile_action'] ?? '') ==
                 header('Location: patients.php?saved=1');
                 exit;
             }
-            if (!$result['ok']) {
+            if (!$result['ok'] || $profileError !== '') {
+                $conn->rollback();
+                if ($promotedPwdIdPath !== null) {
+                    pwd_id_delete_file($promotedPwdIdPath);
+                }
+                pwd_id_cleanup_pending_file($pwdIdReplacementPendingPath);
                 if ($savedPhotoPath !== null) {
                     patientDeleteProfilePhotoFile($savedPhotoPath);
                 }
-                $profileError = $result['error'];
+                if ($profileError === '') {
+                    $profileError = $result['error'];
+                }
             }
         }
         }
     }
 
     if ($profileError !== '') {
+        pwd_id_cleanup_pending_file($pwdIdReplacementPendingPath);
         $_SESSION['patient_profile_error'] = $profileError;
         $conn->close();
         header('Location: patients.php?profile=1');
@@ -968,6 +1032,15 @@ if ($profileDisplayName === '') {
 
 $firstName = trim(explode(' ', $profileDisplayName)[0] ?? 'Patient');
 $profilePhotoUrl = patientProfilePhotoUrl($userDetails['profile_photo'] ?? null, $userDetails['profile_updated_at'] ?? null);
+$profilePwdType = trim((string) ($userDetails['pwd_type'] ?? ''));
+$profilePwdIdPath = trim((string) ($userDetails['pwd_id_path'] ?? ''));
+$profilePwdIdFile = $profilePwdType !== '' ? pwd_id_file_path($profilePwdIdPath) : null;
+$profilePwdIdUrl = null;
+if ($profilePwdIdFile !== null) {
+    $profilePwdIdVersion = @filemtime($profilePwdIdFile);
+    $profilePwdIdUrl = 'pwd_id.php?patient_id=' . (int) $currentUser['id']
+        . ($profilePwdIdVersion ? '&v=' . (int) $profilePwdIdVersion : '');
+}
 $profileInitials = patientProfileInitials($profileDisplayName);
 $headerPatientPhotoUrl = $profilePhotoUrl;
 $headerPatientInitials = $profileInitials;
@@ -3341,6 +3414,109 @@ $additionalStyles = '
         accent-color: #c1121f;
     }
 
+    .pwd-profile-editor {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #d7e6f0;
+    }
+
+    .pwd-profile-editor h4 {
+        margin-bottom: 5px;
+    }
+
+    .pwd-profile-help {
+        margin: 0 0 10px;
+        color: #60727d;
+        font-size: .8rem;
+        line-height: 1.45;
+    }
+
+    .pwd-profile-editor-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .pwd-profile-preview-wrap {
+        min-width: 0;
+        min-height: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px;
+        box-sizing: border-box;
+        border: 1px solid #cfe0ec;
+        border-radius: 8px;
+        background: #f8fcfe;
+        overflow: hidden;
+    }
+
+    .pwd-profile-preview-wrap img {
+        display: block;
+        width: 100%;
+        height: 220px;
+        object-fit: contain;
+        object-position: center;
+        border-radius: 5px;
+        background: #fff;
+    }
+
+    .pwd-profile-change-actions {
+        display: grid;
+        gap: 7px;
+        min-width: 112px;
+    }
+
+    .pwd-profile-change-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 0 18px;
+        box-sizing: border-box;
+        border: 1px solid #0077b6;
+        border-radius: 8px;
+        background: #0077b6;
+        color: #fff;
+        cursor: pointer;
+        font-size: .84rem;
+        font-weight: 800;
+        text-align: center;
+        transition: background .2s ease, transform .2s ease;
+    }
+
+    .pwd-profile-change-button:hover {
+        background: #005f93;
+        transform: translateY(-1px);
+    }
+
+    .pwd-profile-change-button input {
+        display: none;
+    }
+
+    .pwd-profile-file-name {
+        max-width: 150px;
+        color: #60727d;
+        font-size: .74rem;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+        text-align: center;
+    }
+
+    .pwd-profile-error {
+        display: none;
+        margin-top: 8px;
+        color: #b42318;
+        font-size: .78rem;
+        font-weight: 700;
+        line-height: 1.4;
+    }
+
+    .pwd-profile-error.is-visible {
+        display: block;
+    }
+
     .profile-modal-actions {
         display: flex;
         flex-wrap: wrap;
@@ -3546,6 +3722,22 @@ $additionalStyles = '
 
         .profile-password-actions button {
             width: 100%;
+        }
+
+        .pwd-profile-editor-row {
+            grid-template-columns: 1fr;
+        }
+
+        .pwd-profile-change-actions {
+            min-width: 0;
+        }
+
+        .pwd-profile-change-button {
+            width: 100%;
+        }
+
+        .pwd-profile-file-name {
+            max-width: none;
         }
 
         body.profile-modal-open nav {
@@ -5393,7 +5585,7 @@ include 'includes/header.php';
                 <button type="button" class="profile-modal-close" id="closeProfileModal" aria-label="Close profile editor">&times;</button>
             </div>
             <div class="profile-modal-body">
-                <form method="post" action="patients.php?profile=1" class="profile-main-form" id="patientProfileForm">
+                <form method="post" action="patients.php?profile=1" class="profile-main-form" id="patientProfileForm" enctype="multipart/form-data">
                 <input type="hidden" name="profile_action" value="update_profile">
                 <input type="hidden" name="profile_photo_cropped" id="profile_photo_cropped" value="">
 
@@ -5438,6 +5630,26 @@ include 'includes/header.php';
                         <div class="photo-remove-row">
                             <input type="checkbox" name="remove_profile_photo" id="remove_profile_photo" value="1">
                             <label for="remove_profile_photo">Remove current photo</label>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($profilePwdType !== '' && $profilePwdIdUrl !== null): ?>
+                        <div class="pwd-profile-editor" id="pwdProfileEditor">
+                            <h4>PWD ID</h4>
+                            <p class="pwd-profile-help">Your registered PWD ID is shown below. You may replace the image when needed.</p>
+                            <div class="pwd-profile-editor-row">
+                                <div class="pwd-profile-preview-wrap">
+                                    <img src="<?php echo htmlspecialchars($profilePwdIdUrl); ?>" id="pwdProfilePreview" data-original-src="<?php echo htmlspecialchars($profilePwdIdUrl); ?>" alt="Current PWD ID">
+                                </div>
+                                <div class="pwd-profile-change-actions">
+                                    <label class="pwd-profile-change-button" for="pwdProfileInput">
+                                        Change
+                                        <input type="file" id="pwdProfileInput" name="profile_pwd_id" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+                                    </label>
+                                    <span class="pwd-profile-file-name" id="pwdProfileFileName">JPG, JPEG, or PNG up to 5 MB</span>
+                                </div>
+                            </div>
+                            <span class="pwd-profile-error" id="pwdProfileError" role="alert"></span>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -5958,6 +6170,10 @@ include 'includes/header.php';
         const photoZoomControl = document.getElementById('photoZoomControl');
         const photoZoomRange = document.getElementById('photoZoomRange');
         const photoZoomValue = document.getElementById('photoZoomValue');
+        const pwdProfileInput = document.getElementById('pwdProfileInput');
+        const pwdProfilePreview = document.getElementById('pwdProfilePreview');
+        const pwdProfileFileName = document.getElementById('pwdProfileFileName');
+        const pwdProfileError = document.getElementById('pwdProfileError');
         const modalFirstNameInput = document.getElementById('modal_first_name');
         const modalMiddleNameInput = document.getElementById('modal_middle_name');
         const modalLastNameInput = document.getElementById('modal_last_name');
@@ -6108,6 +6324,9 @@ include 'includes/header.php';
             pendingCrop = false;
             croppedField.value = '';
             photoInput.value = '';
+            if (pwdProfileInput) pwdProfileInput.value = '';
+            clearPwdProfileError();
+            restorePwdProfilePreview();
             closeProfileModal();
         }
 
@@ -6238,11 +6457,67 @@ include 'includes/header.php';
             reader.readAsDataURL(file);
         }
 
+        function clearPwdProfileError() {
+            if (pwdProfileError) {
+                pwdProfileError.textContent = '';
+                pwdProfileError.classList.remove('is-visible');
+            }
+        }
+
+        function restorePwdProfilePreview() {
+            if (pwdProfilePreview) {
+                pwdProfilePreview.src = pwdProfilePreview.dataset.originalSrc || '';
+            }
+            if (pwdProfileFileName) {
+                pwdProfileFileName.textContent = 'JPG, JPEG, or PNG up to 5 MB';
+            }
+        }
+
+        function showPwdProfileError(message) {
+            restorePwdProfilePreview();
+            if (pwdProfileInput) pwdProfileInput.value = '';
+            if (pwdProfileError) {
+                pwdProfileError.textContent = message;
+                pwdProfileError.classList.add('is-visible');
+            }
+        }
+
+        function previewPwdProfileFile(file) {
+            if (!file) {
+                restorePwdProfilePreview();
+                return;
+            }
+            const validType = ['image/jpeg', 'image/png'].includes(file.type)
+                || /\.(jpe?g|png)$/i.test(file.name);
+            if (!validType) {
+                showPwdProfileError('PWD ID must be a JPG, JPEG, or PNG image.');
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                showPwdProfileError('PWD ID must be 5 MB or smaller.');
+                return;
+            }
+
+            clearPwdProfileError();
+            if (pwdProfileFileName) pwdProfileFileName.textContent = 'Selected: ' + file.name;
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                if (pwdProfilePreview) pwdProfilePreview.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
         photoInput.addEventListener('change', function() {
             if (photoInput.files && photoInput.files[0]) {
                 startCropper(photoInput.files[0]);
             }
         });
+
+        if (pwdProfileInput) {
+            pwdProfileInput.addEventListener('change', function () {
+                previewPwdProfileFile(pwdProfileInput.files && pwdProfileInput.files[0]);
+            });
+        }
 
         document.getElementById('zoomInBtn').addEventListener('click', function() {
             changeZoom(zoomLevel + 10);
