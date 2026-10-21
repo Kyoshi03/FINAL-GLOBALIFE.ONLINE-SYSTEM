@@ -991,6 +991,7 @@ body {
 }
 
 .trend-panel {
+    padding: 28px 24px 24px;
     margin-bottom: 18px;
 }
 
