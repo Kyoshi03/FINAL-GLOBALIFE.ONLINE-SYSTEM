@@ -991,12 +991,13 @@ body {
 }
 
 .trend-panel {
-    padding: 24px;
+    padding: 0 24px 24px;
     margin-bottom: 18px;
 }
 
 .trend-panel-head {
     align-items: center;
+    padding-top: 32px;
     margin-bottom: 20px;
 }
 
@@ -2808,6 +2809,10 @@ body {
 @media (max-width: 760px) {
     .admin-wrap {
         padding: 18px 12px 36px;
+    }
+
+    .trend-panel {
+        padding: 0 16px 16px;
     }
 
     .admin-notifications-hero,
