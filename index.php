@@ -886,7 +886,12 @@ $additionalStyles = '
 
     #forgot-password-modal .registration-dialog {
         width: min(700px, 100%);
-        height: min(440px, calc(100vh - 40px));
+        height: min(560px, calc(100vh - 40px));
+    }
+
+    #forgot-password-modal .registration-frame {
+        min-height: 420px;
+        overflow: auto;
     }
 
     #forgot-password-modal .registration-modal-head {
@@ -1045,7 +1050,20 @@ $additionalScripts = '
             }
 
             const frameBody = frameDocument.body;
-            const contentHeight = frameBody ? frameBody.scrollHeight : 0;
+            const frameRoot = frameDocument.documentElement;
+            if (frameRoot) {
+                frameRoot.style.minHeight = "100%";
+            }
+            if (frameBody) {
+                frameBody.style.minHeight = "100%";
+                frameBody.style.overflowY = "auto";
+            }
+
+            const contentHeight = Math.max(
+                frameBody ? frameBody.scrollHeight : 0,
+                frameRoot ? frameRoot.scrollHeight : 0,
+                520
+            );
             const header = dialog.querySelector(".registration-modal-head");
             const headerHeight = header ? header.getBoundingClientRect().height : 0;
             const viewportHeight = Math.max(320, window.innerHeight - 40);
@@ -1243,7 +1261,7 @@ $additionalScripts = '
             }
 
             if (!forgotPasswordFrame.getAttribute("src")) {
-                forgotPasswordFrame.setAttribute("src", "forgot_password.php?modal=1");
+                forgotPasswordFrame.setAttribute("src", "forgot_password.php?modal=1&v=2");
             }
             forgotPasswordModal.classList.add("is-open");
             forgotPasswordModal.setAttribute("aria-hidden", "false");
@@ -1293,6 +1311,7 @@ $additionalScripts = '
 
         if (forgotPasswordFrame) {
             forgotPasswordFrame.addEventListener("load", function () {
+                forgotPasswordFrame.style.visibility = "visible";
                 window.setTimeout(fitForgotPasswordModal, 0);
             });
             window.addEventListener("resize", fitForgotPasswordModal);
