@@ -2,84 +2,7 @@
 // The clinic operates on Philippine time across every page and scheduled job.
 date_default_timezone_set('Asia/Manila');
 
-/**
- * Resolve the session namespace from the portal being opened. This lets an
- * admin, patient, and doctor keep separate logins in the same browser profile.
- */
-function clinic_session_context(): string {
-    $forced = strtolower(trim((string) ($_SERVER['CLINIC_SESSION_CONTEXT'] ?? '')));
-    if (in_array($forced, ['admin', 'patient', 'doctor', 'public'], true)) {
-        return $forced;
-    }
-
-    $requested = strtolower(trim((string) ($_GET['portal'] ?? $_POST['portal'] ?? '')));
-    if (in_array($requested, ['admin', 'patient', 'doctor', 'public'], true)) {
-        return $requested;
-    }
-
-    $page = strtolower(basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')));
-    if ($page === 'login_admin.php'
-        || str_starts_with($page, 'admin_')
-        || str_starts_with($page, 'receptionist_')
-        || in_array($page, [
-            'admin.php',
-            'clinic_information.php',
-            'doctor_schedules.php',
-            'email_sms.php',
-            'mark_admin_notifications.php',
-            'queue_history.php',
-            'register_patient_receptionist.php',
-            'slot_management.php',
-        ], true)) {
-        return 'admin';
-    }
-
-    if (str_starts_with($page, 'doctor_')
-        || in_array($page, ['doctor.php', 'doctor_export.php', 'change_password.php'], true)) {
-        return 'doctor';
-    }
-
-    if ($page === 'index.php'
-        || str_starts_with($page, 'patient')
-        || str_starts_with($page, 'patients')
-        || $page === 'book_appointment.php') {
-        return 'patient';
-    }
-
-    return 'public';
-}
-
-function clinic_session_name_for_context(string $context): string {
-    return 'CLINIC_' . strtoupper($context) . '_SESSION';
-}
-
-function clinic_session_name_for_role(string $role): string {
-    $role = normalizeUserRole($role);
-    return clinic_session_name_for_context(in_array($role, ['admin', 'patient', 'doctor'], true) ? $role : 'public');
-}
-
-function clinic_session_cookie_params(): array {
-    $forwardedProto = strtolower(trim((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')));
-    $isHttps = (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off')
-        || $forwardedProto === 'https';
-
-    return [
-        'lifetime' => 0,
-        'path' => '/',
-        'secure' => $isHttps,
-        'httponly' => true,
-        'samesite' => 'Lax',
-    ];
-}
-
-function clinic_is_forced_session_page(): bool {
-    $page = strtolower(basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')));
-    return in_array($page, ['index.php', 'login.php', 'login_admin.php', 'login_doctor.php'], true)
-        || isset($_GET['portal'])
-        || isset($_POST['portal']);
-}
-
-// Start the session if not already started.
+// Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
     // Keep sessions in the app's writable storage instead of relying on a host-specific temp path.
     $sessionPath = __DIR__ . '/../storage/sessions';
@@ -91,17 +14,20 @@ if (session_status() === PHP_SESSION_NONE) {
     }
 
     // Protect the login session cookie without breaking local HTTP testing.
+    $forwardedProto = strtolower(trim((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')));
+    $isHttps = (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off')
+        || $forwardedProto === 'https';
     ini_set('session.use_strict_mode', '1');
     // Give users enough time to complete long registration forms before the
     // server garbage-collects their session and invalidates the CSRF token.
     ini_set('session.gc_maxlifetime', '7200');
-    $clinicSessionContext = clinic_session_context();
-    $clinicSessionName = clinic_session_name_for_context($clinicSessionContext);
-    $clinicUseLegacySession = !clinic_is_forced_session_page()
-        && !isset($_COOKIE[$clinicSessionName])
-        && isset($_COOKIE['PHPSESSID']);
-    session_name($clinicUseLegacySession ? 'PHPSESSID' : $clinicSessionName);
-    session_set_cookie_params(clinic_session_cookie_params());
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => $isHttps,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     session_start();
 }
 
@@ -214,25 +140,6 @@ function normalizeUserRole(string $role): string {
     return $role === 'receptionist' ? 'admin' : $role;
 }
 
-/** Move an authenticated login into the role-specific browser session. */
-function clinic_switch_session_to_role(string $role): void {
-    $targetName = clinic_session_name_for_role($role);
-    if (session_name() === $targetName) {
-        return;
-    }
-
-    $sessionData = $_SESSION;
-    $oldName = session_name();
-    session_write_close();
-    setcookie($oldName, '', array_merge(clinic_session_cookie_params(), ['expires' => time() - 3600]));
-
-    session_name($targetName);
-    session_set_cookie_params(clinic_session_cookie_params());
-    session_start();
-    session_regenerate_id(true);
-    $_SESSION = $sessionData;
-}
-
 function dashboardForRole(string $role): string {
     $role = normalizeUserRole($role);
     switch ($role) {
@@ -334,7 +241,6 @@ function login($username, $password) {
             $_SESSION['username'] = $user['username'];
             $_SESSION['full_name'] = clinic_name_display_from_row($user);
             $_SESSION['user_role'] = $sessionRole;
-            clinic_switch_session_to_role($sessionRole);
             
             $stmt->close();
             $conn->close();
