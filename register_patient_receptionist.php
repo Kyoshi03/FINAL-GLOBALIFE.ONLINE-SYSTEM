@@ -7,6 +7,9 @@ require_once __DIR__ . '/includes/name_parts.php';
 require_once __DIR__ . '/includes/admin_notifications.php';
 require_once __DIR__ . '/includes/sms.php';
 require_once __DIR__ . '/includes/user_registration.php';
+require_once __DIR__ . '/includes/pwd_id.php';
+
+pwd_id_cleanup_old_pending_files();
 
 $rprCaviteLocationSource = require __DIR__ . '/includes/cavite_locations.php';
 $rprCaviteLocations = [];
@@ -60,6 +63,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $gender = ucfirst(strtolower(trim((string) ($_POST['gender'] ?? ''))));
     $date_of_birth = trim($_POST['date_of_birth'] ?? '');
     $civil_status = trim($_POST['civil_status'] ?? '');
+    $pwd_type = trim((string) ($_POST['pwd_type'] ?? ''));
+    $pwd_details = trim((string) ($_POST['pwd_details'] ?? ''));
+    $pwd_id_upload = $_FILES['pwd_id'] ?? null;
     $phone = trim($_POST['phone'] ?? '');
     $email = strtolower(trim($_POST['email'] ?? ''));
     $province = trim((string) ($_POST['province'] ?? ''));
@@ -72,6 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $emergency_contact_name = trim($_POST['emergency_contact_name'] ?? '');
     $emergency_contact_relationship = trim($_POST['emergency_contact_relationship'] ?? '');
     $emergency_contact_number = trim($_POST['emergency_contact_number'] ?? '');
+    $pwd_id_pending_path = null;
+    $pwd_id_path = '';
     
     $birthDate = null;
     $birthDateIsValid = false;
@@ -112,6 +120,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please choose a valid sex.';
     } elseif (!in_array($civil_status, ['', 'Single', 'Married', 'Widowed', 'Separated'], true)) {
         $error = 'Please choose a valid civil status.';
+    } elseif (!pwd_disability_type_is_valid($pwd_type)) {
+        $error = 'Please choose a valid PWD type.';
+    } elseif ($pwd_type === 'Other (please specify)' && $pwd_details === '') {
+        $error = 'Please specify your type of disability.';
+    } elseif ($pwd_type === '' && $pwd_details !== '') {
+        $error = 'Clear the PWD details or select a disability type first.';
     } elseif ($firstNameLength > $rprFirstNameMax) {
         $error = 'First name must not exceed ' . $rprFirstNameMax . ' letters.';
     } elseif ($middle_name !== '' && $middleNameLength !== $rprMiddleNameMax) {
@@ -133,12 +147,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$reqs['uppercase'] || !$reqs['lowercase'] || !$reqs['number'] || !$reqs['special']) {
             $error = 'Password must include uppercase, lowercase, number, and special character.';
         } else {
+        if ($pwd_type !== '') {
+            $pwdUploadValidation = pwd_id_validate_upload($pwd_id_upload);
+            if (!$pwdUploadValidation['ok']) {
+                $error = (string) ($pwdUploadValidation['error'] ?? 'Please upload a valid PWD ID.');
+            } else {
+                $pwd_id_pending_path = pwd_id_store_uploaded_file(
+                    $pwd_id_upload,
+                    (string) ($pwdUploadValidation['extension'] ?? 'jpg')
+                );
+                if ($pwd_id_pending_path === null) {
+                    $error = 'The PWD ID could not be saved. Please choose the image again.';
+                }
+            }
+        }
+
+        if ($error !== '') {
+            // Keep the form values for correction; no account is created yet.
+        } else {
         $conn = getDBConnection();
         $duplicate = clinic_find_duplicate_user($conn, $username, $email, $phone);
 
         if ($duplicate) {
             $error = clinic_duplicate_user_message($duplicate, $username, $email, $phone);
         } else {
+            if ($pwd_id_pending_path !== null) {
+                $pwd_id_path = pwd_id_promote_pending_file($pwd_id_pending_path) ?? '';
+                if ($pwd_id_path === '') {
+                    $error = 'The PWD ID could not be saved. Please choose the image again.';
+                }
+            }
+
+            if ($error !== '') {
+                // Keep the form values for correction; no account is created yet.
+            } else {
             $emailForInsert = $email === '' ? null : $email;
             $normalizedPhone = $phone === '' ? '' : (clinic_sms_normalize_phone($phone) ?? $phone);
             
@@ -147,9 +189,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $role = 'patient';
             
             // Insert new patient
-            $stmt = $conn->prepare("INSERT INTO users (username, password, first_name, middle_name, last_name, suffix, role, is_active, email, phone, gender, date_of_birth, age, civil_status, address, barangay, city, emergency_contact_name, emergency_contact_relationship, emergency_contact_number) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $conn->prepare("INSERT INTO users (username, password, first_name, middle_name, last_name, suffix, role, is_active, email, phone, gender, date_of_birth, age, civil_status, pwd_type, pwd_details, pwd_id_path, address, barangay, city, emergency_contact_name, emergency_contact_relationship, emergency_contact_number) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $fullAddress = implode(', ', array_values(array_filter([$address, $barangay, $city, 'Cavite'], static fn (string $part): bool => $part !== '')));
-            $stmt->bind_param("sssssssssssisssssss", $username, $hashed_password, $first_name, $middle_name, $last_name, $suffix, $role, $emailForInsert, $normalizedPhone, $gender, $date_of_birth, $age, $civil_status, $fullAddress, $barangay, $city, $emergency_contact_name, $emergency_contact_relationship, $emergency_contact_number);
+            $pwdDetailsForInsert = $pwd_type === 'Other (please specify)' ? $pwd_details : '';
+            $stmt->bind_param("sssssssssssissssssssss", $username, $hashed_password, $first_name, $middle_name, $last_name, $suffix, $role, $emailForInsert, $normalizedPhone, $gender, $date_of_birth, $age, $civil_status, $pwd_type, $pwdDetailsForInsert, $pwd_id_path, $fullAddress, $barangay, $city, $emergency_contact_name, $emergency_contact_relationship, $emergency_contact_number);
             
             if ($stmt->execute()) {
                 $newPatientId = (int) $stmt->insert_id;
@@ -175,11 +218,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             $stmt->close();
+            }
         }
         
         $conn->close();
         }
+        if ($error !== '' && $pwd_id_path !== '') {
+            pwd_id_delete_file($pwd_id_path);
+        }
+        if ($error !== '' && $pwd_id_pending_path !== null) {
+            pwd_id_cleanup_pending_file($pwd_id_pending_path);
+        }
     }
+}
 }
 
 $rprSelectedProvince = isset($_POST['province']) ? trim((string) $_POST['province']) : 'Cavite';
@@ -361,6 +412,106 @@ $additionalStyles = '
         min-width: 0;
         padding-right: 36px;
         text-overflow: ellipsis;
+    }
+    .rpr-pwd-row {
+        align-items: start;
+    }
+    .rpr-pwd-clear,
+    .rpr-pwd-remove {
+        border: 0;
+        background: transparent;
+        color: #0077b6;
+        cursor: pointer;
+        font: inherit;
+        font-size: .78rem;
+        font-weight: 700;
+        padding: 7px 0 0;
+        text-decoration: underline;
+    }
+    .rpr-pwd-upload-group {
+        margin-top: 2px;
+    }
+    .rpr-pwd-upload-control {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 52px;
+        padding: 8px 12px;
+        border: 1px solid #c9ddea;
+        border-radius: 14px;
+        background: #fff;
+        box-sizing: border-box;
+    }
+    .rpr-pwd-upload-control:focus-within {
+        border-color: #0f7cc2;
+        box-shadow: 0 0 0 3px rgba(15, 124, 194, .1);
+    }
+    .rpr-pwd-upload-control input[type="file"] {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+    .rpr-pwd-file-button {
+        flex: 0 0 auto;
+        padding: 9px 14px;
+        border: 1px solid #b8d8e7;
+        border-radius: 8px;
+        background: #eef8fc;
+        color: #006da8;
+        cursor: pointer;
+        font-size: .82rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    .rpr-pwd-file-name {
+        min-width: 0;
+        overflow: hidden;
+        color: #6c7a83;
+        font-size: .84rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .rpr-pwd-preview {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        margin-top: 12px;
+        padding: 10px;
+        border: 1px solid #cfe5ef;
+        border-radius: 10px;
+        background: #f8fcfe;
+    }
+    .rpr-pwd-preview img {
+        display: block;
+        width: min(100%, 220px);
+        max-height: 140px;
+        border-radius: 7px;
+        object-fit: contain;
+        background: #fff;
+    }
+    .rpr-pwd-remove {
+        padding-top: 3px;
+        text-decoration: none;
+    }
+    .rpr-pwd-field-error {
+        display: none;
+        margin-top: 5px;
+        color: #c1121f;
+        font-size: .78rem;
+        line-height: 1.35;
+        font-weight: 700;
+    }
+    .rpr-pwd-field-error.is-visible {
+        display: block;
+    }
+    .rpr-pwd-row .form-group:has(.rpr-pwd-field-error.is-visible) select,
+    .rpr-pwd-row .form-group:has(.rpr-pwd-field-error.is-visible) input,
+    .rpr-pwd-upload-group:has(.rpr-pwd-field-error.is-visible) .rpr-pwd-upload-control {
+        border-color: #c1121f;
     }
     .form-group input::placeholder,
     .form-group textarea::placeholder {
@@ -1053,6 +1204,13 @@ $additionalStyles = '
         .name-grid .form-group label {
             min-height: 0;
         }
+        .rpr-pwd-upload-control {
+            align-items: stretch;
+            flex-direction: column;
+        }
+        .rpr-pwd-preview {
+            flex-direction: column;
+        }
         .rpr-dob-calendar {
             width: calc(100vw - 32px);
             padding: 16px;
@@ -1102,7 +1260,7 @@ include 'includes/header.php';
                     </div>
                 <?php endif; ?>
 
-                <form method="POST" action="register_patient_receptionist.php" autocomplete="off">
+                <form method="POST" action="register_patient_receptionist.php" enctype="multipart/form-data" autocomplete="off">
                     <?php echo clinic_csrf_field(); ?>
                     <div class="form-section">
                         <div class="section-head">
@@ -1216,6 +1374,42 @@ include 'includes/header.php';
                                 <label for="phone">Phone number <span class="optional">(optional)</span></label>
                                 <input type="tel" id="phone" name="phone" placeholder="09xxxxxxxxx" value="<?php echo rpr_value('phone'); ?>">
                             </div>
+                        </div>
+
+                        <div class="form-row rpr-pwd-row">
+                            <div class="form-group">
+                                <label for="pwd_type">PWD <span class="optional">(Optional)</span></label>
+                                <select id="pwd_type" name="pwd_type" aria-describedby="pwdTypeHint">
+                                    <option value="" <?php echo rpr_selected('pwd_type', '') ? 'selected' : ''; ?>>Select type of disability</option>
+                                    <?php foreach (pwd_disability_options() as $pwdOption): ?>
+                                        <option value="<?php echo htmlspecialchars($pwdOption, ENT_QUOTES, 'UTF-8'); ?>" <?php echo rpr_selected('pwd_type', $pwdOption); ?>><?php echo htmlspecialchars($pwdOption); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <button type="button" class="rpr-pwd-clear" id="rprPwdClear" hidden>Clear PWD selection</button>
+                                <span class="field-hint" id="pwdTypeHint">Optional. Leave this blank if the patient does not have a disability.</span>
+                                <span class="rpr-pwd-field-error" id="pwdTypeError" role="alert"></span>
+                            </div>
+
+                            <div class="form-group" id="rprPwdDetailsGroup" hidden>
+                                <label for="pwd_details">Additional Details <span class="required" id="rprPwdDetailsRequired" hidden>*</span></label>
+                                <input type="text" id="pwd_details" name="pwd_details" maxlength="255" placeholder="Please specify your type of disability." value="<?php echo rpr_value('pwd_details'); ?>" aria-describedby="pwdDetailsError">
+                                <span class="rpr-pwd-field-error" id="pwdDetailsError" role="alert"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group rpr-pwd-upload-group" id="rprPwdIdGroup" hidden>
+                            <label for="pwd_id">Upload PWD ID <span class="required">(Required)</span></label>
+                            <div class="rpr-pwd-upload-control">
+                                <input type="file" id="pwd_id" name="pwd_id" accept=".jpg,.jpeg,.png,image/jpeg,image/png" aria-describedby="pwdIdHint pwdIdError">
+                                <label class="rpr-pwd-file-button" for="pwd_id">Choose or replace image</label>
+                                <span class="rpr-pwd-file-name" id="rprPwdFileName">No image selected</span>
+                            </div>
+                            <span class="field-hint" id="pwdIdHint">JPG, JPEG, or PNG only, up to 5 MB.</span>
+                            <div class="rpr-pwd-preview" id="rprPwdPreviewWrap" hidden>
+                                <img id="rprPwdPreview" alt="PWD ID preview">
+                                <button type="button" class="rpr-pwd-remove" id="rprPwdRemove">Remove image</button>
+                            </div>
+                            <span class="rpr-pwd-field-error" id="pwdIdError" role="alert"></span>
                         </div>
 
                         <div class="form-group">
@@ -1527,6 +1721,18 @@ document.addEventListener('DOMContentLoaded', function () {
     const rprAgeStatus = document.getElementById('rprAgeStatus');
     const rprAgeDisplay = document.getElementById('rprAgeDisplay');
     const rprSeniorDisplay = document.getElementById('rprSeniorDisplay');
+    const rprPwdType = document.getElementById("pwd_type");
+    const rprPwdDetailsGroup = document.getElementById("rprPwdDetailsGroup");
+    const rprPwdDetails = document.getElementById("pwd_details");
+    const rprPwdDetailsRequired = document.getElementById("rprPwdDetailsRequired");
+    const rprPwdIdGroup = document.getElementById("rprPwdIdGroup");
+    const rprPwdId = document.getElementById("pwd_id");
+    const rprPwdFileName = document.getElementById("rprPwdFileName");
+    const rprPwdPreviewWrap = document.getElementById("rprPwdPreviewWrap");
+    const rprPwdPreview = document.getElementById("rprPwdPreview");
+    const rprPwdClear = document.getElementById("rprPwdClear");
+    const rprPwdRemove = document.getElementById("rprPwdRemove");
+    const rprPwdOtherValue = "Other (please specify)";
 
     function parseRprYmd(value) {
         const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
@@ -1577,6 +1783,117 @@ document.addEventListener('DOMContentLoaded', function () {
         rprAgeStatus.hidden = false;
         rprSeniorDisplay.hidden = age < 60;
     }
+
+    function setRprPwdError(input, errorId, message) {
+        const error = document.getElementById(errorId);
+        if (error) {
+            error.textContent = message;
+            error.classList.add("is-visible");
+        }
+        if (input) input.setAttribute("aria-invalid", "true");
+    }
+
+    function clearRprPwdError(input, errorId) {
+        const error = document.getElementById(errorId);
+        if (error) {
+            error.textContent = "";
+            error.classList.remove("is-visible");
+        }
+        if (input) input.removeAttribute("aria-invalid");
+    }
+
+    function clearRprPwdPreview() {
+        if (rprPwdId) rprPwdId.value = "";
+        if (rprPwdFileName) rprPwdFileName.textContent = "No image selected";
+        if (rprPwdPreview) rprPwdPreview.removeAttribute("src");
+        if (rprPwdPreviewWrap) rprPwdPreviewWrap.hidden = true;
+        clearRprPwdError(rprPwdId, "pwdIdError");
+    }
+
+    function syncRprPwdFields() {
+        if (!rprPwdType) return;
+        const selectedType = rprPwdType.value.trim();
+        const hasType = selectedType !== "";
+        const isOther = selectedType === rprPwdOtherValue;
+
+        if (rprPwdDetailsGroup) rprPwdDetailsGroup.hidden = !isOther;
+        if (rprPwdDetails) {
+            rprPwdDetails.disabled = !isOther;
+            rprPwdDetails.setAttribute("aria-required", isOther ? "true" : "false");
+            if (!isOther) {
+                rprPwdDetails.value = "";
+                clearRprPwdError(rprPwdDetails, "pwdDetailsError");
+            }
+        }
+        if (rprPwdDetailsRequired) rprPwdDetailsRequired.hidden = !isOther;
+        if (rprPwdIdGroup) rprPwdIdGroup.hidden = !hasType;
+        if (rprPwdClear) rprPwdClear.hidden = !hasType;
+        if (!hasType) {
+            clearRprPwdPreview();
+            clearRprPwdError(rprPwdType, "pwdTypeError");
+        }
+    }
+
+    function handleRprPwdIdChange() {
+        if (!rprPwdId || !rprPwdId.files || !rprPwdId.files.length) {
+            clearRprPwdPreview();
+            return;
+        }
+        const file = rprPwdId.files[0];
+        const validType = ["image/jpeg", "image/png"].includes(file.type) || /\.(jpe?g|png)$/i.test(file.name);
+        if (!validType) {
+            clearRprPwdPreview();
+            setRprPwdError(rprPwdId, "pwdIdError", "PWD ID must be a JPG, JPEG, or PNG image.");
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            clearRprPwdPreview();
+            setRprPwdError(rprPwdId, "pwdIdError", "PWD ID must be 5 MB or smaller.");
+            return;
+        }
+        clearRprPwdError(rprPwdId, "pwdIdError");
+        if (rprPwdFileName) rprPwdFileName.textContent = file.name;
+        const reader = new FileReader();
+        reader.onload = function (event) {
+            if (rprPwdPreview) rprPwdPreview.src = event.target.result;
+            if (rprPwdPreviewWrap) rprPwdPreviewWrap.hidden = false;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function validateRprPwdSection() {
+        if (!rprPwdType || rprPwdType.value.trim() === "") return true;
+        if (rprPwdType.value === rprPwdOtherValue && (!rprPwdDetails || rprPwdDetails.value.trim() === "")) {
+            setRprPwdError(rprPwdDetails, "pwdDetailsError", "Please specify your type of disability.");
+            if (rprPwdDetails) rprPwdDetails.focus();
+            return false;
+        }
+        if (!rprPwdId || !rprPwdId.files || !rprPwdId.files.length) {
+            setRprPwdError(rprPwdId, "pwdIdError", "Please upload a PWD ID before creating the account.");
+            if (rprPwdId) rprPwdId.focus();
+            return false;
+        }
+        return true;
+    }
+
+    if (rprPwdType) rprPwdType.addEventListener("change", syncRprPwdFields);
+    if (rprPwdDetails) {
+        rprPwdDetails.addEventListener("input", function () {
+            if (rprPwdDetails.value.trim() !== "") clearRprPwdError(rprPwdDetails, "pwdDetailsError");
+        });
+    }
+    if (rprPwdId) rprPwdId.addEventListener("change", handleRprPwdIdChange);
+    if (rprPwdClear) {
+        rprPwdClear.addEventListener("click", function () {
+            if (rprPwdType) {
+                rprPwdType.value = "";
+                rprPwdType.dispatchEvent(new Event("change", { bubbles: true }));
+                rprPwdType.focus();
+            }
+        });
+    }
+    if (rprPwdRemove) rprPwdRemove.addEventListener("click", clearRprPwdPreview);
+    syncRprPwdFields();
 
     function updateBirthDateButton() {
         if (dobPickerButton) {
@@ -1726,6 +2043,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (registrationForm) {
         registrationForm.addEventListener('submit', function (event) {
+            if (!validateRprPwdSection()) {
+                event.preventDefault();
+                return false;
+            }
             if (!validateDateOfBirth()) {
                 event.preventDefault();
                 if (dobPickerButton) {
@@ -1742,7 +2063,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const rprDraftKey = 'globalife.register_patient_receptionist.draft.v1';
     const rprDraftFieldNames = [
         'first_name', 'middle_name', 'last_name', 'suffix', 'gender',
-        'date_of_birth', 'civil_status', 'phone', 'email', 'barangay',
+        'date_of_birth', 'civil_status', 'pwd_type', 'pwd_details', 'phone', 'email', 'barangay',
         'city', 'address', 'username', 'emergency_contact_name',
         'emergency_contact_relationship', 'emergency_contact_number'
     ];
