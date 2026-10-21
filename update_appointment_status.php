@@ -124,6 +124,7 @@ if (!$canUpdate) {
 }
 
 $cancellationReason = trim((string) ($_POST['cancellation_reason'] ?? ''));
+$cancellationDetails = trim((string) ($_POST['cancellation_details'] ?? ''));
 if ($new_status === 'cancelled') {
     $cancellationReason = preg_replace('/\s+/', ' ', $cancellationReason) ?? '';
     if ($cancellationReason === '') {
@@ -135,6 +136,10 @@ if ($new_status === 'cancelled') {
     if (strlen($cancellationReason) > 500) {
         $cancellationReason = substr($cancellationReason, 0, 500);
     }
+    $cancellationDetails = preg_replace('/\s+/', ' ', $cancellationDetails) ?? '';
+    if (strlen($cancellationDetails) > 1000) {
+        $cancellationDetails = substr($cancellationDetails, 0, 1000);
+    }
 }
 
 // Update appointment status
@@ -142,13 +147,13 @@ if ($new_status === 'cancelled') {
     $cancelledByRole = normalizeUserRole((string) ($currentUser['role'] ?? $userRole));
     $cancelledByUserId = (int) ($currentUser['id'] ?? 0);
     $updateStmt = $conn->prepare("UPDATE appointments
-                                  SET status = ?, cancellation_reason = ?, cancelled_by_role = ?,
+                                  SET status = ?, cancellation_reason = ?, cancellation_details = ?, cancelled_by_role = ?,
                                       cancelled_by_user_id = ?, cancelled_at = NOW()
                                   WHERE id = ? AND status = ?");
-    $updateStmt->bind_param("sssiis", $new_status, $cancellationReason, $cancelledByRole, $cancelledByUserId, $appointment_id, $previousStatus);
+    $updateStmt->bind_param("ssssiis", $new_status, $cancellationReason, $cancellationDetails, $cancelledByRole, $cancelledByUserId, $appointment_id, $previousStatus);
 } else {
     $updateStmt = $conn->prepare("UPDATE appointments
-                                  SET status = ?, cancellation_reason = NULL, cancelled_by_role = NULL,
+                                  SET status = ?, cancellation_reason = NULL, cancellation_details = NULL, cancelled_by_role = NULL,
                                       cancelled_by_user_id = NULL, cancelled_at = NULL
                                   WHERE id = ? AND status = ?");
     $updateStmt->bind_param("sis", $new_status, $appointment_id, $previousStatus);

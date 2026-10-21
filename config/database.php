@@ -387,6 +387,7 @@ function initDatabase() {
         status ENUM('pending', 'confirmed', 'completed', 'cancelled') DEFAULT 'pending',
         notes TEXT,
         cancellation_reason TEXT DEFAULT NULL,
+        cancellation_details TEXT DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE
     )");
@@ -413,6 +414,7 @@ function dbColumnExists($conn, $table, $column) {
 function initLabBookingSchema($conn) {
     $apptCols = [
         ['cancellation_reason', 'TEXT DEFAULT NULL', 'notes'],
+        ['cancellation_details', 'TEXT DEFAULT NULL', 'cancellation_reason'],
         ['booking_type', "ENUM('package','individual','consultation','ultrasound') DEFAULT NULL", 'notes'],
         ['total_display_price', 'DECIMAL(10,2) DEFAULT NULL', 'booking_type'],
         ['price_channel', "ENUM('opd','home') DEFAULT 'opd'", 'total_display_price'],

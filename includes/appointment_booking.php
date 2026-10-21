@@ -318,6 +318,7 @@ function appointment_init_queue_schema(mysqli $conn): void {
 function appointment_init_cancellation_audit_schema(mysqli $conn): void {
     $requiredColumns = [
         'cancellation_reason' => "ALTER TABLE appointments ADD COLUMN cancellation_reason TEXT DEFAULT NULL AFTER notes",
+        'cancellation_details' => "ALTER TABLE appointments ADD COLUMN cancellation_details TEXT DEFAULT NULL AFTER cancellation_reason",
         'cancelled_by_role' => "ALTER TABLE appointments ADD COLUMN cancelled_by_role VARCHAR(20) DEFAULT NULL AFTER cancellation_reason",
         'cancelled_by_user_id' => "ALTER TABLE appointments ADD COLUMN cancelled_by_user_id INT DEFAULT NULL AFTER cancelled_by_role",
         'cancelled_at' => "ALTER TABLE appointments ADD COLUMN cancelled_at DATETIME DEFAULT NULL AFTER cancelled_by_user_id",
@@ -843,7 +844,7 @@ function appointment_send_reminder_sms(array $details): array {
 
 function appointment_fetch_notification_details(mysqli $conn, int $appointmentId): ?array {
     $stmt = $conn->prepare(
-        "SELECT a.id AS appointment_id, a.appointment_date, a.appointment_time, a.booking_type, a.cancellation_reason,
+        "SELECT a.id AS appointment_id, a.appointment_date, a.appointment_time, a.booking_type, a.cancellation_reason, a.cancellation_details,
                 " . dbUsersNameExpression('p') . " AS patient_name, p.email, p.phone,
                 " . dbUsersNameExpression('d') . " AS doctor_name,
                 COALESCE(
@@ -861,7 +862,7 @@ function appointment_fetch_notification_details(mysqli $conn, int $appointmentId
          LEFT JOIN lab_services ls ON ls.id = aps.service_id
          WHERE a.id = ?
          GROUP BY a.id, a.appointment_date, a.appointment_time,
-                 a.booking_type, a.cancellation_reason,
+                 a.booking_type, a.cancellation_reason, a.cancellation_details,
                  p.first_name, p.middle_name, p.last_name, p.suffix, p.email, p.phone,
                  d.first_name, d.middle_name, d.last_name, d.suffix
          LIMIT 1"
@@ -1005,6 +1006,9 @@ function appointment_send_cancellation_email(mysqli $conn, int $appointmentId): 
     ];
     if (trim((string) ($details['cancellation_reason'] ?? '')) !== '') {
         $rows['Reason'] = (string) $details['cancellation_reason'];
+    }
+    if (trim((string) ($details['cancellation_details'] ?? '')) !== '') {
+        $rows['Additional details'] = (string) $details['cancellation_details'];
     }
 
     $content = appointment_email_layout(

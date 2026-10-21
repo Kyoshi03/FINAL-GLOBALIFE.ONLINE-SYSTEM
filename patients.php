@@ -324,6 +324,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['patient_action'] ?? '') ==
     $cancelMessage = '';
     $appointmentId = (int) ($_POST['appointment_id'] ?? 0);
     $cancellationReason = trim((string) ($_POST['cancellation_reason'] ?? ''));
+    $cancellationDetails = trim((string) ($_POST['cancellation_details'] ?? ''));
+    $cancellationDetails = preg_replace('/\s+/', ' ', $cancellationDetails) ?? '';
+    if (strlen($cancellationDetails) > 1000) {
+        $cancellationDetails = substr($cancellationDetails, 0, 1000);
+    }
     if ($appointmentId <= 0) {
         $cancelMessage = 'Invalid appointment.';
         $_SESSION['patient_dashboard_error'] = $cancelMessage;
@@ -338,7 +343,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['patient_action'] ?? '') ==
         $cancelledByRole = 'patient';
         $cancelledByUserId = (int) ($currentUser['id'] ?? 0);
         $cancel = $conn->prepare("UPDATE appointments
-            SET status = ?, cancellation_reason = ?, cancelled_by_role = ?,
+            SET status = ?, cancellation_reason = ?, cancellation_details = ?, cancelled_by_role = ?,
                 cancelled_by_user_id = ?, cancelled_at = NOW()
             WHERE id = ? AND patient_id = ? AND status IN ('pending', 'confirmed')
               AND NOT EXISTS (
@@ -347,7 +352,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['patient_action'] ?? '') ==
                   WHERE q.appointment_id = appointments.id
                     AND q.status IN ('serving', 'completed')
               )");
-        $cancel->bind_param('sssiii', $cancelStatus, $cancellationReason, $cancelledByRole, $cancelledByUserId, $appointmentId, $currentUser['id']);
+        $cancel->bind_param('ssssiii', $cancelStatus, $cancellationReason, $cancellationDetails, $cancelledByRole, $cancelledByUserId, $appointmentId, $currentUser['id']);
         if ($cancel->execute() && $cancel->affected_rows > 0) {
             $cancelOk = true;
             $cancelMessage = 'Appointment cancelled.';
@@ -5093,6 +5098,7 @@ include 'includes/header.php';
                                 : 'PHP ' . number_format((float) ($appointment['total_display_price'] ?? 0), 2);
                             $notesText = trim((string) ($appointment['notes'] ?? ''));
                             $cancellationReason = trim((string) ($appointment['cancellation_reason'] ?? ''));
+                            $cancellationDetails = trim((string) ($appointment['cancellation_details'] ?? ''));
                             $queueNumber = trim((string) ($appointment['queue_number'] ?? ''));
                             $queueStatus = strtolower(trim((string) ($appointment['queue_status'] ?? '')));
                             $canCancelAppointment = !in_array($queueStatus, ['serving', 'completed'], true);
@@ -5114,6 +5120,7 @@ include 'includes/header.php';
                                 'rescheduleReason' => trim((string) ($appointment['reschedule_reason'] ?? '')) ?: 'Not provided',
                                 'notes' => appointment_detail_notes_text($appointment),
                                 'cancellationReason' => $cancellationReason !== '' ? $cancellationReason : 'None',
+                                'cancellationDetails' => $cancellationDetails !== '' ? $cancellationDetails : 'None',
                             ];
                             ?>
                             <article class="appointment-row" tabindex="0" data-appointment='<?php echo htmlspecialchars(json_encode($detailPayload), ENT_QUOTES, 'UTF-8'); ?>'>
@@ -5313,6 +5320,8 @@ include 'includes/header.php';
                     <option value="Found another clinic">Found another clinic</option>
                     <option value="Other reason">Other reason</option>
                 </select>
+                <label for="patientCancelDetails">Additional details <span>(optional)</span></label>
+                <textarea id="patientCancelDetails" maxlength="1000" placeholder="Add more details if needed"></textarea>
                 <div class="patient-cancel-error" id="patientCancelReasonError">Please add a reason before continuing.</div>
             </div>
             <div class="patient-appointment-actions">
@@ -5621,6 +5630,7 @@ include 'includes/header.php';
         const cancelSuccessOk = document.getElementById('patientCancelSuccessOk');
         const cancelText = document.getElementById('patientCancelText');
         const cancelReason = document.getElementById('patientCancelReason');
+        const cancelDetails = document.getElementById('patientCancelDetails');
         const cancelReasonError = document.getElementById('patientCancelReasonError');
         const cancelYes = document.getElementById('patientCancelYes');
         let pendingCancelForm = null;
@@ -5656,6 +5666,7 @@ include 'includes/header.php';
             closePatientModal(cancelSuccessModal);
             pendingCancelForm = null;
             if (cancelReason) cancelReason.value = '';
+            if (cancelDetails) cancelDetails.value = '';
             if (cancelReasonError) cancelReasonError.classList.remove('is-open');
         }
 
@@ -5714,6 +5725,9 @@ include 'includes/header.php';
                 } else if (data.statusKey === 'cancelled') {
                     detailNotes.style.display = '';
                     detailNotes.innerHTML = '<strong>Cancellation reason</strong><span>' + escapeHtml(data.cancellationReason || 'None') + '</span>';
+                    if (data.cancellationDetails && data.cancellationDetails !== 'None') {
+                        detailNotes.innerHTML += '<strong style="margin-top:12px;">Additional details</strong><span>' + escapeHtml(data.cancellationDetails) + '</span>';
+                    }
                 } else {
                     detailNotes.style.display = 'none';
                     detailNotes.innerHTML = '';
@@ -5757,6 +5771,7 @@ include 'includes/header.php';
                     cancelText.textContent = button.getAttribute('data-cancel-message') || 'Are you sure you want to cancel this appointment?';
                 }
                 if (cancelReason) cancelReason.value = '';
+                if (cancelDetails) cancelDetails.value = '';
                 if (cancelReasonError) cancelReasonError.classList.remove('is-open');
                 openPatientModal(cancelModal);
                 if (cancelReason) {
@@ -5782,6 +5797,14 @@ include 'includes/header.php';
                     pendingCancelForm.appendChild(input);
                 }
                 input.value = reason;
+                let detailsInput = pendingCancelForm.querySelector('[name="cancellation_details"]');
+                if (!detailsInput) {
+                    detailsInput = document.createElement('input');
+                    detailsInput.type = 'hidden';
+                    detailsInput.name = 'cancellation_details';
+                    pendingCancelForm.appendChild(detailsInput);
+                }
+                detailsInput.value = cancelDetails ? cancelDetails.value.trim() : '';
                 const form = pendingCancelForm;
                 pendingCancelForm = null;
                 const oldText = cancelYes.textContent;

@@ -1573,6 +1573,7 @@ include __DIR__ . '/includes/header.php';
                         $rejectedRescheduleReason = trim((string) ($appointment['rejected_reschedule_reason'] ?? '')) ?: 'Not provided';
                         $rejectedRescheduleNote = trim((string) ($appointment['rejected_reschedule_reason_text'] ?? '')) ?: 'Not provided';
                         $cancellationReason = trim((string) ($appointment['cancellation_reason'] ?? ''));
+                        $cancellationDetails = trim((string) ($appointment['cancellation_details'] ?? ''));
                         $queueNumber = trim((string) ($appointment['queue_number'] ?? ''));
                         $queueNumberDisplay = $queueNumber !== '' ? $queueNumber : 'Not generated';
                         $searchText = trim(implode(' ', [
@@ -1611,6 +1612,7 @@ include __DIR__ . '/includes/header.php';
                             'rejectedRescheduleReason' => $rejectedRescheduleNote,
                             'notes' => appointment_detail_notes_text($appointment),
                             'cancellationReason' => $cancellationReason !== '' ? $cancellationReason : 'None',
+                            'cancellationDetails' => $cancellationDetails !== '' ? $cancellationDetails : 'None',
                         ];
                         ?>
                         <tr class="appointment-row" tabindex="0"
@@ -1846,6 +1848,8 @@ include __DIR__ . '/includes/header.php';
                 <option value="Emergency or urgent closure">Emergency or urgent closure</option>
                 <option value="Other reason">Other reason</option>
             </select>
+            <label for="statusCancelDetails">Additional details <span>(optional)</span></label>
+            <textarea id="statusCancelDetails" maxlength="1000" placeholder="Add more details if needed"></textarea>
             <div class="cancel-reason-error" id="statusCancelReasonError">Please add a reason before continuing.</div>
         </div>
         <div class="appointment-modal-actions" style="padding-top:20px;">
@@ -1904,6 +1908,7 @@ include __DIR__ . '/includes/header.php';
     var filterSuccessOk = document.getElementById('filterSuccessOk');
     var cancelReasonWrap = document.getElementById('statusCancelReasonWrap');
     var cancelReasonInput = document.getElementById('statusCancelReason');
+    var cancelDetailsInput = document.getElementById('statusCancelDetails');
     var cancelReasonError = document.getElementById('statusCancelReasonError');
     var pendingForm = null;
     var searchInput = document.getElementById('appointmentSearch');
@@ -1948,6 +1953,7 @@ include __DIR__ . '/includes/header.php';
         closeModal(reportResultModal);
         pendingForm = null;
         if (cancelReasonInput) cancelReasonInput.value = '';
+        if (cancelDetailsInput) cancelDetailsInput.value = '';
         if (cancelReasonWrap) cancelReasonWrap.classList.remove('is-open');
         if (cancelReasonError) cancelReasonError.classList.remove('is-open');
     }
@@ -2083,6 +2089,9 @@ include __DIR__ . '/includes/header.php';
                 notesHtml = '<strong>Notes</strong><span>' + escapeHtml(data.notes) + '</span>';
                 if (data.statusKey === 'cancelled') {
                     notesHtml += '<strong style="margin-top:12px;">Cancellation reason</strong><span>' + escapeHtml(data.cancellationReason) + '</span>';
+                    if (data.cancellationDetails && data.cancellationDetails !== 'None') {
+                        notesHtml += '<strong style="margin-top:12px;">Additional details</strong><span>' + escapeHtml(data.cancellationDetails) + '</span>';
+                    }
                 }
             }
             detailNotes.innerHTML = notesHtml;
@@ -2387,6 +2396,7 @@ include __DIR__ . '/includes/header.php';
                 cancelReasonInput.value = '';
                 cancelReasonInput.required = !!needsReason;
             }
+            if (cancelDetailsInput) cancelDetailsInput.value = '';
             if (cancelReasonError) cancelReasonError.classList.remove('is-open');
             openModal(confirmModal);
             if (needsReason && cancelReasonInput) {
@@ -2413,6 +2423,14 @@ include __DIR__ . '/includes/header.php';
                     form.appendChild(reasonInput);
                 }
                 reasonInput.value = reason;
+                var detailsInput = form.querySelector('[name="cancellation_details"]');
+                if (!detailsInput) {
+                    detailsInput = document.createElement('input');
+                    detailsInput.type = 'hidden';
+                    detailsInput.name = 'cancellation_details';
+                    form.appendChild(detailsInput);
+                }
+                detailsInput.value = cancelDetailsInput ? cancelDetailsInput.value.trim() : '';
             }
             if (!form) return;
             var oldText = confirmYes.textContent;

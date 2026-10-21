@@ -2258,6 +2258,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var confirmProceed = document.getElementById("doctorConfirmProceed");
     var cancelReasonWrap = document.getElementById("doctorCancelReasonWrap");
     var cancelReasonInput = document.getElementById("doctorCancelReason");
+    var cancelDetailsInput = document.getElementById("doctorCancelDetails");
     var cancelReasonError = document.getElementById("doctorCancelReasonError");
     var successModal = document.getElementById("doctorSuccessModal");
     var successTitle = document.getElementById("doctorSuccessTitle");
@@ -2312,6 +2313,7 @@ document.addEventListener("DOMContentLoaded", function () {
         pendingForm = null;
         if (cancelReasonWrap) cancelReasonWrap.classList.remove("is-open");
         if (cancelReasonInput) cancelReasonInput.value = "";
+        if (cancelDetailsInput) cancelDetailsInput.value = "";
         if (cancelReasonError) cancelReasonError.classList.remove("is-open");
     }
 
@@ -2345,6 +2347,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 cancelReasonInput.value = "";
                 cancelReasonInput.required = !!needsReason;
             }
+            if (cancelDetailsInput) cancelDetailsInput.value = "";
             if (cancelReasonError) cancelReasonError.classList.remove("is-open");
             confirmModal.classList.add("is-open");
             confirmModal.setAttribute("aria-hidden", "false");
@@ -2375,6 +2378,14 @@ document.addEventListener("DOMContentLoaded", function () {
                     form.appendChild(hiddenReason);
                 }
                 hiddenReason.value = reason;
+                var hiddenDetails = form.querySelector("[name=cancellation_details]");
+                if (!hiddenDetails) {
+                    hiddenDetails = document.createElement("input");
+                    hiddenDetails.type = "hidden";
+                    hiddenDetails.name = "cancellation_details";
+                    form.appendChild(hiddenDetails);
+                }
+                hiddenDetails.value = cancelDetailsInput ? cancelDetailsInput.value.trim() : "";
             }
             closeConfirmModal();
             if (!form) return;
@@ -3323,6 +3334,8 @@ include 'includes/header.php';
                     <option value="Emergency or urgent closure">Emergency or urgent closure</option>
                     <option value="Other reason">Other reason</option>
                 </select>
+                <label for="doctorCancelDetails">Additional details <span>(optional)</span></label>
+                <textarea id="doctorCancelDetails" maxlength="1000" placeholder="Add more details if needed"></textarea>
                 <small id="doctorCancelReasonError">Please add a reason before continuing.</small>
             </div>
             <div class="doctor-confirm-actions">

@@ -151,7 +151,7 @@ try {
 
         $newDate = (string) $request['requested_date'];
         $newTime = appointment_reschedule_normalize_time((string) $request['requested_time']);
-        $updateAppointment = $conn->prepare("UPDATE appointments SET appointment_date = ?, appointment_time = ?, status = 'confirmed', cancellation_reason = NULL WHERE id = ? AND status = 'confirmed'");
+        $updateAppointment = $conn->prepare("UPDATE appointments SET appointment_date = ?, appointment_time = ?, status = 'confirmed', cancellation_reason = NULL, cancellation_details = NULL WHERE id = ? AND status = 'confirmed'");
         $appointmentId = (int) $request['appointment_id'];
         $updateAppointment->bind_param('ssi', $newDate, $newTime, $appointmentId);
         if (!$updateAppointment->execute() || $updateAppointment->affected_rows !== 1) {

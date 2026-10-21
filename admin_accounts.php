@@ -171,7 +171,7 @@ $patientAppointments = [];
 $doctorNameSql = dbUsersNameExpression('d');
 $appointmentResult = $conn->query(
     "SELECT a.id, a.patient_id, a.appointment_date, a.appointment_time, a.status, a.booking_type,
-            a.notes, a.cancellation_reason, a.total_display_price,
+            a.notes, a.cancellation_reason, a.cancellation_details, a.total_display_price,
             {$doctorNameSql} AS doctor_name
      FROM appointments a
      LEFT JOIN users d ON d.id = a.doctor_id
@@ -258,6 +258,7 @@ function admin_accounts_appointment_detail(array $appointment, string $patientNa
     $doctorName = trim((string) ($appointment['doctor_name'] ?? ''));
     $statusValue = strtolower((string) ($appointment['status'] ?? 'pending'));
     $cancellationReason = trim((string) ($appointment['cancellation_reason'] ?? ''));
+    $cancellationDetails = trim((string) ($appointment['cancellation_details'] ?? ''));
 
     return [
         'reference' => '#' . (int) ($appointment['id'] ?? 0),
@@ -272,6 +273,7 @@ function admin_accounts_appointment_detail(array $appointment, string $patientNa
         'services' => $servicesText,
         'notes' => appointment_detail_notes_text($appointment),
         'cancellationReason' => $cancellationReason !== '' ? $cancellationReason : 'None',
+        'cancellationDetails' => $cancellationDetails !== '' ? $cancellationDetails : 'None',
     ];
 }
 
@@ -887,6 +889,9 @@ document.addEventListener("DOMContentLoaded", function () {
             let notesHtml = \'<strong>Notes</strong><span>\' + escapeHtml(displayValue(data.notes)) + "</span>";
             if (data.statusKey === "cancelled") {
                 notesHtml += \'<strong style="margin-top:12px;">Cancellation reason</strong><span>\' + escapeHtml(displayValue(data.cancellationReason)) + "</span>";
+                if (data.cancellationDetails && data.cancellationDetails !== "None") {
+                    notesHtml += \'<strong style="margin-top:12px;">Additional details</strong><span>\' + escapeHtml(displayValue(data.cancellationDetails)) + "</span>";
+                }
             }
             adminApptNotes.innerHTML = notesHtml;
         }

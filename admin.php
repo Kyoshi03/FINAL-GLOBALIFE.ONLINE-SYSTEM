@@ -313,7 +313,7 @@ $appointmentRequestsTotal = admin_count_query($conn, "SELECT COUNT(*) AS total F
 $appointmentRequestsTotalPages = max(1, (int) ceil($appointmentRequestsTotal / $appointmentRequestsPerPage));
 $appointmentRequestsPage = min($appointmentRequestsPage, $appointmentRequestsTotalPages);
 $appointmentRequestsOffset = ($appointmentRequestsPage - 1) * $appointmentRequestsPerPage;
-$requestStmt = $conn->prepare("SELECT a.id, a.appointment_date, a.appointment_time, a.status, a.booking_type, a.notes, a.total_display_price, a.cancellation_reason,
+$requestStmt = $conn->prepare("SELECT a.id, a.appointment_date, a.appointment_time, a.status, a.booking_type, a.notes, a.total_display_price, a.cancellation_reason, a.cancellation_details,
                                 a.patient_id,
                                 {$patientNameSql} AS patient_name,
                                 p.phone AS patient_phone,
@@ -3132,6 +3132,11 @@ document.addEventListener("DOMContentLoaded", function () {
             reasonRows.forEach(function (node) {
                 node.style.display = data.cancelReason && data.cancelReason !== "None" ? "" : "none";
             });
+            var detailsRows = document.querySelectorAll("[data-admin-cancel-details-detail]");
+            setText("adminDetailCancelDetails", data.cancelDetails);
+            detailsRows.forEach(function (node) {
+                node.style.display = data.cancelDetails && data.cancelDetails !== "None" ? "" : "none";
+            });
             modal.classList.add("is-open");
             modal.setAttribute("aria-hidden", "false");
         });
@@ -3184,6 +3189,7 @@ document.addEventListener("DOMContentLoaded", function () {
             var confirmProceed = document.getElementById("adminConfirmActionProceed");
             var cancelReasonWrap = document.getElementById("adminCancelReasonWrap");
             var cancelReasonInput = document.getElementById("adminCancelReason");
+            var cancelDetailsInput = document.getElementById("adminCancelDetails");
             var cancelReasonError = document.getElementById("adminCancelReasonError");
             var form = button.closest("form");
             if (!confirmModal || !form) return;
@@ -3200,6 +3206,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 cancelReasonInput.value = "";
                 cancelReasonInput.required = !!needsReason;
             }
+            if (cancelDetailsInput) cancelDetailsInput.value = "";
             if (cancelReasonError) cancelReasonError.classList.remove("is-open");
             confirmModal.classList.add("is-open");
             confirmModal.setAttribute("aria-hidden", "false");
@@ -3215,6 +3222,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var confirmActionProceed = document.getElementById("adminConfirmActionProceed");
     var confirmCancelReasonWrap = document.getElementById("adminCancelReasonWrap");
     var confirmCancelReasonInput = document.getElementById("adminCancelReason");
+    var confirmCancelDetailsInput = document.getElementById("adminCancelDetails");
     var confirmCancelReasonError = document.getElementById("adminCancelReasonError");
     var actionSuccessModal = document.getElementById("adminActionSuccessModal");
     var actionSuccessTitle = document.getElementById("adminActionSuccessTitle");
@@ -3229,6 +3237,7 @@ document.addEventListener("DOMContentLoaded", function () {
         confirmActionModal.pendingForm = null;
         if (confirmCancelReasonWrap) confirmCancelReasonWrap.classList.remove("is-open");
         if (confirmCancelReasonInput) confirmCancelReasonInput.value = "";
+        if (confirmCancelDetailsInput) confirmCancelDetailsInput.value = "";
         if (confirmCancelReasonError) confirmCancelReasonError.classList.remove("is-open");
     }
 
@@ -3270,6 +3279,14 @@ document.addEventListener("DOMContentLoaded", function () {
                     form.appendChild(hiddenReason);
                 }
                 hiddenReason.value = reason;
+                var hiddenDetails = form.querySelector("[name=cancellation_details]");
+                if (!hiddenDetails) {
+                    hiddenDetails = document.createElement("input");
+                    hiddenDetails.type = "hidden";
+                    hiddenDetails.name = "cancellation_details";
+                    form.appendChild(hiddenDetails);
+                }
+                hiddenDetails.value = confirmCancelDetailsInput ? confirmCancelDetailsInput.value.trim() : "";
             }
             if (!form) return;
             var oldText = confirmActionProceed.textContent;
@@ -3652,6 +3669,7 @@ include 'includes/header.php';
                                                     data-status-label="<?php echo htmlspecialchars($requestStatusLabel, ENT_QUOTES, 'UTF-8'); ?>"
                                                     data-notes="<?php echo htmlspecialchars($requestPriceDetails, ENT_QUOTES, 'UTF-8'); ?>"
                                                     data-cancel-reason="<?php echo htmlspecialchars((string) (($appointment['cancellation_reason'] ?? '') ?: 'None'), ENT_QUOTES, 'UTF-8'); ?>"
+                                                    data-cancel-details="<?php echo htmlspecialchars((string) (($appointment['cancellation_details'] ?? '') ?: 'None'), ENT_QUOTES, 'UTF-8'); ?>"
                                                 >Details</button>
                                                 <?php if ($adminCanRespond): ?>
                                                     <form method="post" action="update_appointment_status.php" class="request-confirm-action">
@@ -4110,6 +4128,10 @@ include 'includes/header.php';
                     <strong>Cancellation reason</strong>
                     <span id="adminDetailCancelReason">None</span>
                 </div>
+                <div class="detail-notes-box" data-admin-cancel-details-detail style="display:none;">
+                    <strong>Additional details</strong>
+                    <span id="adminDetailCancelDetails">None</span>
+                </div>
             </div>
             <div class="appointment-modal-actions">
                 <button class="btn btn-light" type="button" data-admin-close-modal>Close</button>
@@ -4162,6 +4184,8 @@ include 'includes/header.php';
                     <option value="Emergency or urgent closure">Emergency or urgent closure</option>
                     <option value="Other reason">Other reason</option>
                 </select>
+                <label for="adminCancelDetails">Additional details <span>(optional)</span></label>
+                <textarea id="adminCancelDetails" maxlength="1000" placeholder="Add more details if needed"></textarea>
                 <small id="adminCancelReasonError">Please add a reason before continuing.</small>
             </div>
             <div class="admin-modal-actions">
