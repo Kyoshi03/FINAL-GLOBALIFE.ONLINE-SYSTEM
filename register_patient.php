@@ -580,6 +580,17 @@ $additionalStyles = '
         font-size: 0.85rem;
         font-weight: 600;
     }
+    .senior-display {
+        display: inline-block;
+        margin-left: 8px;
+        padding: 5px 12px;
+        background: #168a45;
+        color: #fff;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+    }
     .password-requirements {
         margin-top: 10px;
         padding: 15px;
@@ -1652,7 +1663,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="age">Age <span class="age-display" id="ageDisplay" style="display: none;">0 years old</span></label>
+                            <label for="age">Age <span class="age-display" id="ageDisplay" style="display: none;">0 years old</span><span class="senior-display" id="seniorDisplay" style="display: none;">SENIOR</span></label>
                             <div class="input-wrapper">
                                 <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -2115,6 +2126,10 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                 if (ageDisplay) {
                     ageDisplay.style.display = 'none';
                 }
+                const seniorDisplay = document.getElementById('seniorDisplay');
+                if (seniorDisplay) {
+                    seniorDisplay.style.display = 'none';
+                }
                 const ageInput = document.getElementById('age');
                 if (ageInput) {
                     ageInput.value = '';
@@ -2227,6 +2242,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
             const dobNextMonth = document.getElementById('dobNextMonth');
             const ageInput = document.getElementById('age');
             const ageDisplay = document.getElementById('ageDisplay');
+            const seniorDisplay = document.getElementById('seniorDisplay');
 
             // Keep the fixed calendar outside transformed form containers so it remains viewport-centered.
             if (dobCalendar && dobCalendar.parentElement !== document.body) {
@@ -2545,6 +2561,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                         dateOfBirthInput.setCustomValidity('You must be at least 18 years old to register.');
                         ageInput.value = '';
                         ageDisplay.style.display = 'none';
+                        if (seniorDisplay) seniorDisplay.style.display = 'none';
                         return;
                     }
                     dateOfBirthInput.setCustomValidity('');
@@ -2558,10 +2575,12 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                     ageInput.value = age;
                     ageDisplay.textContent = age + ' years old';
                     ageDisplay.style.display = 'inline-block';
+                    if (seniorDisplay) seniorDisplay.style.display = age >= 60 ? 'inline-block' : 'none';
                 } else {
                     dateOfBirthInput.setCustomValidity('');
                     ageInput.value = '';
                     ageDisplay.style.display = 'none';
+                    if (seniorDisplay) seniorDisplay.style.display = 'none';
                 }
             }
             
