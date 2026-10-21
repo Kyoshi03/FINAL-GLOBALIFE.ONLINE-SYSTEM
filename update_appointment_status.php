@@ -31,20 +31,51 @@ if ($returnUrl === '' || preg_match('/^(https?:)?\/\//i', $returnUrl) || strpos(
     $returnUrl = $appointmentPage;
 }
 
-function appointment_status_finish(?mysqli $conn, string $returnUrl, bool $wantsJson, bool $ok, string $message): void {
-    if ($conn) {
-        $conn->close();
-    }
+function appointment_status_finish(?mysqli $conn, string $returnUrl, bool $wantsJson, bool $ok, string $message, ?callable $afterResponse = null): void {
     if ($wantsJson) {
         header('Content-Type: application/json');
         echo json_encode([
             'ok' => $ok,
             'message' => $message,
         ]);
+
+        if ($afterResponse !== null) {
+            // Release the browser as soon as the status is saved. On Hostinger,
+            // FastCGI keeps the notification work running after the response.
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+            if (function_exists('fastcgi_finish_request')) {
+                fastcgi_finish_request();
+            }
+            $afterResponse();
+        }
+        if ($conn) {
+            $conn->close();
+        }
         exit();
     }
     $_SESSION[$ok ? 'success' : 'error'] = $message;
     header('Location: ' . $returnUrl);
+
+    if ($afterResponse !== null && function_exists('fastcgi_finish_request')) {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+        fastcgi_finish_request();
+        $afterResponse();
+        if ($conn) {
+            $conn->close();
+        }
+        exit();
+    }
+
+    if ($afterResponse !== null) {
+        $afterResponse();
+    }
+    if ($conn) {
+        $conn->close();
+    }
     exit();
 }
 
@@ -207,40 +238,40 @@ if ($updateStmt->execute() && $updateStmt->affected_rows > 0) {
             $statusMessage .= ' The appointment was confirmed, but its queue number could not be generated.';
         }
     }
+    $deferredNotificationWork = null;
     if ($new_status === 'confirmed' && $appointment['status'] !== 'confirmed') {
-        $emailResult = appointment_send_clinic_confirmation_email($conn, (int) $appointment_id);
-        $smsResult = appointment_send_clinic_confirmation_sms($conn, (int) $appointment_id);
-        $failedChannels = [];
-        if (!$emailResult['ok'] && empty($emailResult['disabled'])) {
-            $failedChannels[] = 'email';
-        }
-        if (!$smsResult['ok'] && empty($smsResult['disabled'])) {
-            $failedChannels[] = 'SMS';
-        }
-        if ($failedChannels) {
-            $statusMessage .= ' The status was saved, but the '
-                . implode(' and ', $failedChannels)
-                . ' confirmation could not be delivered.';
-        }
+        $deferredNotificationWork = static function () use ($conn, $appointment_id): void {
+            $emailResult = appointment_send_clinic_confirmation_email($conn, (int) $appointment_id);
+            $smsResult = appointment_send_clinic_confirmation_sms($conn, (int) $appointment_id);
+            if (!$emailResult['ok'] && empty($emailResult['disabled'])) {
+                error_log('Appointment confirmation email failed for appointment #' . (int) $appointment_id . ': ' . (string) ($emailResult['error'] ?? 'Unknown error'));
+            }
+            if (!$smsResult['ok'] && empty($smsResult['disabled'])) {
+                error_log('Appointment confirmation SMS failed for appointment #' . (int) $appointment_id . ': ' . (string) ($smsResult['error'] ?? 'Unknown error'));
+            }
+        };
     } elseif ($new_status === 'cancelled' && $appointment['status'] !== 'cancelled') {
-        $emailResult = appointment_send_cancellation_email($conn, (int) $appointment_id);
-        $smsResult = appointment_send_cancellation_sms($conn, (int) $appointment_id);
-        $failedChannels = [];
-        if (!$emailResult['ok'] && empty($emailResult['disabled'])) {
-            $failedChannels[] = 'email';
-        }
-        if (!$smsResult['ok'] && empty($smsResult['disabled'])) {
-            $failedChannels[] = 'SMS';
-        }
-        if ($failedChannels) {
-            $statusMessage .= ' The status was saved, but the '
-                . implode(' and ', $failedChannels)
-                . ' cancellation notification could not be delivered.';
-        }
+        $deferredNotificationWork = static function () use ($conn, $appointment_id): void {
+            $emailResult = appointment_send_cancellation_email($conn, (int) $appointment_id);
+            $smsResult = appointment_send_cancellation_sms($conn, (int) $appointment_id);
+            if (!$emailResult['ok'] && empty($emailResult['disabled'])) {
+                error_log('Appointment cancellation email failed for appointment #' . (int) $appointment_id . ': ' . (string) ($emailResult['error'] ?? 'Unknown error'));
+            }
+            if (!$smsResult['ok'] && empty($smsResult['disabled'])) {
+                error_log('Appointment cancellation SMS failed for appointment #' . (int) $appointment_id . ': ' . (string) ($smsResult['error'] ?? 'Unknown error'));
+            }
+        };
     }
 } else {
     $statusMessage = 'The appointment status changed before this request was completed. Refresh the page and try again.';
 }
 
 $updateStmt->close();
-appointment_status_finish($conn, $returnUrl, $wantsJson, isset($statusMessage) && $statusMessage !== 'Error updating appointment status.', $statusMessage ?? 'Error updating appointment status.');
+appointment_status_finish(
+    $conn,
+    $returnUrl,
+    $wantsJson,
+    isset($statusMessage) && $statusMessage !== 'Error updating appointment status.',
+    $statusMessage ?? 'Error updating appointment status.',
+    $deferredNotificationWork ?? null
+);
