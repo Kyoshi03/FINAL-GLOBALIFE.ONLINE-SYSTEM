@@ -3256,13 +3256,13 @@ document.addEventListener("DOMContentLoaded", function () {
         closeConfirmActionModal();
         if (actionSuccessTitle) {
             actionSuccessTitle.textContent = status === "cancelled"
-                ? "Appointment cancelled"
-                : (status === "completed" ? "Appointment completed" : "Appointment confirmed");
+                ? "Appointment cancelled successfully"
+                : (status === "completed" ? "Appointment completed successfully" : "Appointment confirmed successfully");
         }
         if (actionSuccessText) {
             actionSuccessText.textContent = message || (status === "cancelled"
-                ? "Appointment cancelled successfully."
-                : (status === "completed" ? "Appointment completed successfully." : "Appointment confirmed successfully."));
+                ? "The appointment cancellation has been saved successfully."
+                : (status === "completed" ? "The appointment was marked completed successfully." : "The appointment confirmation was saved successfully."));
         }
         if (actionSuccessModal) {
             actionSuccessModal.classList.add("is-open");
@@ -4211,8 +4211,8 @@ include 'includes/header.php';
         <div class="admin-modal-card admin-success-card" role="dialog" aria-modal="true" aria-labelledby="adminActionSuccessTitle">
             <div class="admin-success-body">
                 <span class="admin-success-icon" aria-hidden="true">✓</span>
-                <h2 id="adminActionSuccessTitle">Appointment updated</h2>
-                <p id="adminActionSuccessText">Appointment status updated successfully.</p>
+                <h2 id="adminActionSuccessTitle">Appointment updated successfully</h2>
+                <p id="adminActionSuccessText" aria-live="polite">The appointment status was updated successfully.</p>
                 <button class="btn" type="button" id="adminActionSuccessOk">OK</button>
             </div>
         </div>

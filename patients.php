@@ -5340,8 +5340,8 @@ include 'includes/header.php';
         <section class="patient-appointment-dialog patient-cancel-success-dialog" role="dialog" aria-modal="true" aria-labelledby="patientCancelSuccessTitle">
             <div class="patient-cancel-success-body">
                 <span class="patient-cancel-success-icon" aria-hidden="true">✓</span>
-                <h3 id="patientCancelSuccessTitle">Appointment cancelled</h3>
-                <p>Your appointment has been cancelled successfully.</p>
+                <h3 id="patientCancelSuccessTitle">Appointment cancelled successfully</h3>
+                <p aria-live="polite">Your appointment cancellation has been saved successfully.</p>
                 <button type="button" class="patient-cancel-continue" id="patientCancelSuccessOk">OK</button>
             </div>
         </section>
