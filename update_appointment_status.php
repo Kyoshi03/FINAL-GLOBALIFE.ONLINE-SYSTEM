@@ -129,6 +129,9 @@ if ($new_status === 'cancelled') {
     if ($cancellationReason === '') {
         appointment_status_finish($conn, $returnUrl, $wantsJson, false, 'Please add a cancellation reason before cancelling the appointment.');
     }
+    if (!appointment_cancellation_reason_is_valid($cancellationReason, $userRole)) {
+        appointment_status_finish($conn, $returnUrl, $wantsJson, false, 'Please select a valid cancellation reason.');
+    }
     if (strlen($cancellationReason) > 500) {
         $cancellationReason = substr($cancellationReason, 0, 500);
     }

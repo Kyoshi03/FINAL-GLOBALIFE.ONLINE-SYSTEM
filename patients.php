@@ -330,6 +330,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['patient_action'] ?? '') ==
     } elseif ($cancellationReason === '') {
         $cancelMessage = 'Please add a cancellation reason.';
         $_SESSION['patient_dashboard_error'] = $cancelMessage;
+    } elseif (!appointment_cancellation_reason_is_valid($cancellationReason, 'patient')) {
+        $cancelMessage = 'Please select a valid cancellation reason.';
+        $_SESSION['patient_dashboard_error'] = $cancelMessage;
     } else {
         $cancelStatus = 'cancelled';
         $cancelledByRole = 'patient';
@@ -2167,7 +2170,8 @@ $additionalStyles = '
         display: block;
     }
 
-    .patient-cancel-reason textarea {
+    .patient-cancel-reason textarea,
+    .patient-cancel-reason select {
         width: 100%;
         min-height: 96px;
         resize: vertical;
@@ -2236,7 +2240,8 @@ $additionalStyles = '
         font-weight: 800;
     }
 
-    .patient-cancel-dialog .patient-cancel-reason textarea {
+    .patient-cancel-dialog .patient-cancel-reason textarea,
+    .patient-cancel-dialog .patient-cancel-reason select {
         min-height: 96px;
         border-color: #d4e6f5;
         border-radius: 8px;
@@ -2247,9 +2252,15 @@ $additionalStyles = '
         font-weight: 400;
     }
 
-    .patient-cancel-dialog .patient-cancel-reason textarea:focus {
+    .patient-cancel-dialog .patient-cancel-reason textarea:focus,
+    .patient-cancel-dialog .patient-cancel-reason select:focus {
         border-color: #0f7cc2;
         box-shadow: 0 0 0 4px rgba(15, 124, 194, .1);
+    }
+
+    .patient-cancel-dialog .patient-cancel-reason select {
+        min-height: 46px;
+        resize: none;
     }
 
     .patient-cancel-dialog .patient-cancel-reason textarea::placeholder {
@@ -5291,7 +5302,17 @@ include 'includes/header.php';
             </div>
             <div class="patient-cancel-reason">
                 <label for="patientCancelReason">Cancellation reason</label>
-                <textarea id="patientCancelReason" maxlength="500" placeholder="Add a short reason for cancelling this appointment"></textarea>
+                <select id="patientCancelReason" aria-label="Cancellation reason">
+                    <option value="" selected disabled>Select a reason</option>
+                    <option value="No longer available">No longer available</option>
+                    <option value="Schedule conflict">Schedule conflict</option>
+                    <option value="Medical emergency">Medical emergency</option>
+                    <option value="Transportation problem">Transportation problem</option>
+                    <option value="Financial reason">Financial reason</option>
+                    <option value="Booked by mistake">Booked by mistake</option>
+                    <option value="Found another clinic">Found another clinic</option>
+                    <option value="Other reason">Other reason</option>
+                </select>
                 <div class="patient-cancel-error" id="patientCancelReasonError">Please add a reason before continuing.</div>
             </div>
             <div class="patient-appointment-actions">

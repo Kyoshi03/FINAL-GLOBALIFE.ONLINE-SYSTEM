@@ -332,6 +332,37 @@ function appointment_init_cancellation_audit_schema(mysqli $conn): void {
     }
 }
 
+function appointment_cancellation_reasons(string $role): array {
+    if (strtolower(trim($role)) === 'patient') {
+        return [
+            'No longer available',
+            'Schedule conflict',
+            'Medical emergency',
+            'Transportation problem',
+            'Financial reason',
+            'Booked by mistake',
+            'Found another clinic',
+            'Other reason',
+        ];
+    }
+
+    return [
+        'Patient request',
+        'Doctor unavailable',
+        'Clinic closed',
+        'Schedule conflict',
+        'Duplicate appointment',
+        'Invalid appointment details',
+        'Service unavailable',
+        'Emergency or urgent closure',
+        'Other reason',
+    ];
+}
+
+function appointment_cancellation_reason_is_valid(string $reason, string $role): bool {
+    return in_array(trim($reason), appointment_cancellation_reasons($role), true);
+}
+
 function appointment_next_online_queue_number(mysqli $conn, string $date): string {
     $type = 'online';
     $stmt = $conn->prepare("SELECT queue_number FROM clinic_queue WHERE queue_date = ? AND queue_type = ? ORDER BY id DESC LIMIT 1");

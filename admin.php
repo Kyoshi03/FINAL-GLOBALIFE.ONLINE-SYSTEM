@@ -2396,7 +2396,8 @@ body {
     font-weight: 900;
 }
 
-.admin-cancel-reason textarea {
+.admin-cancel-reason textarea,
+.admin-cancel-reason select {
     width: 100%;
     min-height: 96px;
     resize: vertical;
@@ -2410,10 +2411,16 @@ body {
     box-sizing: border-box;
 }
 
-.admin-cancel-reason textarea:focus {
+.admin-cancel-reason textarea:focus,
+.admin-cancel-reason select:focus {
     border-color: #0f7cc2;
     box-shadow: 0 0 0 4px rgba(15, 124, 194, 0.1);
     outline: none;
+}
+
+.admin-cancel-reason select {
+    min-height: 46px;
+    resize: none;
 }
 
 .admin-cancel-reason small {
@@ -4094,11 +4101,14 @@ include 'includes/header.php';
                     <dt data-admin-detail-row="type">Booking type</dt><dd data-admin-detail-row="type" id="adminDetailType">None</dd>
                     <dt data-admin-detail-row="services">Services</dt><dd data-admin-detail-row="services" id="adminDetailServices">None</dd>
                     <dt>Status</dt><dd id="adminDetailStatus">None</dd>
-                    <dt data-admin-cancel-reason-detail>Cancellation reason</dt><dd data-admin-cancel-reason-detail id="adminDetailCancelReason">None</dd>
                 </dl>
                 <div class="detail-notes-box" data-admin-reschedule-reason-box style="display:none;">
                     <strong>Reschedule reason</strong>
                     <span id="adminDetailRescheduleReason">Not provided</span>
+                </div>
+                <div class="detail-notes-box" data-admin-cancel-reason-detail style="display:none;">
+                    <strong>Cancellation reason</strong>
+                    <span id="adminDetailCancelReason">None</span>
                 </div>
             </div>
             <div class="appointment-modal-actions">
@@ -4140,7 +4150,18 @@ include 'includes/header.php';
             </div>
             <div class="admin-cancel-reason" id="adminCancelReasonWrap">
                 <label for="adminCancelReason">Cancellation reason</label>
-                <textarea id="adminCancelReason" maxlength="500" placeholder="Add a short reason for cancelling this appointment"></textarea>
+                <select id="adminCancelReason" aria-label="Cancellation reason">
+                    <option value="" selected disabled>Select a reason</option>
+                    <option value="Patient request">Patient request</option>
+                    <option value="Doctor unavailable">Doctor unavailable</option>
+                    <option value="Clinic closed">Clinic closed</option>
+                    <option value="Schedule conflict">Schedule conflict</option>
+                    <option value="Duplicate appointment">Duplicate appointment</option>
+                    <option value="Invalid appointment details">Invalid appointment details</option>
+                    <option value="Service unavailable">Service unavailable</option>
+                    <option value="Emergency or urgent closure">Emergency or urgent closure</option>
+                    <option value="Other reason">Other reason</option>
+                </select>
                 <small id="adminCancelReasonError">Please add a reason before continuing.</small>
             </div>
             <div class="admin-modal-actions">

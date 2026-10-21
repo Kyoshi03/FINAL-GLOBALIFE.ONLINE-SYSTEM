@@ -1523,7 +1523,8 @@ select:focus {
     font-weight: 900;
 }
 
-.doctor-cancel-reason textarea {
+.doctor-cancel-reason textarea,
+.doctor-cancel-reason select {
     width: 100%;
     min-height: 96px;
     resize: vertical;
@@ -1537,10 +1538,16 @@ select:focus {
     box-sizing: border-box;
 }
 
-.doctor-cancel-reason textarea:focus {
+.doctor-cancel-reason textarea:focus,
+.doctor-cancel-reason select:focus {
     border-color: #0f7cc2;
     box-shadow: 0 0 0 4px rgba(15, 124, 194, 0.1);
     outline: none;
+}
+
+.doctor-cancel-reason select {
+    min-height: 46px;
+    resize: none;
 }
 
 .doctor-cancel-reason small {
@@ -3304,7 +3311,18 @@ include 'includes/header.php';
             </div>
             <div class="doctor-cancel-reason" id="doctorCancelReasonWrap">
                 <label for="doctorCancelReason">Cancellation reason</label>
-                <textarea id="doctorCancelReason" maxlength="500" placeholder="Add a short reason for cancelling this appointment"></textarea>
+                <select id="doctorCancelReason" aria-label="Cancellation reason">
+                    <option value="" selected disabled>Select a reason</option>
+                    <option value="Patient request">Patient request</option>
+                    <option value="Doctor unavailable">Doctor unavailable</option>
+                    <option value="Clinic closed">Clinic closed</option>
+                    <option value="Schedule conflict">Schedule conflict</option>
+                    <option value="Duplicate appointment">Duplicate appointment</option>
+                    <option value="Invalid appointment details">Invalid appointment details</option>
+                    <option value="Service unavailable">Service unavailable</option>
+                    <option value="Emergency or urgent closure">Emergency or urgent closure</option>
+                    <option value="Other reason">Other reason</option>
+                </select>
                 <small id="doctorCancelReasonError">Please add a reason before continuing.</small>
             </div>
             <div class="doctor-confirm-actions">

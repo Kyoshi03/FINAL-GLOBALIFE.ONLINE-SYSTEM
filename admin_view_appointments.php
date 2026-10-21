@@ -1101,7 +1101,8 @@ $additionalStyles = patientAvatarStyles() . '
     .cancel-reason-field { display:none; padding: 0 22px 4px; }
     .cancel-reason-field.is-open { display:block; }
     .cancel-reason-field label { display:block; margin-bottom: 8px; color:#10233f; font-weight:800; }
-    .cancel-reason-field textarea {
+    .cancel-reason-field textarea,
+    .cancel-reason-field select {
         width:100%;
         min-height:96px;
         resize:vertical;
@@ -1114,7 +1115,9 @@ $additionalStyles = patientAvatarStyles() . '
         box-sizing:border-box;
         background:#fbfdff;
     }
-    .cancel-reason-field textarea:focus { border-color:#0f7cc2; box-shadow:0 0 0 4px rgba(15,124,194,.1); outline:none; }
+    .cancel-reason-field textarea:focus,
+    .cancel-reason-field select:focus { border-color:#0f7cc2; box-shadow:0 0 0 4px rgba(15,124,194,.1); outline:none; }
+    .cancel-reason-field select { min-height:46px; resize:none; }
     .cancel-reason-error { display:none; margin-top:7px; color:#b4232d; font-size:.86rem; font-weight:700; }
     .cancel-reason-error.is-open { display:block; }
     .appointment-modal-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 0 24px 24px; }
@@ -2227,7 +2230,18 @@ include __DIR__ . '/includes/header.php';
         </div>
         <div class="cancel-reason-field" id="statusCancelReasonWrap">
             <label for="statusCancelReason">Cancellation reason</label>
-            <textarea id="statusCancelReason" maxlength="500" placeholder="Add a short reason for cancelling this appointment"></textarea>
+            <select id="statusCancelReason" aria-label="Cancellation reason">
+                <option value="" selected disabled>Select a reason</option>
+                <option value="Patient request">Patient request</option>
+                <option value="Doctor unavailable">Doctor unavailable</option>
+                <option value="Clinic closed">Clinic closed</option>
+                <option value="Schedule conflict">Schedule conflict</option>
+                <option value="Duplicate appointment">Duplicate appointment</option>
+                <option value="Invalid appointment details">Invalid appointment details</option>
+                <option value="Service unavailable">Service unavailable</option>
+                <option value="Emergency or urgent closure">Emergency or urgent closure</option>
+                <option value="Other reason">Other reason</option>
+            </select>
             <div class="cancel-reason-error" id="statusCancelReasonError">Please add a reason before continuing.</div>
         </div>
         <div class="appointment-modal-actions" style="padding-top:20px;">
