@@ -376,6 +376,36 @@ $additionalStyles = '
     .rpr-dob-picker {
         position: relative;
     }
+    .rpr-age-status {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+    }
+    .rpr-age-status[hidden] {
+        display: none;
+    }
+    .rpr-age-display,
+    .rpr-senior-display {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        box-sizing: border-box;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 800;
+    }
+    .rpr-age-display {
+        background: #48cae4;
+        color: #fff;
+    }
+    .rpr-senior-display {
+        background: #eee7ff;
+        color: #5b3a91;
+        letter-spacing: 0.04em;
+    }
     .rpr-dob-picker-button {
         width: 100%;
         min-height: 50px;
@@ -1153,6 +1183,10 @@ include 'includes/header.php';
                                         <div class="rpr-dob-days" id="rprDobDays"></div>
                                     </div>
                                 </div>
+                                <div class="rpr-age-status" id="rprAgeStatus" hidden aria-live="polite">
+                                    <span class="rpr-age-display" id="rprAgeDisplay"></span>
+                                    <span class="rpr-senior-display" id="rprSeniorDisplay" hidden>SENIOR</span>
+                                </div>
                                 <span class="field-hint">Must be at least 18 years old.</span>
                             </div>
                         </div>
@@ -1481,6 +1515,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const dobDays = document.getElementById('rprDobDays');
     const dobPreviousMonth = document.getElementById('rprDobPreviousMonth');
     const dobNextMonth = document.getElementById('rprDobNextMonth');
+    const rprAgeStatus = document.getElementById('rprAgeStatus');
+    const rprAgeDisplay = document.getElementById('rprAgeDisplay');
+    const rprSeniorDisplay = document.getElementById('rprSeniorDisplay');
 
     function parseRprYmd(value) {
         const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
@@ -1515,19 +1552,38 @@ document.addEventListener('DOMContentLoaded', function () {
         selectedBirthDate = null;
     }
 
-    function updateBirthDateButton() {
-        if (!dobPickerButton) return;
-        if (selectedBirthDate) {
-            dobPickerButton.textContent = selectedBirthDate.toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric'
-            });
-            dobPickerButton.classList.remove('placeholder');
-        } else {
-            dobPickerButton.textContent = 'Select date of birth';
-            dobPickerButton.classList.add('placeholder');
+    function updateRprAgeStatus() {
+        if (!rprAgeStatus || !rprAgeDisplay || !rprSeniorDisplay || !selectedBirthDate) {
+            if (rprAgeStatus) rprAgeStatus.hidden = true;
+            if (rprSeniorDisplay) rprSeniorDisplay.hidden = true;
+            return;
         }
+        const today = new Date();
+        let age = today.getFullYear() - selectedBirthDate.getFullYear();
+        const monthDiff = today.getMonth() - selectedBirthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < selectedBirthDate.getDate())) {
+            age -= 1;
+        }
+        rprAgeDisplay.textContent = age + ' years old';
+        rprAgeStatus.hidden = false;
+        rprSeniorDisplay.hidden = age < 60;
+    }
+
+    function updateBirthDateButton() {
+        if (dobPickerButton) {
+            if (selectedBirthDate) {
+                dobPickerButton.textContent = selectedBirthDate.toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+                dobPickerButton.classList.remove('placeholder');
+            } else {
+                dobPickerButton.textContent = 'Select date of birth';
+                dobPickerButton.classList.add('placeholder');
+            }
+        }
+        updateRprAgeStatus();
     }
 
     function renderBirthCalendar() {
