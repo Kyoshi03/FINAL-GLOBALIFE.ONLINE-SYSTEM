@@ -10,6 +10,9 @@ require_once 'includes/sms.php';
 require_once 'includes/user_registration.php';
 require_once 'includes/notification_settings.php';
 require_once 'includes/admin_notifications.php';
+require_once 'includes/pwd_id.php';
+
+pwd_id_cleanup_old_pending_files();
 
 if (empty($_SESSION['pending_patient_registration']['data'])) {
     header('Location: register_patient.php');
@@ -42,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
     if ($action === 'cancel') {
+        pwd_id_cleanup_pending_file($pending['data']['pwd_id_pending_path'] ?? null);
         unset($_SESSION['pending_patient_registration']);
         header('Location: register_patient.php' . ($isVerificationModal ? '?modal=1' : ''));
         exit();
@@ -101,14 +105,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $email = strtolower(trim((string) ($patient['email'] ?? '')));
             $emailForInsert = $email === '' ? null : strtolower($email);
             $phoneForCheck = (string) ($patient['phone'] ?? '');
+            $pwdType = trim((string) ($patient['pwd_type'] ?? ''));
+            $pwdDetails = trim((string) ($patient['pwd_details'] ?? ''));
+            $pwdPendingPath = trim((string) ($patient['pwd_id_pending_path'] ?? ''));
 
             $exists = clinic_find_duplicate_user($conn, $username, $email, $phoneForCheck);
 
             if ($exists) {
+                pwd_id_cleanup_pending_file($pwdPendingPath);
                 $conn->close();
                 unset($_SESSION['pending_patient_registration']);
                 $error = clinic_duplicate_user_message($exists, $username, $email, $phoneForCheck);
             } else {
+                if (!pwd_disability_type_is_valid($pwdType)
+                    || ($pwdType === 'Other (please specify)' && $pwdDetails === '')
+                    || ($pwdType !== '' && pwd_id_file_path($pwdPendingPath) === null)
+                ) {
+                    pwd_id_cleanup_pending_file($pwdPendingPath);
+                    $conn->close();
+                    unset($_SESSION['pending_patient_registration']);
+                    $error = 'The PWD information is incomplete. Please return to registration and upload the PWD ID again.';
+                } else {
                 $passwordHash = (string) $patient['password'];
                 $displayName = (string) $patient['display_name'];
                 $firstName = (string) ($patient['first_name'] ?? '');
@@ -130,12 +147,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $insert = $conn->prepare(
                     'INSERT INTO users (
                         username, password, first_name, middle_name, last_name, suffix, role, email, phone, gender,
-                        date_of_birth, age, civil_status, address, barangay, city,
+                        date_of_birth, age, civil_status, pwd_type, pwd_details, pwd_id_path, address, barangay, city,
                         emergency_contact_name, emergency_contact_relationship,
                         emergency_contact_number
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
                 );
-                $bindTypes = str_repeat('s', 11) . 'i' . str_repeat('s', 7);
+                $pwdIdPath = $pwdType === '' ? null : $pwdPendingPath;
+                $bindTypes = str_repeat('s', 11) . 'i' . str_repeat('s', 10);
                 $insert->bind_param(
                     $bindTypes,
                     $username,
@@ -151,6 +169,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $dateOfBirth,
                     $age,
                     $civilStatus,
+                    $pwdType,
+                    $pwdDetails,
+                    $pwdIdPath,
                     $address,
                     $barangay,
                     $city,
@@ -163,7 +184,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $newPatientId = $created ? (int) $insert->insert_id : 0;
                 $insert->close();
 
+                if ($created && $pwdType !== '') {
+                    $promotedPwdPath = pwd_id_promote_pending_file($pwdPendingPath);
+                    if ($promotedPwdPath === null) {
+                        $deleteCreated = $conn->prepare("DELETE FROM users WHERE id = ? AND role = 'patient'");
+                        if ($deleteCreated) {
+                            $deleteCreated->bind_param('i', $newPatientId);
+                            $deleteCreated->execute();
+                            $deleteCreated->close();
+                        }
+                        $created = false;
+                        $insertError = 0;
+                        $error = 'The PWD ID could not be finalized. Please return to registration and upload it again.';
+                    } else {
+                        $pathUpdate = $conn->prepare('UPDATE users SET pwd_id_path = ? WHERE id = ? AND role = \'patient\'');
+                        if (!$pathUpdate) {
+                            pwd_id_delete_file($promotedPwdPath);
+                            $created = false;
+                            $insertError = 0;
+                            $error = 'The PWD ID could not be linked to the account. Please try again.';
+                        } else {
+                            $pathUpdate->bind_param('si', $promotedPwdPath, $newPatientId);
+                            $pathUpdated = $pathUpdate->execute();
+                            $pathUpdate->close();
+                            if (!$pathUpdated) {
+                                pwd_id_delete_file($promotedPwdPath);
+                                $deleteCreated = $conn->prepare("DELETE FROM users WHERE id = ? AND role = 'patient'");
+                                if ($deleteCreated) {
+                                    $deleteCreated->bind_param('i', $newPatientId);
+                                    $deleteCreated->execute();
+                                    $deleteCreated->close();
+                                }
+                                $created = false;
+                                $insertError = 0;
+                                $error = 'The PWD ID could not be linked to the account. Please try again.';
+                            } else {
+                                $pwdIdPath = $promotedPwdPath;
+                            }
+                        }
+                    }
+                }
+
                 if (!$created) {
+                    pwd_id_cleanup_pending_file($pwdPendingPath);
                     $duplicateAfterInsert = $insertError === 1062
                         ? clinic_find_duplicate_user($conn, $username, $email, $phoneForCheck)
                         : null;
@@ -207,6 +270,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     unset($_SESSION['pending_patient_registration']);
                     header('Location: register_patient.php?created=1' . ($isVerificationModal ? '&modal=1' : ''));
                     exit();
+                }
                 }
             }
         }

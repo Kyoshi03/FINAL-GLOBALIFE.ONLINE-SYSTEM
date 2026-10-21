@@ -15,6 +15,7 @@ DirectoryIndex index.php
     RewriteRule ^\.git(?:/|$) - [R=404,L,NC]
     RewriteRule ^(?:config|logs)(?:/|$) - [R=404,L,NC]
     RewriteRule ^(?:storage|uploads)/patient_photos(?:/|$) - [R=404,L,NC]
+    RewriteRule ^storage/pwd_ids(?:/|$) - [R=404,L,NC]
     RewriteRule ^storage/(?:notification_settings\.json|appointment_capacity\.json|sessions(?:/|$)|.*\.lock$) - [R=404,L,NC]
 </IfModule>
 

@@ -9,6 +9,9 @@ require_once 'includes/mailer.php';
 require_once 'includes/sms.php';
 require_once 'includes/user_registration.php';
 require_once 'includes/notification_settings.php';
+require_once 'includes/pwd_id.php';
+
+pwd_id_cleanup_old_pending_files();
 
 $caviteLocationSource = require __DIR__ . '/includes/cavite_locations.php';
 $caviteLocations = [];
@@ -135,6 +138,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $gender = ucfirst(strtolower(trim((string) ($_POST['gender'] ?? ''))));
     $date_of_birth = $_POST['date_of_birth'] ?? '';
     $civil_status = trim($_POST['civil_status'] ?? '');
+    $pwd_type = trim((string) ($_POST['pwd_type'] ?? ''));
+    $pwd_details = trim((string) ($_POST['pwd_details'] ?? ''));
+    $pwd_id_upload = $_FILES['pwd_id'] ?? null;
     $phone = trim($_POST['phone'] ?? '');
     $email = strtolower(trim($_POST['email'] ?? ''));
     $verification_channel = strtolower(trim($_POST['verification_channel'] ?? 'email'));
@@ -152,6 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $emergency_contact_relationship = trim($_POST['emergency_contact_relationship'] ?? '');
     $emergency_contact_number = trim($_POST['emergency_contact_number'] ?? '');
     $agree_clinic_terms = !empty($_POST['agree_clinic_terms']);
+    $pwd_id_pending_path = null;
     $birthDateIsValid = false;
     
     // Calculate age from date of birth
@@ -254,6 +261,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please choose a valid sex.';
     } elseif (!in_array($civil_status, ['', 'Single', 'Married', 'Widowed', 'Separated'], true)) {
         $error = 'Please choose a valid civil status.';
+    } elseif (!pwd_disability_type_is_valid($pwd_type)) {
+        $error = 'Please choose a valid PWD type.';
+    } elseif ($pwd_type === 'Other (please specify)' && $pwd_details === '') {
+        $error = 'Please specify your type of disability.';
+    } elseif ($pwd_type === '' && $pwd_details !== '') {
+        $error = 'Clear the PWD details or select a disability type first.';
     } elseif (!in_array($verification_channel, ['email', 'sms'], true)) {
         $error = 'Please choose where you want to receive the verification code.';
     } elseif ($verification_channel === 'email' && $email === '') {
@@ -269,6 +282,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($passwordErrors)) {
             $showPasswordPopup = true;
             $passwordPopupMessage = implode(' ', $passwordErrors);
+        } else {
+        if ($pwd_type !== '') {
+            $pwdUploadValidation = pwd_id_validate_upload($pwd_id_upload);
+            if (!$pwdUploadValidation['ok']) {
+                $error = (string) ($pwdUploadValidation['error'] ?? 'Please upload a valid PWD ID.');
+            } else {
+                $pwd_id_pending_path = pwd_id_store_uploaded_file(
+                    $pwd_id_upload,
+                    (string) ($pwdUploadValidation['extension'] ?? 'jpg')
+                );
+                if ($pwd_id_pending_path === null) {
+                    $error = 'The PWD ID could not be saved. Please choose the image again.';
+                }
+            }
+        }
+
+        if ($error !== '') {
+            // Keep the form values for correction; no account is created yet.
         } else {
         $conn = getDBConnection();
         
@@ -308,6 +339,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'date_of_birth' => $date_of_birth,
                         'age' => $age,
                         'civil_status' => $civil_status,
+                        'pwd_type' => $pwd_type,
+                        'pwd_details' => $pwd_type === 'Other (please specify)' ? $pwd_details : '',
+                        'pwd_id_pending_path' => $pwd_id_pending_path,
                         'address' => $full_address,
                         'barangay' => $barangay,
                         'city' => $city,
@@ -335,6 +369,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     : clinic_notification_disabled_result('Account verification');
 
                 if (!$sent['ok']) {
+                    pwd_id_cleanup_pending_file($pwd_id_pending_path);
                     unset($_SESSION['pending_patient_registration']);
                     $error = $sent['error'];
                 } else {
@@ -344,8 +379,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     exit();
                 }
             }
+
+        if ($error !== '' && $pwd_id_pending_path !== null) {
+            pwd_id_cleanup_pending_file($pwd_id_pending_path);
+        }
         
         $conn->close();
+        }
         }
     }
 }
@@ -975,8 +1015,94 @@ $additionalStyles = '
     .has-field-error input,
     .has-field-error select,
     .has-field-error .input-wrapper,
-    .has-field-error .dob-picker-button {
+    .has-field-error .dob-picker-button,
+    .has-field-error .pwd-upload-control {
         border-color: #c92a2a !important;
+    }
+    .pwd-clear-button,
+    .pwd-remove-button {
+        border: 0;
+        background: transparent;
+        color: #0077b6;
+        cursor: pointer;
+        font: inherit;
+        font-size: .78rem;
+        font-weight: 700;
+        padding: 7px 0 0;
+        text-decoration: underline;
+    }
+    .pwd-upload-group {
+        margin-top: 2px;
+    }
+    .pwd-upload-control {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 52px;
+        padding: 8px 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        background: #f8f9fa;
+        box-sizing: border-box;
+    }
+    .pwd-upload-control:focus-within {
+        border-color: #48cae4;
+        box-shadow: 0 0 0 3px rgba(72, 202, 228, .14);
+    }
+    .pwd-upload-control input[type="file"] {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+    .pwd-file-button {
+        flex: 0 0 auto;
+        padding: 9px 14px;
+        border: 1px solid #b8d8e7;
+        border-radius: 8px;
+        background: #eef8fc;
+        color: #006da8;
+        cursor: pointer;
+        font-size: .82rem;
+        font-weight: 700;
+        letter-spacing: 0;
+        margin: 0;
+    }
+    .pwd-file-button:hover {
+        background: #e1f4fa;
+    }
+    .pwd-file-name {
+        min-width: 0;
+        overflow: hidden;
+        color: #6c7a83;
+        font-size: .84rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .pwd-id-preview {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        margin-top: 12px;
+        padding: 10px;
+        border: 1px solid #cfe5ef;
+        border-radius: 10px;
+        background: #f8fcfe;
+    }
+    .pwd-id-preview img {
+        display: block;
+        width: min(100%, 220px);
+        max-height: 140px;
+        border-radius: 7px;
+        object-fit: contain;
+        background: #fff;
+    }
+    .pwd-remove-button {
+        padding-top: 3px;
+        text-decoration: none;
     }
     .verification-choice {
         margin-top: 16px;
@@ -1394,6 +1520,17 @@ $additionalStyles = '
         .name-grid {
             grid-template-columns: 1fr;
         }
+        .pwd-upload-control {
+            align-items: stretch;
+            flex-direction: column;
+        }
+        .pwd-file-button,
+        .pwd-file-name {
+            text-align: center;
+        }
+        .pwd-id-preview {
+            flex-direction: column;
+        }
         .dob-calendar {
             width: calc(100vw - 32px);
             max-width: 420px;
@@ -1533,7 +1670,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
             <?php endif; ?>
             
             
-            <form method="POST" action="register_patient.php<?php echo $isRegistrationModal ? '?modal=1' : ''; ?>" id="registerForm" novalidate>
+            <form method="POST" action="register_patient.php<?php echo $isRegistrationModal ? '?modal=1' : ''; ?>" id="registerForm" enctype="multipart/form-data" novalidate>
                 <?php echo clinic_csrf_field(); ?>
                 <input type="hidden" name="registration_source" value="<?php echo htmlspecialchars($registrationSource); ?>">
                 <?php if ($isRegistrationModal): ?>
@@ -1687,6 +1824,53 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                                 </select>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="form-row pwd-form-row">
+                        <div class="form-group">
+                            <label for="pwd_type">PWD <span class="optional">(Optional)</span></label>
+                            <div class="input-wrapper">
+                                <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                    <circle cx="12" cy="5" r="2.5" stroke-width="2" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 21v-3.5a3.5 3.5 0 013.5-3.5h7a3.5 3.5 0 013.5 3.5V21M12 10v4" />
+                                </svg>
+                                <select id="pwd_type" name="pwd_type" aria-describedby="pwdTypeHint">
+                                    <option value=""<?php echo (!$showSuccessPopup && trim((string) ($_POST['pwd_type'] ?? '')) === '') ? ' selected' : ''; ?>>Select type of disability</option>
+                                    <?php foreach (pwd_disability_options() as $pwdOption): ?>
+                                        <option value="<?php echo htmlspecialchars($pwdOption, ENT_QUOTES, 'UTF-8'); ?>"<?php echo (!$showSuccessPopup && (string) ($_POST['pwd_type'] ?? '') === $pwdOption) ? ' selected' : ''; ?>><?php echo htmlspecialchars($pwdOption); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <button type="button" class="pwd-clear-button" id="pwdClearSelection" hidden>Clear PWD selection</button>
+                            <span class="field-hint" id="pwdTypeHint">Optional. Leave this blank if the patient does not have a disability.</span>
+                            <span class="field-error" id="pwdTypeError" role="alert"></span>
+                        </div>
+
+                        <div class="form-group" id="pwdDetailsGroup" hidden>
+                            <label for="pwd_details">Additional Details <span class="required-mark" id="pwdDetailsRequiredMark" hidden>*</span></label>
+                            <div class="input-wrapper">
+                                <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h8M8 14h5m-9 6 2.5-3.5A8 8 0 1112 20a8 8 0 01-5.5-2L4 20z" />
+                                </svg>
+                                <input type="text" id="pwd_details" name="pwd_details" maxlength="255" placeholder="Please specify your type of disability." value="<?php echo (!$showSuccessPopup ? htmlspecialchars((string) ($_POST['pwd_details'] ?? '')) : ''); ?>" aria-describedby="pwdDetailsError">
+                            </div>
+                            <span class="field-error" id="pwdDetailsError" role="alert"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group pwd-upload-group" id="pwdIdGroup" hidden>
+                        <label for="pwd_id">Upload PWD ID <span class="required-mark">(Required)</span></label>
+                        <div class="pwd-upload-control">
+                            <input type="file" id="pwd_id" name="pwd_id" accept=".jpg,.jpeg,.png,image/jpeg,image/png" aria-describedby="pwdIdHint pwdIdError">
+                            <label class="pwd-file-button" for="pwd_id">Choose or replace image</label>
+                            <span class="pwd-file-name" id="pwdFileName">No image selected</span>
+                        </div>
+                        <span class="field-hint" id="pwdIdHint">JPG, JPEG, or PNG only, up to 5 MB.</span>
+                        <div class="pwd-id-preview" id="pwdIdPreviewWrap" hidden>
+                            <img id="pwdIdPreview" alt="PWD ID preview">
+                            <button type="button" class="pwd-remove-button" id="pwdRemoveImage">Remove image</button>
+                        </div>
+                        <span class="field-error" id="pwdIdError" role="alert"></span>
                     </div>
                 </div>
                 
@@ -2243,6 +2427,18 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
             const ageInput = document.getElementById('age');
             const ageDisplay = document.getElementById('ageDisplay');
             const seniorDisplay = document.getElementById('seniorDisplay');
+            const pwdTypeInput = document.getElementById('pwd_type');
+            const pwdDetailsGroup = document.getElementById('pwdDetailsGroup');
+            const pwdDetailsInput = document.getElementById('pwd_details');
+            const pwdDetailsRequiredMark = document.getElementById('pwdDetailsRequiredMark');
+            const pwdIdGroup = document.getElementById('pwdIdGroup');
+            const pwdIdInput = document.getElementById('pwd_id');
+            const pwdFileName = document.getElementById('pwdFileName');
+            const pwdIdPreviewWrap = document.getElementById('pwdIdPreviewWrap');
+            const pwdIdPreview = document.getElementById('pwdIdPreview');
+            const pwdClearSelection = document.getElementById('pwdClearSelection');
+            const pwdRemoveImage = document.getElementById('pwdRemoveImage');
+            const pwdOtherValue = 'Other (please specify)';
 
             // Keep the fixed calendar outside transformed form containers so it remains viewport-centered.
             if (dobCalendar && dobCalendar.parentElement !== document.body) {
@@ -2744,6 +2940,109 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                 }
             }
 
+            function clearPwdImagePreview() {
+                if (pwdIdInput) pwdIdInput.value = '';
+                if (pwdFileName) pwdFileName.textContent = 'No image selected';
+                if (pwdIdPreview) pwdIdPreview.removeAttribute('src');
+                if (pwdIdPreviewWrap) pwdIdPreviewWrap.hidden = true;
+                clearInlineFieldError(pwdIdInput, 'pwdIdError');
+            }
+
+            function syncPwdFields() {
+                if (!pwdTypeInput) return;
+                const selectedType = pwdTypeInput.value.trim();
+                const hasType = selectedType !== '';
+                const isOther = selectedType === pwdOtherValue;
+
+                if (pwdDetailsGroup) pwdDetailsGroup.hidden = !isOther;
+                if (pwdDetailsInput) {
+                    pwdDetailsInput.disabled = !isOther;
+                    pwdDetailsInput.setAttribute('aria-required', isOther ? 'true' : 'false');
+                    if (!isOther) {
+                        pwdDetailsInput.value = '';
+                        clearInlineFieldError(pwdDetailsInput, 'pwdDetailsError');
+                    }
+                }
+                if (pwdDetailsRequiredMark) pwdDetailsRequiredMark.hidden = !isOther;
+                if (pwdIdGroup) pwdIdGroup.hidden = !hasType;
+                if (pwdClearSelection) pwdClearSelection.hidden = !hasType;
+
+                if (!hasType) {
+                    clearPwdImagePreview();
+                    clearInlineFieldError(pwdTypeInput, 'pwdTypeError');
+                }
+            }
+
+            function handlePwdIdChange() {
+                if (!pwdIdInput || !pwdIdInput.files || !pwdIdInput.files.length) {
+                    clearPwdImagePreview();
+                    return;
+                }
+
+                const file = pwdIdInput.files[0];
+                const allowedTypes = ['image/jpeg', 'image/png'];
+                const validType = allowedTypes.includes(file.type) || /\.(jpe?g|png)$/i.test(file.name);
+                if (!validType) {
+                    clearPwdImagePreview();
+                    setInlineFieldError(pwdIdInput, 'pwdIdError', 'PWD ID must be a JPG, JPEG, or PNG image.');
+                    return;
+                }
+                if (file.size > 5 * 1024 * 1024) {
+                    clearPwdImagePreview();
+                    setInlineFieldError(pwdIdInput, 'pwdIdError', 'PWD ID must be 5 MB or smaller.');
+                    return;
+                }
+
+                clearInlineFieldError(pwdIdInput, 'pwdIdError');
+                if (pwdFileName) pwdFileName.textContent = file.name;
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    if (pwdIdPreview) pwdIdPreview.src = event.target.result;
+                    if (pwdIdPreviewWrap) pwdIdPreviewWrap.hidden = false;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            function validatePwdSection() {
+                if (!pwdTypeInput || pwdTypeInput.value.trim() === '') return true;
+
+                if (pwdTypeInput.value === pwdOtherValue && (!pwdDetailsInput || pwdDetailsInput.value.trim() === '')) {
+                    setInlineFieldError(pwdDetailsInput, 'pwdDetailsError', 'Please specify your type of disability.');
+                    if (pwdDetailsInput) pwdDetailsInput.focus();
+                    return false;
+                }
+                if (!pwdIdInput || !pwdIdInput.files || !pwdIdInput.files.length) {
+                    setInlineFieldError(pwdIdInput, 'pwdIdError', 'Please upload a PWD ID before creating the account.');
+                    if (pwdIdInput) pwdIdInput.focus();
+                    return false;
+                }
+                return true;
+            }
+
+            if (pwdTypeInput) {
+                pwdTypeInput.addEventListener('change', syncPwdFields);
+            }
+            if (pwdDetailsInput) {
+                pwdDetailsInput.addEventListener('input', function () {
+                    if (pwdDetailsInput.value.trim() !== '') {
+                        clearInlineFieldError(pwdDetailsInput, 'pwdDetailsError');
+                    }
+                });
+            }
+            if (pwdIdInput) pwdIdInput.addEventListener('change', handlePwdIdChange);
+            if (pwdClearSelection) {
+                pwdClearSelection.addEventListener('click', function () {
+                    if (pwdTypeInput) {
+                        pwdTypeInput.value = '';
+                        pwdTypeInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        syncPwdFields();
+                        pwdTypeInput.focus();
+                    }
+                });
+            }
+            if (pwdRemoveImage) pwdRemoveImage.addEventListener('click', clearPwdImagePreview);
+            syncPwdFields();
+
             function populateCaviteBarangays(selectedBarangay) {
                 if (!cityInput || !barangayInput) return;
                 const city = cityInput.value;
@@ -2822,6 +3121,10 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                     e.preventDefault();
                     return false;
                 }
+                if (!validatePwdSection()) {
+                    e.preventDefault();
+                    return false;
+                }
 
                 calculateAge();
                 if (dateOfBirthInput.value > latestAllowedDobYmd) {
@@ -2871,6 +3174,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
             const patientDraftFieldNames = [
                 'first_name', 'middle_name', 'last_name', 'suffix', 'gender',
                 'date_of_birth', 'civil_status', 'phone', 'email',
+                'pwd_type', 'pwd_details',
                 'verification_channel', 'city', 'barangay', 'address',
                 'username', 'emergency_contact_name',
                 'emergency_contact_relationship', 'emergency_contact_number',
@@ -2955,6 +3259,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                 }
                 syncTermsSubmitState();
                 updateVerificationChoices();
+                syncPwdFields();
             }
 
             if (form) {

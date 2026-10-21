@@ -2,6 +2,7 @@ logs/*.log
 logs/*.lock
 uploads/patient_photos/
 storage/patient_photos/
+storage/pwd_ids/
 config/production.php
 config/mail.local.php
 config/mail.production.php
