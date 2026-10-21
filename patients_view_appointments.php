@@ -1557,7 +1557,7 @@ include __DIR__ . '/includes/header.php';
         </div>
     <?php endif; ?>
 
-    <?php if ($userRole === 'patient'): ?>
+    <?php if ($userRole === 'patient' && $patientAppointmentView === 'active'): ?>
         <section class="patient-appointments-heading" aria-labelledby="patientAppointmentsTitle">
             <div>
                 <h1 id="patientAppointmentsTitle"><?php echo $patientAppointmentView === 'active' ? 'My Appointments' : 'Appointment History'; ?></h1>
