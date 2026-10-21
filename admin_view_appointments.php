@@ -2119,7 +2119,7 @@ include __DIR__ . '/includes/header.php';
                             </td>
                             <td data-label="Actions">
                                 <div class="action-buttons <?php echo $canReviewReschedule ? 'reschedule-actions' : (((($userRole === 'admin' && ($appointment['booking_type'] ?? '') !== 'consultation') || ($isClinicalAppointmentsView && ($appointment['booking_type'] ?? '') === 'consultation')) && $appointment['status'] === 'pending') ? 'pending-actions' : ''); ?>">
-                                    <button type="button" class="btn btn-details" data-open-details>Details</button>
+                                    <button type="button" class="btn btn-details" data-open-details>View</button>
                                     <?php if ($canAdminReschedule): ?>
                                         <button type="button" class="btn btn-reschedule"
                                             data-open-reschedule
