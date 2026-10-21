@@ -584,8 +584,8 @@ $additionalStyles = '
         display: inline-block;
         margin-left: 8px;
         padding: 5px 12px;
-        background: #168a45;
-        color: #fff;
+        background: #eee7ff;
+        color: #5b3a91;
         border-radius: 20px;
         font-size: 0.8rem;
         font-weight: 800;
