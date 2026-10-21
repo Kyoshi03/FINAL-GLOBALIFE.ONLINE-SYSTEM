@@ -997,7 +997,7 @@ body {
 
 .trend-panel-head {
     align-items: center;
-    padding-top: 12px;
+    padding-top: 8px;
     margin-bottom: 20px;
 }
 
