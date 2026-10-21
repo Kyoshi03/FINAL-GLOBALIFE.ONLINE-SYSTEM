@@ -597,32 +597,6 @@ body {
     overflow: hidden;
 }
 
-.admin-brand-mark {
-    display: grid;
-    justify-items: center;
-    gap: 8px;
-    width: min(100%, 190px);
-    color: #0b4f80;
-    text-align: center;
-}
-
-.admin-brand-mark img {
-    display: block;
-    width: 112px;
-    height: 112px;
-    object-fit: contain;
-    border-radius: 50%;
-    filter: drop-shadow(0 10px 16px rgba(15, 124, 194, 0.18));
-}
-
-.admin-brand-mark span {
-    color: #0f7cc2;
-    font-size: 0.72rem;
-    font-weight: 950;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
 .clinic-illustration {
     width: 180px;
     height: 92px;
@@ -3745,9 +3719,12 @@ include 'includes/header.php';
             <p>Welcome back. Here is what needs attention in the clinic today.</p>
         </div>
         <aside class="hero-side" aria-label="Current admin">
-            <div class="admin-brand-mark">
-                <img src="globalife.png" alt="Globalife clinic logo">
-                <span>Admin Portal</span>
+            <div class="clinic-illustration" aria-hidden="true">
+                <span class="tube one"></span>
+                <span class="tube two"></span>
+                <span class="tube three"></span>
+                <span class="clipboard"></span>
+                <span class="leaf"></span>
             </div>
         </aside>
     </section>
