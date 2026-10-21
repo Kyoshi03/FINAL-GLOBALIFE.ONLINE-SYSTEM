@@ -96,9 +96,10 @@ function admin_trend_quarter_key(string $date): string {
 
 function admin_appointment_trend_series(mysqli $conn, string $period, DateTimeImmutable $fromDate, DateTimeImmutable $toDate): array {
     $period = strtolower($period);
+    $seriesPeriod = $period === 'weekly' ? 'daily' : $period;
     $points = [];
 
-    if ($period === 'daily') {
+    if ($seriesPeriod === 'daily') {
         for ($pointDate = $fromDate; $pointDate <= $toDate; $pointDate = $pointDate->modify('+1 day')) {
             $key = $pointDate->format('Y-m-d');
             $points[] = [
@@ -155,9 +156,9 @@ function admin_appointment_trend_series(mysqli $conn, string $period, DateTimeIm
             $result = $stmt->get_result();
             while ($row = $result->fetch_assoc()) {
                 $date = (string) ($row['appointment_date'] ?? '');
-                $key = $period === 'daily'
+                $key = $seriesPeriod === 'daily'
                     ? $date
-                    : ($period === 'monthly' ? substr($date, 0, 7) : admin_trend_quarter_key($date));
+                    : ($seriesPeriod === 'monthly' ? substr($date, 0, 7) : admin_trend_quarter_key($date));
                 if (array_key_exists($key, $values)) {
                     $values[$key] += (int) $row['total'];
                 }
@@ -458,20 +459,24 @@ $adminNotifications = fetch_admin_notifications($conn, $showAdminNotificationsPa
 $unreadNotificationCount = count_unread_admin_notifications($conn);
 
 $todayDate = new DateTimeImmutable($today);
-$requestedTrendPeriod = strtolower(trim((string) ($_GET['trend_period'] ?? 'daily')));
-$trendPeriod = in_array($requestedTrendPeriod, ['daily', 'monthly', 'quarterly'], true) ? $requestedTrendPeriod : 'daily';
+$requestedTrendPeriod = strtolower(trim((string) ($_GET['trend_period'] ?? 'weekly')));
+if ($requestedTrendPeriod === 'daily') {
+    $requestedTrendPeriod = 'weekly';
+}
+$trendPeriod = in_array($requestedTrendPeriod, ['weekly', 'monthly', 'quarterly'], true) ? $requestedTrendPeriod : 'weekly';
 $clearTrendRange = (string) ($_GET['clear_range'] ?? '') === '1';
 $currentMonthStart = $todayDate->modify('first day of this month');
 $currentQuarterMonth = (int) (floor(((int) $todayDate->format('n') - 1) / 3) * 3 + 1);
 $currentQuarterStart = $todayDate->setDate((int) $todayDate->format('Y'), $currentQuarterMonth, 1);
 $defaultTrendRanges = [
-    'daily' => [$todayDate->modify('-6 days'), $todayDate, 'Last 7 days'],
+    'weekly' => [$todayDate->modify('-6 days'), $todayDate, 'Last 7 days'],
     'monthly' => [$currentMonthStart->modify('-11 months'), $todayDate, 'Last 12 months'],
     'quarterly' => [$currentQuarterStart->modify('-9 months'), $todayDate, 'Last 4 quarters'],
 ];
 $requestedTrendFrom = trim((string) ($_GET['trend_from'] ?? ''));
 $requestedTrendTo = trim((string) ($_GET['trend_to'] ?? ''));
-$hasCustomTrendRange = !$clearTrendRange && admin_valid_trend_date($requestedTrendFrom) && admin_valid_trend_date($requestedTrendTo);
+$requestedCustomTrendRange = (string) ($_GET['custom_range'] ?? '') === '1';
+$hasCustomTrendRange = !$clearTrendRange && $requestedCustomTrendRange && admin_valid_trend_date($requestedTrendFrom) && admin_valid_trend_date($requestedTrendTo);
 if ($hasCustomTrendRange) {
     $trendFrom = new DateTimeImmutable($requestedTrendFrom);
     $trendTo = new DateTimeImmutable($requestedTrendTo);
@@ -495,7 +500,7 @@ $trendRangeLabel = $hasCustomTrendRange
     ? $trendFrom->format('F j, Y') . ' - ' . $trendTo->format('F j, Y')
     : $defaultTrendRanges[$trendPeriod][2];
 $trendData = [];
-foreach (['daily', 'monthly', 'quarterly'] as $period) {
+foreach (['weekly', 'monthly', 'quarterly'] as $period) {
     if ($hasCustomTrendRange) {
         $trendData[$period] = admin_appointment_trend_series($conn, $period, $trendFrom, $trendTo);
     } else {
@@ -503,13 +508,6 @@ foreach (['daily', 'monthly', 'quarterly'] as $period) {
         $trendData[$period] = admin_appointment_trend_series($conn, $period, $periodFrom, $periodTo);
         $trendData[$period]['range'] = $periodLabel;
     }
-}
-$trendCardData = $trendData;
-$trendCardSubtitles = [];
-foreach (['daily', 'monthly', 'quarterly'] as $period) {
-    $trendCardSubtitles[$period] = $hasCustomTrendRange
-        ? 'Appointments from ' . $trendRangeLabel
-        : $defaultTrendRanges[$period][2];
 }
 
 $conn->close();
@@ -1021,7 +1019,8 @@ body {
     white-space: nowrap;
 }
 
-.trend-date-form input {
+.trend-date-form input,
+.trend-date-form select {
     min-height: 36px;
     box-sizing: border-box;
     border: 1px solid #cfe1ee;
@@ -1033,10 +1032,17 @@ body {
     font-size: .82rem;
 }
 
-.trend-date-form input:focus {
+.trend-date-form input:focus,
+.trend-date-form select:focus {
     outline: none;
     border-color: #0f7cc2;
     box-shadow: 0 0 0 3px rgba(15, 124, 194, .10);
+}
+
+.trend-period-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .trend-meta {
@@ -2887,7 +2893,13 @@ body {
         flex-direction: column;
     }
 
-    .trend-date-form input {
+    .trend-period-control {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .trend-date-form input,
+    .trend-date-form select {
         width: 100%;
     }
 
@@ -2920,6 +2932,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var trendToInput = document.getElementById("adminTrendTo");
     var trendPeriodInput = document.getElementById("adminTrendPeriod");
     var trendClearInput = document.getElementById("adminTrendClearRange");
+    var trendCustomRangeInput = document.getElementById("adminTrendCustomRange");
     var trendScrollStorageKey = "adminAppointmentReportScrollY";
     function submitTrendForm() {
         try {
@@ -2943,7 +2956,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var range = document.getElementById("adminTrendRange");
     var total = document.getElementById("adminTrendTotal");
     var svgNamespace = "http://www.w3.org/2000/svg";
-    var periodNames = { daily: "Daily", monthly: "Monthly", quarterly: "Quarterly" };
+    var periodNames = { weekly: "Weekly", monthly: "Monthly", quarterly: "Quarterly" };
     var activePeriod = null;
     var rangeModal = document.getElementById("adminTrendRangeModal");
     var rangeCalendars = document.getElementById("adminTrendRangeCalendars");
@@ -3116,7 +3129,8 @@ document.addEventListener("DOMContentLoaded", function () {
         if (trendFromInput) trendFromInput.value = "";
         if (trendToInput) trendToInput.value = "";
         if (trendClearInput) trendClearInput.value = "1";
-        if (trendPeriodInput) trendPeriodInput.value = activePeriod || "daily";
+        if (trendCustomRangeInput) trendCustomRangeInput.value = "0";
+        if (trendPeriodInput) trendPeriodInput.value = activePeriod || "weekly";
         closeRangeModal(false);
         submitTrendForm();
     });
@@ -3128,8 +3142,13 @@ document.addEventListener("DOMContentLoaded", function () {
         trendFromInput.value = draftFrom;
         trendToInput.value = draftTo;
         if (trendClearInput) trendClearInput.value = "0";
-        if (trendPeriodInput) trendPeriodInput.value = activePeriod || "";
+        if (trendCustomRangeInput) trendCustomRangeInput.value = "1";
+        if (trendPeriodInput) trendPeriodInput.value = activePeriod || "weekly";
         closeRangeModal(false);
+        submitTrendForm();
+    });
+    if (trendPeriodInput) trendPeriodInput.addEventListener("change", function () {
+        if (trendClearInput) trendClearInput.value = "0";
         submitTrendForm();
     });
     document.addEventListener("keydown", function (event) { if (event.key === "Escape" && rangeModal && !rangeModal.hidden) closeRangeModal(true); });
@@ -3162,11 +3181,6 @@ document.addEventListener("DOMContentLoaded", function () {
         var totalValue = Number(dataset.total) || 0;
         var hasData = values.length > 0 && totalValue > 0;
 
-        document.querySelectorAll("[data-trend-card]").forEach(function (button) {
-            var active = button.getAttribute("data-trend-card") === period;
-            button.classList.toggle("is-active", active);
-            button.setAttribute("aria-pressed", active ? "true" : "false");
-        });
         if (description) description.textContent = periodNames[period] + " appointments for " + (dataset.range || "the selected period") + ".";
         if (range) range.textContent = dataset.range || "Selected period";
         if (total) total.textContent = "Total: " + totalValue + " appointment" + (totalValue === 1 ? "" : "s");
@@ -3231,28 +3245,11 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         while (chart.firstChild) chart.removeChild(chart.firstChild);
         if (emptyState) emptyState.style.display = "none";
-        document.querySelectorAll("[data-trend-card]").forEach(function (button) {
-            button.classList.remove("is-active");
-            button.setAttribute("aria-pressed", "false");
-        });
     }
 
-    document.querySelectorAll("[data-trend-card]").forEach(function (button) {
-        button.addEventListener("click", function () {
-            var period = button.getAttribute("data-trend-card");
-            if (activePeriod === period && trendPanel && !trendPanel.hidden) {
-                hideTrend();
-            } else {
-                renderTrend(period);
-            }
-        });
-    });
-    var initialPeriod = trendPeriodInput ? trendPeriodInput.value : "";
-    if (["daily", "monthly", "quarterly"].indexOf(initialPeriod) !== -1) {
-        renderTrend(initialPeriod);
-    } else {
-        hideTrend();
-    }
+    var initialPeriod = trendPeriodInput ? trendPeriodInput.value : "weekly";
+    if (["weekly", "monthly", "quarterly"].indexOf(initialPeriod) === -1) initialPeriod = "weekly";
+    renderTrend(initialPeriod);
 
     try {
         var savedScrollY = sessionStorage.getItem(trendScrollStorageKey);
@@ -3782,38 +3779,28 @@ include 'includes/header.php';
     <?php exit; ?>
     <?php endif; ?>
 
-    <section class="trend-metrics" aria-label="Appointment report periods">
-        <button class="trend-card" type="button" data-trend-card="daily" aria-pressed="false">
-            <span class="trend-card-label">Daily</span>
-            <strong><?php echo (int) ($trendCardData['daily']['total'] ?? 0); ?></strong>
-            <small><?php echo htmlspecialchars($trendCardSubtitles['daily']); ?></small>
-        </button>
-        <button class="trend-card" type="button" data-trend-card="monthly" aria-pressed="false">
-            <span class="trend-card-label">Monthly</span>
-            <strong><?php echo (int) ($trendCardData['monthly']['total'] ?? 0); ?></strong>
-            <small><?php echo htmlspecialchars($trendCardSubtitles['monthly']); ?></small>
-        </button>
-        <button class="trend-card" type="button" data-trend-card="quarterly" aria-pressed="false">
-            <span class="trend-card-label">Quarterly</span>
-            <strong><?php echo (int) ($trendCardData['quarterly']['total'] ?? 0); ?></strong>
-            <small><?php echo htmlspecialchars($trendCardSubtitles['quarterly']); ?></small>
-        </button>
-    </section>
-
-    <section class="panel trend-panel" aria-labelledby="adminTrendTitle" aria-hidden="true" hidden>
+    <section class="panel trend-panel" aria-labelledby="adminTrendTitle" aria-hidden="false">
         <div class="panel-head trend-panel-head">
             <div>
                 <h2 id="adminTrendTitle">Appointment Report</h2>
-                <p id="adminTrendDescription">Daily appointments for <?php echo htmlspecialchars($trendRangeLabel); ?>.</p>
+                <p id="adminTrendDescription"><?php echo htmlspecialchars(ucfirst($trendPeriod)); ?> appointments for <?php echo htmlspecialchars($trendRangeLabel); ?>.</p>
             </div>
             <div class="trend-panel-actions">
                 <form class="trend-date-form" method="get" id="adminTrendFilterForm">
+                    <div class="trend-period-control">
+                        <label for="adminTrendPeriod">Report Period</label>
+                        <select name="trend_period" id="adminTrendPeriod">
+                            <option value="weekly"<?php echo $trendPeriod === 'weekly' ? ' selected' : ''; ?>>Weekly</option>
+                            <option value="monthly"<?php echo $trendPeriod === 'monthly' ? ' selected' : ''; ?>>Monthly</option>
+                            <option value="quarterly"<?php echo $trendPeriod === 'quarterly' ? ' selected' : ''; ?>>Quarterly</option>
+                        </select>
+                    </div>
                     <div class="trend-range-control">
                         <button type="button" class="trend-range-open" id="adminTrendRangeOpen">Custom Date Range</button>
                         <button type="button" class="trend-range-clear" id="adminTrendRangeClear">Clear</button>
                     </div>
-                    <input type="hidden" name="trend_period" id="adminTrendPeriod" value="<?php echo htmlspecialchars((string) ($_GET['trend_period'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
                     <input type="hidden" name="clear_range" id="adminTrendClearRange" value="0">
+                    <input type="hidden" name="custom_range" id="adminTrendCustomRange" value="<?php echo $hasCustomTrendRange ? '1' : '0'; ?>">
                     <input type="hidden" name="trend_from" id="adminTrendFrom" value="<?php echo htmlspecialchars($trendFrom->format('Y-m-d'), ENT_QUOTES, 'UTF-8'); ?>">
                     <input type="hidden" name="trend_to" id="adminTrendTo" value="<?php echo htmlspecialchars($trendTo->format('Y-m-d'), ENT_QUOTES, 'UTF-8'); ?>">
                 </form>
@@ -3821,10 +3808,10 @@ include 'includes/header.php';
         </div>
         <div class="trend-meta">
             <span id="adminTrendRange"><?php echo htmlspecialchars($trendRangeLabel); ?></span>
-            <strong id="adminTrendTotal">Total: <?php echo (int) ($trendData['daily']['total'] ?? 0); ?> appointments</strong>
+            <strong id="adminTrendTotal">Total: <?php echo (int) ($trendData['weekly']['total'] ?? 0); ?> appointments</strong>
         </div>
         <div class="trend-chart-wrap">
-            <svg id="adminTrendChart" class="trend-chart" viewBox="0 0 920 320" role="img" aria-label="Daily appointment report chart"></svg>
+            <svg id="adminTrendChart" class="trend-chart" viewBox="0 0 920 320" role="img" aria-label="<?php echo htmlspecialchars(ucfirst($trendPeriod)); ?> appointment report chart"></svg>
             <div id="adminTrendEmpty" class="trend-empty">No appointments found for this period.</div>
         </div>
     </section>
