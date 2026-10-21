@@ -84,6 +84,13 @@ function clinic_csrf_guard_request(): void {
         return;
     }
 
+    // Login forms do not change authenticated data; allow them to work even
+    // when a page was left open long enough for its token to become stale.
+    $page = strtolower(basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')));
+    if (in_array($page, ['index.php', 'login.php', 'login_admin.php'], true)) {
+        return;
+    }
+
     $submittedToken = clinic_csrf_request_token();
     if (clinic_csrf_token_matches($submittedToken)) {
         return;
