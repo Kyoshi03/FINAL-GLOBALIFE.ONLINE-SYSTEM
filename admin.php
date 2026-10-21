@@ -991,18 +991,20 @@ body {
 }
 
 .trend-panel {
+    padding: 16px 20px 20px;
     margin-bottom: 18px;
 }
 
 .trend-panel-head {
     align-items: center;
+    margin-bottom: 12px;
 }
 
 .trend-panel-actions {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 12px;
+    gap: 8px;
     flex-wrap: wrap;
 }
 
@@ -1043,6 +1045,12 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 8px;
+}
+
+.trend-period-control select {
+    min-width: 140px;
+    min-height: 36px;
+    cursor: pointer;
 }
 
 .trend-meta {
