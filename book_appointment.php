@@ -957,18 +957,16 @@ $additionalStyles = '
     .progressive-panel .form-group:last-child { margin-bottom: 0; }
     .progressive-search-row { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(180px, .8fr); gap: 12px; margin-bottom: 14px; }
     .progressive-service-list { display: grid; gap: 8px; max-height: 300px; overflow-y: auto; padding: 4px; border: 1px solid #e1edf4; border-radius: 11px; background: #fff; }
-    .progressive-service-row { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 11px 12px; border: 1px solid #e3edf4; border-radius: 10px; background: #fff; }
+    .progressive-service-row { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 11px 12px; border: 1px solid #e3edf4; border-radius: 10px; background: #fff; }
     .progressive-service-row.is-hidden { display: none; }
-    .progressive-service-row > input[type="radio"], .progressive-service-row > input[type="checkbox"] { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+    .progressive-service-row > input[type="radio"], .progressive-service-row > input[type="checkbox"] { width: 19px; height: 19px; margin: 0; accent-color: #0878b5; cursor: pointer; }
+    .progressive-service-row > input[type="radio"]:focus-visible, .progressive-service-row > input[type="checkbox"]:focus-visible { outline: 3px solid rgba(8,120,181,.2); outline-offset: 2px; }
+    .progressive-service-row > input[type="radio"]:disabled, .progressive-service-row > input[type="checkbox"]:disabled { opacity: .45; cursor: not-allowed; }
     .progressive-service-row label { min-width: 0; cursor: pointer; }
     .progressive-service-row label strong { display: block; color: #073b4c; line-height: 1.3; overflow-wrap: anywhere; }
     .progressive-service-row label small { display: block; margin-top: 3px; color: #6a7e92; line-height: 1.35; }
     .progressive-service-row .price-tag { white-space: nowrap; }
     .progressive-service-actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: 10px; white-space: nowrap; }
-    .progressive-add-button { min-width: 58px; padding: 7px 10px; border: 1px solid #0878b5; border-radius: 8px; background: #fff; color: #0878b5; font: inherit; font-size: .78rem; font-weight: 900; cursor: pointer; }
-    .progressive-add-button:hover, .progressive-add-button:focus-visible { background: #eaf8fd; outline: none; }
-    .progressive-add-button:disabled { opacity: .45; cursor: not-allowed; }
-    .progressive-add-button.is-added { border-color: #16865b; background: #e5f7ee; color: #16865b; }
     .progressive-selection-summary { margin-top: 12px; padding: 13px 15px; border: 1px solid #d8e8f2; border-left: 4px solid #55b7dc; border-radius: 11px; background: #fff; color: #173b5b; }
     #progressivePackageSummary { border-color: #d8c7f1; border-left-color: #7c4dba; background: #f7f0ff; }
     #progressivePackageSummary .progressive-selection-header strong, #progressivePackageSummary .progressive-selection-total strong { color: #63399b; }
@@ -1077,8 +1075,6 @@ $additionalStyles = '
     .service-row:hover { background: #f5fbff; }
     .service-row.hidden { display: none !important; }
     .service-row label { flex: 1; cursor: pointer; min-width: 0; }
-    .btn-add-svc { flex-shrink: 0; padding: 6px 12px; font-size: 0.85rem; border-radius: 8px; border: 1px solid #0077b6; background: #fff; color: #0077b6; font-weight: 600; cursor: pointer; margin-top: 2px; }
-    .btn-add-svc:hover { background: #0077b6; color: #fff; }
     .price-cols { display: flex; gap: 12px; flex-shrink: 0; font-size: 0.85rem; color: #555; }
     .price-cols span { min-width: 72px; text-align: right; }
     .price-tag { color: #0077b6; font-weight: 700; white-space: nowrap; }
@@ -1311,7 +1307,7 @@ $additionalStyles = '
         .progressive-panel { padding: 13px; border-radius: 11px; }
         .progressive-search-row { grid-template-columns: 1fr; gap: 0; margin-bottom: 10px; }
         .progressive-service-list { max-height: 280px; }
-        .progressive-service-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 10px; }
+        .progressive-service-row { grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; padding: 10px; }
         .progressive-service-actions { grid-column: auto; justify-content: flex-end; width: auto; }
         .progressive-service-row .price-tag { grid-column: auto; }
         .progressive-selected-item { gap: 7px; padding: 8px; font-size: .8rem; }
@@ -1680,14 +1676,13 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                 <?php foreach ($services as $service): ?>
                                     <?php $serviceId = (int) $service['id']; ?>
                                     <div class="progressive-service-row" data-progressive-service data-search="<?php echo htmlspecialchars(strtolower($service['name'] . ' ' . $category . ' ' . ($service['included_tests'] ?? '')), ENT_QUOTES, 'UTF-8'); ?>" data-category="<?php echo htmlspecialchars((string) $category, ENT_QUOTES, 'UTF-8'); ?>">
-                                        <input type="radio" name="package_id" value="<?php echo $serviceId; ?>" id="progressivePackage<?php echo $serviceId; ?>" data-name="<?php echo htmlspecialchars((string) $service['name'], ENT_QUOTES, 'UTF-8'); ?>" data-price="<?php echo (float) $service['opd_price']; ?>" <?php echo count($bk['service_ids']) === 1 && (int) $bk['service_ids'][0] === $serviceId ? 'checked' : ''; ?> disabled>
+                                        <input type="checkbox" name="package_id" value="<?php echo $serviceId; ?>" id="progressivePackage<?php echo $serviceId; ?>" data-name="<?php echo htmlspecialchars((string) $service['name'], ENT_QUOTES, 'UTF-8'); ?>" data-price="<?php echo (float) $service['opd_price']; ?>" <?php echo count($bk['service_ids']) === 1 && (int) $bk['service_ids'][0] === $serviceId ? 'checked' : ''; ?> disabled>
                                         <label for="progressivePackage<?php echo $serviceId; ?>">
                                             <strong><?php echo htmlspecialchars((string) $service['name']); ?></strong>
                                             <?php if (!empty($service['included_tests'])): ?><small><?php echo htmlspecialchars((string) $service['included_tests']); ?></small><?php endif; ?>
                                         </label>
                                         <span class="progressive-service-actions">
                                             <span class="price-tag">PHP <?php echo number_format((float) $service['opd_price'], 0); ?></span>
-                                            <button type="button" class="progressive-add-button" data-add-package="progressivePackage<?php echo $serviceId; ?>">Add</button>
                                         </span>
                                     </div>
                                 <?php endforeach; ?>
@@ -1734,7 +1729,6 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                         <label for="progressiveIndividual<?php echo $serviceId; ?>"><strong><?php echo htmlspecialchars((string) $service['name']); ?></strong></label>
                                         <span class="progressive-service-actions">
                                             <span class="price-tag">PHP <?php echo number_format((float) $service['opd_price'], 0); ?></span>
-                                            <button type="button" class="progressive-add-button" data-add-service="progressiveIndividual<?php echo $serviceId; ?>">Add</button>
                                         </span>
                                     </div>
                                 <?php endforeach; ?>
@@ -2083,14 +2077,6 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         item.appendChild(remove);
                         individualSelectedItems.appendChild(item);
                     });
-                    document.querySelectorAll('[data-add-service], [data-add-package]').forEach(function(button) {
-                        var targetId = button.getAttribute('data-add-service') || button.getAttribute('data-add-package');
-                        var input = document.getElementById(targetId);
-                        var isAdded = !!(input && input.checked);
-                        button.textContent = isAdded ? 'Added' : 'Add';
-                        button.classList.toggle('is-added', isAdded);
-                        button.setAttribute('aria-pressed', isAdded ? 'true' : 'false');
-                    });
                 }
                 packageRemove.addEventListener('click', function() {
                     var selectedPackage = form.querySelector('input[name="package_id"]:checked');
@@ -2142,7 +2128,6 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     specialtySelect.disabled = type !== 'consultation';
                     document.querySelectorAll('input[name="package_id"]').forEach(function(input) { input.disabled = type !== 'package'; });
                     document.querySelectorAll('input[name="service_ids[]"]').forEach(function(input) { input.disabled = type !== 'individual'; });
-                    document.querySelectorAll('[data-add-service], [data-add-package]').forEach(function(button) { button.disabled = button.hasAttribute('data-add-package') ? type !== 'package' : type !== 'individual'; });
                     if (type !== 'consultation') {
                         doctorSelect.disabled = true;
                         doctorSelect.value = '';
@@ -2194,23 +2179,17 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 document.addEventListener('keydown', function(event) {
                     if (event.key === 'Escape' && calendarModal.classList.contains('is-open')) closeProgressiveCalendar();
                 });
-                form.querySelectorAll('input[name="package_id"], input[name="service_ids[]"]').forEach(function(input) { input.addEventListener('change', updatePanels); });
-                document.querySelectorAll('[data-add-service], [data-add-package]').forEach(function(button) {
-                    button.addEventListener('click', function() {
-                        var isPackage = button.hasAttribute('data-add-package');
-                        var targetId = button.getAttribute('data-add-service') || button.getAttribute('data-add-package');
-                        var input = document.getElementById(targetId);
-                        if (!input || input.disabled) return;
-                        if (isPackage) {
-                            var wasChecked = input.checked;
-                            form.querySelectorAll('input[name="package_id"]').forEach(function(packageInput) { packageInput.checked = false; });
-                            input.checked = !wasChecked;
-                        } else {
-                            input.checked = !input.checked;
+                form.querySelectorAll('input[name="package_id"]').forEach(function(input) {
+                    input.addEventListener('change', function() {
+                        if (input.checked) {
+                            form.querySelectorAll('input[name="package_id"]').forEach(function(packageInput) {
+                                if (packageInput !== input) packageInput.checked = false;
+                            });
                         }
                         updatePanels();
                     });
                 });
+                form.querySelectorAll('input[name="service_ids[]"]').forEach(function(input) { input.addEventListener('change', updatePanels); });
                 [['progressivePackageSearch', 'progressivePackageCategory', 'progressivePackageList'], ['progressiveIndividualSearch', 'progressiveIndividualCategory', 'progressiveIndividualList']].forEach(function(config) {
                     var search = document.getElementById(config[0]);
                     var category = document.getElementById(config[1]);
@@ -2321,7 +2300,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                         $needle = strtolower($svc['name'] . ' ' . $catName . ' ' . ($svc['included_tests'] ?? ''));
                                         ?>
                                         <div class="service-row pkg-row" data-search="<?php echo htmlspecialchars($needle, ENT_QUOTES, 'UTF-8'); ?>" data-cat="<?php echo htmlspecialchars($catName, ENT_QUOTES, 'UTF-8'); ?>">
-                                            <input type="radio" name="package_id" value="<?php echo $sid; ?>" id="pkg<?php echo $sid; ?>" class="pkg-radio"
+                                            <input type="checkbox" name="package_id" value="<?php echo $sid; ?>" id="pkg<?php echo $sid; ?>" class="pkg-cb"
                                                 data-name="<?php echo htmlspecialchars($svc['name'], ENT_QUOTES, 'UTF-8'); ?>"
                                                 data-opd="<?php echo (float) $svc['opd_price']; ?>"
                                                 <?php echo (count($bk['service_ids']) === 1 && (int) $bk['service_ids'][0] === $sid) ? 'checked' : ''; ?>>
@@ -2332,7 +2311,6 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                                 <?php endif; ?>
                                             </label>
                                             <span class="price-tag">PHP <?php echo number_format((float) $svc['opd_price'], 0); ?></span>
-                                            <button type="button" class="btn-add-svc pkg-add" data-target="pkg<?php echo $sid; ?>">Add</button>
                                         </div>
                                     <?php endforeach; ?>
                                 </div>
@@ -2382,7 +2360,6 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                             <div class="price-cols">
                                                 <span>PHP <?php echo number_format((float) $svc['opd_price'], 0); ?></span>
                                             </div>
-                                            <button type="button" class="btn-add-svc ind-add" data-target="t<?php echo $sid; ?>">Add</button>
                                         </div>
                                     <?php endforeach; ?>
                                 </div>
@@ -2468,7 +2445,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 var pkgCat = document.getElementById('pkgCatFilter');
                 if (pkgSearch && pkgCat) {
                     function updPkgSummary() {
-                        var r = document.querySelector('.pkg-radio:checked');
+                        var r = document.querySelector('.pkg-cb:checked');
                         var el = document.getElementById('pkgSummaryText');
                         if (!el) return;
                         if (!r) { el.textContent = 'No package selected'; return; }
@@ -2477,14 +2454,16 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     }
                     pkgSearch.addEventListener('input', function() { filterRows(pkgSearch, pkgCat, '.pkg-row', '.cat-block'); });
                     pkgCat.addEventListener('change', function() { filterRows(pkgSearch, pkgCat, '.pkg-row', '.cat-block'); });
-                    document.querySelectorAll('.pkg-add').forEach(function(btn) {
-                        btn.addEventListener('click', function() {
-                            var id = btn.getAttribute('data-target');
-                            var inp = document.getElementById(id);
-                            if (inp) { inp.checked = true; updPkgSummary(); }
+                    document.querySelectorAll('.pkg-cb').forEach(function(r) {
+                        r.addEventListener('change', function() {
+                            if (r.checked) {
+                                document.querySelectorAll('.pkg-cb').forEach(function(other) {
+                                    if (other !== r) other.checked = false;
+                                });
+                            }
+                            updPkgSummary();
                         });
                     });
-                    document.querySelectorAll('.pkg-radio').forEach(function(r) { r.addEventListener('change', updPkgSummary); });
                     updPkgSummary();
                 }
                 var indSearch = document.getElementById('indSearch');
@@ -2507,13 +2486,6 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     }
                     indSearch.addEventListener('input', function() { filterRows(indSearch, indCat, '.ind-row', '.cat-block'); });
                     indCat.addEventListener('change', function() { filterRows(indSearch, indCat, '.ind-row', '.cat-block'); });
-                    document.querySelectorAll('.ind-add').forEach(function(btn) {
-                        btn.addEventListener('click', function() {
-                            var id = btn.getAttribute('data-target');
-                            var inp = document.getElementById(id);
-                            if (inp) { inp.checked = !inp.checked; indTotals(); }
-                        });
-                    });
                     document.querySelectorAll('.ind-cb').forEach(function(cb) { cb.addEventListener('change', indTotals); });
                     indTotals();
                 }
