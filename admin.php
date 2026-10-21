@@ -990,14 +990,14 @@ body {
     font-size: .82rem;
 }
 
-.trend-panel {
-    padding: 0 24px 24px;
+.panel.trend-panel {
+    padding: 20px 24px 24px;
     margin-bottom: 18px;
 }
 
 .trend-panel-head {
     align-items: center;
-    padding-top: 32px;
+    padding-top: 12px;
     margin-bottom: 20px;
 }
 
@@ -2811,8 +2811,8 @@ body {
         padding: 18px 12px 36px;
     }
 
-    .trend-panel {
-        padding: 0 16px 16px;
+    .panel.trend-panel {
+        padding: 20px 16px 16px;
     }
 
     .admin-notifications-hero,
