@@ -25,6 +25,50 @@ function appointment_holiday_name(string $date): ?string {
     return $recurringHolidays[substr($date, 5)] ?? null;
 }
 
+function appointment_patient_has_active_date(mysqli $conn, int $patientId, string $date): bool {
+    if ($patientId <= 0 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        return false;
+    }
+
+    $stmt = $conn->prepare(
+        "SELECT id FROM appointments
+         WHERE patient_id = ? AND appointment_date = ? AND status <> 'cancelled'
+         LIMIT 1"
+    );
+    $stmt->bind_param('is', $patientId, $date);
+    $stmt->execute();
+    $hasAppointment = (bool) $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    return $hasAppointment;
+}
+
+/** @return array<string,bool> */
+function appointment_patient_booked_dates_between(mysqli $conn, int $patientId, string $dateFrom, string $dateTo): array {
+    $dates = [];
+    if ($patientId <= 0 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)) {
+        return $dates;
+    }
+
+    $stmt = $conn->prepare(
+        "SELECT DISTINCT appointment_date
+         FROM appointments
+         WHERE patient_id = ?
+           AND appointment_date >= ?
+           AND appointment_date < ?
+           AND status <> 'cancelled'"
+    );
+    $stmt->bind_param('iss', $patientId, $dateFrom, $dateTo);
+    $stmt->execute();
+    foreach ($stmt->get_result()->fetch_all(MYSQLI_ASSOC) as $row) {
+        $date = (string) ($row['appointment_date'] ?? '');
+        if ($date !== '') {
+            $dates[$date] = true;
+        }
+    }
+    $stmt->close();
+    return $dates;
+}
+
 function appointment_doctor_daily_limit(): int {
     return (int) appointment_capacity_settings()['doctor_limit'];
 }
@@ -628,6 +672,9 @@ function appointment_validate_payload(mysqli $conn, int $patientId, array $paylo
     if ($type !== 'consultation' && !appointment_clinic_is_open_at($date, $time)) {
         return ['ok' => false, 'error' => 'The clinic is open Monday to Saturday, from 8:00 AM to 5:00 PM. Please choose a schedule within clinic hours.'];
     }
+    if (appointment_patient_has_active_date($conn, $patientId, $date)) {
+        return ['ok' => false, 'error' => 'You already have an appointment on this date. Please choose another date.'];
+    }
 
     $serviceIds = [];
     $services = [];
@@ -696,20 +743,6 @@ function appointment_validate_payload(mysqli $conn, int $patientId, array $paylo
             ];
         }
         $doctorId = 0;
-    }
-
-    $duplicate = $conn->prepare(
-        "SELECT id FROM appointments
-         WHERE patient_id = ? AND appointment_date = ? AND appointment_time = ?
-           AND status != 'cancelled'
-         LIMIT 1"
-    );
-    $duplicate->bind_param('iss', $patientId, $date, $time);
-    $duplicate->execute();
-    $duplicateRow = $duplicate->get_result()->fetch_assoc();
-    $duplicate->close();
-    if ($duplicateRow) {
-        return ['ok' => false, 'error' => 'You already have an appointment at this date and time.'];
     }
 
     $userStmt = $conn->prepare("SELECT " . dbUsersNameExpression() . " AS full_name, email, phone FROM users WHERE id = ? AND role = 'patient' LIMIT 1");
@@ -1103,7 +1136,7 @@ function appointment_create_direct(mysqli $conn, int $patientId, array $payload)
 
     $conn->begin_transaction();
     $capacityLockName = '';
-    $patientSlotLockName = '';
+    $patientDateLockName = '';
     $queueNumber = '';
     try {
         $doctorId = $booking['doctor_id'];
@@ -1113,15 +1146,19 @@ function appointment_create_direct(mysqli $conn, int $patientId, array $payload)
         $total = (float) $validated['total'];
         $priceChannel = (string) $booking['price_channel'];
 
-        // Serialize repeated submissions for the same patient and exact slot.
-        $patientSlotLockName = 'patient-appointment-slot-' . $patientId . '-' . $appointmentDate . '-' . $appointmentTime;
+        // Serialize all submissions for the same patient and date, regardless of time or service.
+        $patientDateLockName = 'patient-appointment-date-' . $patientId . '-' . $appointmentDate;
         $patientLockStmt = $conn->prepare('SELECT GET_LOCK(?, 5) AS acquired');
-        $patientLockStmt->bind_param('s', $patientSlotLockName);
+        $patientLockStmt->bind_param('s', $patientDateLockName);
         $patientLockStmt->execute();
         $patientLockAcquired = (int) ($patientLockStmt->get_result()->fetch_assoc()['acquired'] ?? 0);
         $patientLockStmt->close();
         if ($patientLockAcquired !== 1) {
             throw new RuntimeException('The selected schedule is being updated. Please try again.');
+        }
+
+        if (appointment_patient_has_active_date($conn, $patientId, $appointmentDate)) {
+            throw new RuntimeException('You already have an appointment on this date. Please choose another date.');
         }
 
         if ($bookingType === 'consultation') {
@@ -1163,21 +1200,6 @@ function appointment_create_direct(mysqli $conn, int $patientId, array $payload)
                     . ' bookings). Please choose another date.'
                 );
             }
-        }
-
-        // Recheck after locking because the initial validation runs before the transaction.
-        $duplicate = $conn->prepare(
-            "SELECT id FROM appointments
-             WHERE patient_id = ? AND appointment_date = ? AND appointment_time = ?
-               AND status != 'cancelled'
-             LIMIT 1"
-        );
-        $duplicate->bind_param('iss', $patientId, $appointmentDate, $appointmentTime);
-        $duplicate->execute();
-        $duplicateRow = $duplicate->get_result()->fetch_assoc();
-        $duplicate->close();
-        if ($duplicateRow) {
-            throw new RuntimeException('You already have an appointment at this date and time.');
         }
 
         if ($doctorId === null) {
@@ -1279,9 +1301,9 @@ function appointment_create_direct(mysqli $conn, int $patientId, array $payload)
             $releaseStmt->execute();
             $releaseStmt->close();
         }
-        if ($patientSlotLockName !== '') {
+        if ($patientDateLockName !== '') {
             $releaseStmt = $conn->prepare('SELECT RELEASE_LOCK(?)');
-            $releaseStmt->bind_param('s', $patientSlotLockName);
+            $releaseStmt->bind_param('s', $patientDateLockName);
             $releaseStmt->execute();
             $releaseStmt->close();
         }
@@ -1293,9 +1315,9 @@ function appointment_create_direct(mysqli $conn, int $patientId, array $payload)
             $releaseStmt->execute();
             $releaseStmt->close();
         }
-        if ($patientSlotLockName !== '') {
+        if ($patientDateLockName !== '') {
             $releaseStmt = $conn->prepare('SELECT RELEASE_LOCK(?)');
-            $releaseStmt->bind_param('s', $patientSlotLockName);
+            $releaseStmt->bind_param('s', $patientDateLockName);
             $releaseStmt->execute();
             $releaseStmt->close();
         }

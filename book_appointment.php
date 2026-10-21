@@ -827,6 +827,12 @@ $calendarMonthEnd = (clone $calendarMonthStart)->modify('first day of next month
 $calendarPrevMonth = (clone $calendarMonthStart)->modify('-1 month')->format('Y-m');
 $calendarNextMonth = (clone $calendarMonthStart)->modify('+1 month')->format('Y-m');
 $calendarStartValue = $calendarMonthStart->format('Y-m-d');
+$calendarPatientBookedDates = appointment_patient_booked_dates_between(
+    $conn,
+    (int) ($currentUser['id'] ?? 0),
+    $calendarStartValue,
+    $calendarMonthEnd
+);
 $calendarDoctorSlotsByDow = [];
 for ($dow = 1; $dow <= 7; $dow++) {
     $calendarDoctorSlotsByDow[$dow] = [];
@@ -1027,10 +1033,15 @@ $additionalStyles = '
     .progressive-calendar-grid button.is-closed small { color: #9aa8b2; }
     .progressive-calendar-grid button:hover, .progressive-calendar-grid button:focus-visible { border-color: #0878b5; background: #eef8fd; outline: none; }
     .progressive-calendar-grid button.is-today { box-shadow: inset 0 0 0 2px #77c7e5; }
+    .progressive-calendar-grid button.is-patient-booked { border-color: #f2c58b; background: #fff4e3; color: #8b5a16; cursor: pointer; }
+    .progressive-calendar-grid button.is-patient-booked small { color: #a36a12; }
+    .progressive-calendar-grid button.is-patient-booked:hover, .progressive-calendar-grid button.is-patient-booked:focus-visible { border-color: #d99a43; background: #ffebc9; outline: none; }
     .progressive-calendar-grid button.is-selected { border-color: #0878b5; background: #0878b5; color: #fff; }
     .progressive-calendar-grid button:disabled { border-color: #edf2f5; background: #f7fafb; color: #9aa8b2; cursor: not-allowed; }
     .progressive-calendar-grid button.is-selected small { color: #dff6ff; }
     .progressive-calendar-help { margin: 12px 0 0; color: #607784; font-size: .83rem; line-height: 1.4; }
+    .progressive-calendar-warning { margin: 12px 0 0; padding: 10px 12px; border: 1px solid #f2c58b; border-radius: 9px; background: #fff4e3; color: #8b5a16; font-size: .83rem; font-weight: 800; line-height: 1.4; }
+    .progressive-calendar-warning[hidden] { display: none; }
     .progressive-calendar-actions { display: flex; flex: 0 0 auto; justify-content: flex-end; gap: 10px; padding: 12px 16px 16px; border-top: 1px solid #d8eaf3; background: #fff; }
     .progressive-calendar-cancel, .progressive-calendar-confirm { min-height: 42px; padding: 0 18px; border-radius: 9px; font: inherit; font-weight: 900; cursor: pointer; }
     .progressive-calendar-cancel { border: 1px solid #c9dce8; background: #fff; color: #44647a; }
@@ -1172,12 +1183,17 @@ $additionalStyles = '
     .cal-day.is-selected .cal-date-number { background: transparent; color: #0572d4; }
     .cal-day.is-fully-booked { background:#fffaf2; box-shadow:inset 0 3px 0 #d99b2b; }
     .cal-day.is-fully-booked .cal-date-number { background:#fff0d2; color:#8a5b12; }
+    .cal-day.is-patient-booked { background:#fff4e3; box-shadow:inset 0 3px 0 #d99a43; color:#8b5a16; }
+    .cal-day.is-patient-booked .cal-date-number { background:#ffebc9; color:#8b5a16; }
+    .cal-day.is-patient-booked:hover { background:#ffebc9; outline:2px solid #d99a43; outline-offset:-2px; }
     .cal-day.is-unavailable { background:#f8fafb; box-shadow:none; }
     .cal-day.is-unavailable .cal-date-number,
     .cal-day.is-closed .cal-date-number { background:transparent; color:#8290a2; }
     .cal-day:disabled { cursor:not-allowed; color:#8a99a3; background:#f8fafb; box-shadow:none; }
     .cal-day:disabled small { opacity: .82; }
     .cal-day.is-closed { background:#f8fafb; }
+    .calendar-booked-warning { margin: 12px 0 0; padding: 10px 12px; border: 1px solid #f2c58b; border-radius: 9px; background: #fff4e3; color: #8b5a16; font-size: .83rem; font-weight: 800; line-height: 1.4; }
+    .calendar-booked-warning[hidden] { display: none; }
     @media (max-width: 980px) { .mini-calendar-head { grid-template-columns:1fr; gap:14px; } }
     @media (max-width: 760px) {
         .booking-container { margin: 22px auto; padding: 24px 14px 148px; }
@@ -1789,6 +1805,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                                 <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
                                             </div>
                                             <div class="progressive-calendar-grid" id="progressiveCalendarGrid"></div>
+                                            <p class="progressive-calendar-warning" id="progressiveCalendarWarning" role="alert" hidden>You already have an appointment on this date. Please choose another date.</p>
                                             <p class="progressive-calendar-help" id="progressiveCalendarHelp">Choose an available date for your appointment.</p>
                                         </div>
                                         <div class="progressive-calendar-actions">
@@ -1835,6 +1852,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 var calendarMonth = document.getElementById('progressiveCalendarMonth');
                 var calendarGrid = document.getElementById('progressiveCalendarGrid');
                 var calendarHelp = document.getElementById('progressiveCalendarHelp');
+                var calendarWarning = document.getElementById('progressiveCalendarWarning');
                 var calendarSelected = document.getElementById('progressiveCalendarSelected');
                 var calendarSelectedStatus = document.getElementById('progressiveCalendarSelectedStatus');
                 var schedule = document.getElementById('progressiveSchedule');
@@ -1850,6 +1868,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     consultation: <?php echo json_encode($calendarConsultationDayCounts, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
                     doctorDayCounts: <?php echo json_encode($calendarDoctorDayCounts, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
                     doctorSlots: <?php echo json_encode($calendarDoctorSlotsByDow, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                    patientBookedDates: <?php echo json_encode($calendarPatientBookedDates, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
                     labLimit: <?php echo (int) $labDailyLimit; ?>,
                     ultrasoundLimit: <?php echo (int) $ultrasoundDailyLimit; ?>,
                     consultationLimit: <?php echo (int) $consultationDailyLimit; ?>,
@@ -1871,13 +1890,20 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 function isBookingCutoffPassed(date) {
                     return toIsoDate(date) === calendarToday && bookingCutoffPassedToday;
                 }
+                function isPatientBookedDate(iso) {
+                    return Object.prototype.hasOwnProperty.call(appointmentSlotData.patientBookedDates || {}, iso);
+                }
+                function setCalendarWarning(show) {
+                    if (calendarWarning) calendarWarning.hidden = !show;
+                }
                 function appointmentSlotInfo(date) {
                     var iso = toIsoDate(date);
+                    var patientBooked = isPatientBookedDate(iso);
                     if (iso < dateInput.min) {
-                        return { booked: 0, limit: 0, remaining: 0, open: false, full: false, label: 'Past', scheduleText: '' };
+                        return { booked: 0, limit: 0, remaining: 0, open: false, full: false, patientBooked: patientBooked, label: 'Past', scheduleText: '' };
                     }
                     if (isBookingCutoffPassed(date)) {
-                        return { booked: 0, limit: 0, remaining: 0, open: false, full: false, label: 'Booking closed after 5:00 PM', scheduleText: '' };
+                        return { booked: 0, limit: 0, remaining: 0, open: false, full: false, patientBooked: patientBooked, label: 'Booking closed after 5:00 PM', scheduleText: '' };
                     }
                     var phpDayOfWeek = date.getDay() === 0 ? 7 : date.getDay();
                     var type = typeSelect.value;
@@ -1909,11 +1935,11 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     }
                     var full = limit > 0 && booked >= limit;
                     if (full) label = 'Full';
-                    return { booked: booked, limit: limit, remaining: Math.max(0, limit - booked), open: open, full: full, label: label, scheduleText: scheduleText };
+                    return { booked: booked, limit: limit, remaining: Math.max(0, limit - booked), open: open, full: full, patientBooked: patientBooked, label: label, scheduleText: scheduleText };
                 }
                 function dateCanBeSelected(date) {
                     var iso = toIsoDate(date);
-                    if (iso < dateInput.min || isBookingCutoffPassed(date)) return false;
+                    if (iso < dateInput.min || isBookingCutoffPassed(date) || isPatientBookedDate(iso)) return false;
                     var slotInfo = appointmentSlotInfo(date);
                     return slotInfo.open && !slotInfo.full;
                 }
@@ -1924,6 +1950,10 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     var daysInMonth = new Date(year, month + 1, 0).getDate();
                     var todayMonth = new Date();
                     todayMonth.setDate(1);
+                    if (calendarDraftValue && isPatientBookedDate(calendarDraftValue)) {
+                        calendarDraftValue = '';
+                        calendarConfirm.disabled = true;
+                    }
                     calendarMonth.textContent = calendarViewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
                     calendarPrev.disabled = calendarViewDate <= todayMonth;
                     var selectedDate = fromIsoDate(calendarDraftValue);
@@ -1951,7 +1981,10 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         var dayNumber = document.createElement('span');
                         dayNumber.textContent = day;
                         var dayStatus = document.createElement('small');
-                        if (dateValue < dateInput.min) {
+                        if (slotInfo.patientBooked && dateValue >= dateInput.min) {
+                            dayStatus.textContent = 'Already booked';
+                            dayButton.title = 'You already have an appointment on this date.';
+                        } else if (dateValue < dateInput.min) {
                             dayStatus.textContent = 'Past';
                             dayButton.title = 'Past date';
                         } else if (isBookingCutoffPassed(date)) {
@@ -1968,15 +2001,25 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         dayButton.appendChild(dayNumber);
                         dayButton.appendChild(dayStatus);
                         dayButton.dataset.date = dateValue;
-                        dayButton.disabled = !dateCanBeSelected(date);
+                        dayButton.dataset.patientBooked = slotInfo.patientBooked ? '1' : '0';
+                        dayButton.disabled = !dateCanBeSelected(date) && !slotInfo.patientBooked;
                         dayButton.classList.toggle('is-open', slotInfo.open && !slotInfo.full);
                         dayButton.classList.toggle('is-full', slotInfo.full);
                         dayButton.classList.toggle('is-closed', !slotInfo.open);
+                        dayButton.classList.toggle('is-patient-booked', slotInfo.patientBooked && dateValue >= dateInput.min);
                         if (dateValue === toIsoDate(new Date())) dayButton.classList.add('is-today');
                         if (dateValue === calendarDraftValue) dayButton.classList.add('is-selected');
                         dayButton.addEventListener('click', function() {
+                            if (this.dataset.patientBooked === '1') {
+                                calendarDraftValue = '';
+                                calendarConfirm.disabled = true;
+                                setCalendarWarning(true);
+                                renderProgressiveCalendar();
+                                return;
+                            }
                             calendarDraftValue = this.dataset.date;
                             calendarConfirm.disabled = false;
+                            setCalendarWarning(false);
                             renderProgressiveCalendar();
                         });
                         calendarGrid.appendChild(dayButton);
@@ -1992,6 +2035,13 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 function openProgressiveCalendar() {
                     if (dateInput.disabled) return;
                     calendarDraftValue = dateInput.value || '';
+                    if (isPatientBookedDate(calendarDraftValue)) {
+                        dateInput.value = '';
+                        calendarDraftValue = '';
+                        setCalendarWarning(true);
+                    } else {
+                        setCalendarWarning(false);
+                    }
                     calendarConfirm.disabled = !calendarDraftValue;
                     var selectedDate = fromIsoDate(calendarDraftValue);
                     calendarViewDate = selectedDate || new Date();
@@ -2168,7 +2218,11 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                     renderProgressiveCalendar();
                 });
                 calendarConfirm.addEventListener('click', function() {
-                    if (!calendarDraftValue) return;
+                    if (!calendarDraftValue || isPatientBookedDate(calendarDraftValue)) {
+                        setCalendarWarning(true);
+                        calendarConfirm.disabled = true;
+                        return;
+                    }
                     dateInput.value = calendarDraftValue;
                     updateDateLabel();
                     closeProgressiveCalendar();
@@ -2710,6 +2764,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                 <?php for ($day = 1; $day <= $calendarDaysInMonth; $day++): ?>
                                     <?php
                                     $dateValue = $calendarMonthStart->format('Y-m-') . str_pad((string) $day, 2, '0', STR_PAD_LEFT);
+                                    $patientAlreadyBooked = isset($calendarPatientBookedDates[$dateValue]);
                                     $dateDayOfWeek = (int) date('N', strtotime($dateValue));
                                     $isConsultationSchedule = $bk['type'] === 'consultation';
                                     $isUltrasoundSchedule = $bk['type'] === 'ultrasound';
@@ -2777,13 +2832,17 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                     if ($isConsultationSchedule && !$doctorAvailable) {
                                         $classes[] = 'is-unavailable';
                                     }
-                                    $disabled = $dateValue < $calendarToday || $dateBookingCutoffPassed || ($isConsultationSchedule ? !$doctorAvailable : !$clinicOpen);
+                                    if ($patientAlreadyBooked && $dateValue >= $calendarToday) {
+                                        $classes[] = 'is-patient-booked';
+                                    }
+                                    $disabled = ($dateValue < $calendarToday || $dateBookingCutoffPassed || ($isConsultationSchedule ? !$doctorAvailable : !$clinicOpen)) && !($patientAlreadyBooked && $dateValue >= $calendarToday);
                                     ?>
                                     <button
                                         type="button"
                                         class="<?php echo implode(' ', $classes); ?>"
                                         data-date="<?php echo htmlspecialchars($dateValue); ?>"
-                                        data-selectable="<?php echo ($dateBookingCutoffPassed || !$clinicOpen || $capacityFull || ($isConsultationSchedule && !$doctorAvailable)) ? '0' : '1'; ?>"
+                                        data-selectable="<?php echo ($patientAlreadyBooked || $dateBookingCutoffPassed || !$clinicOpen || $capacityFull || ($isConsultationSchedule && !$doctorAvailable)) ? '0' : '1'; ?>"
+                                        data-patient-booked="<?php echo $patientAlreadyBooked ? '1' : '0'; ?>"
                                         data-capacity-date="<?php echo htmlspecialchars($dateValue); ?>"
                                         data-capacity-doctors="<?php echo htmlspecialchars(json_encode($capacityRows, JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8'); ?>"
                                         data-capacity-booked="<?php echo $capacityBooked; ?>"
@@ -2795,7 +2854,9 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                     >
                                         <span class="cal-date-number"><?php echo $day; ?></span>
                                         <div class="calendar-events">
-                                            <?php if ($clinicOpen && $dateValue >= $calendarToday): ?>
+                                            <?php if ($patientAlreadyBooked && $dateValue >= $calendarToday): ?>
+                                                <small class="patient-booked-event">Already booked</small>
+                                            <?php elseif ($clinicOpen && $dateValue >= $calendarToday): ?>
                                                 <small class="clinic-hours-event">
                                                     <span class="clinic-hours-label"><?php echo $bk['type'] === 'consultation' ? 'Doctor schedule' : 'Clinic open'; ?></span>
                                                     <?php if ($bk['type'] === 'consultation' && !empty($doctorSlots[0])): ?>
@@ -2820,6 +2881,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                                     </button>
                                 <?php endfor; ?>
                             </div>
+                            <p class="calendar-booked-warning" id="calendarBookedWarning" role="alert" hidden>You already have an appointment on this date. Please choose another date.</p>
                         </div>
                                 </div>
                                 <div class="mobile-calendar-dialog-actions">
@@ -2858,6 +2920,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                 var selectedDateText = document.getElementById('selectedDateText');
                 var selectedDateStatus = document.getElementById('selectedDateStatus');
                 var selectedDateSlots = document.getElementById('selectedDateSlots');
+                var calendarBookedWarning = document.getElementById('calendarBookedWarning');
                 var mobilePicker = document.getElementById('mobileCalendarModal');
                 var mobilePickerOpen = document.getElementById('mobileDatePickerOpen');
                 var mobilePickerClose = document.getElementById('mobileDatePickerClose');
@@ -2894,7 +2957,16 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         dateRequiredChoose.focus();
                     }
                 }
+                function setCalendarBookedWarning(show) {
+                    if (calendarBookedWarning) calendarBookedWarning.hidden = !show;
+                }
                 function updateView() {
+                    var currentDay = dateInp.value ? calendar.querySelector('.cal-day[data-date="' + dateInp.value + '"]') : null;
+                    if (currentDay && currentDay.getAttribute('data-patient-booked') === '1') {
+                        dateInp.value = '';
+                        currentDay = null;
+                        setCalendarBookedWarning(true);
+                    }
                     if (selectedDateText) {
                         selectedDateText.textContent = formatDateLabel(dateInp.value);
                     }
@@ -2920,6 +2992,12 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
 
                 calendar.querySelectorAll('.cal-day').forEach(function(day) {
                     day.addEventListener('click', function() {
+                        if (day.getAttribute('data-patient-booked') === '1') {
+                            dateInp.value = '';
+                            setCalendarBookedWarning(true);
+                            updateView();
+                            return;
+                        }
                         if (day.disabled) return;
                         if (
                             typeof window.openDoctorCapacity === 'function'
@@ -2933,6 +3011,7 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                             return;
                         }
                         dateInp.value = day.getAttribute('data-date') || '';
+                        setCalendarBookedWarning(false);
                         selectedDateCard.classList.remove('is-invalid');
                         updateView();
                     });
@@ -2997,6 +3076,13 @@ $currentProgressLabel = $stepLabels[$step] ?? 'Continue booking';
                         return;
                     }
                     var selectedDay = calendar.querySelector('.cal-day[data-date="' + dateInp.value + '"]');
+                    if (selectedDay && selectedDay.getAttribute('data-patient-booked') === '1') {
+                        event.preventDefault();
+                        dateInp.value = '';
+                        setCalendarBookedWarning(true);
+                        updateView();
+                        return;
+                    }
                     if (selectedDay && selectedDay.getAttribute('data-selectable') === '0') {
                         event.preventDefault();
                         if (typeof window.openDoctorCapacity === 'function') {
