@@ -355,6 +355,7 @@ $requestStmt = $conn->prepare("SELECT a.id, a.appointment_date, a.appointment_ti
                                 p.age,
                                 p.date_of_birth,
                                 p.pwd_type,
+                                p.pwd_id_path,
                                 p.profile_photo,
                                 p.profile_updated_at,
                                 {$doctorNameSql} AS doctor_name
@@ -1677,6 +1678,10 @@ body {
     background: #f1f5f9;
 }
 
+.request-actions-menu .request-menu-item.pwd-id {
+    color: #5b3a91;
+}
+
 .request-actions .request-confirm-action,
 .request-actions .request-cancel-action {
     display: block;
@@ -2378,6 +2383,42 @@ body {
 
 .admin-modal-actions form {
     margin: 0;
+}
+
+.pwd-id-modal-card {
+    width: min(820px, 100%);
+    max-height: calc(100vh - 36px);
+    display: flex;
+    flex-direction: column;
+}
+
+.pwd-id-modal-body {
+    display: grid;
+    place-items: center;
+    min-height: 260px;
+    max-height: calc(100vh - 190px);
+    padding: 22px;
+    overflow: auto;
+    background: #f8fcff;
+}
+
+.pwd-id-modal-body img {
+    display: block;
+    max-width: 100%;
+    max-height: calc(100vh - 250px);
+    width: auto;
+    height: auto;
+    border: 1px solid #cfe1ee;
+    border-radius: 8px;
+    background: #fff;
+    object-fit: contain;
+}
+
+.pwd-id-modal-message {
+    margin: 0;
+    color: #9d1c2c;
+    font-weight: 800;
+    text-align: center;
 }
 
 .appointment-modal {
@@ -3230,6 +3271,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
 document.addEventListener("DOMContentLoaded", function () {
     var modal = document.getElementById("adminAppointmentModal");
+    var pwdIdModal = document.getElementById("adminPwdIdModal");
+    var pwdIdPreview = document.getElementById("adminPwdIdPreview");
+    var pwdIdMessage = document.getElementById("adminPwdIdMessage");
     var rejectionModal = document.getElementById("rescheduleRejectionModal");
     var rejectionForm = document.getElementById("rescheduleRejectionForm");
     var rejectionRequestId = document.getElementById("rescheduleRejectionRequestId");
@@ -3271,6 +3315,20 @@ document.addEventListener("DOMContentLoaded", function () {
     function closeModal() {
         modal.classList.remove("is-open");
         modal.setAttribute("aria-hidden", "true");
+    }
+
+    function closePwdIdModal() {
+        if (!pwdIdModal) return;
+        pwdIdModal.classList.remove("is-open");
+        pwdIdModal.setAttribute("aria-hidden", "true");
+        if (pwdIdPreview) {
+            pwdIdPreview.removeAttribute("src");
+            pwdIdPreview.hidden = true;
+        }
+        if (pwdIdMessage) {
+            pwdIdMessage.hidden = true;
+            pwdIdMessage.textContent = "";
+        }
     }
 
     document.querySelectorAll("[data-admin-appointment]").forEach(function (button) {
@@ -3320,15 +3378,53 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
+    document.querySelectorAll("[data-view-pwd-id]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            if (!pwdIdModal || !pwdIdPreview) return;
+            var patientId = button.getAttribute("data-patient-id") || "";
+            var patientName = button.getAttribute("data-patient-name") || "Patient";
+            var modalTitle = document.getElementById("adminPwdIdTitle");
+            if (modalTitle) modalTitle.textContent = patientName + " - PWD ID";
+            if (pwdIdMessage) {
+                pwdIdMessage.hidden = true;
+                pwdIdMessage.textContent = "";
+            }
+            pwdIdPreview.hidden = true;
+            pwdIdPreview.onload = function () {
+                pwdIdMessage.hidden = true;
+                pwdIdPreview.hidden = false;
+            };
+            pwdIdPreview.onerror = function () {
+                pwdIdPreview.hidden = true;
+                pwdIdMessage.textContent = "PWD ID could not be loaded.";
+                pwdIdMessage.hidden = false;
+            };
+            pwdIdPreview.src = "pwd_id.php?patient_id=" + encodeURIComponent(patientId);
+            pwdIdModal.classList.add("is-open");
+            pwdIdModal.setAttribute("aria-hidden", "false");
+        });
+    });
+
     modal.querySelectorAll("[data-admin-close-modal]").forEach(function (button) {
         button.addEventListener("click", closeModal);
     });
     modal.addEventListener("click", function (event) {
         if (event.target === modal) closeModal();
     });
+    if (pwdIdModal) {
+        pwdIdModal.querySelectorAll("[data-pwd-id-close]").forEach(function (button) {
+            button.addEventListener("click", closePwdIdModal);
+        });
+        pwdIdModal.addEventListener("click", function (event) {
+            if (event.target === pwdIdModal) closePwdIdModal();
+        });
+    }
     document.addEventListener("keydown", function (event) {
         if (event.key === "Escape" && modal.classList.contains("is-open")) {
             closeModal();
+        }
+        if (event.key === "Escape" && pwdIdModal && pwdIdModal.classList.contains("is-open")) {
+            closePwdIdModal();
         }
     });
 
@@ -3922,6 +4018,16 @@ include 'includes/header.php';
                                                         data-cancel-reason="<?php echo htmlspecialchars((string) (($appointment['cancellation_reason'] ?? '') ?: 'None'), ENT_QUOTES, 'UTF-8'); ?>"
                                                         data-cancel-details="<?php echo htmlspecialchars((string) (($appointment['cancellation_details'] ?? '') ?: 'None'), ENT_QUOTES, 'UTF-8'); ?>"
                                                     >Details</button>
+                                                    <?php if (trim((string) ($appointment['pwd_id_path'] ?? '')) !== ''): ?>
+                                                        <button
+                                                            type="button"
+                                                            class="request-menu-item pwd-id"
+                                                            role="menuitem"
+                                                            data-view-pwd-id
+                                                            data-patient-id="<?php echo (int) $appointment['patient_id']; ?>"
+                                                            data-patient-name="<?php echo htmlspecialchars((string) $appointment['patient_name'], ENT_QUOTES, 'UTF-8'); ?>"
+                                                        >View PWD ID</button>
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
                                         </td>
@@ -4373,6 +4479,25 @@ include 'includes/header.php';
             </div>
             <div class="appointment-modal-actions">
                 <button class="btn btn-light" type="button" data-admin-close-modal>Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-modal pwd-id-modal" id="adminPwdIdModal" aria-hidden="true">
+        <div class="admin-modal-card pwd-id-modal-card" role="dialog" aria-modal="true" aria-labelledby="adminPwdIdTitle">
+            <div class="admin-modal-head">
+                <div>
+                    <h2 id="adminPwdIdTitle">PWD ID</h2>
+                    <p>Private patient document</p>
+                </div>
+                <button class="admin-modal-close" type="button" data-pwd-id-close aria-label="Close PWD ID preview">&times;</button>
+            </div>
+            <div class="pwd-id-modal-body">
+                <img id="adminPwdIdPreview" alt="Patient PWD ID" hidden>
+                <p class="pwd-id-modal-message" id="adminPwdIdMessage" hidden></p>
+            </div>
+            <div class="admin-modal-actions">
+                <button class="btn btn-light" type="button" data-pwd-id-close>Close</button>
             </div>
         </div>
     </div>
