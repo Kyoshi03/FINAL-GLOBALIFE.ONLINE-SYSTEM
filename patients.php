@@ -984,7 +984,9 @@ $appointmentsTotalPages = max(1, (int) ceil($upcomingCount / $appointmentsPerPag
 $appointmentsShowingFrom = $upcomingCount > 0 ? $appointmentsOffset + 1 : 0;
 $appointmentsShowingTo = min($appointmentsOffset + count($appointments), $upcomingCount);
 
-$patientTourSeen = !empty($_SESSION['patient_tour_seen']);
+$patientTourUserId = (int) ($currentUser['id'] ?? 0);
+$patientTourSeenUserId = (int) ($_SESSION['patient_tour_seen_user_id'] ?? 0);
+$patientTourSeen = $patientTourUserId > 0 && $patientTourSeenUserId === $patientTourUserId;
 $isNewPatientWelcome = !$patientTourSeen && !empty($_SESSION['patient_welcome_new']);
 unset($_SESSION['patient_welcome_new']);
 
@@ -995,8 +997,8 @@ if (!$isNewPatientWelcome && !$patientTourSeen && $totalCount === 0) {
     }
 }
 
-if ($isNewPatientWelcome) {
-    $_SESSION['patient_tour_seen'] = true;
+if ($isNewPatientWelcome && $patientTourUserId > 0) {
+    $_SESSION['patient_tour_seen_user_id'] = $patientTourUserId;
 }
 
 $welcomeTitle = $isNewPatientWelcome
@@ -6503,6 +6505,7 @@ include 'includes/header.php';
         var positionFrame = 0;
         var retryTimer = 0;
         var started = false;
+        var tourSeenRecorded = false;
         var patientTourStorageKey = 'globalife_patient_tour_seen_<?php echo (int) ($currentUser['id'] ?? 0); ?>';
 
         function getStepTarget(step) {
@@ -6658,6 +6661,17 @@ include 'includes/header.php';
             activeTarget.classList.add('patient-tour-highlight');
             scrollTargetIntoView(activeTarget);
 
+            // Record the tour only after a real target is visible. This avoids
+            // permanently hiding the tutorial when the page is still rendering.
+            if (!tourSeenRecorded) {
+                try {
+                    window.localStorage.setItem(patientTourStorageKey, '1');
+                } catch (error) {
+                    // The server-side per-patient session flag remains available.
+                }
+                tourSeenRecorded = true;
+            }
+
             var isLast = currentStep === steps.length - 1;
             var percent = Math.round(((currentStep + 1) / steps.length) * 100);
             tooltip.innerHTML =
@@ -6728,9 +6742,8 @@ include 'includes/header.php';
             if (started) return;
             try {
                 if (window.localStorage.getItem(patientTourStorageKey) === '1') return;
-                window.localStorage.setItem(patientTourStorageKey, '1');
             } catch (error) {
-                // The server-side session flag still prevents repeated tours.
+                // Continue with the server-side per-patient session flag.
             }
             started = true;
             overlay.classList.add('is-open');
