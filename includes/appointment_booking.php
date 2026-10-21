@@ -347,8 +347,7 @@ function appointment_cancellation_reasons(string $role): array {
         ];
     }
 
-    return [
-        'Patient request',
+    $staffReasons = [
         'Doctor unavailable',
         'Clinic closed',
         'Schedule conflict',
@@ -358,6 +357,11 @@ function appointment_cancellation_reasons(string $role): array {
         'Emergency or urgent closure',
         'Other reason',
     ];
+    if (strtolower(trim($role)) === 'admin') {
+        return $staffReasons;
+    }
+    array_unshift($staffReasons, 'Patient request');
+    return $staffReasons;
 }
 
 function appointment_cancellation_reason_is_valid(string $reason, string $role): bool {

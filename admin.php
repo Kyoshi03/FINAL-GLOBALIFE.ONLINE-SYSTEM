@@ -4184,7 +4184,6 @@ include 'includes/header.php';
                 <label for="adminCancelReason">Cancellation reason</label>
                 <select id="adminCancelReason" aria-label="Cancellation reason">
                     <option value="" selected disabled>Select a reason</option>
-                    <option value="Patient request">Patient request</option>
                     <option value="Doctor unavailable">Doctor unavailable</option>
                     <option value="Clinic closed">Clinic closed</option>
                     <option value="Schedule conflict">Schedule conflict</option>
