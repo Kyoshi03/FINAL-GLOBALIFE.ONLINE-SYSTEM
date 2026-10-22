@@ -1566,7 +1566,7 @@ include __DIR__ . '/includes/header.php';
                     : 'Review your completed and cancelled appointment records.'; ?></p>
             </div>
             <?php if ($patientAppointmentView === 'active'): ?>
-                <a class="patient-new-appointment" href="book_appointment.php?start=1">+ New Book Appointment</a>
+                <a class="patient-new-appointment" href="book_appointment.php?start=1">Book Appointment</a>
             <?php endif; ?>
         </section>
     <?php endif; ?>
