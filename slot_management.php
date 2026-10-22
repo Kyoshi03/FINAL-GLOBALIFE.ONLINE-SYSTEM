@@ -63,8 +63,8 @@ $capacity = appointment_capacity_settings();
 
 $additionalStyles = '
 body{background:#f4f8fb;color:#1f343d}
-body.app-layout:has(main.slot-page){min-height:auto}
-body.app-layout:has(main.slot-page)>main.slot-page{flex:0 0 auto}
+body.app-layout:has(main.slot-page){min-height:100vh}
+body.app-layout:has(main.slot-page)>main.slot-page{flex:1 0 auto}
 .slot-page{max-width:1180px;margin:0 auto;padding:34px 20px 20px}
 .slot-heading{display:none!important}
 .slot-panel{border:1px solid #d8e6ed;border-radius:8px;background:#fff;box-shadow:0 10px 24px rgba(25,76,110,.06);padding:20px}
