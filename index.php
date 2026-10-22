@@ -1790,7 +1790,6 @@ include 'includes/header.php';
                 <p class="disabled-login-message" id="disabled-login-message">
                     <?php echo htmlspecialchars($loginBlockedMessage ?? 'This account is disabled and cannot log in.'); ?>
                 </p>
-                <p style="margin-top:16px;">Please contact the clinic administrator if you believe this was a mistake.</p>
                 <div class="disabled-login-actions">
                     <button type="button" class="disabled-login-close" data-disabled-login-close>Close</button>
                 </div>

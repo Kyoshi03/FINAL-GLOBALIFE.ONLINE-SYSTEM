@@ -396,7 +396,6 @@ $pageTitle = "Login | Globalife Medical Laboratory & Polyclinic";
                     <p class="disabled-login-message" id="disabled-login-message">
                         <?php echo htmlspecialchars($blockedLoginMessage); ?>
                     </p>
-                    <p style="margin-top:16px;">Please contact the clinic administrator if you believe this was a mistake.</p>
                     <div class="disabled-login-actions">
                         <button type="button" class="disabled-login-close">Close</button>
                     </div>
