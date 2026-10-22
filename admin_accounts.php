@@ -469,7 +469,13 @@ body{background:#f4f8fb;color:#1f343d}
 #accountStatusModal .account-disable-fields textarea{min-height:96px}
 #accountStatusModal .account-disable-fields small{display:block;padding:4px 2px 0;color:#6b8794}
 #accountStatusModal .account-modal-actions{padding:18px 28px 26px;background:#f8fcff;border-top:1px solid #e1eef3}
-#accountStatusModal .modal-secondary,#accountStatusModal .modal-primary{min-height:46px;border-radius:10px;padding:10px 18px}
+#accountStatusModal .modal-secondary,#accountStatusModal .modal-primary{min-height:46px;border-radius:10px;padding:10px 18px;transition:transform .2s ease,box-shadow .2s ease,background .2s ease}
+#accountStatusModal .modal-secondary:hover,#accountStatusModal .modal-primary:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(7,59,76,.14)}
+#accountStatusModal .modal-secondary:hover{background:#e4f3fa}
+#accountStatusModal .modal-primary:not(.restore):hover{background:#ffe3e8}
+#accountStatusModal .modal-primary.restore:hover{background:#e1f5e8}
+#accountStatusModal .modal-secondary:active,#accountStatusModal .modal-primary:active{transform:translateY(0);box-shadow:0 3px 8px rgba(7,59,76,.1)}
+#accountStatusModal .modal-secondary:focus-visible,#accountStatusModal .modal-primary:focus-visible{outline:3px solid rgba(0,119,182,.2);outline-offset:2px}
 .account-disable-fields{display:grid;gap:7px;padding:18px 22px 4px}
 .account-disable-fields[hidden]{display:none}
 .account-disable-fields label{color:#5f7280;font-size:.82rem;font-weight:950}
