@@ -64,6 +64,7 @@ $capacity = appointment_capacity_settings();
 $additionalStyles = '
 body{background:#f4f8fb;color:#1f343d}
 .slot-page{max-width:1180px;margin:0 auto;padding:34px 20px 48px}
+.slot-heading{display:none!important}
 .slot-panel{border:1px solid #d8e6ed;border-radius:8px;background:#fff;box-shadow:0 10px 24px rgba(25,76,110,.06);padding:20px}
 .slot-panel-head{display:flex;align-items:center;gap:14px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #e0edf3}
 .slot-panel-icon{width:44px;height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:center;margin:0;padding:0;border-radius:12px;background:#e5f3ff;color:#0878b5;line-height:0}
