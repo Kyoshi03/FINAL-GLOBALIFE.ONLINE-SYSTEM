@@ -827,6 +827,9 @@ $additionalStyles = patientAvatarStyles() . '
         border-color:#0f8ec9;
         box-shadow:0 0 0 4px rgba(15,142,201,.14), 0 3px 10px rgba(25,76,110,.05);
     }
+    .patient-inline-status-filter .patient-new-appointment {
+        justify-self:end;
+    }
     .filter-empty {
         display: none;
         text-align: center;
@@ -1305,6 +1308,7 @@ $additionalStyles = patientAvatarStyles() . '
             gap:8px;
         }
         .patient-inline-status-filter select { width:100%; }
+        .patient-inline-status-filter .patient-new-appointment { width:100%; justify-self:stretch; }
         .patient-history-page {
             width: 100%;
             max-width: none;
@@ -1558,20 +1562,6 @@ include __DIR__ . '/includes/header.php';
     <?php endif; ?>
 
     <?php if ($userRole === 'patient' && $patientAppointmentView === 'active'): ?>
-        <section class="patient-appointments-heading" aria-labelledby="patientAppointmentsTitle">
-            <div>
-                <h1 id="patientAppointmentsTitle"><?php echo $patientAppointmentView === 'active' ? 'My Appointments' : 'Appointment History'; ?></h1>
-                <p><?php echo $patientAppointmentView === 'active'
-                    ? 'Manage your upcoming clinic appointments and schedules.'
-                    : 'Review your completed and cancelled appointment records.'; ?></p>
-            </div>
-            <?php if ($patientAppointmentView === 'active'): ?>
-                <a class="patient-new-appointment" href="book_appointment.php?start=1">Book Appointment</a>
-            <?php endif; ?>
-        </section>
-    <?php endif; ?>
-
-    <?php if ($userRole === 'patient' && $patientAppointmentView === 'active'): ?>
         <section class="appointments-booking-guide" aria-labelledby="appointmentsBookingGuideTitle">
             <div class="appointments-booking-guide-head">
                 <h2 id="appointmentsBookingGuideTitle">How to book your appointment</h2>
@@ -1715,6 +1705,7 @@ include __DIR__ . '/includes/header.php';
                     <option value="pending"<?php echo $initialStatusFilter === 'pending' ? ' selected' : ''; ?>>Pending (<?php echo (int) $statusCounts['pending']; ?>)</option>
                     <option value="confirmed"<?php echo $initialStatusFilter === 'confirmed' ? ' selected' : ''; ?>>Confirmed (<?php echo (int) $statusCounts['confirmed']; ?>)</option>
                 </select>
+                <a class="patient-new-appointment" href="book_appointment.php?start=1">Book Appointment</a>
             </div>
         <?php endif; ?>
         <?php if ($isClinicalAppointmentsView): ?>
