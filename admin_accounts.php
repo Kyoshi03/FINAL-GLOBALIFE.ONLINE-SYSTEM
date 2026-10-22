@@ -448,8 +448,23 @@ body{background:#f4f8fb;color:#1f343d}
 @keyframes accountStatusIconRing{0%{opacity:.8;transform:scale(.86)}70%,100%{opacity:0;transform:scale(1.15)}}
 @media (prefers-reduced-motion:reduce){.account-status-icon-wrap::before,.account-status-icon{animation:none}}
 .account-status-copy{min-width:0}
-.account-status-head h2{margin:0;color:#073b4c;font-size:1.25rem;line-height:1.25}
-.account-status-head p{margin:6px 0 0;color:#657b88;line-height:1.5}
+.account-status-eyebrow{display:block;margin-bottom:5px;color:#0077b6;font-size:.7rem;font-weight:950;letter-spacing:.12em;text-transform:uppercase}
+.account-status-head h2{margin:0;color:#073b4c;font-size:1.4rem;line-height:1.2}
+.account-status-head p{margin:7px 0 0;color:#5d7582;line-height:1.5}
+#accountStatusModal .account-modal-card{width:min(560px,100%);border-radius:18px;box-shadow:0 28px 90px rgba(7,24,38,.3)}
+#accountStatusModal .account-status-head{position:relative;overflow:hidden;gap:18px;padding:28px;background:linear-gradient(135deg,#eafbff 0%,#f8fcff 58%,#fff 100%);border-top:4px solid #16a8d5}
+#accountStatusModal .account-status-head::after{content:"";position:absolute;right:-42px;bottom:-62px;width:210px;height:100px;border:1px solid rgba(0,150,199,.16);border-radius:50%;transform:rotate(-16deg)}
+#accountStatusModal .account-status-icon-wrap{z-index:1;flex-basis:66px;width:66px;height:66px;border-radius:18px;background:#fff;box-shadow:0 10px 24px rgba(0,119,182,.12)}
+#accountStatusModal .account-status-icon{width:38px;height:38px}
+#accountStatusModal .account-status-copy{position:relative;z-index:1}
+#accountStatusModal .account-disable-fields{gap:9px;padding:24px 28px 18px}
+#accountStatusModal .account-disable-fields label{margin-top:2px;color:#315466;font-size:.8rem;letter-spacing:.02em}
+#accountStatusModal .account-disable-fields select,#accountStatusModal .account-disable-fields textarea{border-radius:10px;padding:12px 14px;border-color:#c9e1eb}
+#accountStatusModal .account-disable-fields select{min-height:48px}
+#accountStatusModal .account-disable-fields textarea{min-height:96px}
+#accountStatusModal .account-disable-fields small{display:block;padding:4px 2px 0;color:#6b8794}
+#accountStatusModal .account-modal-actions{padding:18px 28px 26px;background:#f8fcff;border-top:1px solid #e1eef3}
+#accountStatusModal .modal-secondary,#accountStatusModal .modal-primary{min-height:46px;border-radius:10px;padding:10px 18px}
 .account-disable-fields{display:grid;gap:7px;padding:18px 22px 4px}
 .account-disable-fields[hidden]{display:none}
 .account-disable-fields label{color:#5f7280;font-size:.82rem;font-weight:950}
@@ -1512,6 +1527,7 @@ include 'includes/header.php';
                     </svg>
                 </div>
                 <div class="account-status-copy">
+                    <span class="account-status-eyebrow">Account access</span>
                     <h2 id="accountStatusTitle">Disable this user?</h2>
                     <p id="accountStatusText">Are you sure you want to disable this user?</p>
                 </div>
