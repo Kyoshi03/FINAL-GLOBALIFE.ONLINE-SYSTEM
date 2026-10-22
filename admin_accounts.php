@@ -709,6 +709,68 @@ document.addEventListener("DOMContentLoaded", function () {
     const successModal = document.getElementById("accountSuccessModal");
     const successOk = document.getElementById("accountSuccessOk");
     const doctorModals = document.querySelectorAll("[data-account-doctor-modal]");
+    const disableDraftPrefix = "adminAccountDisableDraft:";
+    let activeDisableUserId = "";
+
+    function disableDraftKey(userId) {
+        return disableDraftPrefix + String(userId || "");
+    }
+
+    function readDisableDraft(userId) {
+        if (!userId) return null;
+        try {
+            const saved = window.localStorage.getItem(disableDraftKey(userId));
+            if (!saved) return null;
+            const draft = JSON.parse(saved);
+            return draft && typeof draft === "object" ? draft : null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function saveDisableDraft() {
+        if (!activeDisableUserId || !disableReason || !disableDetails) return;
+        const draft = {
+            reason: disableReason.value || "",
+            details: disableDetails.value || ""
+        };
+        try {
+            if (!draft.reason && !draft.details) {
+                window.localStorage.removeItem(disableDraftKey(activeDisableUserId));
+                return;
+            }
+            window.localStorage.setItem(disableDraftKey(activeDisableUserId), JSON.stringify(draft));
+        } catch (error) {
+            // Storage may be unavailable in private browsing; the form remains usable.
+        }
+    }
+
+    function clearDisableDraft(userId) {
+        if (!userId) return;
+        try {
+            window.localStorage.removeItem(disableDraftKey(userId));
+        } catch (error) {
+            // Ignore storage cleanup errors and continue with the form action.
+        }
+    }
+
+    function restoreDisableDraft(userId) {
+        if (!disableReason || !disableDetails) return;
+        disableReason.value = "";
+        disableDetails.value = "";
+        const draft = readDisableDraft(userId);
+        if (!draft) {
+            disableDetails.required = false;
+            return;
+        }
+        const savedReason = String(draft.reason || "");
+        const reasonExists = Array.from(disableReason.options).some(function (option) {
+            return option.value === savedReason;
+        });
+        disableReason.value = reasonExists ? savedReason : "";
+        disableDetails.value = String(draft.details || "");
+        disableDetails.required = disableReason.value === "Other reason";
+    }
 
     function closeStatusModal() {
         if (!modal) return;
@@ -723,6 +785,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const name = button.getAttribute("data-user-name") || "this user";
             const nextState = button.getAttribute("data-next-state") || "0";
             const isRestore = nextState === "1";
+            activeDisableUserId = button.getAttribute("data-user-id") || "";
             modalTitle.textContent = isRestore ? "Enable this user?" : "Disable this user?";
             modalText.textContent = isRestore
                 ? "Are you sure you want to enable " + name + "? This account can log in again."
@@ -740,6 +803,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (isRestore) {
                     disableReason.value = "";
                     disableDetails.value = "";
+                    clearDisableDraft(activeDisableUserId);
+                } else {
+                    restoreDisableDraft(activeDisableUserId);
                 }
             }
             modal.classList.add("is-open");
@@ -750,7 +816,9 @@ document.addEventListener("DOMContentLoaded", function () {
     if (disableReason && disableDetails) {
         disableReason.addEventListener("change", function () {
             disableDetails.required = disableReason.value === "Other reason";
+            saveDisableDraft();
         });
+        disableDetails.addEventListener("input", saveDisableDraft);
     }
     if (modal && modalSubmit) {
         modal.addEventListener("submit", function (event) {
@@ -763,7 +831,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (disableReason.value === "Other reason" && !disableDetails.value.trim()) {
                     event.preventDefault();
                     disableDetails.focus();
+                    return;
                 }
+                clearDisableDraft(modalUserId ? modalUserId.value : activeDisableUserId);
             }
         });
     }
