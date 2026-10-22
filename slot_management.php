@@ -65,7 +65,7 @@ $additionalStyles = '
 body{background:#f4f8fb;color:#1f343d}
 body.app-layout:has(main.slot-page){min-height:100vh}
 body.app-layout:has(main.slot-page)>main.slot-page{flex:1 0 auto}
-.slot-page{max-width:1180px;margin:0 auto;padding:34px 20px 20px}
+.slot-page{max-width:1180px;margin:0 auto;padding:34px 20px 20px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center}
 .slot-heading{display:none!important}
 .slot-panel{border:1px solid #d8e6ed;border-radius:8px;background:#fff;box-shadow:0 10px 24px rgba(25,76,110,.06);padding:20px}
 .slot-panel-head{display:flex;align-items:center;gap:14px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #e0edf3}
@@ -104,7 +104,7 @@ body.app-layout:has(main.slot-page)>main.slot-page{flex:1 0 auto}
 .slot-notice-close{min-height:42px;padding:0 24px;border:0;border-radius:8px;background:#0f7cc2;color:#fff;font:inherit;font-weight:900;cursor:pointer}
 .slot-notice-close:hover{background:#086aa8}
 @media(max-width:800px){.slot-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:560px){.slot-page{padding:22px 12px 20px}.slot-panel{padding:14px}.slot-grid{grid-template-columns:1fr;margin-top:10px}.slot-actions,.slot-save{width:100%}}
+@media(max-width:560px){body.app-layout:has(main.slot-page)>main.slot-page{flex:0 0 auto}.slot-page{display:block;padding:22px 12px 20px}.slot-panel{padding:14px}.slot-grid{grid-template-columns:1fr;margin-top:10px}.slot-actions,.slot-save{width:100%}}
 ';
 
 include 'includes/header.php';
