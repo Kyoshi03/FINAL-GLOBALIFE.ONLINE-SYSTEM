@@ -75,7 +75,7 @@ body.app-layout:has(main.slot-page)>main.slot-page{flex:1 0 auto}
 .slot-panel-head span{display:block;margin-top:3px;color:#607784;font-size:.86rem}
 .slot-panel-head > .slot-panel-icon{display:flex;margin:0;color:#0878b5;font-size:initial}
 .slot-panel-head > .slot-panel-icon svg{display:block;margin:0}
-.slot-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.slot-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;position:relative;top:16px}
 .slot-card{border:1px solid #dce8f2;border-radius:8px;background:linear-gradient(135deg,#fafdff,#f1f8ff);padding:18px}
 .slot-card-head{display:flex;align-items:center;gap:10px;margin-bottom:20px;color:#073b4c;font-weight:900}
 .slot-card-icon{width:40px;height:40px;flex:0 0 40px;display:flex;align-items:center;justify-content:center;margin:0;padding:0;border-radius:10px;background:#e4f2ff;color:#0878b5;line-height:0}
@@ -104,7 +104,7 @@ body.app-layout:has(main.slot-page)>main.slot-page{flex:1 0 auto}
 .slot-notice-close{min-height:42px;padding:0 24px;border:0;border-radius:8px;background:#0f7cc2;color:#fff;font:inherit;font-weight:900;cursor:pointer}
 .slot-notice-close:hover{background:#086aa8}
 @media(max-width:800px){.slot-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:560px){.slot-page{padding:22px 12px 20px}.slot-panel{padding:14px}.slot-grid{grid-template-columns:1fr}.slot-actions,.slot-save{width:100%}}
+@media(max-width:560px){.slot-page{padding:22px 12px 20px}.slot-panel{padding:14px}.slot-grid{grid-template-columns:1fr;top:10px}.slot-actions,.slot-save{width:100%}}
 ';
 
 include 'includes/header.php';
