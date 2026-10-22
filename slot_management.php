@@ -64,9 +64,6 @@ $capacity = appointment_capacity_settings();
 $additionalStyles = '
 body{background:#f4f8fb;color:#1f343d}
 .slot-page{max-width:1180px;margin:0 auto;padding:34px 20px 48px}
-.slot-heading{margin-bottom:22px}
-.slot-heading h1{margin:0 0 7px;color:#061a40;font-size:2.05rem;line-height:1.12}
-.slot-heading p{margin:0;color:#607784;line-height:1.6}
 .slot-panel{border:1px solid #d8e6ed;border-radius:8px;background:#fff;box-shadow:0 10px 24px rgba(25,76,110,.06);padding:20px}
 .slot-panel-head{display:flex;align-items:center;gap:14px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #e0edf3}
 .slot-panel-icon{width:44px;height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:center;margin:0;padding:0;border-radius:12px;background:#e5f3ff;color:#0878b5;line-height:0}
@@ -110,11 +107,6 @@ body{background:#f4f8fb;color:#1f343d}
 include 'includes/header.php';
 ?>
 <main class="slot-page">
-    <section class="slot-heading">
-        <h1>Slot Management</h1>
-        <p>Set the maximum number of appointments accepted each day for every clinic service.</p>
-    </section>
-
     <?php if ($noticeMessage !== ''): ?>
         <div class="slot-notice-modal <?php echo htmlspecialchars($noticeType); ?>" id="slotNoticeModal" role="dialog" aria-modal="true" aria-labelledby="slotNoticeTitle">
             <section class="slot-notice-dialog">
