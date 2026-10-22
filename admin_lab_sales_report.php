@@ -36,6 +36,21 @@ function sales_report_range_for_period(string $period, DateTimeImmutable $anchor
     return [$anchor, $anchor];
 }
 
+function sales_report_range_preset_label(string $preset): string {
+    return [
+        'today' => 'Today',
+        'yesterday' => 'Yesterday',
+        'past_3_days' => 'Past 3 Days',
+        'past_7_days' => 'Past 7 Days',
+        'past_2_weeks' => 'Past 2 Weeks',
+        'past_30_days' => 'Past 30 Days',
+        'last_7_days' => 'Last 7 Days',
+        'last_12_months' => 'Last 12 Months',
+        'last_4_quarters' => 'Last 4 Quarters',
+        'custom' => 'Custom Date Range',
+    ][$preset] ?? 'Selected Date Range';
+}
+
 function sales_report_clean_service(string $service): string {
     $service = trim((string) preg_replace('/\s*[-|]\s*Total:\s*(?:PHP|₱)\s*[0-9,]+(?:\.[0-9]{2})?/i', '', $service));
     return $service !== '' ? $service : 'Laboratory service';
@@ -267,7 +282,7 @@ function sales_report_chart_values(array $rows, string $period, DateTimeImmutabl
     return $values;
 }
 
-function sales_report_pdf_chart_page(array $values, string $period, string $from, string $to, float $total, int $quantity, int $page, int $pages, ?array $logo): string {
+function sales_report_pdf_chart_page(array $values, string $period, string $rangeLabel, string $from, string $to, float $total, int $quantity, int $page, int $pages, ?array $logo): string {
     $ops = [];
     clinic_pdf_line($ops, 34, 805, 561, 805, 2.2);
     if ($logo) {
@@ -280,7 +295,7 @@ function sales_report_pdf_chart_page(array $values, string $period, string $from
     clinic_pdf_text($ops, 112, 764, 9, 'Laboratory Sales Report');
     clinic_pdf_text($ops, 42, 710, 16, 'LABORATORY SALES REPORT', true);
     clinic_pdf_text($ops, 42, 692, 9, 'Period: ' . date('M j, Y', strtotime($from)) . ' - ' . date('M j, Y', strtotime($to)));
-    clinic_pdf_text($ops, 42, 676, 9, ucfirst($period) . ' sales trend');
+    clinic_pdf_text($ops, 42, 676, 9, ucfirst($period) . ' | ' . $rangeLabel);
     clinic_pdf_text($ops, 350, 692, 9, 'Total Sales: ' . sales_report_money($total), true);
     clinic_pdf_text($ops, 350, 676, 9, 'Completed Tests: ' . number_format($quantity), true);
 
@@ -417,13 +432,13 @@ function sales_report_pdf_build(array $streams, ?array $image): string {
     return $pdf . "trailer\n<< /Size " . (count($objects) + 1) . " /Root 1 0 R >>\nstartxref\n" . $xref . "\n%%EOF";
 }
 
-function sales_report_output_pdf(array $rows, string $from, string $to, float $total, int $quantity, array $chartValues, string $period): void {
+function sales_report_output_pdf(array $rows, string $from, string $to, float $total, int $quantity, array $chartValues, string $period, string $rangeLabel): void {
     $chunks = array_chunk($rows, 28);
     if (!$chunks) $chunks = [[]];
     $logo = clinic_pdf_image(__DIR__ . '/globalife.png');
     $streams = [];
     $pages = count($chunks) + 1;
-    $streams[] = sales_report_pdf_chart_page($chartValues, $period, $from, $to, $total, $quantity, 1, $pages, $logo);
+    $streams[] = sales_report_pdf_chart_page($chartValues, $period, $rangeLabel, $from, $to, $total, $quantity, 1, $pages, $logo);
     foreach ($chunks as $index => $chunk) $streams[] = sales_report_pdf_page($chunk, $from, $to, $total, $quantity, $index + 2, $pages, $logo);
     $pdf = sales_report_pdf_build($streams, $logo);
     while (ob_get_level() > 0) ob_end_clean();
@@ -623,10 +638,6 @@ foreach ($chartViews as $viewKey => &$chartView) {
     $chartView['report_range_label'] = $formatDateRange($viewData['from'], $viewData['to']);
 }
 unset($chartView);
-if (strtolower((string) ($_GET['format'] ?? '')) === 'pdf') {
-    $pdfChartValues = sales_report_chart_values($rows, $period, $fromDate, $toDate);
-    sales_report_output_pdf($rows, $from, $to, $totalSales, $completedTests, $pdfChartValues, $period);
-}
 $allowedViewModes = ['current', 'daily', 'monthly', 'quarterly'];
 $viewMode = strtolower(trim((string) ($_GET['view_mode'] ?? '')));
 if (!in_array($viewMode, $allowedViewModes, true)) $viewMode = in_array($period, ['daily', 'monthly', 'quarterly'], true) ? $period : 'current';
@@ -648,6 +659,23 @@ $viewSummaryLabels = [
     'monthly' => $periodCardSubtitles['monthly'],
     'quarterly' => $periodCardSubtitles['quarterly'],
 ];
+if (strtolower((string) ($_GET['format'] ?? '')) === 'pdf') {
+    $pdfPeriod = $selectedViewKey === 'current' ? $period : $selectedViewKey;
+    $pdfFromDate = $selectedReportView['from'];
+    $pdfToDate = $selectedReportView['to'];
+    $pdfRows = $selectedReportView['rows'];
+    $pdfChartValues = sales_report_chart_values($pdfRows, $pdfPeriod, $pdfFromDate, $pdfToDate);
+    sales_report_output_pdf(
+        $pdfRows,
+        $pdfFromDate->format('Y-m-d'),
+        $pdfToDate->format('Y-m-d'),
+        (float) $selectedReportView['sales'],
+        (int) $selectedReportView['tests'],
+        $pdfChartValues,
+        $pdfPeriod,
+        sales_report_range_preset_label($displayRangePreset)
+    );
+}
 
 $additionalStyles = '
 body{background:#f4f8fb;color:#1f343d}.sales-wrap{max-width:1240px;margin:0 auto;padding:24px 20px 44px}.sales-wrap>section{padding:0}.sales-print-heading{display:none}.sales-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:14px}.sales-card{min-height:118px;box-sizing:border-box;padding:20px 22px;border:1px solid #d8e6ed;border-radius:8px;background:#fff;box-shadow:0 10px 24px rgba(25,76,110,.06)}.sales-card-label{display:block;color:#607784;font-size:.78rem;font-weight:900;letter-spacing:.04em;text-transform:uppercase}.sales-card strong{display:block;margin-top:11px;color:#0066cc;font-size:1.75rem;line-height:1}.sales-card small{display:block;margin-top:10px;color:#708792}.sales-period-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:14px;scroll-margin-top:76px}.sales-period-card{width:100%;min-height:118px;box-sizing:border-box;padding:18px 20px;border:1px solid #dce8ef;border-radius:8px;background:#fff;color:#1f343d;box-shadow:0 10px 24px rgba(25,76,110,.06);cursor:pointer;font:inherit;text-align:left;transition:border-color .2s ease,background .2s ease,box-shadow .2s ease,transform .2s ease}.sales-period-card:hover,.sales-period-card:focus-visible{border-color:#8ed9ef;background:#f8fcff;box-shadow:0 12px 26px rgba(25,76,110,.10);outline:none;transform:translateY(-1px)}.sales-period-card.is-active{border-color:#0f7cc2;background:#eef8ff;box-shadow:0 12px 28px rgba(15,124,194,.13)}.sales-period-card-label{display:block;color:#607784;font-size:.78rem;font-weight:900;letter-spacing:.04em;text-transform:uppercase}.sales-period-card strong{display:block;margin-top:9px;color:#0066cc;font-size:1.8rem;line-height:1}.sales-period-card small{display:block;margin-top:8px;color:#708792;font-size:.82rem}.sales-control-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px}.sales-controls{display:flex;align-items:flex-end;justify-content:flex-start;gap:10px;flex-wrap:wrap;max-width:100%}.sales-date-form{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;max-width:100%}.sales-range-field{display:grid;gap:5px}.sales-range-field label{color:#073b4c;font-size:.76rem;font-weight:900}.sales-date-form input,.sales-date-form select{width:155px;min-height:40px;box-sizing:border-box;border:1px solid #cfe1ee;border-radius:8px;padding:8px 10px;color:#1f343d;background:#fff;font:inherit}.sales-date-form input:focus,.sales-date-form select:focus{outline:none;border-color:#0f7cc2;box-shadow:0 0 0 3px rgba(15,124,194,.10)}.sales-actions{display:flex;align-items:center;gap:8px;margin:0;flex:0 0 auto}.sales-action{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:7px 12px;border:1px solid #cfe1ee;border-radius:7px;color:#0b4f80;background:#fff;font:inherit;font-size:.8rem;font-weight:900;text-decoration:none;cursor:pointer}.sales-action.primary{color:#fff;border-color:#0f7cc2;background:#0f7cc2}.sales-panel{padding:22px;margin-bottom:14px;border:1px solid #d8e6ed;border-radius:8px;background:#fff;box-shadow:0 10px 24px rgba(25,76,110,.06)}.sales-panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:15px}.sales-panel h3{margin:0;color:#073b4c;font-size:1.2rem}.sales-panel-head span{color:#607784;font-size:.84rem}.sales-table-wrap{overflow-x:auto}.sales-table{width:100%;min-width:650px;border-collapse:collapse}.sales-table th,.sales-table td{padding:12px 14px;border-bottom:1px solid #edf3f6;text-align:left;vertical-align:top}.sales-table th{color:#607784;font-size:.74rem;font-weight:900;letter-spacing:.05em;text-transform:uppercase;background:#f8fbfd}.sales-table td{color:#405b67;font-size:.9rem}.sales-table td strong{color:#073b4c}.sales-table .number{text-align:right;white-space:nowrap}.sales-table tfoot th{border-top:1px solid #d8e6ed;border-bottom:0;color:#073b4c;font-size:.92rem;background:#fff}.sales-chart{display:block;width:100%;height:auto;overflow:visible}.sales-chart .grid-line{stroke:#e5eef3;stroke-width:1}.sales-chart .axis-line{stroke:#b7cbd6;stroke-width:1.2}.sales-chart .trend-area{fill:rgba(15,124,194,.10);opacity:0;animation:salesTrendFade .65s ease-out .1s forwards}.sales-chart .trend-line{fill:none;stroke:#0077b6;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1800;stroke-dashoffset:1800;animation:salesTrendDraw .8s ease-out forwards}.sales-chart .trend-dot{fill:#fff;stroke:#0077b6;stroke-width:2;opacity:0;animation:salesTrendFade .35s ease-out .25s forwards}.sales-chart text{fill:#607784;font-family:inherit;font-size:11px}.sales-chart .axis-title{fill:#073b4c;font-size:11px;font-weight:800}.sales-empty{padding:35px 10px;color:#607784;text-align:center;font-weight:700}@keyframes salesTrendDraw{to{stroke-dashoffset:0}}@keyframes salesTrendFade{to{opacity:1}}@media(max-width:1100px){.sales-period-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.sales-control-row{align-items:stretch;flex-direction:column;gap:12px}.sales-controls{justify-content:flex-start;width:100%}.sales-date-form{width:100%}.sales-range-field{flex:1 1 180px}}@media(max-width:760px){.sales-wrap{padding:22px 16px 42px}.sales-period-cards{grid-template-columns:1fr;gap:12px}.sales-control-row{gap:16px}.sales-controls,.sales-date-form{width:100%}.sales-date-form{align-items:stretch;flex-direction:column}.sales-range-field,.sales-date-form input,.sales-date-form select{width:100%}.sales-actions{flex-wrap:wrap}.sales-action{flex:1}.sales-cards{grid-template-columns:1fr}.sales-card{min-height:0}.sales-panel{padding:16px 12px;overflow:hidden}.sales-panel-head{align-items:flex-start;flex-direction:column;gap:5px}.sales-chart text{font-size:9px}}@media print{body{background:#fff!important}.no-print,.main-header,.sidebar,nav{display:none!important}.sales-wrap{max-width:none;padding:0}.sales-panel,.sales-card,.sales-period-card{box-shadow:none;break-inside:avoid}}';
@@ -663,7 +691,7 @@ $additionalStyles .= '.sales-range-nav:disabled{border-color:#d9e3e8;color:#9aae
 require_once __DIR__ . '/includes/header.php';
 ?>
 <main class="sales-wrap">
-    <div class="sales-print-heading" aria-hidden="true"><h2>Laboratory Sales Report</h2><p>Period: <?php echo htmlspecialchars($displayRangeLabel); ?></p><p>Completed and paid laboratory transactions only</p></div>
+    <div class="sales-print-heading" aria-hidden="true"><h2>Laboratory Sales Report</h2><p>Report: <?php echo htmlspecialchars(ucfirst($selectedViewKey === 'current' ? $period : $selectedViewKey) . ' | ' . sales_report_range_preset_label($displayRangePreset)); ?></p><p>Period: <?php echo htmlspecialchars($displayRangeLabel); ?></p><p>Completed and paid laboratory transactions only</p></div>
     <section class="sales-cards" aria-label="Laboratory sales summary"><article class="sales-card"><span class="sales-card-label">Total Laboratory Sales</span><strong id="salesTotalSalesValue"><?php echo htmlspecialchars($formatMoney($displayTotalSales)); ?></strong><small id="salesSummaryRange"><?php echo htmlspecialchars($displaySummaryLabel); ?></small></article><article class="sales-card"><span class="sales-card-label">Completed Tests</span><strong id="salesTotalTestsValue"><?php echo number_format($displayCompletedTests); ?></strong></article></section>
     <section class="sales-period-cards no-print" aria-label="Laboratory sales report periods">
         <?php foreach (['daily' => 'Daily', 'monthly' => 'Monthly', 'quarterly' => 'Quarterly'] as $cardPeriod => $cardLabel): ?>
@@ -714,7 +742,7 @@ document.addEventListener('DOMContentLoaded',function(){
     function localDate(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
     function setActivePeriod(period,active){document.querySelectorAll('.sales-period-card').forEach(function(button){var selected=active&&button.getAttribute('data-sales-period')===period;button.classList.toggle('is-active',selected);button.setAttribute('aria-pressed',selected?'true':'false')})}
     function focusPeriodCard(period){var card=document.querySelector('.sales-period-card[data-sales-period="'+period+'"]'),cards=document.querySelector('.sales-period-cards');if(!card)return;var rect=cards?cards.getBoundingClientRect():null,viewportHeight=window.innerHeight||document.documentElement.clientHeight;if(rect&&(rect.top<76||rect.bottom>viewportHeight-16)){cards.scrollIntoView({behavior:'smooth',block:'start'})}try{card.focus({preventScroll:true})}catch(error){card.focus()}}
-    function updatePdfLink(viewKey,selectedView){if(!pdfLink||!selectedView)return;try{var url=new URL(pdfLink.href,window.location.href);url.searchParams.set('period',viewKey==='current'?(p.value||'daily'):viewKey);url.searchParams.set('range_preset','custom');url.searchParams.set('from_date',selectedView.getAttribute('data-report-from-date')||a.value);url.searchParams.set('to_date',selectedView.getAttribute('data-report-to-date')||b.value);url.searchParams.set('anchor_date',h.value||a.value);pdfLink.href=url.toString()}catch(error){}}
+    function updatePdfLink(viewKey,selectedView){if(!pdfLink||!selectedView)return;try{var url=new URL(pdfLink.href,window.location.href),selectedPeriod=viewKey==='current'?(p.value||'daily'):viewKey,selectedRange=viewKey==='monthly'?'last_12_months':(viewKey==='quarterly'?'last_4_quarters':(viewKey==='daily'?'last_7_days':(r.value||'custom')));url.searchParams.set('period',selectedPeriod);url.searchParams.set('range_preset',selectedRange);url.searchParams.set('from_date',selectedView.getAttribute('data-report-from-date')||a.value);url.searchParams.set('to_date',selectedView.getAttribute('data-report-to-date')||b.value);url.searchParams.set('anchor_date',h.value||a.value);pdfLink.href=url.toString()}catch(error){}}
     function showChart(viewKey){var selectedView=null;document.querySelectorAll('[data-sales-chart-view]').forEach(function(view){var selected=view.getAttribute('data-sales-chart-view')===viewKey;view.hidden=!selected;if(selected)selectedView=view});document.querySelectorAll('[data-sales-details-view]').forEach(function(view){view.hidden=view.getAttribute('data-sales-details-view')!==viewKey});if(selectedView){var graphRangeLabel=selectedView.getAttribute('data-range-label')||'',reportRangeLabel=selectedView.getAttribute('data-report-range-label')||graphRangeLabel,summaryLabel=selectedView.getAttribute('data-summary-label')||reportRangeLabel;if(trendRange)trendRange.textContent=graphRangeLabel;if(summarySales)summarySales.textContent=selectedView.getAttribute('data-sales-total')||'₱0.00';if(summaryTests)summaryTests.textContent=selectedView.getAttribute('data-completed-tests')||'0';if(summaryRange)summaryRange.textContent=summaryLabel;if(detailsRange)detailsRange.textContent=reportRangeLabel;if(viewKey!=='current'){if(a)a.value=selectedView.getAttribute('data-report-from-date')||a.value;if(b)b.value=selectedView.getAttribute('data-report-to-date')||b.value;var cardRange=viewKey==='monthly'?'last_12_months':(viewKey==='quarterly'?'last_4_quarters':'last_7_days');if(r)r.value=cardRange;syncCustomRangeEditor();lastRangePreset=cardRange;viewMode.value=viewKey;p.value=viewKey;if(showTrend)showTrend.value='1'}updatePdfLink(viewKey,selectedView);selectedView.querySelectorAll('.trend-area,.trend-line,.trend-dot').forEach(function(node){node.style.animation='none';void node.offsetWidth;node.style.animation=''})}}
     function setTrendVisible(visible,viewKey){if(!trendPanel)return;trendPanel.hidden=!visible;trendPanel.setAttribute('aria-hidden',visible?'false':'true');if(showTrend)showTrend.value=visible?'1':'0';if(visible&&viewKey)showChart(viewKey)}
     function submit(scrollTarget){if(a.value&&b.value&&a.value>b.value){var x=a.value;a.value=b.value;b.value=x}h.value=b.value||a.value||h.value;try{sessionStorage.setItem(salesScrollStorageKey,JSON.stringify({y:window.scrollY||window.pageYOffset||0,target:scrollTarget||'current'}))}catch(error){}f.submit()}
