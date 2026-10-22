@@ -75,7 +75,7 @@ body.app-layout:has(main.slot-page)>main.slot-page{flex:1 0 auto}
 .slot-panel-head span{display:block;margin-top:3px;color:#607784;font-size:.86rem}
 .slot-panel-head > .slot-panel-icon{display:flex;margin:0;color:#0878b5;font-size:initial}
 .slot-panel-head > .slot-panel-icon svg{display:block;margin:0}
-.slot-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:16px}
+.slot-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:36px}
 .slot-card{border:1px solid #dce8f2;border-radius:8px;background:linear-gradient(135deg,#fafdff,#f1f8ff);padding:18px}
 .slot-card-head{display:flex;align-items:center;gap:10px;margin-bottom:20px;color:#073b4c;font-weight:900}
 .slot-card-icon{width:40px;height:40px;flex:0 0 40px;display:flex;align-items:center;justify-content:center;margin:0;padding:0;border-radius:10px;background:#e4f2ff;color:#0878b5;line-height:0}
