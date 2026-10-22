@@ -54,8 +54,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['account_action'] ?? '') ==
             $_SESSION['error'] = 'Only patient and doctor accounts can be disabled here.';
         } elseif ($nextState === 0 && !in_array($disableReason, $disableReasonOptions, true)) {
             $_SESSION['error'] = 'Please select a valid reason before disabling this account.';
-        } elseif ($nextState === 0 && $disableReason === 'Other reason' && $disableDetails === '') {
-            $_SESSION['error'] = 'Please provide additional details when Other reason is selected.';
         } else {
             $toggleRole = (string) $toggleUser['role'];
             $roleLabel = $toggleRole === 'doctor' ? 'Doctor' : 'Patient';
@@ -478,6 +476,8 @@ body{background:#f4f8fb;color:#1f343d}
 #accountStatusModal .modal-secondary:focus-visible,#accountStatusModal .modal-primary:focus-visible{outline:3px solid rgba(0,119,182,.2);outline-offset:2px}
 .account-disable-fields{display:grid;gap:7px;padding:18px 22px 4px}
 .account-disable-fields[hidden]{display:none}
+.account-disable-details{display:grid;gap:7px}
+.account-disable-details[hidden]{display:none}
 .account-disable-fields label{color:#5f7280;font-size:.82rem;font-weight:950}
 .account-disable-fields select,.account-disable-fields textarea{width:100%;box-sizing:border-box;border:1px solid #cfe0e9;border-radius:7px;background:#fff;color:#183b4d;padding:9px 11px;font:inherit}
 .account-disable-fields select{min-height:42px}
@@ -706,6 +706,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const disableFields = document.getElementById("accountDisableFields");
     const disableReason = document.getElementById("accountDisableReason");
     const disableDetails = document.getElementById("accountDisableDetails");
+    const disableDetailsGroup = document.getElementById("accountDisableDetailsGroup");
     const successModal = document.getElementById("accountSuccessModal");
     const successOk = document.getElementById("accountSuccessOk");
     const doctorModals = document.querySelectorAll("[data-account-doctor-modal]");
@@ -754,13 +755,23 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    function setDisableDetailsVisibility(shouldShow) {
+        if (!disableDetails || !disableDetailsGroup) return;
+        disableDetailsGroup.hidden = !shouldShow;
+        disableDetails.disabled = !shouldShow || (modalNextState && modalNextState.value === "1");
+        disableDetails.required = false;
+        if (!shouldShow) {
+            disableDetails.value = "";
+        }
+    }
+
     function restoreDisableDraft(userId) {
         if (!disableReason || !disableDetails) return;
         disableReason.value = "";
         disableDetails.value = "";
         const draft = readDisableDraft(userId);
         if (!draft) {
-            disableDetails.required = false;
+            setDisableDetailsVisibility(false);
             return;
         }
         const savedReason = String(draft.reason || "");
@@ -768,8 +779,11 @@ document.addEventListener("DOMContentLoaded", function () {
             return option.value === savedReason;
         });
         disableReason.value = reasonExists ? savedReason : "";
-        disableDetails.value = String(draft.details || "");
-        disableDetails.required = disableReason.value === "Other reason";
+        const isOtherReason = disableReason.value === "Other reason";
+        setDisableDetailsVisibility(isOtherReason);
+        if (isOtherReason) {
+            disableDetails.value = String(draft.details || "");
+        }
     }
 
     function closeStatusModal() {
@@ -797,12 +811,11 @@ document.addEventListener("DOMContentLoaded", function () {
             if (disableFields && disableReason && disableDetails) {
                 disableFields.hidden = isRestore;
                 disableReason.disabled = isRestore;
-                disableDetails.disabled = isRestore;
                 disableReason.required = !isRestore;
-                disableDetails.required = false;
                 if (isRestore) {
                     disableReason.value = "";
                     disableDetails.value = "";
+                    setDisableDetailsVisibility(false);
                     clearDisableDraft(activeDisableUserId);
                 } else {
                     restoreDisableDraft(activeDisableUserId);
@@ -815,7 +828,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (disableReason && disableDetails) {
         disableReason.addEventListener("change", function () {
-            disableDetails.required = disableReason.value === "Other reason";
+            setDisableDetailsVisibility(disableReason.value === "Other reason");
             saveDisableDraft();
         });
         disableDetails.addEventListener("input", saveDisableDraft);
@@ -826,11 +839,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (!disableReason.value) {
                     event.preventDefault();
                     disableReason.focus();
-                    return;
-                }
-                if (disableReason.value === "Other reason" && !disableDetails.value.trim()) {
-                    event.preventDefault();
-                    disableDetails.focus();
                     return;
                 }
                 clearDisableDraft(modalUserId ? modalUserId.value : activeDisableUserId);
@@ -1621,9 +1629,11 @@ include 'includes/header.php';
                         <option value="<?php echo htmlspecialchars($reasonOption, ENT_QUOTES); ?>"><?php echo htmlspecialchars($reasonOption); ?></option>
                     <?php endforeach; ?>
                 </select>
-                <label for="accountDisableDetails">Additional details (optional)</label>
-                <textarea name="disabled_details" id="accountDisableDetails" placeholder="Add a short explanation for the user."></textarea>
-                <small>Additional details are required when Other reason is selected.</small>
+                <div class="account-disable-details" id="accountDisableDetailsGroup" hidden>
+                    <label for="accountDisableDetails">Additional details (optional)</label>
+                    <textarea name="disabled_details" id="accountDisableDetails" placeholder="Add a short explanation for the user."></textarea>
+                    <small>Add more details if needed.</small>
+                </div>
             </div>
             <div class="account-modal-actions">
                 <button class="modal-secondary" type="button" data-close-account-modal>Cancel</button>
