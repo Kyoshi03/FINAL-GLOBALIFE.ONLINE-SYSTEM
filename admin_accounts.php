@@ -440,6 +440,15 @@ body{background:#f4f8fb;color:#1f343d}
 .account-modal{position:fixed;inset:0;z-index:4200;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(7,24,38,.54)}
 .account-modal.is-open{display:flex}
 .account-modal-card{width:min(460px,100%);border:1px solid #d8e6ed;border-radius:10px;background:#fff;box-shadow:0 24px 70px rgba(7,24,38,.26);overflow:hidden}
+.account-status-head{display:flex;align-items:center;gap:14px;padding:22px;background:linear-gradient(135deg,#eefaff 0%,#f8fcff 100%);border-bottom:1px solid #d8eef7}
+.account-status-logo-wrap{position:relative;display:grid;flex:0 0 54px;place-items:center;width:54px;height:54px}
+.account-status-logo-wrap::before{content:"";position:absolute;inset:0;border:2px solid rgba(72,202,228,.38);border-radius:50%;animation:accountStatusLogoRing 2.2s ease-out infinite}
+.account-status-logo{position:relative;width:46px;height:46px;border:3px solid #48cae4;border-radius:50%;background:#fff;box-shadow:0 6px 16px rgba(0,119,182,.16);object-fit:cover;animation:accountStatusLogoPulse 2.2s ease-in-out infinite}
+@keyframes accountStatusLogoPulse{0%,100%{transform:scale(1);box-shadow:0 6px 16px rgba(0,119,182,.16)}50%{transform:scale(1.06);box-shadow:0 9px 22px rgba(0,119,182,.26)}}
+@keyframes accountStatusLogoRing{0%{opacity:.8;transform:scale(.82)}70%,100%{opacity:0;transform:scale(1.35)}}
+.account-status-copy{min-width:0}
+.account-status-head h2{margin:0;color:#073b4c;font-size:1.25rem;line-height:1.25}
+.account-status-head p{margin:6px 0 0;color:#657b88;line-height:1.5}
 .account-disable-fields{display:grid;gap:7px;padding:18px 22px 4px}
 .account-disable-fields[hidden]{display:none}
 .account-disable-fields label{color:#5f7280;font-size:.82rem;font-weight:950}
@@ -564,6 +573,7 @@ body{background:#f4f8fb;color:#1f343d}
 .modal-primary{border:1px solid #ffc7cf;background:#fff0f2;color:#c1121f}
 .modal-primary.restore{border-color:#bfe6ce;background:#edf9f1;color:#17643a}
 .account-success-card{width:min(390px,100%);border:1px solid #d8e6ed;border-radius:10px;background:#fff;box-shadow:0 24px 70px rgba(7,24,38,.26);padding:28px 24px;text-align:center}
+.account-status-head + .account-disable-fields{padding-top:20px}
 .account-success-icon{display:inline-grid;place-items:center;width:58px;height:58px;margin-bottom:14px;border-radius:50%;background:#dcf7e7;color:#148047;font-size:1.8rem;font-weight:950}
 .account-success-card h2{margin:0 0 8px;color:#073b4c;font-size:1.24rem}
 .account-success-card p{margin:0 0 20px;color:#657b88;line-height:1.45}
@@ -1492,9 +1502,14 @@ include 'includes/header.php';
             <input type="hidden" name="account_action" value="toggle_user">
             <input type="hidden" name="user_id" id="accountStatusUserId" value="">
             <input type="hidden" name="next_state" id="accountStatusNextState" value="">
-            <div class="account-modal-head">
-                <h2 id="accountStatusTitle">Disable this user?</h2>
-                <p id="accountStatusText">Are you sure you want to disable this user?</p>
+            <div class="account-status-head">
+                <div class="account-status-logo-wrap" aria-hidden="true">
+                    <img class="account-status-logo" src="globalife.png" alt="">
+                </div>
+                <div class="account-status-copy">
+                    <h2 id="accountStatusTitle">Disable this user?</h2>
+                    <p id="accountStatusText">Are you sure you want to disable this user?</p>
+                </div>
             </div>
             <div class="account-disable-fields" id="accountDisableFields">
                 <label for="accountDisableReason">Reason for disabling</label>
