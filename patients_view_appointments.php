@@ -774,7 +774,7 @@ $additionalStyles = patientAvatarStyles() . '
     }
     .patient-inline-status-filter {
         display:grid;
-        grid-template-columns:max-content minmax(220px, 320px);
+        grid-template-columns:max-content minmax(220px, 320px) minmax(0, 1fr);
         align-items:center;
         gap:16px;
         margin:0 0 18px;
