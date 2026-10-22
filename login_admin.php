@@ -2,6 +2,7 @@
 require_once 'includes/session.php';
 
 $error = '';
+$blockedLoginMessage = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isLoggedIn()) {
     redirectToDashboardForCurrentUser();
@@ -24,7 +25,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Access denied. This login is for administrators only.';
             }
         } else {
-            $error = consumeLoginBlockedMessage() ?? 'Invalid username or password.';
+            $blockedLoginMessage = consumeLoginBlockedMessage();
+            $error = $blockedLoginMessage === null ? 'Invalid username or password.' : '';
         }
     }
 }
@@ -269,6 +271,119 @@ $additionalStyles = '
         position: relative;
         z-index: 1;
     }
+
+    .disabled-login-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 2600;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        background: rgba(7, 59, 76, 0.68);
+    }
+
+    .disabled-login-dialog {
+        width: min(100%, 480px);
+        box-sizing: border-box;
+        overflow: hidden;
+        border: 1px solid #d8edf1;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 24px 70px rgba(7, 59, 76, 0.28);
+    }
+
+    .disabled-login-head {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 22px 24px;
+        background: #eef9fc;
+        border-bottom: 1px solid #d8edf1;
+    }
+
+    .disabled-login-icon {
+        display: inline-grid;
+        flex: 0 0 42px;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: #fff0f0;
+        color: #d90429;
+        font-size: 1.45rem;
+        font-weight: 800;
+    }
+
+    .disabled-login-head h2 {
+        margin: 0;
+        color: #073b4c;
+        font-size: 1.35rem;
+        line-height: 1.25;
+    }
+
+    .disabled-login-body {
+        padding: 24px;
+    }
+
+    .disabled-login-body p {
+        margin: 0;
+        color: #51636d;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+
+    .disabled-login-message {
+        padding: 14px 16px;
+        border: 1px solid #ffd2d2;
+        border-left: 4px solid #d90429;
+        border-radius: 8px;
+        background: #fff7f7;
+        color: #8f1d2c !important;
+        font-weight: 700;
+    }
+
+    .disabled-login-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 22px;
+    }
+
+    .disabled-login-close {
+        min-height: 44px;
+        padding: 10px 22px;
+        border: 0;
+        border-radius: 8px;
+        background: #0077b6;
+        color: #fff;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 700;
+    }
+
+    .disabled-login-close:hover,
+    .disabled-login-close:focus-visible {
+        background: #005f91;
+    }
+
+    @media (max-width: 560px) {
+        .disabled-login-modal {
+            padding: 14px;
+        }
+
+        .disabled-login-head,
+        .disabled-login-body {
+            padding: 18px;
+        }
+
+        .disabled-login-head h2 {
+            font-size: 1.15rem;
+        }
+
+        .disabled-login-actions,
+        .disabled-login-close {
+            width: 100%;
+        }
+    }
     .back-to-home {
         text-align: center;
         margin-top: 25px;
@@ -378,6 +493,55 @@ $additionalStyles = '
             </div>
         </div>
     </div>
+
+    <?php if ($blockedLoginMessage !== null): ?>
+        <section class="disabled-login-modal" role="alertdialog" aria-modal="true" aria-labelledby="disabled-login-title" aria-describedby="disabled-login-message">
+            <div class="disabled-login-dialog">
+                <div class="disabled-login-head">
+                    <span class="disabled-login-icon" aria-hidden="true">!</span>
+                    <h2 id="disabled-login-title">Account access unavailable</h2>
+                </div>
+                <div class="disabled-login-body">
+                    <p class="disabled-login-message" id="disabled-login-message">
+                        <?php echo htmlspecialchars($blockedLoginMessage); ?>
+                    </p>
+                    <p style="margin-top:16px;">Please contact the clinic administrator if you believe this was a mistake.</p>
+                    <div class="disabled-login-actions">
+                        <button type="button" class="disabled-login-close">Close</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    <?php endif; ?>
+
+    <script>
+        const disabledLoginModal = document.querySelector('.disabled-login-modal');
+        const disabledLoginClose = document.querySelector('.disabled-login-close');
+
+        function closeDisabledLoginModal() {
+            if (disabledLoginModal) {
+                disabledLoginModal.remove();
+            }
+        }
+
+        if (disabledLoginModal) {
+            disabledLoginModal.addEventListener('click', function (event) {
+                if (event.target === disabledLoginModal) {
+                    closeDisabledLoginModal();
+                }
+            });
+        }
+
+        if (disabledLoginClose) {
+            disabledLoginClose.addEventListener('click', closeDisabledLoginModal);
+        }
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && disabledLoginModal) {
+                closeDisabledLoginModal();
+            }
+        });
+    </script>
 </body>
 </html>
 

@@ -3,6 +3,7 @@ require_once 'includes/session.php';
 require_once __DIR__ . '/config/database.php';
 
 $loginError = '';
+$loginBlockedMessage = null;
 $submittedUsername = '';
 $loginSuccess = '';
 
@@ -38,7 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['portal_login'])) {
         unset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['full_name'], $_SESSION['user_role']);
         $loginError = 'We could not open this account. Please try again.';
     } else {
-        $loginError = consumeLoginBlockedMessage() ?? 'Invalid username or password. Check your details and try again.';
+        $loginBlockedMessage = consumeLoginBlockedMessage();
+        $loginError = $loginBlockedMessage === null
+            ? 'Invalid username or password. Check your details and try again.'
+            : '';
     }
 }
 
@@ -594,6 +598,129 @@ $additionalStyles = '
         color: #17652b;
     }
 
+    .disabled-login-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 2600;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        background: rgba(7, 59, 76, 0.68);
+        opacity: 0;
+        pointer-events: none;
+        visibility: hidden;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    .disabled-login-modal.is-open {
+        opacity: 1;
+        pointer-events: auto;
+        visibility: visible;
+    }
+
+    .disabled-login-dialog {
+        width: min(100%, 480px);
+        box-sizing: border-box;
+        overflow: hidden;
+        border: 1px solid #d8edf1;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 24px 70px rgba(7, 59, 76, 0.28);
+    }
+
+    .disabled-login-head {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 22px 24px;
+        background: #eef9fc;
+        border-bottom: 1px solid #d8edf1;
+    }
+
+    .disabled-login-icon {
+        display: inline-grid;
+        flex: 0 0 42px;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: #fff0f0;
+        color: #d90429;
+        font-size: 1.45rem;
+        font-weight: 800;
+    }
+
+    .disabled-login-head h2 {
+        margin: 0;
+        color: #073b4c;
+        font-size: 1.35rem;
+        line-height: 1.25;
+    }
+
+    .disabled-login-body {
+        padding: 24px;
+    }
+
+    .disabled-login-body p {
+        margin: 0;
+        color: #51636d;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+
+    .disabled-login-message {
+        padding: 14px 16px;
+        border: 1px solid #ffd2d2;
+        border-left: 4px solid #d90429;
+        border-radius: 8px;
+        background: #fff7f7;
+        color: #8f1d2c !important;
+        font-weight: 700;
+    }
+
+    .disabled-login-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 22px;
+    }
+
+    .disabled-login-close {
+        min-height: 44px;
+        padding: 10px 22px;
+        border: 0;
+        border-radius: 8px;
+        background: #0077b6;
+        color: #fff;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 700;
+    }
+
+    .disabled-login-close:hover,
+    .disabled-login-close:focus-visible {
+        background: #005f91;
+    }
+
+    @media (max-width: 560px) {
+        .disabled-login-modal {
+            padding: 14px;
+        }
+
+        .disabled-login-head,
+        .disabled-login-body {
+            padding: 18px;
+        }
+
+        .disabled-login-head h2 {
+            font-size: 1.15rem;
+        }
+
+        .disabled-login-actions,
+        .disabled-login-close {
+            width: 100%;
+        }
+    }
+
     #patient-login-success[hidden] {
         display: none;
     }
@@ -1020,7 +1147,20 @@ $additionalScripts = '
         const verificationSuccessCloseTriggers = document.querySelectorAll("[data-verification-success-close]");
         const verificationSuccessLogin = document.getElementById("verification-success-login");
         const patientLoginSuccess = document.getElementById("patient-login-success");
-        const shouldOpenPatientLogin = ' . (($loginError !== '' || $loginSuccess !== '') ? 'true' : 'false') . ';
+        const disabledLoginModal = document.getElementById("disabled-login-modal");
+        const disabledLoginClose = document.querySelector("[data-disabled-login-close]");
+        const shouldOpenPatientLogin = ' . (($loginError !== '' || $loginSuccess !== '' || $loginBlockedMessage !== null) ? 'true' : 'false') . ';
+
+        function closeDisabledLoginModal() {
+            if (!disabledLoginModal) {
+                return;
+            }
+            disabledLoginModal.classList.remove("is-open");
+            disabledLoginModal.setAttribute("aria-hidden", "true");
+            if (disabledLoginClose) {
+                disabledLoginClose.blur();
+            }
+        }
 
         function framePath(frame) {
             if (!frame || !frame.contentWindow) {
@@ -1409,8 +1549,22 @@ $additionalScripts = '
             });
         }
 
+        if (disabledLoginModal) {
+            disabledLoginModal.addEventListener("click", function (event) {
+                if (event.target === disabledLoginModal) {
+                    closeDisabledLoginModal();
+                }
+            });
+        }
+
+        if (disabledLoginClose) {
+            disabledLoginClose.addEventListener("click", closeDisabledLoginModal);
+        }
+
         document.addEventListener("keydown", function (event) {
-            if (event.key === "Escape" && registrationModal && registrationModal.classList.contains("is-open")) {
+            if (event.key === "Escape" && disabledLoginModal && disabledLoginModal.classList.contains("is-open")) {
+                closeDisabledLoginModal();
+            } else if (event.key === "Escape" && registrationModal && registrationModal.classList.contains("is-open")) {
                 closeRegistrationModal(event);
             } else if (event.key === "Escape" && verificationModal && verificationModal.classList.contains("is-open")) {
                 closeVerificationModal(event);
@@ -1626,6 +1780,23 @@ include 'includes/header.php';
         </div>
     </section>
 
+    <section id="disabled-login-modal" class="disabled-login-modal<?php echo $loginBlockedMessage !== null ? ' is-open' : ''; ?>" role="alertdialog" aria-modal="true" aria-labelledby="disabled-login-title" aria-describedby="disabled-login-message" aria-hidden="<?php echo $loginBlockedMessage !== null ? 'false' : 'true'; ?>">
+        <div class="disabled-login-dialog">
+            <div class="disabled-login-head">
+                <span class="disabled-login-icon" aria-hidden="true">!</span>
+                <h2 id="disabled-login-title">Account access unavailable</h2>
+            </div>
+            <div class="disabled-login-body">
+                <p class="disabled-login-message" id="disabled-login-message">
+                    <?php echo htmlspecialchars($loginBlockedMessage ?? 'This account is disabled and cannot log in.'); ?>
+                </p>
+                <p style="margin-top:16px;">Please contact the clinic administrator if you believe this was a mistake.</p>
+                <div class="disabled-login-actions">
+                    <button type="button" class="disabled-login-close" data-disabled-login-close>Close</button>
+                </div>
+            </div>
+        </div>
+    </section>
     <section id="patient-login" class="patient-login-section" role="dialog" aria-modal="true" aria-labelledby="patient-login-title" aria-hidden="true">
         <div class="container patient-login-grid">
             <button type="button" class="modal-close-btn" data-login-close aria-label="Close login">&times;</button>
