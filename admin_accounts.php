@@ -441,11 +441,16 @@ body{background:#f4f8fb;color:#1f343d}
 .account-modal.is-open{display:flex}
 .account-modal-card{width:min(460px,100%);border:1px solid #d8e6ed;border-radius:10px;background:#fff;box-shadow:0 24px 70px rgba(7,24,38,.26);overflow:hidden}
 .account-status-head{display:flex;align-items:center;gap:14px;padding:22px;background:linear-gradient(135deg,#eefaff 0%,#f8fcff 100%);border-bottom:1px solid #d8eef7}
-.account-status-icon-wrap{position:relative;display:grid;flex:0 0 54px;place-items:center;width:54px;height:54px;border:1px solid #b8e9f4;border-radius:14px;background:#eaf8fc;overflow:visible}
+.account-status-icon-wrap{position:relative;display:grid;flex:0 0 54px;place-items:center;width:54px;height:54px;border:1px solid #b8e9f4;border-radius:14px;background:#eaf8fc;overflow:visible;transition:transform .22s ease,box-shadow .22s ease,background .22s ease}
 .account-status-icon-wrap::before{content:"";position:absolute;inset:-5px;border:2px solid rgba(72,202,228,.28);border-radius:18px;animation:accountStatusIconRing 2.2s ease-out infinite}
 .account-status-icon{position:relative;width:32px;height:32px;fill:none;stroke:#0096c7;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8;animation:accountStatusIconPulse 2.2s ease-in-out infinite}
 @keyframes accountStatusIconPulse{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-2px) scale(1.06)}}
 @keyframes accountStatusIconRing{0%{opacity:.8;transform:scale(.86)}70%,100%{opacity:0;transform:scale(1.15)}}
+.account-status-icon-wrap:hover{transform:translateY(-4px) scale(1.04);background:#f5fdff;box-shadow:0 10px 24px rgba(0,150,199,.2)}
+.account-status-icon-wrap:hover::before{animation:accountStatusIconHoverRing .7s ease-out}
+.account-status-icon-wrap:hover .account-status-icon{animation:accountStatusIconHover .7s ease-in-out}
+@keyframes accountStatusIconHover{0%{transform:rotate(0) scale(1)}35%{transform:rotate(-8deg) scale(1.12)}70%{transform:rotate(7deg) scale(1.08)}100%{transform:rotate(0) scale(1)}}
+@keyframes accountStatusIconHoverRing{0%{opacity:.85;transform:scale(.84)}100%{opacity:0;transform:scale(1.2)}}
 @media (prefers-reduced-motion:reduce){.account-status-icon-wrap::before,.account-status-icon{animation:none}}
 .account-status-copy{min-width:0}
 .account-status-eyebrow{display:block;margin-bottom:5px;color:#0077b6;font-size:.7rem;font-weight:950;letter-spacing:.12em;text-transform:uppercase}
