@@ -3240,6 +3240,21 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             </div>
         </div>
     <?php endif; ?>
+    <?php if ($currentPage !== 'admin_accounts.php'): ?>
+    <script>
+    (function () {
+        try {
+            Object.keys(window.localStorage).forEach(function (key) {
+                if (key.indexOf('adminAccountDisableDraft:') === 0) {
+                    window.localStorage.removeItem(key);
+                }
+            });
+        } catch (error) {
+            // Ignore storage cleanup errors so navigation is never blocked.
+        }
+    })();
+    </script>
+    <?php endif; ?>
     <script>
     function toggleMobileMenu() {
         const nav = document.getElementById('mainNav');
