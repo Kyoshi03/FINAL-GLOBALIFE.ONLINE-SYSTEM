@@ -329,6 +329,9 @@ function initDatabase() {
         emergency_contact_name VARCHAR(100) DEFAULT NULL,
         emergency_contact_relationship VARCHAR(50) DEFAULT NULL,
         emergency_contact_number VARCHAR(20) DEFAULT NULL,
+        disabled_reason VARCHAR(120) DEFAULT NULL,
+        disabled_details VARCHAR(500) DEFAULT NULL,
+        disabled_at DATETIME DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
     $conn->query("UPDATE users SET role = 'admin' WHERE role = 'receptionist'");
@@ -354,7 +357,10 @@ function initDatabase() {
         ['city', 'VARCHAR(100) DEFAULT NULL', 'barangay'],
         ['emergency_contact_name', 'VARCHAR(100) DEFAULT NULL', 'city'],
         ['emergency_contact_relationship', 'VARCHAR(50) DEFAULT NULL', 'emergency_contact_name'],
-        ['emergency_contact_number', 'VARCHAR(20) DEFAULT NULL', 'emergency_contact_relationship']
+        ['emergency_contact_number', 'VARCHAR(20) DEFAULT NULL', 'emergency_contact_relationship'],
+        ['disabled_reason', 'VARCHAR(120) DEFAULT NULL', 'emergency_contact_number'],
+        ['disabled_details', 'VARCHAR(500) DEFAULT NULL', 'disabled_reason'],
+        ['disabled_at', 'DATETIME DEFAULT NULL', 'disabled_details']
     ];
     
     foreach ($columns_to_add as $col) {

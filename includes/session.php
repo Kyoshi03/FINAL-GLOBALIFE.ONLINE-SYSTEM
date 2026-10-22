@@ -217,9 +217,10 @@ function getCurrentUser() {
 function login($username, $password) {
     require_once __DIR__ . '/../config/database.php';
     $conn = getDBConnection();
+    unset($_SESSION['login_blocked_reason']);
 
     $username = trim((string) $username);
-    $stmt = $conn->prepare("SELECT id, username, password, first_name, middle_name, last_name, suffix, role, COALESCE(is_active, 1) AS is_active FROM users WHERE username = ? LIMIT 1");
+    $stmt = $conn->prepare("SELECT id, username, password, first_name, middle_name, last_name, suffix, role, COALESCE(is_active, 1) AS is_active, disabled_reason, disabled_details FROM users WHERE username = ? LIMIT 1");
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -227,6 +228,10 @@ function login($username, $password) {
     if ($result->num_rows === 1) {
         $user = $result->fetch_assoc();
         if ((int) $user['is_active'] !== 1) {
+            $_SESSION['login_blocked_reason'] = [
+                'reason' => trim((string) ($user['disabled_reason'] ?? '')),
+                'details' => trim((string) ($user['disabled_details'] ?? '')),
+            ];
             $stmt->close();
             $conn->close();
             return false;
@@ -258,6 +263,25 @@ function login($username, $password) {
     $stmt->close();
     $conn->close();
     return false;
+}
+
+function consumeLoginBlockedMessage(): ?string {
+    $blocked = $_SESSION['login_blocked_reason'] ?? null;
+    unset($_SESSION['login_blocked_reason']);
+    if (!is_array($blocked)) {
+        return null;
+    }
+
+    $reason = trim((string) ($blocked['reason'] ?? ''));
+    $details = trim((string) ($blocked['details'] ?? ''));
+    $message = 'This account is disabled and cannot log in.';
+    if ($reason !== '') {
+        $message .= ' Reason: ' . $reason . '.';
+    }
+    if ($details !== '') {
+        $message .= ' Additional details: ' . $details;
+    }
+    return $message;
 }
 
 // Logout function

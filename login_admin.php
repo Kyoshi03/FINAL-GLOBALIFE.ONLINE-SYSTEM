@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Access denied. This login is for administrators only.';
             }
         } else {
-            $error = 'Invalid username or password.';
+            $error = consumeLoginBlockedMessage() ?? 'Invalid username or password.';
         }
     }
 }

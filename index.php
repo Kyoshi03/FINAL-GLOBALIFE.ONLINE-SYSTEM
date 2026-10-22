@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['portal_login'])) {
         unset($_SESSION['user_id'], $_SESSION['username'], $_SESSION['full_name'], $_SESSION['user_role']);
         $loginError = 'We could not open this account. Please try again.';
     } else {
-        $loginError = 'Invalid username or password. Check your details and try again.';
+        $loginError = consumeLoginBlockedMessage() ?? 'Invalid username or password. Check your details and try again.';
     }
 }
 

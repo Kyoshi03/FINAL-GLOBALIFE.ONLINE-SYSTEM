@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: ' . dashboardForRole($user['role']));
         exit();
     } else {
-        $error = 'Invalid username or password. Please check your details and try again.';
+        $error = consumeLoginBlockedMessage() ?? 'Invalid username or password. Please check your details and try again.';
     }
 }
 

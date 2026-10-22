@@ -22,10 +22,22 @@ $dayNames = [
     7 => 'Sunday',
 ];
 $suffixOptions = ['Jr', 'Sr', 'II', 'III', 'IV', 'V'];
+$disableReasonOptions = [
+    'Suspicious login activity',
+    'Unauthorized access attempt',
+    'Violation of clinic policy',
+    'Misuse of clinic system',
+    'False or invalid information',
+    'Inactive or duplicate account',
+    'Administrative review',
+    'Other reason',
+];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['account_action'] ?? '') === 'toggle_user') {
     $userId = (int) ($_POST['user_id'] ?? 0);
     $nextState = (int) ($_POST['next_state'] ?? 0) === 1 ? 1 : 0;
+    $disableReason = trim((string) ($_POST['disabled_reason'] ?? ''));
+    $disableDetails = trim((string) ($_POST['disabled_details'] ?? ''));
 
     if ($userId <= 0) {
         $_SESSION['error'] = 'Please choose a valid account.';
@@ -40,11 +52,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['account_action'] ?? '') ==
 
         if (!$toggleUser) {
             $_SESSION['error'] = 'Only patient and doctor accounts can be disabled here.';
+        } elseif ($nextState === 0 && !in_array($disableReason, $disableReasonOptions, true)) {
+            $_SESSION['error'] = 'Please select a valid reason before disabling this account.';
+        } elseif ($nextState === 0 && $disableReason === 'Other reason' && $disableDetails === '') {
+            $_SESSION['error'] = 'Please provide additional details when Other reason is selected.';
         } else {
             $toggleRole = (string) $toggleUser['role'];
             $roleLabel = $toggleRole === 'doctor' ? 'Doctor' : 'Patient';
-            $stmt = $conn->prepare("UPDATE users SET is_active = ? WHERE id = ? AND role IN ('patient', 'doctor')");
-            $stmt->bind_param('ii', $nextState, $userId);
+            if ($nextState === 0) {
+                $stmt = $conn->prepare("UPDATE users SET is_active = 0, disabled_reason = ?, disabled_details = ?, disabled_at = NOW() WHERE id = ? AND role IN ('patient', 'doctor')");
+                $stmt->bind_param('ssi', $disableReason, $disableDetails, $userId);
+            } else {
+                $stmt = $conn->prepare("UPDATE users SET is_active = 1, disabled_reason = NULL, disabled_details = NULL, disabled_at = NULL WHERE id = ? AND role IN ('patient', 'doctor')");
+                $stmt->bind_param('i', $userId);
+            }
             if ($stmt->execute()) {
                 $_SESSION['success'] = $nextState === 1 ? $roleLabel . ' account enabled.' : $roleLabel . ' account disabled.';
             } else {
@@ -419,6 +440,14 @@ body{background:#f4f8fb;color:#1f343d}
 .account-modal{position:fixed;inset:0;z-index:4200;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(7,24,38,.54)}
 .account-modal.is-open{display:flex}
 .account-modal-card{width:min(460px,100%);border:1px solid #d8e6ed;border-radius:10px;background:#fff;box-shadow:0 24px 70px rgba(7,24,38,.26);overflow:hidden}
+.account-disable-fields{display:grid;gap:7px;padding:18px 22px 4px}
+.account-disable-fields[hidden]{display:none}
+.account-disable-fields label{color:#5f7280;font-size:.82rem;font-weight:950}
+.account-disable-fields select,.account-disable-fields textarea{width:100%;box-sizing:border-box;border:1px solid #cfe0e9;border-radius:7px;background:#fff;color:#183b4d;padding:9px 11px;font:inherit}
+.account-disable-fields select{min-height:42px}
+.account-disable-fields textarea{min-height:78px;resize:vertical}
+.account-disable-fields select:focus,.account-disable-fields textarea:focus{border-color:#0f7cc2;box-shadow:0 0 0 3px rgba(15,124,194,.1);outline:none}
+.account-disable-fields small{color:#708792;font-size:.76rem;line-height:1.4}
 .doctor-account-modal-card{width:min(1060px,100%);max-height:88vh;overflow:auto;position:relative}
 .account-modal-head{padding:22px;border-bottom:1px solid #e4edf2;background:#f8fcff}
 .doctor-modal-close{position:absolute;top:16px;right:16px;width:30px;height:30px;border:0;border-radius:7px;background:transparent;color:#8aa0ad;font-size:1.25rem;line-height:1;font-weight:900;cursor:pointer;z-index:2}
@@ -637,6 +666,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const modalUserId = document.getElementById("accountStatusUserId");
     const modalNextState = document.getElementById("accountStatusNextState");
     const modalSubmit = document.getElementById("accountStatusSubmit");
+    const disableFields = document.getElementById("accountDisableFields");
+    const disableReason = document.getElementById("accountDisableReason");
+    const disableDetails = document.getElementById("accountDisableDetails");
     const successModal = document.getElementById("accountSuccessModal");
     const successOk = document.getElementById("accountSuccessOk");
     const doctorModals = document.querySelectorAll("[data-account-doctor-modal]");
@@ -662,10 +694,42 @@ document.addEventListener("DOMContentLoaded", function () {
             modalNextState.value = nextState;
             modalSubmit.textContent = isRestore ? "Enable User" : "Disable User";
             modalSubmit.classList.toggle("restore", isRestore);
+            if (disableFields && disableReason && disableDetails) {
+                disableFields.hidden = isRestore;
+                disableReason.disabled = isRestore;
+                disableDetails.disabled = isRestore;
+                disableReason.required = !isRestore;
+                disableDetails.required = false;
+                if (isRestore) {
+                    disableReason.value = "";
+                    disableDetails.value = "";
+                }
+            }
             modal.classList.add("is-open");
             modal.setAttribute("aria-hidden", "false");
         });
     });
+
+    if (disableReason && disableDetails) {
+        disableReason.addEventListener("change", function () {
+            disableDetails.required = disableReason.value === "Other reason";
+        });
+    }
+    if (modal && modalSubmit) {
+        modal.addEventListener("submit", function (event) {
+            if (modalNextState && modalNextState.value === "0" && disableReason && disableDetails) {
+                if (!disableReason.value) {
+                    event.preventDefault();
+                    disableReason.focus();
+                    return;
+                }
+                if (disableReason.value === "Other reason" && !disableDetails.value.trim()) {
+                    event.preventDefault();
+                    disableDetails.focus();
+                }
+            }
+        });
+    }
 
     document.querySelectorAll("[data-close-account-modal]").forEach(function (button) {
         button.addEventListener("click", closeStatusModal);
@@ -1431,6 +1495,18 @@ include 'includes/header.php';
             <div class="account-modal-head">
                 <h2 id="accountStatusTitle">Disable this user?</h2>
                 <p id="accountStatusText">Are you sure you want to disable this user?</p>
+            </div>
+            <div class="account-disable-fields" id="accountDisableFields">
+                <label for="accountDisableReason">Reason for disabling</label>
+                <select name="disabled_reason" id="accountDisableReason">
+                    <option value="" selected disabled>Select a reason</option>
+                    <?php foreach ($disableReasonOptions as $reasonOption): ?>
+                        <option value="<?php echo htmlspecialchars($reasonOption, ENT_QUOTES); ?>"><?php echo htmlspecialchars($reasonOption); ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <label for="accountDisableDetails">Additional details (optional)</label>
+                <textarea name="disabled_details" id="accountDisableDetails" placeholder="Add a short explanation for the user."></textarea>
+                <small>Additional details are required when Other reason is selected.</small>
             </div>
             <div class="account-modal-actions">
                 <button class="modal-secondary" type="button" data-close-account-modal>Cancel</button>
