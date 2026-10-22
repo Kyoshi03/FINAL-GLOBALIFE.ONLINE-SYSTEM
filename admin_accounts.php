@@ -441,11 +441,12 @@ body{background:#f4f8fb;color:#1f343d}
 .account-modal.is-open{display:flex}
 .account-modal-card{width:min(460px,100%);border:1px solid #d8e6ed;border-radius:10px;background:#fff;box-shadow:0 24px 70px rgba(7,24,38,.26);overflow:hidden}
 .account-status-head{display:flex;align-items:center;gap:14px;padding:22px;background:linear-gradient(135deg,#eefaff 0%,#f8fcff 100%);border-bottom:1px solid #d8eef7}
-.account-status-logo-wrap{position:relative;display:grid;flex:0 0 54px;place-items:center;width:54px;height:54px}
-.account-status-logo-wrap::before{content:"";position:absolute;inset:0;border:2px solid rgba(72,202,228,.38);border-radius:50%;animation:accountStatusLogoRing 2.2s ease-out infinite}
-.account-status-logo{position:relative;width:46px;height:46px;border:3px solid #48cae4;border-radius:50%;background:#fff;box-shadow:0 6px 16px rgba(0,119,182,.16);object-fit:cover;animation:accountStatusLogoPulse 2.2s ease-in-out infinite}
-@keyframes accountStatusLogoPulse{0%,100%{transform:scale(1);box-shadow:0 6px 16px rgba(0,119,182,.16)}50%{transform:scale(1.06);box-shadow:0 9px 22px rgba(0,119,182,.26)}}
-@keyframes accountStatusLogoRing{0%{opacity:.8;transform:scale(.82)}70%,100%{opacity:0;transform:scale(1.35)}}
+.account-status-icon-wrap{position:relative;display:grid;flex:0 0 54px;place-items:center;width:54px;height:54px;border:1px solid #b8e9f4;border-radius:14px;background:#eaf8fc;overflow:visible}
+.account-status-icon-wrap::before{content:"";position:absolute;inset:-5px;border:2px solid rgba(72,202,228,.28);border-radius:18px;animation:accountStatusIconRing 2.2s ease-out infinite}
+.account-status-icon{position:relative;width:32px;height:32px;fill:none;stroke:#0096c7;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8;animation:accountStatusIconPulse 2.2s ease-in-out infinite}
+@keyframes accountStatusIconPulse{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-2px) scale(1.06)}}
+@keyframes accountStatusIconRing{0%{opacity:.8;transform:scale(.86)}70%,100%{opacity:0;transform:scale(1.15)}}
+@media (prefers-reduced-motion:reduce){.account-status-icon-wrap::before,.account-status-icon{animation:none}}
 .account-status-copy{min-width:0}
 .account-status-head h2{margin:0;color:#073b4c;font-size:1.25rem;line-height:1.25}
 .account-status-head p{margin:6px 0 0;color:#657b88;line-height:1.5}
@@ -1503,8 +1504,12 @@ include 'includes/header.php';
             <input type="hidden" name="user_id" id="accountStatusUserId" value="">
             <input type="hidden" name="next_state" id="accountStatusNextState" value="">
             <div class="account-status-head">
-                <div class="account-status-logo-wrap" aria-hidden="true">
-                    <img class="account-status-logo" src="globalife.png" alt="">
+                <div class="account-status-icon-wrap" aria-hidden="true">
+                    <svg class="account-status-icon" viewBox="0 0 24 24">
+                        <path d="M15 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1"></path>
+                        <circle cx="9" cy="7" r="3"></circle>
+                        <path d="m17 9 4 4m0-4-4 4"></path>
+                    </svg>
                 </div>
                 <div class="account-status-copy">
                     <h2 id="accountStatusTitle">Disable this user?</h2>
