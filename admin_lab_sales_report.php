@@ -364,7 +364,7 @@ function sales_report_output_pdf(array $rows, string $from, string $to, float $t
 
 $today = new DateTimeImmutable('today');
 $period = sales_report_period(strtolower(trim((string) ($_GET['period'] ?? 'daily'))));
-$showTrend = (string) ($_GET['show_trend'] ?? '') === '1';
+$showTrend = true;
 $anchorDate = trim((string) ($_GET['anchor_date'] ?? $today->format('Y-m-d')));
 if (!sales_report_valid_date($anchorDate)) $anchorDate = $today->format('Y-m-d');
 $anchor = new DateTimeImmutable($anchorDate);
@@ -555,8 +555,8 @@ unset($chartView);
 $allowedViewModes = ['current', 'daily', 'monthly', 'quarterly'];
 $viewMode = strtolower(trim((string) ($_GET['view_mode'] ?? '')));
 if (!in_array($viewMode, $allowedViewModes, true)) $viewMode = in_array($period, ['daily', 'monthly', 'quarterly'], true) ? $period : 'current';
-$showGraph = $showTrend;
-$selectedViewKey = $showTrend && isset($reportViews[$viewMode]) ? $viewMode : 'current';
+$showGraph = true;
+$selectedViewKey = isset($reportViews[$viewMode]) ? $viewMode : 'current';
 $selectedReportView = $reportViews[$selectedViewKey];
 $displayFrom = $selectedReportView['from']->format('Y-m-d');
 $displayTo = $selectedReportView['to']->format('Y-m-d');
@@ -679,7 +679,7 @@ document.addEventListener('DOMContentLoaded',function(){
     if(editCustomRange)editCustomRange.addEventListener('click',function(){openRangeModal()});
     syncCustomRangeEditor();
     r.addEventListener('change',function(){var v=r.value;if(v==='custom'){openRangeModal();return}if(v==='last_7_days'){setRange(6, h.value);viewMode.value='daily';p.value='daily';showTrend.value='1';setActivePeriod('daily',true);lastRangePreset=v;submit();return}if(v==='last_12_months'){setReportPeriodRange('monthly');viewMode.value='monthly';p.value='monthly';showTrend.value='1';setActivePeriod('monthly',true);lastRangePreset=v;submit();return}if(v==='last_4_quarters'){setReportPeriodRange('quarterly');viewMode.value='quarterly';p.value='quarterly';showTrend.value='1';setActivePeriod('quarterly',true);lastRangePreset=v;submit();return}if(v==='today'){setRange(0)}else if(v==='yesterday'){var y=new Date(r.getAttribute('data-today')+'T00:00:00');y.setDate(y.getDate()-1);setRange(0,localDate(y))}else if(v==='past_3_days'){setRange(2)}else if(v==='past_7_days'){setRange(6)}else if(v==='past_2_weeks'){setRange(13)}else if(v==='past_30_days'){setRange(29)}useManualRange(v!=='today');lastRangePreset=v;submit()});
-    document.querySelectorAll('[data-sales-period]').forEach(function(btn){btn.addEventListener('click',function(){var v=btn.getAttribute('data-sales-period'),isVisible=trendPanel&&!trendPanel.hidden,isActiveButton=btn.classList.contains('is-active');if(isVisible&&isActiveButton){setTrendVisible(false);setActivePeriod(v,false);return}setActivePeriod(v,true);setTrendVisible(true,v);focusPeriodCard(v)})});
+    document.querySelectorAll('[data-sales-period]').forEach(function(btn){btn.addEventListener('click',function(){var v=btn.getAttribute('data-sales-period');setActivePeriod(v,true);setTrendVisible(true,v);focusPeriodCard(v)})});
     var print=document.getElementById('printSalesReport');if(print)print.addEventListener('click',function(){salesPaginationViews.forEach(function(view){if(view._salesPaginationShowAll)view._salesPaginationShowAll()});window.print();window.setTimeout(function(){salesPaginationViews.forEach(function(view){if(view._salesPaginationRender)view._salesPaginationRender()})},100)})
     try{var savedScrollState=sessionStorage.getItem(salesScrollStorageKey);if(savedScrollState){sessionStorage.removeItem(salesScrollStorageKey);var state;try{state=JSON.parse(savedScrollState)}catch(error){state={y:Number(savedScrollState)||0,target:'current'}}window.requestAnimationFrame(function(){window.requestAnimationFrame(function(){if(state&&state.target==='period-cards'){var cards=document.querySelector('.sales-period-cards');if(cards){window.scrollTo(0,Math.max(0,Math.round(cards.getBoundingClientRect().top+window.pageYOffset-76)));var activeCard=cards.querySelector('.sales-period-card.is-active');if(activeCard){try{activeCard.focus({preventScroll:true})}catch(error){activeCard.focus()}}return}}window.scrollTo(0,Number(state&&state.y)||0)})})}}catch(error){}
 });
