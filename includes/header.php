@@ -2917,7 +2917,7 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                             <span class="nav-label">Manage Doctors</span>
                         </a>
                         <?php
-                        $adminSettingsPages = ['clinic_information.php', 'email_sms.php', 'slot_management.php'];
+                        $adminSettingsPages = ['clinic_information.php', 'email_sms.php'];
                         $isAdminSettingsOpen = in_array(basename($_SERVER['PHP_SELF']), $adminSettingsPages, true);
                         ?>
                         <div class="nav-settings-group nav-admin-settings-group <?php echo $isAdminSettingsOpen ? 'is-open' : ''; ?>">
@@ -2930,7 +2930,6 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                                 <div class="nav-submenu-inner">
                                     <a href="clinic_information.php" class="nav-subitem <?php echo basename($_SERVER['PHP_SELF']) === 'clinic_information.php' ? 'active' : ''; ?>">Clinic Information</a>
                                     <a href="email_sms.php" class="nav-subitem <?php echo basename($_SERVER['PHP_SELF']) === 'email_sms.php' ? 'active' : ''; ?>">Email/SMS Settings</a>
-                                    <a href="slot_management.php" class="nav-subitem <?php echo basename($_SERVER['PHP_SELF']) === 'slot_management.php' ? 'active' : ''; ?>">Slot Management</a>
                                 </div>
                             </div>
                         </div>
@@ -2950,7 +2949,6 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
                                     <a href="admin_doctors.php" class="nav-subitem">Manage Doctors</a>
                                     <a href="clinic_information.php" class="nav-subitem">Clinic Information</a>
                                     <a href="email_sms.php" class="nav-subitem">Email/SMS Settings</a>
-                                    <a href="slot_management.php" class="nav-subitem">Slot Management</a>
                                 </div>
                             </div>
                         </div>
@@ -3095,7 +3093,6 @@ if (isLoggedIn() && (string) ($currentUser['role'] ?? '') === 'doctor' && functi
             'queue_history.php' => ['parent' => 'Queue Manage', 'title' => 'Queue History'],
             'clinic_information.php' => ['parent' => 'Settings', 'title' => 'Clinic Information'],
             'email_sms.php' => ['parent' => 'Settings', 'title' => 'Email/SMS Settings'],
-            'slot_management.php' => ['parent' => 'Settings', 'title' => 'Slot Management'],
         ];
         if (($currentUser['role'] ?? '') === 'admin' && isset($topbarParentPages[$currentPage])) {
             $topbarParentTitle = $topbarParentPages[$currentPage]['parent'];
