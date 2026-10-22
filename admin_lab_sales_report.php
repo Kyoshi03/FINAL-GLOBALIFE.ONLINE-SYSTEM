@@ -267,6 +267,77 @@ function sales_report_chart_values(array $rows, string $period, DateTimeImmutabl
     return $values;
 }
 
+function sales_report_pdf_chart_page(array $values, string $period, string $from, string $to, float $total, int $quantity, int $page, int $pages, ?array $logo): string {
+    $ops = [];
+    clinic_pdf_line($ops, 34, 805, 561, 805, 2.2);
+    if ($logo) {
+        $ops[] = 'q 54 0 0 54 42 738 cm /Im1 Do Q';
+    } else {
+        clinic_pdf_rect($ops, 42, 738, 54, 54, true);
+        clinic_pdf_text($ops, 57, 760, 18, 'GL', true);
+    }
+    clinic_pdf_text($ops, 112, 780, 13, 'Globalife Medical Laboratory & Polyclinic', true);
+    clinic_pdf_text($ops, 112, 764, 9, 'Laboratory Sales Report');
+    clinic_pdf_text($ops, 42, 710, 16, 'LABORATORY SALES REPORT', true);
+    clinic_pdf_text($ops, 42, 692, 9, 'Period: ' . date('M j, Y', strtotime($from)) . ' - ' . date('M j, Y', strtotime($to)));
+    clinic_pdf_text($ops, 42, 676, 9, ucfirst($period) . ' sales trend');
+    clinic_pdf_text($ops, 350, 692, 9, 'Total Sales: ' . sales_report_money($total), true);
+    clinic_pdf_text($ops, 350, 676, 9, 'Completed Tests: ' . number_format($quantity), true);
+
+    $chartLeft = 70.0;
+    $chartRight = 553.0;
+    $chartBottom = 350.0;
+    $chartTop = 610.0;
+    $chartMax = max(100.0, max($values ?: [0.0]));
+    $chartTick = max(25.0, ceil($chartMax / 4 / 25) * 25);
+    $chartMax = max($chartTick * 4, 100.0);
+    $plotHeight = $chartTop - $chartBottom;
+    $pointCount = count($values);
+    $points = [];
+    $index = 0;
+    foreach ($values as $date => $amount) {
+        $x = $chartLeft + ($pointCount > 1 ? ($index / ($pointCount - 1)) * ($chartRight - $chartLeft) : ($chartRight - $chartLeft) / 2);
+        $y = $chartBottom + (((float) $amount / $chartMax) * $plotHeight);
+        $points[] = ['date' => $date, 'amount' => (float) $amount, 'x' => $x, 'y' => $y];
+        $index++;
+    }
+
+    clinic_pdf_text($ops, 42, 638, 11, 'Sales Trend - ' . ucfirst($period), true);
+    for ($tick = 0; $tick <= 4; $tick++) {
+        $y = $chartBottom + (($tick / 4) * $plotHeight);
+        clinic_pdf_line($ops, $chartLeft, $y, $chartRight, $y, 0.35);
+        clinic_pdf_text($ops, 42, $y - 3, 7.5, sales_report_money($chartMax * ($tick / 4)));
+    }
+    clinic_pdf_line($ops, $chartLeft, $chartBottom, $chartLeft, $chartTop, 0.8);
+    clinic_pdf_line($ops, $chartLeft, $chartBottom, $chartRight, $chartBottom, 0.8);
+    foreach ($points as $index => $point) {
+        if ($index > 0) {
+            $previous = $points[$index - 1];
+            clinic_pdf_line($ops, $previous['x'], $previous['y'], $point['x'], $point['y'], 2.2);
+        }
+        clinic_pdf_rect($ops, $point['x'] - 2, $point['y'] - 2, 4, 4, true);
+    }
+    $labelStep = max(1, (int) ceil(max(1, $pointCount) / 8));
+    foreach ($points as $index => $point) {
+        if ($index % $labelStep !== 0 && $index !== $pointCount - 1) continue;
+        $dateObject = DateTimeImmutable::createFromFormat('!Y-m-d', (string) $point['date']);
+        if (!$dateObject) continue;
+        if ($period === 'monthly') {
+            $label = $dateObject->format('M Y');
+        } elseif ($period === 'quarterly') {
+            $quarter = (int) floor(((int) $dateObject->format('n') - 1) / 3) + 1;
+            $label = 'Q' . $quarter . ' ' . $dateObject->format('Y');
+        } else {
+            $label = $dateObject->format('M j');
+        }
+        clinic_pdf_text($ops, max($chartLeft, $point['x'] - (strlen($label) * 2.2)), $chartBottom - 18, 7.5, $label);
+    }
+    clinic_pdf_line($ops, 42, 38, 553, 38, 0.7);
+    clinic_pdf_text($ops, 42, 24, 7.5, 'Globalife Clinic System');
+    clinic_pdf_text($ops, 465, 24, 7.5, 'Page ' . $page . ' of ' . $pages);
+    return implode("\n", $ops);
+}
+
 function sales_report_pdf_page(array $rows, string $from, string $to, float $total, int $quantity, int $page, int $pages, ?array $logo): string {
     $ops = [];
     clinic_pdf_line($ops, 34, 805, 561, 805, 2.2);
@@ -346,13 +417,14 @@ function sales_report_pdf_build(array $streams, ?array $image): string {
     return $pdf . "trailer\n<< /Size " . (count($objects) + 1) . " /Root 1 0 R >>\nstartxref\n" . $xref . "\n%%EOF";
 }
 
-function sales_report_output_pdf(array $rows, string $from, string $to, float $total, int $quantity): void {
+function sales_report_output_pdf(array $rows, string $from, string $to, float $total, int $quantity, array $chartValues, string $period): void {
     $chunks = array_chunk($rows, 28);
     if (!$chunks) $chunks = [[]];
     $logo = clinic_pdf_image(__DIR__ . '/globalife.png');
     $streams = [];
-    $pages = count($chunks);
-    foreach ($chunks as $index => $chunk) $streams[] = sales_report_pdf_page($chunk, $from, $to, $total, $quantity, $index + 1, $pages, $logo);
+    $pages = count($chunks) + 1;
+    $streams[] = sales_report_pdf_chart_page($chartValues, $period, $from, $to, $total, $quantity, 1, $pages, $logo);
+    foreach ($chunks as $index => $chunk) $streams[] = sales_report_pdf_page($chunk, $from, $to, $total, $quantity, $index + 2, $pages, $logo);
     $pdf = sales_report_pdf_build($streams, $logo);
     while (ob_get_level() > 0) ob_end_clean();
     header('Content-Type: application/pdf');
@@ -470,7 +542,6 @@ $periodCardSubtitles = [
     'monthly' => 'Last 12 months',
     'quarterly' => 'Last 4 quarters',
 ];
-if (strtolower((string) ($_GET['format'] ?? '')) === 'pdf') sales_report_output_pdf($rows, $from, $to, $totalSales, $completedTests);
 $conn->close();
 
 $chartWidth = 1080; $chartHeight = 350; $chartLeft = 78; $chartRight = 28; $chartTop = 28; $chartBottom = 58;
@@ -552,6 +623,10 @@ foreach ($chartViews as $viewKey => &$chartView) {
     $chartView['report_range_label'] = $formatDateRange($viewData['from'], $viewData['to']);
 }
 unset($chartView);
+if (strtolower((string) ($_GET['format'] ?? '')) === 'pdf') {
+    $pdfChartValues = sales_report_chart_values($rows, $period, $fromDate, $toDate);
+    sales_report_output_pdf($rows, $from, $to, $totalSales, $completedTests, $pdfChartValues, $period);
+}
 $allowedViewModes = ['current', 'daily', 'monthly', 'quarterly'];
 $viewMode = strtolower(trim((string) ($_GET['view_mode'] ?? '')));
 if (!in_array($viewMode, $allowedViewModes, true)) $viewMode = in_array($period, ['daily', 'monthly', 'quarterly'], true) ? $period : 'current';
@@ -577,7 +652,7 @@ $viewSummaryLabels = [
 $additionalStyles = '
 body{background:#f4f8fb;color:#1f343d}.sales-wrap{max-width:1240px;margin:0 auto;padding:24px 20px 44px}.sales-wrap>section{padding:0}.sales-print-heading{display:none}.sales-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:14px}.sales-card{min-height:118px;box-sizing:border-box;padding:20px 22px;border:1px solid #d8e6ed;border-radius:8px;background:#fff;box-shadow:0 10px 24px rgba(25,76,110,.06)}.sales-card-label{display:block;color:#607784;font-size:.78rem;font-weight:900;letter-spacing:.04em;text-transform:uppercase}.sales-card strong{display:block;margin-top:11px;color:#0066cc;font-size:1.75rem;line-height:1}.sales-card small{display:block;margin-top:10px;color:#708792}.sales-period-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:14px;scroll-margin-top:76px}.sales-period-card{width:100%;min-height:118px;box-sizing:border-box;padding:18px 20px;border:1px solid #dce8ef;border-radius:8px;background:#fff;color:#1f343d;box-shadow:0 10px 24px rgba(25,76,110,.06);cursor:pointer;font:inherit;text-align:left;transition:border-color .2s ease,background .2s ease,box-shadow .2s ease,transform .2s ease}.sales-period-card:hover,.sales-period-card:focus-visible{border-color:#8ed9ef;background:#f8fcff;box-shadow:0 12px 26px rgba(25,76,110,.10);outline:none;transform:translateY(-1px)}.sales-period-card.is-active{border-color:#0f7cc2;background:#eef8ff;box-shadow:0 12px 28px rgba(15,124,194,.13)}.sales-period-card-label{display:block;color:#607784;font-size:.78rem;font-weight:900;letter-spacing:.04em;text-transform:uppercase}.sales-period-card strong{display:block;margin-top:9px;color:#0066cc;font-size:1.8rem;line-height:1}.sales-period-card small{display:block;margin-top:8px;color:#708792;font-size:.82rem}.sales-control-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px}.sales-controls{display:flex;align-items:flex-end;justify-content:flex-start;gap:10px;flex-wrap:wrap;max-width:100%}.sales-date-form{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;max-width:100%}.sales-range-field{display:grid;gap:5px}.sales-range-field label{color:#073b4c;font-size:.76rem;font-weight:900}.sales-date-form input,.sales-date-form select{width:155px;min-height:40px;box-sizing:border-box;border:1px solid #cfe1ee;border-radius:8px;padding:8px 10px;color:#1f343d;background:#fff;font:inherit}.sales-date-form input:focus,.sales-date-form select:focus{outline:none;border-color:#0f7cc2;box-shadow:0 0 0 3px rgba(15,124,194,.10)}.sales-actions{display:flex;align-items:center;gap:8px;margin:0;flex:0 0 auto}.sales-action{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:7px 12px;border:1px solid #cfe1ee;border-radius:7px;color:#0b4f80;background:#fff;font:inherit;font-size:.8rem;font-weight:900;text-decoration:none;cursor:pointer}.sales-action.primary{color:#fff;border-color:#0f7cc2;background:#0f7cc2}.sales-panel{padding:22px;margin-bottom:14px;border:1px solid #d8e6ed;border-radius:8px;background:#fff;box-shadow:0 10px 24px rgba(25,76,110,.06)}.sales-panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:15px}.sales-panel h3{margin:0;color:#073b4c;font-size:1.2rem}.sales-panel-head span{color:#607784;font-size:.84rem}.sales-table-wrap{overflow-x:auto}.sales-table{width:100%;min-width:650px;border-collapse:collapse}.sales-table th,.sales-table td{padding:12px 14px;border-bottom:1px solid #edf3f6;text-align:left;vertical-align:top}.sales-table th{color:#607784;font-size:.74rem;font-weight:900;letter-spacing:.05em;text-transform:uppercase;background:#f8fbfd}.sales-table td{color:#405b67;font-size:.9rem}.sales-table td strong{color:#073b4c}.sales-table .number{text-align:right;white-space:nowrap}.sales-table tfoot th{border-top:1px solid #d8e6ed;border-bottom:0;color:#073b4c;font-size:.92rem;background:#fff}.sales-chart{display:block;width:100%;height:auto;overflow:visible}.sales-chart .grid-line{stroke:#e5eef3;stroke-width:1}.sales-chart .axis-line{stroke:#b7cbd6;stroke-width:1.2}.sales-chart .trend-area{fill:rgba(15,124,194,.10);opacity:0;animation:salesTrendFade .65s ease-out .1s forwards}.sales-chart .trend-line{fill:none;stroke:#0077b6;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1800;stroke-dashoffset:1800;animation:salesTrendDraw .8s ease-out forwards}.sales-chart .trend-dot{fill:#fff;stroke:#0077b6;stroke-width:2;opacity:0;animation:salesTrendFade .35s ease-out .25s forwards}.sales-chart text{fill:#607784;font-family:inherit;font-size:11px}.sales-chart .axis-title{fill:#073b4c;font-size:11px;font-weight:800}.sales-empty{padding:35px 10px;color:#607784;text-align:center;font-weight:700}@keyframes salesTrendDraw{to{stroke-dashoffset:0}}@keyframes salesTrendFade{to{opacity:1}}@media(max-width:1100px){.sales-period-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.sales-control-row{align-items:stretch;flex-direction:column;gap:12px}.sales-controls{justify-content:flex-start;width:100%}.sales-date-form{width:100%}.sales-range-field{flex:1 1 180px}}@media(max-width:760px){.sales-wrap{padding:22px 16px 42px}.sales-period-cards{grid-template-columns:1fr;gap:12px}.sales-control-row{gap:16px}.sales-controls,.sales-date-form{width:100%}.sales-date-form{align-items:stretch;flex-direction:column}.sales-range-field,.sales-date-form input,.sales-date-form select{width:100%}.sales-actions{flex-wrap:wrap}.sales-action{flex:1}.sales-cards{grid-template-columns:1fr}.sales-card{min-height:0}.sales-panel{padding:16px 12px;overflow:hidden}.sales-panel-head{align-items:flex-start;flex-direction:column;gap:5px}.sales-chart text{font-size:9px}}@media print{body{background:#fff!important}.no-print,.main-header,.sidebar,nav{display:none!important}.sales-wrap{max-width:none;padding:0}.sales-panel,.sales-card,.sales-period-card{box-shadow:none;break-inside:avoid}}';
 $additionalStyles .= '@media print{header#mainHeader{display:block!important;position:static!important;background:#fff!important;color:#073b4c!important;box-shadow:none!important}header#mainHeader .header-flex{justify-content:flex-start!important;max-width:none!important;padding:0 0 16px!important}header#mainHeader .logo-section{color:#073b4c!important}header#mainHeader .mobile-menu-toggle,header#mainHeader nav,.patient-app-topbar,.patient-notification-wrap,.patient-topbar-menu-wrap{display:none!important}}';
-$additionalStyles .= '@media print{.sales-print-heading{display:block!important;margin:12px 0 20px;padding-bottom:14px;border-bottom:1px solid #b7cbd6}.sales-print-heading h2{margin:0 0 8px;color:#073b4c;font-size:20pt;line-height:1.1;text-transform:uppercase}.sales-print-heading p{margin:4px 0;color:#405b67;font-size:9pt}.sales-period-cards,.sales-control-row,.sales-trend-panel,.sales-pagination{display:none!important}.sales-wrap{padding:0 0 20px}.sales-cards{gap:28px;margin:0 0 24px}.sales-card{min-height:0;padding:14px 16px;border:1px solid #cfe1ee;border-radius:0;box-shadow:none}.sales-card strong{margin-top:8px;font-size:18pt}.sales-card small{margin-top:7px;font-size:9pt}.sales-panel{padding:0;margin:0;border:0;border-radius:0;box-shadow:none}.sales-panel-head{display:none}.sales-table-wrap{overflow:visible}.sales-table{min-width:0;width:100%;table-layout:fixed}.sales-table th,.sales-table td{padding:8px 7px;border-bottom:1px solid #d8e6ed;font-size:8.5pt}.sales-table th{font-size:7.5pt;background:#f3f8fc}.sales-table th:nth-child(1),.sales-table td:nth-child(1){width:15%}.sales-table th:nth-child(2),.sales-table td:nth-child(2){width:38%}.sales-table th:nth-child(3),.sales-table td:nth-child(3){width:9%}.sales-table th:nth-child(4),.sales-table td:nth-child(4){width:20%}.sales-table th:nth-child(5),.sales-table td:nth-child(5){width:18%}.sales-table td strong{font-weight:700}.sales-table tfoot th{border-top:1px solid #b7cbd6;font-size:9pt;background:#fff}.sales-table tr{break-inside:avoid;page-break-inside:avoid}}';
+$additionalStyles .= '@media print{.sales-print-heading{display:block!important;margin:12px 0 20px;padding-bottom:14px;border-bottom:1px solid #b7cbd6}.sales-print-heading h2{margin:0 0 8px;color:#073b4c;font-size:20pt;line-height:1.1;text-transform:uppercase}.sales-print-heading p{margin:4px 0;color:#405b67;font-size:9pt}.sales-period-cards,.sales-control-row,.sales-pagination{display:none!important}.sales-wrap{padding:0 0 20px}.sales-cards{gap:28px;margin:0 0 24px}.sales-card{min-height:0;padding:14px 16px;border:1px solid #cfe1ee;border-radius:0;box-shadow:none}.sales-card strong{margin-top:8px;font-size:18pt}.sales-card small{margin-top:7px;font-size:9pt}.sales-panel{padding:0;margin:0;border:0;border-radius:0;box-shadow:none}.sales-panel-head{display:none}.sales-trend-panel{display:block!important;break-before:page;page-break-before:always;padding:12px 0 20px!important}.sales-trend-panel .sales-chart-view[hidden]{display:none!important}.sales-trend-panel .sales-chart{display:block;width:100%;height:auto;max-width:100%}.sales-trend-panel .trend-line{stroke-dasharray:none!important;stroke-dashoffset:0!important;animation:none!important}.sales-trend-panel .trend-area,.sales-trend-panel .trend-dot{opacity:1!important;animation:none!important}.sales-table-wrap{overflow:visible}.sales-table{min-width:0;width:100%;table-layout:fixed}.sales-table th,.sales-table td{padding:8px 7px;border-bottom:1px solid #d8e6ed;font-size:8.5pt}.sales-table th{font-size:7.5pt;background:#f3f8fc}.sales-table th:nth-child(1),.sales-table td:nth-child(1){width:15%}.sales-table th:nth-child(2),.sales-table td:nth-child(2){width:38%}.sales-table th:nth-child(3),.sales-table td:nth-child(3){width:9%}.sales-table th:nth-child(4),.sales-table td:nth-child(4){width:20%}.sales-table th:nth-child(5),.sales-table td:nth-child(5){width:18%}.sales-table td strong{font-weight:700}.sales-table tfoot th{border-top:1px solid #b7cbd6;font-size:9pt;background:#fff}.sales-table tr{break-inside:avoid;page-break-inside:avoid}}';
 $additionalStyles .= '.sales-range-select-wrap{display:flex;align-items:center;gap:8px}.sales-range-edit{min-height:40px;padding:8px 11px;border:1px solid #cfe1ee;border-radius:8px;color:#0b4f80;background:#fff;font:inherit;font-size:.78rem;font-weight:900;cursor:pointer;white-space:nowrap}.sales-range-edit:hover,.sales-range-edit:focus-visible{border-color:#0f7cc2;background:#eef8ff;outline:none}.sales-range-edit[hidden]{display:none}@media(max-width:760px){.sales-range-select-wrap{align-items:stretch;flex-direction:column}.sales-range-select-wrap select{width:100%!important}.sales-range-edit{width:100%}}';
 $additionalStyles .= '.sales-pagination-row td{padding:0;border-top:1px solid #edf3f6}.sales-pagination-row[hidden]{display:none}.sales-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;color:#607784;font-size:.8rem}.sales-pagination-controls{display:flex;align-items:center;gap:5px}.sales-pagination button,.sales-pagination-page{min-width:32px;min-height:32px;padding:5px 9px;border:1px solid #cfe1ee;border-radius:7px;color:#0b4f80;background:#fff;font:inherit;font-size:.78rem;font-weight:800;cursor:pointer}.sales-pagination button:hover,.sales-pagination-page:hover,.sales-pagination-page.is-active{border-color:#0f7cc2;color:#fff;background:#0f7cc2}.sales-pagination button:disabled{opacity:.45;cursor:not-allowed}.sales-pagination-page{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}.sales-pagination-page[hidden]{display:none}@media(max-width:600px){.sales-pagination{align-items:stretch;flex-direction:column}.sales-pagination-controls{justify-content:space-between}.sales-pagination button,.sales-pagination-page{flex:1}.sales-pagination-controls [data-sales-page-buttons]{display:flex;flex:1;gap:5px}.sales-pagination-controls [data-sales-page-buttons] .sales-pagination-page{flex:1}}';
 $additionalStyles .= '.sales-pagination-row td{padding:0!important;border-bottom:0!important;background:#fff}.sales-pagination-row .sales-pagination{border-top:1px solid #edf3f6}';
