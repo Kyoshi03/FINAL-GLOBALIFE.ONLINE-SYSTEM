@@ -11,6 +11,7 @@ require_once 'includes/user_registration.php';
 require_once 'includes/notification_settings.php';
 require_once 'includes/admin_notifications.php';
 require_once 'includes/pwd_id.php';
+require_once 'includes/pregnancy.php';
 
 pwd_id_cleanup_old_pending_files();
 
@@ -108,6 +109,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pwdType = trim((string) ($patient['pwd_type'] ?? ''));
             $pwdDetails = trim((string) ($patient['pwd_details'] ?? ''));
             $pwdPendingPath = trim((string) ($patient['pwd_id_pending_path'] ?? ''));
+            $pregnancyStatus = trim((string) ($patient['pregnancy_status'] ?? ''));
+            $pregnancyLmpDate = trim((string) ($patient['pregnancy_lmp_date'] ?? ''));
+            $pregnancyEddDate = trim((string) ($patient['pregnancy_edd_date'] ?? ''));
 
             $exists = clinic_find_duplicate_user($conn, $username, $email, $phoneForCheck);
 
@@ -117,7 +121,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 unset($_SESSION['pending_patient_registration']);
                 $error = clinic_duplicate_user_message($exists, $username, $email, $phoneForCheck);
             } else {
-                if (!pwd_disability_type_is_valid($pwdType)
+                $pregnancyError = clinic_pregnancy_validate(
+                    (string) ($patient['gender'] ?? ''),
+                    $pregnancyStatus,
+                    $pregnancyLmpDate,
+                    $pregnancyEddDate
+                );
+                if ($pregnancyError !== '') {
+                    pwd_id_cleanup_pending_file($pwdPendingPath);
+                    $conn->close();
+                    unset($_SESSION['pending_patient_registration']);
+                    $error = $pregnancyError . ' Please return to registration and try again.';
+                } elseif (!pwd_disability_type_is_valid($pwdType)
                     || ($pwdType === 'Other (please specify)' && $pwdDetails === '')
                     || ($pwdType !== '' && pwd_id_file_path($pwdPendingPath) === null)
                 ) {
@@ -149,11 +164,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         username, password, first_name, middle_name, last_name, suffix, role, is_active, email, phone, gender,
                         date_of_birth, age, civil_status, pwd_type, pwd_details, pwd_id_path, address, barangay, city,
                         emergency_contact_name, emergency_contact_relationship,
-                        emergency_contact_number
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                        emergency_contact_number, pregnancy_status, pregnancy_lmp_date, pregnancy_edd_date
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
                 );
                 $pwdIdPath = $pwdType === '' ? null : $pwdPendingPath;
-                $bindTypes = str_repeat('s', 11) . 'i' . str_repeat('s', 10);
+                $pregnancyStatusForInsert = $pregnancyStatus === 'Pregnant' ? 'Pregnant' : '';
+                $pregnancyLmpForInsert = $pregnancyStatusForInsert !== '' && $pregnancyLmpDate !== '' ? $pregnancyLmpDate : null;
+                $pregnancyEddForInsert = $pregnancyStatusForInsert !== '' && $pregnancyEddDate !== '' ? $pregnancyEddDate : null;
+                $bindTypes = str_repeat('s', 11) . 'i' . str_repeat('s', 13);
                 $insert->bind_param(
                     $bindTypes,
                     $username,
@@ -177,7 +195,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $city,
                     $emergencyName,
                     $emergencyRelationship,
-                    $emergencyNumber
+                    $emergencyNumber,
+                    $pregnancyStatusForInsert,
+                    $pregnancyLmpForInsert,
+                    $pregnancyEddForInsert
                 );
                 $created = $insert->execute();
                 $insertError = $insert->errno;
