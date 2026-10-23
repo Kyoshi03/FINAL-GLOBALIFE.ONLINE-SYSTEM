@@ -571,7 +571,7 @@ function sales_report_xlsx_drawing_xml(): string {
         . '<xdr:graphicFrame macro=""><xdr:nvGraphicFramePr><xdr:cNvPr id="2" name="Laboratory Sales Trend"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="12192000" cy="4114800"/></xdr:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart r:id="rId1"/></a:graphicData></a:graphic></xdr:graphicFrame><xdr:clientData/></xdr:twoCellAnchor></xdr:wsDr>';
 }
 
-function sales_report_output_xlsx(array $rows, string $from, string $to, float $total, string $rangeLabel, array $chartValues = [], string $period = 'daily'): void {
+function sales_report_output_xlsx(array $rows, string $from, string $to, float $total, string $rangeLabel): void {
     $tableHeaderRow = 3;
     $sheetRows = [];
     $sheetRows[] = '<row r="1" ht="30" customHeight="1">'
@@ -616,59 +616,21 @@ function sales_report_output_xlsx(array $rows, string $from, string $to, float $
     $emptyMerge = $emptyRow !== null ? '<mergeCell ref="A' . $emptyRow . ':E' . $emptyRow . '"/>' : '';
     $mergeCount = $emptyRow !== null ? 4 : 3;
 
-    // Keep chart data editable in hidden columns outside the printed report area.
-    $chartSourceHeaderRow = $lastRow + 2;
-    $chartSourceFirstRow = $chartSourceHeaderRow + 1;
-    $chartSourceLastRow = $chartValues !== []
-        ? $chartSourceFirstRow + count($chartValues) - 1
-        : $chartSourceFirstRow;
-    if ($chartValues !== []) {
-        $sheetRows[] = '<row r="' . $chartSourceHeaderRow . '">'
-            . sales_report_xlsx_inline_cell('P' . $chartSourceHeaderRow, 'Chart Date', 6)
-            . sales_report_xlsx_inline_cell('Q' . $chartSourceHeaderRow, 'Chart Period', 6)
-            . sales_report_xlsx_inline_cell('R' . $chartSourceHeaderRow, 'Sales', 6)
-            . '</row>';
-        $sourceRow = $chartSourceFirstRow;
-        foreach ($chartValues as $date => $amount) {
-            $dateObject = DateTimeImmutable::createFromFormat('!Y-m-d', (string) $date);
-            $label = $dateObject
-                ? ($period === 'monthly'
-                    ? $dateObject->format('M Y')
-                    : ($period === 'quarterly'
-                        ? 'Q' . (int) ceil((int) $dateObject->format('n') / 3) . ' ' . $dateObject->format('Y')
-                        : $dateObject->format('M j')))
-                : (string) $date;
-            $sheetRows[] = '<row r="' . $sourceRow . '">'
-                . sales_report_xlsx_date_cell('P' . $sourceRow, (string) $date)
-                . sales_report_xlsx_inline_cell('Q' . $sourceRow, $label, 6)
-                . sales_report_xlsx_number_cell('R' . $sourceRow, round((float) $amount, 2), 4)
-                . '</row>';
-            $sourceRow++;
-        }
-    }
-    $chartXml = $chartValues !== []
-        ? sales_report_xlsx_chart_xml($chartValues, $period, $chartSourceFirstRow, $chartSourceLastRow)
-        : '';
-    $sheetDrawing = $chartXml !== '' ? '<drawing r="rId1"/>' : '';
-    $printLastRow = max($lastRow, 18);
-    $dimensionLastRow = max($lastRow, $chartSourceLastRow, 18);
-
     $sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
         . '<sheetPr><pageSetUpPr fitToPage="1" autoPageBreaks="1"/></sheetPr>'
-        . '<dimension ref="A1:R' . $dimensionLastRow . '"/>'
+        . '<dimension ref="A1:E' . $lastRow . '"/>'
         . '<sheetViews><sheetView workbookViewId="0"><pane ySplit="' . $tableHeaderRow . '" topLeftCell="A' . ($tableHeaderRow + 1) . '" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>'
         . '<sheetFormatPr defaultRowHeight="19"/><cols>'
         . '<col min="1" max="1" width="17" customWidth="1"/><col min="2" max="2" width="52" customWidth="1"/>'
         . '<col min="3" max="3" width="12" customWidth="1"/><col min="4" max="4" width="30" customWidth="1"/>'
-        . '<col min="5" max="5" width="19" customWidth="1"/><col min="6" max="15" width="12" customWidth="1"/>'
-        . '<col min="16" max="18" hidden="1" width="12" customWidth="1"/></cols>'
+        . '<col min="5" max="5" width="19" customWidth="1"/></cols>'
         . '<sheetData>' . implode('', $sheetRows) . '</sheetData>'
         . '<autoFilter ref="A' . $tableHeaderRow . ':E' . $dataLastRow . '"/>'
         . '<mergeCells count="' . $mergeCount . '"><mergeCell ref="A1:B1"/><mergeCell ref="C1:E1"/><mergeCell ref="A' . $lastRow . ':D' . $lastRow . '"/>' . $emptyMerge . '</mergeCells>'
         . '<printOptions horizontalCentered="0" verticalCentered="0"/>'
         . '<pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/>'
-        . '<pageSetup orientation="landscape" paperSize="9" fitToWidth="1" fitToHeight="0"/>' . $sheetDrawing . '</worksheet>';
+        . '<pageSetup orientation="landscape" paperSize="9" fitToWidth="1" fitToHeight="0"/></worksheet>';
 
     $styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
@@ -679,18 +641,9 @@ function sales_report_output_xlsx(array $rows, string $from, string $to, float $
         . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
         . '<cellXfs count="13"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/><xf numFmtId="0" fontId="2" fillId="0" borderId="0" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf><xf numFmtId="0" fontId="1" fillId="2" borderId="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="164" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="3" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment horizontal="right" vertical="center" wrapText="1"/></xf><xf numFmtId="165" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf><xf numFmtId="0" fontId="1" fillId="0" borderId="0" applyAlignment="1"><alignment horizontal="right" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="1" fillId="0" borderId="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf><xf numFmtId="164" fontId="1" fillId="0" borderId="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="0" fontId="1" fillId="2" borderId="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf></cellXfs>'
         . '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles><dxfs count="0"/><tableStyles count="0" defaultTableStyle="TableStyleMedium2" defaultPivotStyle="PivotStyleMedium4"/></styleSheet>';
-    $workbook = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><bookViews><workbookView/></bookViews><sheets><sheet name=\"Sales Report\" sheetId=\"1\" r:id=\"rId1\"/></sheets><definedNames><definedName name=\"_xlnm.Print_Titles\" localSheetId=\"0\">'Sales Report'!\$" . $tableHeaderRow . ":\$" . $tableHeaderRow . "</definedName><definedName name=\"_xlnm.Print_Area\" localSheetId=\"0\">'Sales Report'!\$A\$1:\$O\$" . $printLastRow . "</definedName></definedNames></workbook>";
-    $chartContentTypes = $chartXml !== ''
-        ? '<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/><Override PartName="/xl/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>'
-        : '';
+    $workbook = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><bookViews><workbookView/></bookViews><sheets><sheet name=\"Sales Report\" sheetId=\"1\" r:id=\"rId1\"/></sheets><definedNames><definedName name=\"_xlnm.Print_Titles\" localSheetId=\"0\">'Sales Report'!\$" . $tableHeaderRow . ":\$" . $tableHeaderRow . "</definedName><definedName name=\"_xlnm.Print_Area\" localSheetId=\"0\">'Sales Report'!\$A\$1:\$E\$" . $lastRow . "</definedName></definedNames></workbook>";
     $contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-        . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>' . $chartContentTypes . '</Types>';
-    $worksheetRelationships = $chartXml !== ''
-        ? '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/></Relationships>'
-        : '';
-    $drawingRelationships = $chartXml !== ''
-        ? '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart1.xml"/></Relationships>'
-        : '';
+        . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>';
     $files = [
         '[Content_Types].xml' => $contentTypes,
         '_rels/.rels' => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>',
@@ -701,12 +654,6 @@ function sales_report_output_xlsx(array $rows, string $from, string $to, float $
         'xl/worksheets/sheet1.xml' => $sheet,
         'xl/styles.xml' => $styles,
     ];
-    if ($chartXml !== '') {
-        $files['xl/worksheets/_rels/sheet1.xml.rels'] = $worksheetRelationships;
-        $files['xl/drawings/drawing1.xml'] = sales_report_xlsx_drawing_xml();
-        $files['xl/drawings/_rels/drawing1.xml.rels'] = $drawingRelationships;
-        $files['xl/charts/chart1.xml'] = $chartXml;
-    }
     $xlsx = sales_report_xlsx_zip($files);
     while (ob_get_level() > 0) ob_end_clean();
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -959,21 +906,12 @@ if (strtolower((string) ($_GET['format'] ?? '')) === 'pdf') {
     );
 }
 if (strtolower((string) ($_GET['format'] ?? '')) === 'xlsx') {
-    $xlsxPeriod = $selectedViewKey === 'current' ? $period : $selectedViewKey;
-    $xlsxChartValues = sales_report_chart_values(
-        $selectedReportView['rows'],
-        $xlsxPeriod,
-        $selectedReportView['from'],
-        $selectedReportView['to']
-    );
     sales_report_output_xlsx(
         $selectedReportView['rows'],
         $selectedReportView['from']->format('Y-m-d'),
         $selectedReportView['to']->format('Y-m-d'),
         (float) $selectedReportView['sales'],
-        $displayRangeLabel,
-        $xlsxChartValues,
-        $xlsxPeriod
+        $displayRangeLabel
     );
 }
 
