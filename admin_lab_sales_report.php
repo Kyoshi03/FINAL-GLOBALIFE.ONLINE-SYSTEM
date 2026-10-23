@@ -463,7 +463,7 @@ function sales_report_xlsx_inline_cell(string $reference, string $value, int $st
         . sales_report_xlsx_escape($value) . '</t></is></c>';
 }
 
-function sales_report_xlsx_number_cell(string $reference, float|int $value, int $style = 0): string {
+function sales_report_xlsx_number_cell(string $reference, float $value, int $style = 0): string {
     return '<c r="' . $reference . '" s="' . $style . '" t="n"><v>' . (string) $value . '</v></c>';
 }
 
