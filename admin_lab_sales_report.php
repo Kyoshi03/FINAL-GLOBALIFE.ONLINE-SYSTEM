@@ -625,8 +625,8 @@ function sales_report_output_xlsx(array $rows, string $from, string $to, float $
         . '<col min="3" max="3" width="12" customWidth="1"/><col min="4" max="4" width="30" customWidth="1"/>'
         . '<col min="5" max="5" width="19" customWidth="1"/></cols>'
         . '<sheetData>' . implode('', $sheetRows) . '</sheetData>'
-        . '<mergeCells count="' . $mergeCount . '"><mergeCell ref="A1:D1"/><mergeCell ref="A' . $lastRow . ':D' . $lastRow . '"/>' . $emptyMerge . '</mergeCells>'
         . '<autoFilter ref="A3:E' . $dataLastRow . '"/>'
+        . '<mergeCells count="' . $mergeCount . '"><mergeCell ref="A1:D1"/><mergeCell ref="A' . $lastRow . ':D' . $lastRow . '"/>' . $emptyMerge . '</mergeCells>'
         . '<printOptions horizontalCentered="0" verticalCentered="0"/>'
         . '<pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/>'
         . '<pageSetup orientation="landscape" paperSize="9" fitToWidth="1" fitToHeight="0"/></worksheet>';
