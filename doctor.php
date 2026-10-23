@@ -281,7 +281,7 @@ function doctor_completed_consultations(mysqli $conn, int $doctorId): array {
 $summaryPeriod = strtolower(trim((string) ($_GET['summary_period'] ?? '')));
 $allowedSummaryPeriods = ['daily', 'monthly', 'quarterly'];
 if (!in_array($summaryPeriod, $allowedSummaryPeriods, true)) {
-    $summaryPeriod = '';
+    $summaryPeriod = 'daily';
 }
 
 $summaryFrom = '';
@@ -2942,17 +2942,6 @@ document.addEventListener("DOMContentLoaded", function () {
         document.querySelectorAll("[data-summary-period]").forEach(function (button) {
             button.addEventListener("click", function () {
                 var nextPeriod = button.getAttribute("data-summary-period");
-                if (summaryPeriod === nextPeriod && !summaryBody.hidden) {
-                    summaryBody.hidden = true;
-                    summaryPeriod = "";
-                    if (summaryPeriodInput) summaryPeriodInput.value = "";
-                    document.querySelectorAll("[data-summary-period]").forEach(function (periodButton) {
-                        periodButton.classList.remove("active");
-                        periodButton.setAttribute("aria-pressed", "false");
-                    });
-                    summaryClearUrl();
-                    return;
-                }
                 summaryRender(nextPeriod, true);
                 summaryBody.scrollIntoView({ behavior: "smooth", block: "start" });
             });
