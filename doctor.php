@@ -2680,6 +2680,8 @@ document.addEventListener("DOMContentLoaded", function () {
             summaryCalendarRightMonth = end ? new Date(end.getFullYear(), end.getMonth(), 1) : new Date(start.getFullYear(), start.getMonth() + 1, 1);
             summaryRenderRangeCalendar();
             summaryRangeModal.hidden = false;
+            summaryRangeModal.removeAttribute("hidden");
+            summaryRangeModal.style.display = "grid";
             summaryRangeModal.setAttribute("aria-hidden", "false");
             document.body.classList.add("doctor-summary-range-open");
             if (summaryRangeClose) summaryRangeClose.focus();
@@ -2697,6 +2699,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             summaryRangeModal.hidden = true;
             summaryRangeModal.setAttribute("aria-hidden", "true");
+            summaryRangeModal.style.removeProperty("display");
             document.body.classList.remove("doctor-summary-range-open");
             if (summaryRangeMessage) summaryRangeMessage.hidden = true;
             summaryRangeModalState = null;
