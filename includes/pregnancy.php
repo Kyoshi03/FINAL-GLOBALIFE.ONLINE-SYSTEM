@@ -57,8 +57,15 @@ function clinic_pregnancy_validate(
     if ($lmpDate !== '' && $eddDate !== '') {
         $lmp = DateTimeImmutable::createFromFormat('!Y-m-d', $lmpDate);
         $edd = DateTimeImmutable::createFromFormat('!Y-m-d', $eddDate);
-        if ($lmp instanceof DateTimeImmutable && $edd instanceof DateTimeImmutable && $edd < $lmp->modify('+7 months')) {
-            return 'The Estimated Date of Delivery must be at least 7 months after the Last Menstrual Period.';
+        if ($lmp instanceof DateTimeImmutable && $edd instanceof DateTimeImmutable) {
+            $minimumEdd = $lmp->modify('+7 months');
+            $maximumEdd = $lmp->modify('+10 months');
+            if ($edd < $minimumEdd) {
+                return 'The Estimated Date of Delivery must be at least 7 months after the Last Menstrual Period.';
+            }
+            if ($edd > $maximumEdd) {
+                return 'The Estimated Date of Delivery cannot be more than 10 months after the Last Menstrual Period.';
+            }
         }
     }
 

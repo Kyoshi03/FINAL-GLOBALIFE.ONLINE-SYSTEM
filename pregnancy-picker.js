@@ -148,10 +148,16 @@
             return lmp ? addMonths(lmp, 7) : null;
         }
 
+        function maximumEddDate() {
+            var lmp = parseYmd(draft.lmp);
+            return lmp ? addMonths(lmp, 10) : null;
+        }
+
         function normalizeDraftDates() {
             var minimumEdd = minimumEddDate();
+            var maximumEdd = maximumEddDate();
             var edd = parseYmd(draft.edd);
-            if (minimumEdd && edd && edd < minimumEdd) {
+            if (edd && ((minimumEdd && edd < minimumEdd) || (maximumEdd && edd > maximumEdd))) {
                 draft.edd = "";
             }
         }
@@ -236,9 +242,13 @@
                     button.title = "LMP cannot be a future date";
                 }
                 var minimumEdd = kind === "edd" ? minimumEddDate() : null;
+                var maximumEdd = kind === "edd" ? maximumEddDate() : null;
                 if (minimumEdd && date < minimumEdd) {
                     button.disabled = true;
                     button.title = "EDD must be at least 7 months after LMP";
+                } else if (maximumEdd && date > maximumEdd) {
+                    button.disabled = true;
+                    button.title = "EDD cannot be more than 10 months after LMP";
                 }
                 button.addEventListener("click", function () {
                     draft[kind] = this.dataset.pregnancyDate;
