@@ -211,15 +211,8 @@
     margin-bottom: 12px;
 }
 
-.pregnancy-picker-month-title {
-    color: #0b5d93;
-    font-size: .93rem;
-    font-weight: 900;
-    text-align: right;
-}
-
+.pregnancy-picker-month-select,
 .pregnancy-picker-year-select {
-    min-width: 78px;
     min-height: 30px;
     padding: 4px 24px 4px 8px;
     border: 1px solid #cfe1ee;
@@ -232,10 +225,26 @@
     cursor: pointer;
 }
 
+.pregnancy-picker-month-select {
+    min-width: 104px;
+}
+
+.pregnancy-picker-month-select:focus-visible,
 .pregnancy-picker-year-select:focus-visible {
     outline: none;
     border-color: #48cae4;
     box-shadow: 0 0 0 3px rgba(72, 202, 228, .14);
+}
+
+.pregnancy-picker-year-select {
+    min-width: 78px;
+}
+
+.pregnancy-picker-month-title {
+    color: #0b5d93;
+    font-size: .93rem;
+    font-weight: 900;
+    text-align: right;
 }
 
 .pregnancy-picker-nav {

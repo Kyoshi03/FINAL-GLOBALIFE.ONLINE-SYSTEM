@@ -1247,7 +1247,7 @@ $additionalStyles = '
     }
 ';
 
-$additionalHeadLinks = '<link rel="stylesheet" href="pregnancy-picker.css?v=20261023-4">';
+$additionalHeadLinks = '<link rel="stylesheet" href="pregnancy-picker.css?v=20261023-5">';
 include 'includes/header.php';
 ?>
 
@@ -1636,7 +1636,7 @@ include 'includes/header.php';
     </div>
 </div>
 
-<script src="pregnancy-picker.js?v=20261023-4" defer></script>
+<script src="pregnancy-picker.js?v=20261023-5" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const registrationSuccessModal = document.getElementById('registrationSuccessModal');

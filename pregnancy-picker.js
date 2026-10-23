@@ -68,12 +68,12 @@
                 '<div class="pregnancy-picker-calendars">' +
                     '<section class="pregnancy-picker-calendar" data-pregnancy-calendar="lmp" aria-labelledby="pregnancyLmpTitle">' +
                         '<div class="pregnancy-picker-calendar-head"><h3 id="pregnancyLmpTitle">Last Menstrual Period <span>(LMP)</span></h3></div>' +
-                        '<div class="pregnancy-picker-month-bar"><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="prev" aria-label="Previous month">&#8249;</button><div class="pregnancy-picker-month-year"><strong class="pregnancy-picker-month-title"></strong><select class="pregnancy-picker-year-select" aria-label="LMP year"></select></div><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="next" aria-label="Next month">&#8250;</button></div>' +
+                        '<div class="pregnancy-picker-month-bar"><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="prev" aria-label="Previous month">&#8249;</button><div class="pregnancy-picker-month-year"><select class="pregnancy-picker-month-select" aria-label="LMP month"></select><select class="pregnancy-picker-year-select" aria-label="LMP year"></select></div><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="next" aria-label="Next month">&#8250;</button></div>' +
                         '<div class="pregnancy-picker-weekdays" aria-hidden="true"></div><div class="pregnancy-picker-days" role="grid"></div>' +
                     '</section>' +
                     '<section class="pregnancy-picker-calendar" data-pregnancy-calendar="edd" aria-labelledby="pregnancyEddTitle">' +
                         '<div class="pregnancy-picker-calendar-head"><h3 id="pregnancyEddTitle">Estimated Date of Delivery <span>(EDD)</span></h3></div>' +
-                        '<div class="pregnancy-picker-month-bar"><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="prev" aria-label="Previous month">&#8249;</button><div class="pregnancy-picker-month-year"><strong class="pregnancy-picker-month-title"></strong><select class="pregnancy-picker-year-select" aria-label="EDD year"></select></div><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="next" aria-label="Next month">&#8250;</button></div>' +
+                        '<div class="pregnancy-picker-month-bar"><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="prev" aria-label="Previous month">&#8249;</button><div class="pregnancy-picker-month-year"><select class="pregnancy-picker-month-select" aria-label="EDD month"></select><select class="pregnancy-picker-year-select" aria-label="EDD year"></select></div><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="next" aria-label="Next month">&#8250;</button></div>' +
                         '<div class="pregnancy-picker-weekdays" aria-hidden="true"></div><div class="pregnancy-picker-days" role="grid"></div>' +
                     '</section>' +
                 '</div>' +
@@ -177,12 +177,15 @@
             var calendar = backdrop.querySelector('[data-pregnancy-calendar="' + kind + '"]');
             var view = views[kind];
             if (!calendar) return;
-            var title = calendar.querySelector(".pregnancy-picker-month-title");
+            var monthSelect = calendar.querySelector(".pregnancy-picker-month-select");
             var yearSelect = calendar.querySelector(".pregnancy-picker-year-select");
             var weekdays = calendar.querySelector(".pregnancy-picker-weekdays");
             var days = calendar.querySelector(".pregnancy-picker-days");
             clampView(kind);
-            title.textContent = MONTHS[view.month];
+            monthSelect.innerHTML = MONTHS.map(function (month, index) {
+                return '<option value="' + index + '">' + month + '</option>';
+            }).join("");
+            monthSelect.value = String(view.month);
             yearSelect.innerHTML = allowedYears.map(function (year) {
                 return '<option value="' + year + '">' + year + '</option>';
             }).join("");
@@ -290,6 +293,16 @@
                 var year = Number(select.value);
                 if (!isAllowedYear(year)) return;
                 views[kind].year = year;
+                renderCalendar(kind);
+            });
+        });
+        backdrop.querySelectorAll(".pregnancy-picker-month-select").forEach(function (select) {
+            select.addEventListener("change", function () {
+                var calendar = select.closest("[data-pregnancy-calendar]");
+                var kind = calendar.dataset.pregnancyCalendar;
+                var month = Number(select.value);
+                if (month < 0 || month > 11) return;
+                views[kind].month = month;
                 renderCalendar(kind);
             });
         });
