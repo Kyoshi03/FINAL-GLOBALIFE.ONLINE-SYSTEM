@@ -706,21 +706,6 @@ $periodCardSubtitles = [
 ];
 $conn->close();
 
-$exportPeriod = $selectedViewKey === 'current' ? $period : $selectedViewKey;
-$exportParams = [
-    'period' => $exportPeriod,
-    'view_mode' => $selectedViewKey,
-    'range_preset' => $displayRangePreset,
-    'anchor_date' => $anchorDate,
-    'from_date' => $displayFrom,
-    'to_date' => $displayTo,
-];
-$exportPdfPrintHref = 'admin_lab_sales_report.php?' . http_build_query($exportParams + ['format' => 'pdf', 'delivery' => 'inline']);
-$exportPdfDownloadHref = 'admin_lab_sales_report.php?' . http_build_query($exportParams + ['format' => 'pdf', 'delivery' => 'attachment']);
-$exportExcelHref = 'admin_lab_sales_report.php?' . http_build_query($exportParams + ['format' => 'xlsx']);
-$exportPdfFilename = sales_report_export_filename('pdf', $displayFrom, $displayTo);
-$exportExcelFilename = sales_report_export_filename('xlsx', $displayFrom, $displayTo);
-
 $chartWidth = 1080; $chartHeight = 350; $chartLeft = 78; $chartRight = 28; $chartTop = 28; $chartBottom = 58;
 $plotWidth = $chartWidth - $chartLeft - $chartRight; $plotHeight = $chartHeight - $chartTop - $chartBottom;
 $chartMax = max(100.0, max($dailySales ?: [0.0]));
@@ -821,6 +806,20 @@ $viewSummaryLabels = [
     'monthly' => $periodCardSubtitles['monthly'],
     'quarterly' => $periodCardSubtitles['quarterly'],
 ];
+$exportPeriod = $selectedViewKey === 'current' ? $period : $selectedViewKey;
+$exportParams = [
+    'period' => $exportPeriod,
+    'view_mode' => $selectedViewKey,
+    'range_preset' => $displayRangePreset,
+    'anchor_date' => $anchorDate,
+    'from_date' => $displayFrom,
+    'to_date' => $displayTo,
+];
+$exportPdfPrintHref = 'admin_lab_sales_report.php?' . http_build_query($exportParams + ['format' => 'pdf', 'delivery' => 'inline']);
+$exportPdfDownloadHref = 'admin_lab_sales_report.php?' . http_build_query($exportParams + ['format' => 'pdf', 'delivery' => 'attachment']);
+$exportExcelHref = 'admin_lab_sales_report.php?' . http_build_query($exportParams + ['format' => 'xlsx']);
+$exportPdfFilename = sales_report_export_filename('pdf', $displayFrom, $displayTo);
+$exportExcelFilename = sales_report_export_filename('xlsx', $displayFrom, $displayTo);
 if (strtolower((string) ($_GET['format'] ?? '')) === 'pdf') {
     $pdfPeriod = $selectedViewKey === 'current' ? $period : $selectedViewKey;
     $pdfFromDate = $selectedReportView['from'];
