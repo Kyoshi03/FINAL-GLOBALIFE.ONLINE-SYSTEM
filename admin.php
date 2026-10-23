@@ -1314,7 +1314,8 @@ body {
 .appointment-request-table th:nth-child(3),
 .appointment-request-table td:nth-child(3) { width: 18%; }
 .appointment-request-table th:nth-child(4),
-.appointment-request-table td:nth-child(4) { width: 13%; }
+.appointment-request-table td:nth-child(4) { width: 13%; text-align: center; vertical-align: middle; }
+.appointment-request-table th:nth-child(4) { text-align: center; }
 .appointment-request-table th:nth-child(5),
 .appointment-request-table td:nth-child(5) { width: 13%; }
 .appointment-request-table th:nth-child(6),
@@ -1322,6 +1323,17 @@ body {
 
 .appointment-request-table th:nth-child(6) {
     text-align: center;
+}
+
+.appointment-request-table .request-priority {
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.appointment-request-table .request-priority .badge,
+.appointment-request-table .request-priority .queue-priority-empty {
+    margin-inline: auto;
 }
 
 .appointment-request-table-wrap {
@@ -1765,6 +1777,10 @@ body {
     .appointment-request-table td:nth-child(4)::before { content: "Status"; }
     .appointment-request-table td:nth-child(5)::before { content: "Priority"; }
     .appointment-request-table td:nth-child(6)::before { content: "Actions"; }
+
+    .appointment-request-table td.request-priority::before {
+        text-align: left;
+    }
 
     .request-actions {
         justify-content: center;
