@@ -1650,7 +1650,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" href="globalife.png">
     <link rel="stylesheet" href="main.css">
-    <link rel="stylesheet" href="pregnancy-picker.css?v=20261023-2">
+    <link rel="stylesheet" href="pregnancy-picker.css?v=20261023-3">
     <style><?php echo $additionalStyles; ?></style>
 </head>
 <body>
@@ -3313,7 +3313,7 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
             }
         });
     </script>
-    <script src="pregnancy-picker.js?v=20261023-2" defer></script>
+    <script src="pregnancy-picker.js?v=20261023-3" defer></script>
     <?php if ($isRegistrationModal): ?>
     <script>
         document.querySelectorAll('[data-registration-go-login]').forEach(function (link) {

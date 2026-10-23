@@ -188,9 +188,9 @@
 }
 
 .pregnancy-picker-month-bar {
-    display: flex;
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr) auto 30px;
     align-items: center;
-    justify-content: space-between;
     gap: 8px;
     margin-top: 12px;
 }
@@ -207,7 +207,8 @@
     color: #0b5d93;
     font-size: .93rem;
     font-weight: 900;
-    text-align: center;
+    justify-self: end;
+    text-align: right;
 }
 
 .pregnancy-picker-year-select {
@@ -222,6 +223,7 @@
     font-size: .78rem;
     font-weight: 900;
     cursor: pointer;
+    justify-self: start;
 }
 
 .pregnancy-picker-year-select:focus-visible {
