@@ -420,6 +420,12 @@ $summaryTotalRecords = count($summaryCompletedConsultations);
 $summaryPageTotal = max(1, (int) ceil($summaryTotalRecords / $summaryPerPage));
 $summaryPage = min($summaryPage, $summaryPageTotal);
 $summaryPageRows = array_slice($summaryCompletedConsultations, ($summaryPage - 1) * $summaryPerPage, $summaryPerPage);
+$summaryGraphLinePoints = implode(' ', array_map(static function (array $point): string {
+    return number_format((float) $point['x'], 2, '.', '') . ',' . number_format((float) $point['y'], 2, '.', '');
+}, $summaryGraphPoints));
+$summaryGraphAreaPoints = $summaryGraphLinePoints !== ''
+    ? '70,250 ' . $summaryGraphLinePoints . ' 890,250'
+    : '';
 
 $conn->close();
 
@@ -1587,6 +1593,7 @@ select:focus {
 }
 
 .consultation-period-card {
+    display: block;
     width: 100%;
     min-height: 86px;
     border: 1px solid #dce8ef;
@@ -1596,6 +1603,7 @@ select:focus {
     cursor: pointer;
     padding: 16px 18px;
     text-align: left;
+    text-decoration: none;
     font: inherit;
     transition: border-color .2s ease, background .2s ease, transform .2s ease;
 }
@@ -2952,7 +2960,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         document.querySelectorAll("[data-summary-period]").forEach(function (button) {
-            button.addEventListener("click", function () {
+            button.addEventListener("click", function (event) {
+                event.preventDefault();
                 var nextPeriod = button.getAttribute("data-summary-period");
                 summaryRender(nextPeriod, true);
                 summaryBody.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -3116,11 +3125,12 @@ include 'includes/header.php';
                     'monthly' => ['Monthly', 'Completed in last 12 months'],
                     'quarterly' => ['Quarterly', 'Completed in last 4 quarters'],
                 ] as $periodKey => $periodCopy): ?>
-                    <button class="consultation-period-card<?php echo $summaryPeriod === $periodKey ? ' active' : ''; ?>" type="button" data-summary-period="<?php echo $periodKey; ?>" aria-pressed="<?php echo $summaryPeriod === $periodKey ? 'true' : 'false'; ?>">
+                    <?php $periodRange = $summaryDefaultRanges[$periodKey]; ?>
+                    <a class="consultation-period-card<?php echo $summaryPeriod === $periodKey ? ' active' : ''; ?>" href="doctor.php?<?php echo htmlspecialchars(http_build_query(['summary_period' => $periodKey, 'summary_from' => $periodRange['from'], 'summary_to' => $periodRange['to'], 'summary_page' => 1]), ENT_QUOTES, 'UTF-8'); ?>#consultationSummary" data-summary-period="<?php echo $periodKey; ?>" aria-pressed="<?php echo $summaryPeriod === $periodKey ? 'true' : 'false'; ?>">
                         <strong><?php echo htmlspecialchars($periodCopy[0]); ?></strong>
                         <b data-summary-card-value="<?php echo $periodKey; ?>"><?php echo (int) $summaryCardValues[$periodKey]; ?></b>
                         <span><?php echo htmlspecialchars($periodCopy[1]); ?></span>
-                    </button>
+                    </a>
                 <?php endforeach; ?>
             </div>
 
@@ -3139,8 +3149,34 @@ include 'includes/header.php';
                     </div>
 
                     <div class="consultation-summary-chart">
-                        <svg id="doctorConsultationSummaryChart" viewBox="0 0 920 320" role="img" aria-label="Consultation chart"></svg>
-                        <div id="doctorConsultationSummaryEmpty" class="consultation-summary-empty" hidden>No completed consultations in this date range.</div>
+                        <svg id="doctorConsultationSummaryChart" viewBox="0 0 920 320" role="img" aria-label="Consultation chart">
+                            <?php if ($summaryGraphPoints): ?>
+                                <?php for ($tick = 0; $tick <= 4; $tick++): ?>
+                                    <?php $tickY = 250 - (($tick / 4) * 190); ?>
+                                    <line class="summary-grid-line" x1="70" y1="<?php echo number_format($tickY, 2, '.', ''); ?>" x2="890" y2="<?php echo number_format($tickY, 2, '.', ''); ?>"></line>
+                                    <text x="61" y="<?php echo number_format($tickY + 4, 2, '.', ''); ?>" text-anchor="end"><?php echo (int) round($summaryGraphMax * ($tick / 4)); ?></text>
+                                <?php endfor; ?>
+                                <line class="summary-axis-line" x1="70" y1="60" x2="70" y2="250"></line>
+                                <line class="summary-axis-line" x1="70" y1="250" x2="890" y2="250"></line>
+                                <polygon class="summary-area" points="<?php echo htmlspecialchars($summaryGraphAreaPoints, ENT_QUOTES, 'UTF-8'); ?>"></polygon>
+                                <polyline class="summary-line" points="<?php echo htmlspecialchars($summaryGraphLinePoints, ENT_QUOTES, 'UTF-8'); ?>"></polyline>
+                                <?php foreach ($summaryGraphPoints as $point): ?>
+                                    <?php if ((int) $point['value'] > 0): ?>
+                                        <circle class="summary-dot" cx="<?php echo number_format((float) $point['x'], 2, '.', ''); ?>" cy="<?php echo number_format((float) $point['y'], 2, '.', ''); ?>" r="4.5">
+                                            <title><?php echo htmlspecialchars((string) $point['full_label'] . ': ' . (int) $point['value'] . ' completed consultations', ENT_QUOTES, 'UTF-8'); ?></title>
+                                        </circle>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                                <?php $summaryGraphLabelStep = max(1, (int) ceil(count($summaryGraphPoints) / 8)); ?>
+                                <?php foreach ($summaryGraphPoints as $index => $point): ?>
+                                    <?php if ($index === 0 || $index === count($summaryGraphPoints) - 1 || $index % $summaryGraphLabelStep === 0): ?>
+                                        <text x="<?php echo number_format((float) $point['x'], 2, '.', ''); ?>" y="274" text-anchor="middle"><?php echo htmlspecialchars((string) $point['label'], ENT_QUOTES, 'UTF-8'); ?></text>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                                <text class="summary-axis-label" x="480" y="313" text-anchor="middle">Period</text>
+                            <?php endif; ?>
+                        </svg>
+                        <div id="doctorConsultationSummaryEmpty" class="consultation-summary-empty"<?php echo $summaryGraphPoints ? ' hidden' : ''; ?>>No completed consultations in this date range.</div>
                     </div>
 
                     <div class="consultation-summary-table-wrap">
