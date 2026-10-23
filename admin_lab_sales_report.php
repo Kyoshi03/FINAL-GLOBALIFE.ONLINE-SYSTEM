@@ -512,19 +512,42 @@ function sales_report_xlsx_zip(array $files): string {
     return $local . $central . $end;
 }
 
-function sales_report_xlsx_chart_xml(array $rows, int $firstRow, int $lastRow): string {
+function sales_report_xlsx_date_serial(string $date): ?int {
+    $parsed = DateTimeImmutable::createFromFormat('!Y-m-d', $date);
+    if (!$parsed) {
+        return null;
+    }
+    $base = DateTimeImmutable::createFromFormat('!Y-m-d', '1899-12-30');
+    return $base ? (int) $base->diff($parsed)->format('%r%a') : null;
+}
+
+function sales_report_xlsx_date_cell(string $reference, string $date, int $style = 8): string {
+    $serial = sales_report_xlsx_date_serial($date);
+    return $serial === null
+        ? sales_report_xlsx_inline_cell($reference, 'Not recorded', 3)
+        : sales_report_xlsx_number_cell($reference, $serial, $style);
+}
+
+function sales_report_xlsx_chart_xml(array $chartValues, string $period, int $firstRow, int $lastRow): string {
     $categoryPoints = '';
     $valuePoints = '';
-    foreach (array_values($rows) as $index => $row) {
-        $date = strtotime((string) ($row['date'] ?? ''));
-        $category = $date ? date('M j, Y', $date) : 'Not recorded';
-        $amount = number_format((float) ($row['total_amount'] ?? 0), 2, '.', '');
+    foreach (array_keys($chartValues) as $index => $date) {
+        $dateObject = DateTimeImmutable::createFromFormat('!Y-m-d', (string) $date);
+        if (!$dateObject) {
+            continue;
+        }
+        $category = $period === 'monthly'
+            ? $dateObject->format('M Y')
+            : ($period === 'quarterly'
+                ? 'Q' . (int) ceil((int) $dateObject->format('n') / 3) . ' ' . $dateObject->format('Y')
+                : $dateObject->format('M j'));
+        $amount = number_format((float) ($chartValues[$date] ?? 0), 2, '.', '');
         $categoryPoints .= '<c:pt idx="' . $index . '"><c:v>' . sales_report_xlsx_escape($category) . '</c:v></c:pt>';
         $valuePoints .= '<c:pt idx="' . $index . '"><c:v>' . $amount . '</c:v></c:pt>';
     }
-    $categoryFormula = "'Sales Report'!\$A\$" . $firstRow . ":\$A\$" . $lastRow;
-    $valueFormula = "'Sales Report'!\$E\$" . $firstRow . ":\$E\$" . $lastRow;
-    $pointCount = count($rows);
+    $categoryFormula = "'Sales Report'!\$Q\$" . $firstRow . ":\$Q\$" . $lastRow;
+    $valueFormula = "'Sales Report'!\$R\$" . $firstRow . ":\$R\$" . $lastRow;
+    $pointCount = count($chartValues);
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         . '<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
         . '<c:date1904 val="0"/><c:lang val="en-US"/><c:roundedCorners val="0"/><c:chart>'
@@ -538,42 +561,43 @@ function sales_report_xlsx_chart_xml(array $rows, int $firstRow, int $lastRow): 
         . '</c:ser><c:axId val="100000001"/><c:axId val="100000002"/></c:lineChart>'
         . '<c:catAx><c:axId val="100000001"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:crossAx val="100000002"/><c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:crossBetween val="midCat"/></c:catAx>'
         . '<c:valAx><c:axId val="100000002"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:majorGridlines/><c:numFmt formatCode="₱#,##0.00" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:crossAx val="100000001"/><c:crosses val="autoZero"/><c:crossBetween val="midCat"/></c:valAx></c:plotArea>'
-        . '<c:plotVisOnly val="1"/><c:dispBlanksAs val="gap"/></c:chart><c:printSettings><c:headerFooter/><c:pageMargins b="0.75" l="0.25" r="0.25" t="0.75" header="0.3" footer="0.3"/><c:pageSetup/></c:printSettings></c:chartSpace>';
+        . '<c:plotVisOnly val="0"/><c:dispBlanksAs val="zero"/></c:chart><c:printSettings><c:headerFooter/><c:pageMargins b="0.75" l="0.25" r="0.25" t="0.75" header="0.3" footer="0.3"/><c:pageSetup/></c:printSettings></c:chartSpace>';
 }
 
 function sales_report_xlsx_drawing_xml(): string {
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         . '<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
-        . '<xdr:twoCellAnchor editAs="oneCell"><xdr:from><xdr:col>6</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>1</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:to><xdr:col>14</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>17</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to>'
+        . '<xdr:twoCellAnchor editAs="oneCell"><xdr:from><xdr:col>0</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>5</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:to><xdr:col>14</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>22</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to>'
         . '<xdr:graphicFrame macro=""><xdr:nvGraphicFramePr><xdr:cNvPr id="2" name="Laboratory Sales Trend"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart r:id="rId1"/></a:graphicData></a:graphic></xdr:graphicFrame><xdr:clientData/></xdr:twoCellAnchor></xdr:wsDr>';
 }
 
-function sales_report_output_xlsx(array $rows, string $from, string $to, float $total, int $quantity, string $period, string $rangeLabel): void {
+function sales_report_output_xlsx(array $rows, string $from, string $to, float $total, int $quantity, array $chartValues, string $period, string $rangeLabel): void {
     $sheetRows = [];
     $sheetRows[] = '<row r="1" ht="30" customHeight="1">' . sales_report_xlsx_inline_cell('A1', 'Laboratory Sales Report', 1) . '</row>';
     $sheetRows[] = '<row r="2" ht="22" customHeight="1">' . sales_report_xlsx_inline_cell('A2', 'Period: ' . $rangeLabel . ' | ' . ucfirst($period), 6) . '</row>';
     $sheetRows[] = '<row r="3"><c r="A3" t="inlineStr"><is><t></t></is></c></row>';
     $sheetRows[] = '<row r="4" ht="22" customHeight="1">'
         . sales_report_xlsx_inline_cell('A4', 'Total Laboratory Sales', 6)
-        . sales_report_xlsx_inline_cell('B4', '₱' . number_format(round($total, 2), 2, '.', ','), 7)
+        . sales_report_xlsx_number_cell('B4', round($total, 2), 4)
         . sales_report_xlsx_inline_cell('C4', 'Completed Tests', 6)
         . sales_report_xlsx_number_cell('D4', $quantity, 5)
         . '</row>';
     $sheetRows[] = '<row r="5" ht="22" customHeight="1">' . sales_report_xlsx_inline_cell('A5', 'Completed and paid laboratory transactions only', 6) . '</row>';
     $sheetRows[] = '<row r="6"><c r="A6" t="inlineStr"><is><t></t></is></c></row>';
-    $sheetRows[] = '<row r="7" ht="24" customHeight="1">'
-        . sales_report_xlsx_inline_cell('A7', 'Date', 2)
-        . sales_report_xlsx_inline_cell('B7', 'Laboratory Test / Package', 2)
-        . sales_report_xlsx_inline_cell('C7', 'Quantity', 2)
-        . sales_report_xlsx_inline_cell('D7', 'Unit Price', 2)
-        . sales_report_xlsx_inline_cell('E7', 'Total Amount', 2)
+    $sheetRows[] = '<row r="23"><c r="A23" t="inlineStr"><is><t></t></is></c></row>';
+    $sheetRows[] = '<row r="24" ht="28" customHeight="1">'
+        . sales_report_xlsx_inline_cell('A24', 'Date', 2)
+        . sales_report_xlsx_inline_cell('B24', 'Laboratory Test / Package', 2)
+        . sales_report_xlsx_inline_cell('C24', 'Quantity', 2)
+        . sales_report_xlsx_inline_cell('D24', 'Unit Price', 2)
+        . sales_report_xlsx_inline_cell('E24', 'Total Amount', 2)
         . '</row>';
 
-    $rowNumber = 8;
+    $rowNumber = 25;
     foreach ($rows as $row) {
-        $date = strtotime((string) ($row['date'] ?? ''));
+        $dateValue = (string) ($row['date'] ?? '');
         $sheetRows[] = '<row r="' . $rowNumber . '">'
-            . sales_report_xlsx_inline_cell('A' . $rowNumber, $date ? date('M j, Y', $date) : 'Not recorded')
+            . sales_report_xlsx_date_cell('A' . $rowNumber, $dateValue)
             . sales_report_xlsx_inline_cell('B' . $rowNumber, (string) ($row['service'] ?? 'Laboratory service'))
             . sales_report_xlsx_number_cell('C' . $rowNumber, (int) ($row['quantity'] ?? 0), 5)
             . sales_report_xlsx_inline_cell('D' . $rowNumber, (string) ($row['unit_price'] ?? ''))
@@ -587,37 +611,72 @@ function sales_report_output_xlsx(array $rows, string $from, string $to, float $
     }
     $sheetRows[] = '<row r="' . $rowNumber . '" ht="24" customHeight="1">'
         . sales_report_xlsx_inline_cell('A' . $rowNumber, 'Total Laboratory Sales', 6)
-        . sales_report_xlsx_inline_cell('E' . $rowNumber, '₱' . number_format(round($total, 2), 2, '.', ','), 7)
+        . sales_report_xlsx_number_cell('E' . $rowNumber, round($total, 2), 4)
         . '</row>';
     $lastRow = $rowNumber;
-    $dataLastRow = $rows ? 7 + count($rows) : 8;
-    $chartXml = $rows ? sales_report_xlsx_chart_xml($rows, 8, 7 + count($rows)) : '';
+    $dataLastRow = $rows ? 24 + count($rows) : 24;
+
+    // Keep editable chart source values in hidden columns outside the print area.
+    $chartSourceHeaderRow = $lastRow + 2;
+    $chartSourceFirstRow = $chartSourceHeaderRow + 1;
+    $chartSourceLastRow = $chartSourceFirstRow + max(0, count($chartValues) - 1);
+    if ($chartValues !== []) {
+        $sheetRows[] = '<row r="' . $chartSourceHeaderRow . '">'
+            . sales_report_xlsx_inline_cell('P' . $chartSourceHeaderRow, 'Chart Date', 6)
+            . sales_report_xlsx_inline_cell('Q' . $chartSourceHeaderRow, 'Chart Period', 6)
+            . sales_report_xlsx_inline_cell('R' . $chartSourceHeaderRow, 'Sales', 6)
+            . '</row>';
+        $sourceRow = $chartSourceFirstRow;
+        foreach ($chartValues as $date => $amount) {
+            $dateObject = DateTimeImmutable::createFromFormat('!Y-m-d', (string) $date);
+            $label = $dateObject
+                ? ($period === 'monthly'
+                    ? $dateObject->format('M Y')
+                    : ($period === 'quarterly'
+                        ? 'Q' . (int) ceil((int) $dateObject->format('n') / 3) . ' ' . $dateObject->format('Y')
+                        : $dateObject->format('M j')))
+                : (string) $date;
+            $sheetRows[] = '<row r="' . $sourceRow . '">'
+                . sales_report_xlsx_date_cell('P' . $sourceRow, (string) $date)
+                . sales_report_xlsx_inline_cell('Q' . $sourceRow, $label, 6)
+                . sales_report_xlsx_number_cell('R' . $sourceRow, round((float) $amount, 2), 4)
+                . '</row>';
+            $sourceRow++;
+        }
+    }
+    $chartXml = $chartValues !== [] ? sales_report_xlsx_chart_xml($chartValues, $period, $chartSourceFirstRow, $chartSourceLastRow) : '';
     $sheetDrawing = $chartXml !== '' ? '<drawing r="rId1"/>' : '';
+    $printLastRow = max($lastRow, 22);
+    $dimensionLastRow = max($lastRow, $chartSourceLastRow);
 
     $sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
-        . '<dimension ref="A1:O18"/>'
-        . '<sheetViews><sheetView workbookViewId="0"><pane ySplit="7" topLeftCell="A8" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>'
+        . '<sheetPr><pageSetUpPr fitToPage="1" autoPageBreaks="1"/></sheetPr>'
+        . '<dimension ref="A1:R' . $dimensionLastRow . '"/>'
+        . '<sheetViews><sheetView workbookViewId="0"><pane ySplit="24" topLeftCell="A25" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>'
         . '<sheetFormatPr defaultRowHeight="19"/><cols>'
         . '<col min="1" max="1" width="22" bestFit="1" customWidth="1"/><col min="2" max="2" width="46" bestFit="1" customWidth="1"/>'
         . '<col min="3" max="3" width="14" bestFit="1" customWidth="1"/><col min="4" max="4" width="28" bestFit="1" customWidth="1"/>'
-        . '<col min="5" max="5" width="20" bestFit="1" customWidth="1"/></cols>'
+        . '<col min="5" max="5" width="20" bestFit="1" customWidth="1"/>'
+        . '<col min="6" max="15" width="12" customWidth="1"/>'
+        . '<col min="16" max="18" hidden="1" width="12" customWidth="1"/></cols>'
         . '<sheetData>' . implode('', $sheetRows) . '</sheetData>'
-        . '<mergeCells count="4"><mergeCell ref="A1:E1"/><mergeCell ref="A2:E2"/><mergeCell ref="A5:E5"/><mergeCell ref="A' . $lastRow . ':D' . $lastRow . '"/></mergeCells>'
-        . '<autoFilter ref="A7:E' . $dataLastRow . '"/>'
+        . '<mergeCells count="4"><mergeCell ref="A1:O1"/><mergeCell ref="A2:O2"/><mergeCell ref="A5:O5"/><mergeCell ref="A' . $lastRow . ':D' . $lastRow . '"/></mergeCells>'
+        . '<autoFilter ref="A24:E' . $dataLastRow . '"/>'
+        . '<printOptions horizontalCentered="0" verticalCentered="0"/>'
         . '<pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/>'
         . '<pageSetup orientation="landscape" paperSize="9" fitToWidth="1" fitToHeight="0"/>' . $sheetDrawing . '</worksheet>';
 
     $styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-        . '<numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;₱&quot;#,##0.00"/></numFmts>'
+        . '<numFmts count="2"><numFmt numFmtId="164" formatCode="&quot;₱&quot;#,##0.00"/><numFmt numFmtId="165" formatCode="mmm d, yyyy"/></numFmts>'
         . '<fonts count="2"><font><sz val="10"/><name val="Arial"/><family val="2"/></font><font><b/><sz val="10"/><name val="Arial"/><family val="2"/><color rgb="FFFFFFFF"/></font></fonts>'
         . '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF0F7CC2"/><bgColor indexed="64"/></patternFill></fill></fills>'
-        . '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+        . '<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFD8E6ED"/></left><right style="thin"><color rgb="FFD8E6ED"/></right><top style="thin"><color rgb="FFD8E6ED"/></top><bottom style="thin"><color rgb="FFD8E6ED"/></bottom><diagonal/></border></borders>'
         . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
-        . '<cellXfs count="8"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf><xf numFmtId="0" fontId="1" fillId="2" borderId="0" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="164" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="3" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf></cellXfs>'
+        . '<cellXfs count="9"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf><xf numFmtId="0" fontId="1" fillId="2" borderId="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="164" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="3" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="165" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf></cellXfs>'
         . '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles><dxfs count="0"/><tableStyles count="0" defaultTableStyle="TableStyleMedium2" defaultPivotStyle="PivotStyleMedium4"/></styleSheet>';
-    $workbook = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><bookViews><workbookView/></bookViews><sheets><sheet name=\"Sales Report\" sheetId=\"1\" r:id=\"rId1\"/></sheets><definedNames><definedName name=\"_xlnm.Print_Titles\" localSheetId=\"0\">'Sales Report'!$1:$7</definedName></definedNames></workbook>";
+    $workbook = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><bookViews><workbookView/></bookViews><sheets><sheet name=\"Sales Report\" sheetId=\"1\" r:id=\"rId1\"/></sheets><definedNames><definedName name=\"_xlnm.Print_Titles\" localSheetId=\"0\">'Sales Report'!\$1:\$5</definedName><definedName name=\"_xlnm.Print_Area\" localSheetId=\"0\">'Sales Report'!\$A\$1:\$O\$" . $printLastRow . "</definedName></definedNames></workbook>";
     $chartContentTypes = $chartXml !== ''
         ? '<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/><Override PartName="/xl/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>'
         : '';
@@ -897,13 +956,22 @@ if (strtolower((string) ($_GET['format'] ?? '')) === 'pdf') {
     );
 }
 if (strtolower((string) ($_GET['format'] ?? '')) === 'xlsx') {
-    $xlsxPeriod = $selectedViewKey === 'current' ? $period : $selectedViewKey;
+    // The current view is rendered as a daily trend on the page, even when its
+    // filter period is different, so keep the workbook chart aligned with it.
+    $xlsxPeriod = $selectedViewKey === 'current' ? 'daily' : $selectedViewKey;
+    $xlsxChartValues = sales_report_chart_values(
+        $selectedReportView['rows'],
+        $xlsxPeriod,
+        $selectedReportView['from'],
+        $selectedReportView['to']
+    );
     sales_report_output_xlsx(
         $selectedReportView['rows'],
         $selectedReportView['from']->format('Y-m-d'),
         $selectedReportView['to']->format('Y-m-d'),
         (float) $selectedReportView['sales'],
         (int) $selectedReportView['tests'],
+        $xlsxChartValues,
         $xlsxPeriod,
         $displayRangeLabel
     );
