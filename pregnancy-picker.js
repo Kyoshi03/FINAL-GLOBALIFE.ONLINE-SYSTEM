@@ -68,12 +68,12 @@
                 '<div class="pregnancy-picker-calendars">' +
                     '<section class="pregnancy-picker-calendar" data-pregnancy-calendar="lmp" aria-labelledby="pregnancyLmpTitle">' +
                         '<div class="pregnancy-picker-calendar-head"><h3 id="pregnancyLmpTitle">Last Menstrual Period <span>(LMP)</span></h3></div>' +
-                        '<div class="pregnancy-picker-month-bar"><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="prev" aria-label="Previous month">&#8249;</button><strong class="pregnancy-picker-month-title"></strong><select class="pregnancy-picker-year-select" aria-label="LMP year"></select><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="next" aria-label="Next month">&#8250;</button></div>' +
+                        '<div class="pregnancy-picker-month-bar"><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="prev" aria-label="Previous month">&#8249;</button><div class="pregnancy-picker-month-year"><strong class="pregnancy-picker-month-title"></strong><select class="pregnancy-picker-year-select" aria-label="LMP year"></select></div><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="next" aria-label="Next month">&#8250;</button></div>' +
                         '<div class="pregnancy-picker-weekdays" aria-hidden="true"></div><div class="pregnancy-picker-days" role="grid"></div>' +
                     '</section>' +
                     '<section class="pregnancy-picker-calendar" data-pregnancy-calendar="edd" aria-labelledby="pregnancyEddTitle">' +
                         '<div class="pregnancy-picker-calendar-head"><h3 id="pregnancyEddTitle">Estimated Date of Delivery <span>(EDD)</span></h3></div>' +
-                        '<div class="pregnancy-picker-month-bar"><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="prev" aria-label="Previous month">&#8249;</button><strong class="pregnancy-picker-month-title"></strong><select class="pregnancy-picker-year-select" aria-label="EDD year"></select><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="next" aria-label="Next month">&#8250;</button></div>' +
+                        '<div class="pregnancy-picker-month-bar"><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="prev" aria-label="Previous month">&#8249;</button><div class="pregnancy-picker-month-year"><strong class="pregnancy-picker-month-title"></strong><select class="pregnancy-picker-year-select" aria-label="EDD year"></select></div><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="next" aria-label="Next month">&#8250;</button></div>' +
                         '<div class="pregnancy-picker-weekdays" aria-hidden="true"></div><div class="pregnancy-picker-days" role="grid"></div>' +
                     '</section>' +
                 '</div>' +
