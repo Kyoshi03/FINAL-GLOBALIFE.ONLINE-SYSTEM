@@ -46,6 +46,12 @@
         ].join("-");
     }
 
+    function addMonths(date, months) {
+        var result = new Date(date);
+        result.setMonth(result.getMonth() + months);
+        return startOfDay(result);
+    }
+
     function formatDate(value) {
         var date = parseYmd(value);
         return date ? date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Not selected";
@@ -137,6 +143,19 @@
             }
         }
 
+        function minimumEddDate() {
+            var lmp = parseYmd(draft.lmp);
+            return lmp ? addMonths(lmp, 7) : null;
+        }
+
+        function normalizeDraftDates() {
+            var minimumEdd = minimumEddDate();
+            var edd = parseYmd(draft.edd);
+            if (minimumEdd && edd && edd < minimumEdd) {
+                draft.edd = "";
+            }
+        }
+
         function updateSummary() {
             var lmp = parseYmd(lmpInput.value);
             var edd = parseYmd(eddInput.value);
@@ -216,9 +235,16 @@
                     button.disabled = true;
                     button.title = "LMP cannot be a future date";
                 }
+                var minimumEdd = kind === "edd" ? minimumEddDate() : null;
+                if (minimumEdd && date < minimumEdd) {
+                    button.disabled = true;
+                    button.title = "EDD must be at least 7 months after LMP";
+                }
                 button.addEventListener("click", function () {
                     draft[kind] = this.dataset.pregnancyDate;
+                    if (kind === "lmp") normalizeDraftDates();
                     renderCalendar(kind);
+                    if (kind === "lmp") renderCalendar("edd");
                     renderSelected();
                 });
                 days.appendChild(button);
@@ -236,6 +262,7 @@
             refreshYearRange();
             draft.lmp = lmpInput.value;
             draft.edd = eddInput.value;
+            normalizeDraftDates();
             ["lmp", "edd"].forEach(function (kind) {
                 var selected = parseYmd(draft[kind]);
                 views[kind] = selected && isAllowedYear(selected.getFullYear())

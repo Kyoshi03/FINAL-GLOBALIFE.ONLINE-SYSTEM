@@ -50,8 +50,16 @@ function clinic_pregnancy_validate(
         return 'Please select a valid Estimated Date of Delivery.';
     }
 
-    if ($lmpDate !== '' && $lmpDate > (new DateTimeImmutable('today'))->format('Y-m-d')) {
+    if ($lmpDate !== '' && $lmpDate > (new DateTimeImmutable('today', new DateTimeZone('Asia/Manila')))->format('Y-m-d')) {
         return 'The Last Menstrual Period cannot be a future date.';
+    }
+
+    if ($lmpDate !== '' && $eddDate !== '') {
+        $lmp = DateTimeImmutable::createFromFormat('!Y-m-d', $lmpDate);
+        $edd = DateTimeImmutable::createFromFormat('!Y-m-d', $eddDate);
+        if ($lmp instanceof DateTimeImmutable && $edd instanceof DateTimeImmutable && $edd < $lmp->modify('+7 months')) {
+            return 'The Estimated Date of Delivery must be at least 7 months after the Last Menstrual Period.';
+        }
     }
 
     return '';
