@@ -455,7 +455,7 @@ function sales_report_output_pdf(array $rows, string $from, string $to, float $t
 }
 
 function sales_report_xlsx_escape(string $value): string {
-    return htmlspecialchars($value, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+    return htmlspecialchars($value, ENT_XML1 | ENT_QUOTES | ENT_SUBSTITUTE | ENT_DISALLOWED, 'UTF-8');
 }
 
 function sales_report_xlsx_inline_cell(string $reference, string $value, int $style = 0): string {
