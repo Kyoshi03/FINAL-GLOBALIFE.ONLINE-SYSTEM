@@ -1348,7 +1348,6 @@ include 'includes/header.php';
                                     </div>
                                     <div class="pregnancy-summary" id="pregnancySummary" hidden></div>
                                     <button type="button" class="pregnancy-clear" id="pregnancyClear" hidden>Clear</button>
-                                    <span class="field-hint">Optional. Select LMP, EDD, or both if known.</span>
                                     <span class="rpr-pwd-field-error pregnancy-field-error" id="pregnancyError" role="alert"></span>
                                 </div>
                             </div>
