@@ -381,7 +381,7 @@ body{background:linear-gradient(135deg,#f5fbff 0%,#eaf7fb 100%);min-height:100vh
 .np-note-card strong{display:block;color:#09233f}.np-note-card small{display:block;color:#718696;margin:3px 0 10px}
 .np-note-line{display:grid;grid-template-columns:115px minmax(0,1fr);gap:12px;margin:6px 0;color:#213b4b}.np-note-line b{color:#607889}
 .np-note-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #e4edf3}
-.np-note-export{display:inline-flex;align-items:center;justify-content:center;min-height:36px;border:1px solid #cfe4f1;border-radius:8px;padding:0 12px;background:#fff;color:#0b4f80;font-size:.86rem;font-weight:900;text-decoration:none}
+.np-note-export{display:inline-flex;align-items:center;justify-content:center;min-height:36px;border:1px solid #cfe4f1;border-radius:8px;padding:0 12px;background:#fff;color:#0b4f80;font-family:inherit;font-size:.86rem;font-weight:900;text-decoration:none;cursor:pointer}
 .np-note-export.primary{border-color:#0077b6;background:#0077b6;color:#fff}
 .np-note-export:hover{background:#eef8ff}.np-note-export.primary:hover{background:#006aa3}
 .np-note-empty{padding:16px;color:#607889}
@@ -449,6 +449,47 @@ document.addEventListener("DOMContentLoaded", function () {
   document.querySelectorAll("[data-close-medical-modal]").forEach(function (button) {
     button.addEventListener("click", function () {
       closeModal(button.closest(".np-modal"));
+    });
+  });
+
+  var activePrintFrame = null;
+  function printMedicalNote(url) {
+    if (activePrintFrame && activePrintFrame.parentNode) {
+      activePrintFrame.parentNode.removeChild(activePrintFrame);
+    }
+
+    var frame = document.createElement("iframe");
+    frame.setAttribute("aria-hidden", "true");
+    frame.style.position = "fixed";
+    frame.style.width = "1px";
+    frame.style.height = "1px";
+    frame.style.border = "0";
+    frame.style.opacity = "0";
+    frame.style.pointerEvents = "none";
+    frame.style.left = "-10000px";
+    document.body.appendChild(frame);
+    activePrintFrame = frame;
+
+    function cleanup() {
+      window.setTimeout(function () {
+        if (frame.parentNode) frame.parentNode.removeChild(frame);
+        if (activePrintFrame === frame) activePrintFrame = null;
+      }, 100);
+    }
+
+    frame.onload = function () {
+      frame.contentWindow.onafterprint = cleanup;
+      window.setTimeout(function () {
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+      }, 150);
+    };
+    frame.src = url;
+  }
+
+  document.querySelectorAll("[data-print-medical]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      printMedicalNote(button.getAttribute("data-print-medical"));
     });
   });
 
@@ -687,7 +728,7 @@ include 'includes/header.php';
                         <?php if ((int) ($record['author_id'] ?? 0) === $doctorId): ?>
                           <a class="np-note-export primary" href="<?php echo htmlspecialchars(np_edit_note_url((int) $record['id'], $patientId, $page, $q)); ?>">Edit</a>
                         <?php endif; ?>
-                        <a class="np-note-export" href="doctor_export.php?type=medical&amp;id=<?php echo (int) $record['id']; ?>&amp;action=print" target="_blank" rel="noopener">Print</a>
+                        <button class="np-note-export" type="button" data-print-medical="doctor_export.php?type=medical&amp;id=<?php echo (int) $record['id']; ?>&amp;action=print&amp;embedded=1">Print</button>
                         <a class="np-note-export" href="doctor_export.php?type=medical&amp;id=<?php echo (int) $record['id']; ?>&amp;action=download">Download</a>
                       </div>
                     </article>

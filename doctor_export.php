@@ -9,6 +9,7 @@ require_once __DIR__ . '/includes/doctor_pdf_export.php';
 
 $type = strtolower(trim((string) ($_GET['type'] ?? '')));
 $action = strtolower(trim((string) ($_GET['action'] ?? 'print')));
+$embedded = (string) ($_GET['embedded'] ?? '') === '1';
 $recordId = (int) ($_GET['id'] ?? 0);
 $doctorId = (int) (getCurrentUser()['id'] ?? 0);
 
@@ -48,5 +49,7 @@ if ($action === 'download') {
 
 header('Content-Type: text/html; charset=UTF-8');
 echo $html;
-echo '<script>window.addEventListener("load",function(){setTimeout(function(){window.print();},300);});</script>';
+if (!$embedded) {
+    echo '<script>window.addEventListener("load",function(){setTimeout(function(){window.print();},300);});</script>';
+}
 
