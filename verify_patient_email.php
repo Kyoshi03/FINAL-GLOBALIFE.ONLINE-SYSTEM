@@ -165,45 +165,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         date_of_birth, age, civil_status, pwd_type, pwd_details, pwd_id_path, address, barangay, city,
                         emergency_contact_name, emergency_contact_relationship,
                         emergency_contact_number, pregnancy_status, pregnancy_lmp_date, pregnancy_edd_date
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                    ) VALUES (
+                        ?, ?, ?, ?, ?, ?, ?, 1,
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                        ?, ?, ?, ?, ?, ?, ?, ?, ?
+                    )'
                 );
                 $pwdIdPath = $pwdType === '' ? null : $pwdPendingPath;
                 $pregnancyStatusForInsert = $pregnancyStatus === 'Pregnant' ? 'Pregnant' : '';
                 $pregnancyLmpForInsert = $pregnancyStatusForInsert !== '' && $pregnancyLmpDate !== '' ? $pregnancyLmpDate : null;
                 $pregnancyEddForInsert = $pregnancyStatusForInsert !== '' && $pregnancyEddDate !== '' ? $pregnancyEddDate : null;
                 $bindTypes = str_repeat('s', 11) . 'i' . str_repeat('s', 13);
-                $insert->bind_param(
-                    $bindTypes,
-                    $username,
-                    $passwordHash,
-                    $firstName,
-                    $middleName,
-                    $lastName,
-                    $suffix,
-                    $role,
-                    $emailForInsert,
-                    $phone,
-                    $gender,
-                    $dateOfBirth,
-                    $age,
-                    $civilStatus,
-                    $pwdType,
-                    $pwdDetails,
-                    $pwdIdPath,
-                    $address,
-                    $barangay,
-                    $city,
-                    $emergencyName,
-                    $emergencyRelationship,
-                    $emergencyNumber,
-                    $pregnancyStatusForInsert,
-                    $pregnancyLmpForInsert,
-                    $pregnancyEddForInsert
-                );
-                $created = $insert->execute();
-                $insertError = $insert->errno;
-                $newPatientId = $created ? (int) $insert->insert_id : 0;
-                $insert->close();
+                if (!$insert) {
+                    $created = false;
+                    $insertError = $conn->errno;
+                } else {
+                    $bound = $insert->bind_param(
+                        $bindTypes,
+                        $username,
+                        $passwordHash,
+                        $firstName,
+                        $middleName,
+                        $lastName,
+                        $suffix,
+                        $role,
+                        $emailForInsert,
+                        $phone,
+                        $gender,
+                        $dateOfBirth,
+                        $age,
+                        $civilStatus,
+                        $pwdType,
+                        $pwdDetails,
+                        $pwdIdPath,
+                        $address,
+                        $barangay,
+                        $city,
+                        $emergencyName,
+                        $emergencyRelationship,
+                        $emergencyNumber,
+                        $pregnancyStatusForInsert,
+                        $pregnancyLmpForInsert,
+                        $pregnancyEddForInsert
+                    );
+                    $created = $bound && $insert->execute();
+                    $insertError = $insert->errno;
+                    $newPatientId = $created ? (int) $insert->insert_id : 0;
+                    $insert->close();
+                }
 
                 if ($created && $pwdType !== '') {
                     $promotedPwdPath = pwd_id_promote_pending_file($pwdPendingPath);

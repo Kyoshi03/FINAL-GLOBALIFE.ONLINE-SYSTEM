@@ -195,7 +195,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $role = 'patient';
             
             // Insert new patient
-            $stmt = $conn->prepare("INSERT INTO users (username, password, first_name, middle_name, last_name, suffix, role, is_active, email, phone, gender, date_of_birth, age, civil_status, pwd_type, pwd_details, pwd_id_path, address, barangay, city, emergency_contact_name, emergency_contact_relationship, emergency_contact_number, pregnancy_status, pregnancy_lmp_date, pregnancy_edd_date) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $conn->prepare(
+                "INSERT INTO users (
+                    username, password, first_name, middle_name, last_name, suffix, role, is_active,
+                    email, phone, gender, date_of_birth, age, civil_status, pwd_type, pwd_details,
+                    pwd_id_path, address, barangay, city, emergency_contact_name,
+                    emergency_contact_relationship, emergency_contact_number, pregnancy_status,
+                    pregnancy_lmp_date, pregnancy_edd_date
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, 1,
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?
+                )"
+            );
             $fullAddress = implode(', ', array_values(array_filter([$address, $barangay, $city, 'Cavite'], static fn (string $part): bool => $part !== '')));
             $pwdDetailsForInsert = $pwd_type === 'Other (please specify)' ? $pwd_details : '';
             $pregnancyStatusForInsert = $pregnancy_status === 'Pregnant' ? 'Pregnant' : '';
