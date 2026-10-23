@@ -408,6 +408,13 @@ $summaryClientData = [
     'initial_to' => $summaryTo,
     'initial_page' => $summaryPage,
 ];
+$summaryClientJson = json_encode(
+    $summaryClientData,
+    JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE
+);
+if ($summaryClientJson === false) {
+    $summaryClientJson = '{"records":[],"defaults":{},"initial_period":"daily","initial_from":"","initial_to":"","initial_page":1}';
+}
 
 $summaryTotalRecords = count($summaryCompletedConsultations);
 $summaryPageTotal = max(1, (int) ceil($summaryTotalRecords / $summaryPerPage));
@@ -2467,7 +2474,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         var summaryRecords = Array.isArray(summaryData.records) ? summaryData.records : [];
-        var summaryPeriod = summaryData.initial_period || "";
+        var summaryPeriod = summaryData.initial_period || "daily";
         var summaryPage = Math.max(1, parseInt(summaryData.initial_page || "1", 10));
         var summaryPageSize = 5;
         var summaryFromInput = document.getElementById("doctorSummaryFrom");
@@ -2704,6 +2711,10 @@ document.addEventListener("DOMContentLoaded", function () {
             return year + "-Q" + (Math.floor((month - 1) / 3) + 1);
         }
 
+        function summaryRecordDate(record) {
+            return String(record && record.date || "").slice(0, 10);
+        }
+
         function summaryBuildSeries(period, range) {
             var start = new Date(range.from + "T00:00:00");
             var end = new Date(range.to + "T00:00:00");
@@ -2717,10 +2728,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
             var counts = {};
             var filtered = summaryRecords.filter(function (record) {
-                return record.date >= range.from && record.date <= range.to;
+                var recordDate = summaryRecordDate(record);
+                return summaryValidDate(recordDate) && recordDate >= range.from && recordDate <= range.to;
             });
             filtered.forEach(function (record) {
-                var key = summaryBucketKey(record.date, period);
+                var key = summaryBucketKey(summaryRecordDate(record), period);
                 counts[key] = (counts[key] || 0) + 1;
             });
 
@@ -3145,7 +3157,7 @@ include 'includes/header.php';
                         <div id="doctorConsultationSummaryPagination"></div>
                     </div>
             </div>
-            <script type="application/json" id="doctorConsultationSummaryData"><?php echo json_encode($summaryClientData, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?></script>
+            <script type="application/json" id="doctorConsultationSummaryData"><?php echo $summaryClientJson; ?></script>
         </section>
 
         <section class="doctor-clean-panel" id="appointmentRequests">
