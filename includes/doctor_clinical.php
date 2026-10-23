@@ -241,6 +241,18 @@ function doctor_clinical_report_age(?string $dateOfBirth): string {
     }
 }
 
+function doctor_clinical_logo_src(): string {
+    $path = __DIR__ . '/../globalife.png';
+    if (!is_file($path)) {
+        return 'globalife.png';
+    }
+
+    $contents = @file_get_contents($path);
+    return $contents === false
+        ? 'globalife.png'
+        : 'data:image/png;base64,' . base64_encode($contents);
+}
+
 function doctor_clinical_lab_report_rows(string $testName, string $resultText): array {
     $lines = preg_split('/\R/', trim($resultText)) ?: [];
     $rows = [];
@@ -326,7 +338,7 @@ body{font-family:Arial,sans-serif;color:#163744;background:#edf4f6;margin:0}
 <body>
 <main class="sheet">
   <div class="letterhead">
-    <img src="globalife.png" class="logo" alt="Clinic logo">
+    <img src="<?php echo htmlspecialchars(doctor_clinical_logo_src(), ENT_QUOTES, 'UTF-8'); ?>" class="logo" alt="Clinic logo">
     <div>
       <h1 class="clinic-name">Globalife Medical Laboratory &amp; Polyclinic</h1>
       <p class="clinic-details">Barangay Sahud Ulan, Tanza, Cavite<br>Professional medical and laboratory services</p>
