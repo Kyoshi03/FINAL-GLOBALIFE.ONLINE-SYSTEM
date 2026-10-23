@@ -1595,7 +1595,9 @@ select:focus {
 .consultation-period-card {
     display: block;
     width: 100%;
+    min-width: 0;
     min-height: 86px;
+    box-sizing: border-box;
     border: 1px solid #dce8ef;
     border-radius: 8px;
     background: #fff;
