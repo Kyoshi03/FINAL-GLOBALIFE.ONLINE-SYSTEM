@@ -161,13 +161,14 @@ function doctor_clinical_fetch_medical(mysqli $conn, int $id, int $doctorId = 0)
     doctor_clinical_ensure_schema($conn);
     $accessSql = '';
     if ($doctorId > 0) {
-        // A doctor may export records only for a patient with a completed consultation.
+        // Keep exports aligned with the Doctors patient list: the doctor may
+        // access clinical records for patients who have a consultation with
+        // them, regardless of the appointment's current status.
         $accessSql = " AND EXISTS (
             SELECT 1 FROM appointments a
             WHERE a.patient_id = m.patient_id
               AND a.doctor_id = ?
               AND a.booking_type = 'consultation'
-              AND a.status = 'completed'
         )";
     }
     $stmt = $conn->prepare("SELECT m.*, " . dbUsersNameExpression('p') . " AS patient_name, p.date_of_birth, p.gender, p.phone, p.email, " . dbUsersNameExpression('u') . " AS author_name
@@ -190,13 +191,12 @@ function doctor_clinical_fetch_lab(mysqli $conn, int $id, int $doctorId = 0): ?a
     doctor_clinical_ensure_schema($conn);
     $accessSql = '';
     if ($doctorId > 0) {
-        // Keep lab exports under the same completed-consultation access rule.
+        // Keep lab exports under the same consultation access rule.
         $accessSql = " AND EXISTS (
             SELECT 1 FROM appointments a
             WHERE a.patient_id = l.patient_id
               AND a.doctor_id = ?
               AND a.booking_type = 'consultation'
-              AND a.status = 'completed'
         )";
     }
     $stmt = $conn->prepare("SELECT l.*, " . dbUsersNameExpression('p') . " AS patient_name, p.date_of_birth, p.gender, p.phone, p.email, " . dbUsersNameExpression('u') . " AS author_name
