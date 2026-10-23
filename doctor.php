@@ -1718,7 +1718,7 @@ body.doctor-summary-range-open {
 .consultation-range-modal {
     position: fixed;
     inset: 0;
-    z-index: 1200;
+    z-index: 4000;
     display: grid;
     place-items: center;
     padding: 20px;
@@ -2685,6 +2685,9 @@ document.addEventListener("DOMContentLoaded", function () {
             if (summaryRangeClose) summaryRangeClose.focus();
         }
 
+        // Keep a direct fallback for the Edit dates control if another dashboard widget stops event initialization.
+        window.doctorSummaryOpenRange = summaryOpenRangeModal;
+
         function summaryCloseRangeModal(restore) {
             if (!summaryRangeModal) return;
             if (restore && summaryRangeModalState) {
@@ -3157,7 +3160,7 @@ include 'includes/header.php';
                         <input id="doctorSummaryTo" type="hidden" name="summary_to" value="<?php echo htmlspecialchars($summaryTo); ?>">
                         <input id="doctorSummaryPeriod" type="hidden" name="summary_period" value="<?php echo htmlspecialchars($summaryPeriod); ?>">
                         <input id="doctorSummaryToday" type="hidden" value="<?php echo htmlspecialchars($today); ?>">
-                        <button type="button" class="consultation-summary-range-edit" id="doctorSummaryEditRange">Edit dates</button>
+                        <button type="button" class="consultation-summary-range-edit" id="doctorSummaryEditRange" aria-haspopup="dialog" onclick="if (window.doctorSummaryOpenRange) window.doctorSummaryOpenRange();">Edit dates</button>
                         <button type="button" class="consultation-summary-range-edit consultation-summary-range-clear" id="doctorSummaryClearRange">Clear</button>
                     </div>
 
