@@ -575,7 +575,7 @@ function sales_report_output_xlsx(array $rows, string $from, string $to, float $
     $sheetRows = [];
     $sheetRows[] = '<row r="1" ht="30" customHeight="1">'
         . sales_report_xlsx_inline_cell('A1', 'Detailed Sales', 1)
-        . sales_report_xlsx_inline_cell('E1', $rangeLabel, 9)
+        . sales_report_xlsx_inline_cell('C1', $rangeLabel, 9)
         . '</row>';
     $sheetRows[] = '<row r="2"><c r="A2" t="inlineStr"><is><t></t></is></c></row>';
     $sheetRows[] = '<row r="3" ht="30" customHeight="1">'
@@ -613,7 +613,7 @@ function sales_report_output_xlsx(array $rows, string $from, string $to, float $
     $lastRow = $rowNumber;
     $dataLastRow = $rows ? 3 + count($rows) : 3;
     $emptyMerge = $emptyRow !== null ? '<mergeCell ref="A' . $emptyRow . ':E' . $emptyRow . '"/>' : '';
-    $mergeCount = $emptyRow !== null ? 3 : 2;
+    $mergeCount = $emptyRow !== null ? 4 : 3;
 
     $sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
@@ -626,7 +626,7 @@ function sales_report_output_xlsx(array $rows, string $from, string $to, float $
         . '<col min="5" max="5" width="19" customWidth="1"/></cols>'
         . '<sheetData>' . implode('', $sheetRows) . '</sheetData>'
         . '<autoFilter ref="A3:E' . $dataLastRow . '"/>'
-        . '<mergeCells count="' . $mergeCount . '"><mergeCell ref="A1:D1"/><mergeCell ref="A' . $lastRow . ':D' . $lastRow . '"/>' . $emptyMerge . '</mergeCells>'
+        . '<mergeCells count="' . $mergeCount . '"><mergeCell ref="A1:B1"/><mergeCell ref="C1:E1"/><mergeCell ref="A' . $lastRow . ':D' . $lastRow . '"/>' . $emptyMerge . '</mergeCells>'
         . '<printOptions horizontalCentered="0" verticalCentered="0"/>'
         . '<pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/>'
         . '<pageSetup orientation="landscape" paperSize="9" fitToWidth="1" fitToHeight="0"/></worksheet>';
