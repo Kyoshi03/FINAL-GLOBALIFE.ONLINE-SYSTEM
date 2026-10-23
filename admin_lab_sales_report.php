@@ -551,15 +551,15 @@ function sales_report_xlsx_drawing_xml(): string {
 function sales_report_output_xlsx(array $rows, string $from, string $to, float $total, int $quantity, string $period, string $rangeLabel): void {
     $sheetRows = [];
     $sheetRows[] = '<row r="1" ht="30" customHeight="1">' . sales_report_xlsx_inline_cell('A1', 'Laboratory Sales Report', 1) . '</row>';
-    $sheetRows[] = '<row r="2" ht="22" customHeight="1">' . sales_report_xlsx_inline_cell('A2', 'Period: ' . $rangeLabel . ' | ' . ucfirst($period), 3) . '</row>';
+    $sheetRows[] = '<row r="2" ht="22" customHeight="1">' . sales_report_xlsx_inline_cell('A2', 'Period: ' . $rangeLabel . ' | ' . ucfirst($period), 6) . '</row>';
     $sheetRows[] = '<row r="3"><c r="A3" t="inlineStr"><is><t></t></is></c></row>';
     $sheetRows[] = '<row r="4" ht="22" customHeight="1">'
-        . sales_report_xlsx_inline_cell('A4', 'Total Laboratory Sales', 3)
-        . sales_report_xlsx_number_cell('B4', round($total, 2), 4)
-        . sales_report_xlsx_inline_cell('C4', 'Completed Tests', 3)
+        . sales_report_xlsx_inline_cell('A4', 'Total Laboratory Sales', 6)
+        . sales_report_xlsx_inline_cell('B4', '₱' . number_format(round($total, 2), 2, '.', ','), 7)
+        . sales_report_xlsx_inline_cell('C4', 'Completed Tests', 6)
         . sales_report_xlsx_number_cell('D4', $quantity, 5)
         . '</row>';
-    $sheetRows[] = '<row r="5">' . sales_report_xlsx_inline_cell('A5', 'Completed and paid laboratory transactions only', 3) . '</row>';
+    $sheetRows[] = '<row r="5" ht="22" customHeight="1">' . sales_report_xlsx_inline_cell('A5', 'Completed and paid laboratory transactions only', 6) . '</row>';
     $sheetRows[] = '<row r="6"><c r="A6" t="inlineStr"><is><t></t></is></c></row>';
     $sheetRows[] = '<row r="7" ht="24" customHeight="1">'
         . sales_report_xlsx_inline_cell('A7', 'Date', 2)
@@ -586,22 +586,25 @@ function sales_report_output_xlsx(array $rows, string $from, string $to, float $
         $rowNumber++;
     }
     $sheetRows[] = '<row r="' . $rowNumber . '" ht="24" customHeight="1">'
-        . sales_report_xlsx_inline_cell('A' . $rowNumber, 'Total Laboratory Sales', 3)
-        . sales_report_xlsx_number_cell('E' . $rowNumber, round($total, 2), 4)
+        . sales_report_xlsx_inline_cell('A' . $rowNumber, 'Total Laboratory Sales', 6)
+        . sales_report_xlsx_inline_cell('E' . $rowNumber, '₱' . number_format(round($total, 2), 2, '.', ','), 7)
         . '</row>';
     $lastRow = $rowNumber;
+    $dataLastRow = $rows ? 7 + count($rows) : 8;
     $chartXml = $rows ? sales_report_xlsx_chart_xml($rows, 8, 7 + count($rows)) : '';
     $sheetDrawing = $chartXml !== '' ? '<drawing r="rId1"/>' : '';
 
     $sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        . '<dimension ref="A1:O18"/>'
         . '<sheetViews><sheetView workbookViewId="0"><pane ySplit="7" topLeftCell="A8" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>'
         . '<sheetFormatPr defaultRowHeight="19"/><cols>'
-        . '<col min="1" max="1" width="15" customWidth="1"/><col min="2" max="2" width="42" customWidth="1"/>'
-        . '<col min="3" max="3" width="12" customWidth="1"/><col min="4" max="4" width="22" customWidth="1"/>'
-        . '<col min="5" max="5" width="18" customWidth="1"/></cols>'
+        . '<col min="1" max="1" width="22" bestFit="1" customWidth="1"/><col min="2" max="2" width="46" bestFit="1" customWidth="1"/>'
+        . '<col min="3" max="3" width="14" bestFit="1" customWidth="1"/><col min="4" max="4" width="28" bestFit="1" customWidth="1"/>'
+        . '<col min="5" max="5" width="20" bestFit="1" customWidth="1"/></cols>'
         . '<sheetData>' . implode('', $sheetRows) . '</sheetData>'
-        . '<autoFilter ref="A7:E' . $lastRow . '"/><mergeCells count="4"><mergeCell ref="A1:E1"/><mergeCell ref="A2:E2"/><mergeCell ref="A5:E5"/><mergeCell ref="A' . $lastRow . ':D' . $lastRow . '"/></mergeCells>'
+        . '<mergeCells count="4"><mergeCell ref="A1:E1"/><mergeCell ref="A2:E2"/><mergeCell ref="A5:E5"/><mergeCell ref="A' . $lastRow . ':D' . $lastRow . '"/></mergeCells>'
+        . '<autoFilter ref="A7:E' . $dataLastRow . '"/>'
         . '<pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/>'
         . '<pageSetup orientation="landscape" paperSize="9" fitToWidth="1" fitToHeight="0"/>' . $sheetDrawing . '</worksheet>';
 
@@ -612,7 +615,7 @@ function sales_report_output_xlsx(array $rows, string $from, string $to, float $
         . '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF0F7CC2"/><bgColor indexed="64"/></patternFill></fill></fills>'
         . '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
         . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
-        . '<cellXfs count="6"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="0" fontId="1" fillId="2" borderId="0" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="164" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="3" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf></cellXfs>'
+        . '<cellXfs count="8"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf><xf numFmtId="0" fontId="1" fillId="2" borderId="0" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="164" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="3" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf></cellXfs>'
         . '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles><dxfs count="0"/><tableStyles count="0" defaultTableStyle="TableStyleMedium2" defaultPivotStyle="PivotStyleMedium4"/></styleSheet>';
     $workbook = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><bookViews><workbookView/></bookViews><sheets><sheet name=\"Sales Report\" sheetId=\"1\" r:id=\"rId1\"/></sheets><definedNames><definedName name=\"_xlnm.Print_Titles\" localSheetId=\"0\">'Sales Report'!$1:$7</definedName></definedNames></workbook>";
     $chartContentTypes = $chartXml !== ''
