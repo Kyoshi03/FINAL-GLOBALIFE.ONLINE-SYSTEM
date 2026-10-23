@@ -1722,6 +1722,7 @@ body.doctor-summary-range-open {
     display: grid;
     place-items: center;
     padding: 20px;
+    box-sizing: border-box;
     background: rgba(7, 59, 76, .42);
 }
 
@@ -1733,6 +1734,7 @@ body.doctor-summary-range-open {
     width: min(900px, 100%);
     max-height: min(680px, calc(100vh - 40px));
     overflow: auto;
+    box-sizing: border-box;
     border: 1px solid #cfe1ee;
     border-radius: 12px;
     background: #fff;
@@ -2946,7 +2948,17 @@ document.addEventListener("DOMContentLoaded", function () {
                 button.setAttribute("aria-pressed", active ? "true" : "false");
             });
             var range = summaryRange();
-            if (!range) return;
+            if (!range && defaults && summaryFromInput && summaryToInput) {
+                summaryFromInput.value = defaults.from;
+                summaryToInput.value = defaults.to;
+                range = summaryRange();
+            }
+            if (!range) {
+                summaryRenderChart(period, { from: "", to: "" }, { points: [], filtered: [] });
+                summaryRenderTable([]);
+                if (summaryMetaRange) summaryMetaRange.textContent = "Select a valid date range";
+                return;
+            }
             var series = summaryBuildSeries(period, range);
             summaryRenderChart(period, range, series);
             summaryRenderTable(series.filtered);
@@ -3014,15 +3026,18 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
                 return;
             }
+            var selectedRange = { from: summaryDraftFrom, to: summaryDraftTo };
             if (summaryFromInput) summaryFromInput.value = summaryDraftFrom;
             if (summaryToInput) summaryToInput.value = summaryDraftTo;
             if (summaryEditRange) summaryEditRange.hidden = false;
             summaryCloseRangeModal(false);
-            summarySetRange({ from: summaryDraftFrom, to: summaryDraftTo });
+            summarySetRange(selectedRange);
         });
         if (summaryClearRange) summaryClearRange.addEventListener("click", function () {
             var defaults = summaryData.defaults && summaryData.defaults[summaryPeriod] ? summaryData.defaults[summaryPeriod] : null;
             if (!defaults) return;
+            if (summaryRangeModal && !summaryRangeModal.hidden) summaryCloseRangeModal(true);
+            summaryPage = 1;
             summarySetRange(defaults);
         });
         document.addEventListener("keydown", function (event) {
