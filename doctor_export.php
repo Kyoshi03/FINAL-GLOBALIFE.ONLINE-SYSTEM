@@ -5,6 +5,7 @@ checkRole('doctor');
 
 require_once 'config/database.php';
 require_once __DIR__ . '/includes/doctor_clinical.php';
+require_once __DIR__ . '/includes/doctor_pdf_export.php';
 
 $type = strtolower(trim((string) ($_GET['type'] ?? '')));
 $action = strtolower(trim((string) ($_GET['action'] ?? 'print')));
@@ -42,11 +43,7 @@ if ($action === 'download') {
     if (ob_get_length() !== false) {
         ob_end_clean();
     }
-    header('Content-Type: text/html; charset=UTF-8');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
-    header('Content-Length: ' . strlen($html));
-    echo $html;
-    exit;
+    clinic_doctor_pdf_output($type === 'lab' ? 'lab' : 'medical', $data);
 }
 
 header('Content-Type: text/html; charset=UTF-8');
