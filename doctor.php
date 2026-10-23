@@ -1751,7 +1751,13 @@ body.doctor-summary-range-open {
     border-bottom: 1px solid #e5eef3;
 }
 
-.consultation-range-dialog-header h3 {
+.consultation-range-footer {
+    border-top: 1px solid #e5eef3;
+    border-bottom: 0;
+    background: #fbfdfe;
+}
+
+.consultation-range-dialog-header h2 {
     margin: 0;
     color: #073b4c;
     font-size: 1.05rem;
@@ -1915,6 +1921,10 @@ body.doctor-summary-range-open {
     font-weight: 900;
 }
 
+.consultation-range-day.is-start.is-end {
+    border-radius: 7px;
+}
+
 .consultation-range-day.is-start {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
@@ -1959,6 +1969,11 @@ body.doctor-summary-range-open {
     font-size: .82rem;
 }
 
+.consultation-range-action:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
 .consultation-range-action.primary {
     border-color: #0f7cc2;
     color: #fff;
@@ -1974,6 +1989,29 @@ body.doctor-summary-range-open {
 
 .consultation-range-message[hidden] {
     display: none;
+}
+
+.consultation-range-modal,
+.consultation-range-dialog,
+.consultation-range-footer,
+.consultation-range-action {
+    pointer-events: auto;
+}
+
+.consultation-range-dialog {
+    position: relative;
+    z-index: 1;
+}
+
+.consultation-range-footer {
+    position: relative;
+    z-index: 2;
+}
+
+.consultation-range-action {
+    position: relative;
+    z-index: 3;
+    appearance: none;
 }
 
 .consultation-summary-field {
@@ -3303,7 +3341,7 @@ include 'includes/header.php';
         <div class="consultation-range-modal" id="doctorSummaryRangeModal" hidden aria-hidden="true">
             <section class="consultation-range-dialog" role="dialog" aria-modal="true" aria-labelledby="doctorSummaryRangeTitle">
                 <div class="consultation-range-dialog-header">
-                    <h3 id="doctorSummaryRangeTitle">Edit dates</h3>
+                    <h2 id="doctorSummaryRangeTitle">Custom Date Range</h2>
                     <button type="button" class="consultation-range-close" id="doctorSummaryRangeClose" aria-label="Close date range picker">&times;</button>
                 </div>
                 <div class="consultation-range-calendars" id="doctorSummaryRangeCalendars"></div>
