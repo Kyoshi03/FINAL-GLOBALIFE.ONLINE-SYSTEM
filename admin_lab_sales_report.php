@@ -432,7 +432,11 @@ function sales_report_pdf_build(array $streams, ?array $image): string {
     return $pdf . "trailer\n<< /Size " . (count($objects) + 1) . " /Root 1 0 R >>\nstartxref\n" . $xref . "\n%%EOF";
 }
 
-function sales_report_output_pdf(array $rows, string $from, string $to, float $total, int $quantity, array $chartValues, string $period, string $rangeLabel): void {
+function sales_report_export_filename(string $extension, string $from, string $to): string {
+    return 'laboratory_sales_report_' . $from . '_to_' . $to . '.' . $extension;
+}
+
+function sales_report_output_pdf(array $rows, string $from, string $to, float $total, int $quantity, array $chartValues, string $period, string $rangeLabel, bool $inline = false): void {
     $chunks = array_chunk($rows, 28);
     if (!$chunks) $chunks = [[]];
     $logo = clinic_pdf_image(__DIR__ . '/globalife.png');
@@ -443,9 +447,152 @@ function sales_report_output_pdf(array $rows, string $from, string $to, float $t
     $pdf = sales_report_pdf_build($streams, $logo);
     while (ob_get_level() > 0) ob_end_clean();
     header('Content-Type: application/pdf');
-    header('Content-Disposition: attachment; filename="laboratory_sales_report_' . date('Ymd_His') . '.pdf"');
+    $disposition = $inline ? 'inline' : 'attachment';
+    header('Content-Disposition: ' . $disposition . '; filename="' . sales_report_export_filename('pdf', $from, $to) . '"');
     header('Content-Length: ' . strlen($pdf));
     echo $pdf;
+    exit();
+}
+
+function sales_report_xlsx_escape(string $value): string {
+    return htmlspecialchars($value, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+}
+
+function sales_report_xlsx_inline_cell(string $reference, string $value, int $style = 0): string {
+    return '<c r="' . $reference . '" s="' . $style . '" t="inlineStr"><is><t xml:space="preserve">'
+        . sales_report_xlsx_escape($value) . '</t></is></c>';
+}
+
+function sales_report_xlsx_number_cell(string $reference, float|int $value, int $style = 0): string {
+    return '<c r="' . $reference . '" s="' . $style . '" t="n"><v>' . (string) $value . '</v></c>';
+}
+
+function sales_report_xlsx_zip(array $files): string {
+    $local = '';
+    $central = '';
+    $offset = 0;
+    $fileCount = 0;
+
+    foreach ($files as $name => $contents) {
+        $name = (string) $name;
+        $contents = (string) $contents;
+        $nameLength = strlen($name);
+        $size = strlen($contents);
+        $crc = crc32($contents);
+        $localHeader = pack('VvvvvvVVVvv', 0x04034b50, 20, 0, 0, 0, 0, $crc, $size, $size, $nameLength, 0);
+        $local .= $localHeader . $name . $contents;
+        $centralHeader = pack(
+            'VvvvvvvVVVvvvvvVV',
+            0x02014b50,
+            20,
+            20,
+            0,
+            0,
+            0,
+            0,
+            $crc,
+            $size,
+            $size,
+            $nameLength,
+            0,
+            0,
+            0,
+            0,
+            0,
+            $offset
+        );
+        $central .= $centralHeader . $name;
+        $offset += strlen($localHeader) + $nameLength + $size;
+        $fileCount++;
+    }
+
+    $centralOffset = strlen($local);
+    $centralSize = strlen($central);
+    $end = pack('VvvvvVVv', 0x06054b50, 0, 0, $fileCount, $fileCount, $centralSize, $centralOffset, 0);
+    return $local . $central . $end;
+}
+
+function sales_report_output_xlsx(array $rows, string $from, string $to, float $total, int $quantity, string $period, string $rangeLabel): void {
+    $sheetRows = [];
+    $sheetRows[] = '<row r="1" ht="30" customHeight="1">' . sales_report_xlsx_inline_cell('A1', 'Laboratory Sales Report', 1) . '</row>';
+    $sheetRows[] = '<row r="2" ht="22" customHeight="1">' . sales_report_xlsx_inline_cell('A2', 'Period: ' . $rangeLabel . ' | ' . ucfirst($period), 3) . '</row>';
+    $sheetRows[] = '<row r="3"><c r="A3" t="inlineStr"><is><t></t></is></c></row>';
+    $sheetRows[] = '<row r="4" ht="22" customHeight="1">'
+        . sales_report_xlsx_inline_cell('A4', 'Total Laboratory Sales', 3)
+        . sales_report_xlsx_number_cell('B4', round($total, 2), 4)
+        . sales_report_xlsx_inline_cell('C4', 'Completed Tests', 3)
+        . sales_report_xlsx_number_cell('D4', $quantity, 5)
+        . '</row>';
+    $sheetRows[] = '<row r="5">' . sales_report_xlsx_inline_cell('A5', 'Completed and paid laboratory transactions only', 3) . '</row>';
+    $sheetRows[] = '<row r="6"><c r="A6" t="inlineStr"><is><t></t></is></c></row>';
+    $sheetRows[] = '<row r="7" ht="24" customHeight="1">'
+        . sales_report_xlsx_inline_cell('A7', 'Date', 2)
+        . sales_report_xlsx_inline_cell('B7', 'Laboratory Test / Package', 2)
+        . sales_report_xlsx_inline_cell('C7', 'Quantity', 2)
+        . sales_report_xlsx_inline_cell('D7', 'Unit Price', 2)
+        . sales_report_xlsx_inline_cell('E7', 'Total Amount', 2)
+        . '</row>';
+
+    $rowNumber = 8;
+    foreach ($rows as $row) {
+        $date = strtotime((string) ($row['date'] ?? ''));
+        $sheetRows[] = '<row r="' . $rowNumber . '">'
+            . sales_report_xlsx_inline_cell('A' . $rowNumber, $date ? date('M j, Y', $date) : 'Not recorded')
+            . sales_report_xlsx_inline_cell('B' . $rowNumber, (string) ($row['service'] ?? 'Laboratory service'))
+            . sales_report_xlsx_number_cell('C' . $rowNumber, (int) ($row['quantity'] ?? 0), 5)
+            . sales_report_xlsx_inline_cell('D' . $rowNumber, (string) ($row['unit_price'] ?? ''))
+            . sales_report_xlsx_number_cell('E' . $rowNumber, round((float) ($row['total_amount'] ?? 0), 2), 4)
+            . '</row>';
+        $rowNumber++;
+    }
+    if (!$rows) {
+        $sheetRows[] = '<row r="' . $rowNumber . '">' . sales_report_xlsx_inline_cell('A' . $rowNumber, 'No laboratory sales found for this period.', 3) . '</row>';
+        $rowNumber++;
+    }
+    $sheetRows[] = '<row r="' . $rowNumber . '" ht="24" customHeight="1">'
+        . sales_report_xlsx_inline_cell('A' . $rowNumber, 'Total Laboratory Sales', 3)
+        . sales_report_xlsx_number_cell('E' . $rowNumber, round($total, 2), 4)
+        . '</row>';
+    $lastRow = $rowNumber;
+
+    $sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        . '<sheetViews><sheetView workbookViewId="0"><pane ySplit="7" topLeftCell="A8" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>'
+        . '<sheetFormatPr defaultRowHeight="19"/><cols>'
+        . '<col min="1" max="1" width="15" customWidth="1"/><col min="2" max="2" width="42" customWidth="1"/>'
+        . '<col min="3" max="3" width="12" customWidth="1"/><col min="4" max="4" width="22" customWidth="1"/>'
+        . '<col min="5" max="5" width="18" customWidth="1"/></cols>'
+        . '<sheetData>' . implode('', $sheetRows) . '</sheetData>'
+        . '<mergeCells count="4"><mergeCell ref="A1:E1"/><mergeCell ref="A2:E2"/><mergeCell ref="A5:E5"/><mergeCell ref="A' . $lastRow . ':D' . $lastRow . '"/></mergeCells>'
+        . '<autoFilter ref="A7:E' . $lastRow . '"/><pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/>'
+        . '<pageSetup orientation="landscape" paperSize="9" fitToWidth="1" fitToHeight="0"/></worksheet>';
+
+    $styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+        . '<numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;₱&quot;#,##0.00"/></numFmts>'
+        . '<fonts count="2"><font><sz val="10"/><name val="Arial"/><family val="2"/></font><font><b/><sz val="10"/><name val="Arial"/><family val="2"/><color rgb="FFFFFFFF"/></font></fonts>'
+        . '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF0F7CC2"/><bgColor indexed="64"/></patternFill></fill></fills>'
+        . '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+        . '<cellXfs count="6"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="0" fontId="1" fillId="2" borderId="0" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="164" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="3" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf></cellXfs></styleSheet>';
+    $workbook = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><bookViews><workbookView/></bookViews><sheets><sheet name=\"Sales Report\" sheetId=\"1\" r:id=\"rId1\"/></sheets><definedNames><definedName name=\"_xlnm.Print_Titles\" localSheetId=\"0\">'Sales Report'!$1:$7</definedName></definedNames></workbook>";
+    $contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>';
+    $files = [
+        '[Content_Types].xml' => $contentTypes,
+        '_rels/.rels' => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>',
+        'docProps/core.xml' => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>Laboratory Sales Report</dc:title><dc:creator>Globalife Clinic System</dc:creator></cp:coreProperties>',
+        'docProps/app.xml' => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>Globalife Clinic System</Application></Properties>',
+        'xl/workbook.xml' => $workbook,
+        'xl/_rels/workbook.xml.rels' => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>',
+        'xl/worksheets/sheet1.xml' => $sheet,
+        'xl/styles.xml' => $styles,
+    ];
+    $xlsx = sales_report_xlsx_zip($files);
+    while (ob_get_level() > 0) ob_end_clean();
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment; filename="' . sales_report_export_filename('xlsx', $from, $to) . '"');
+    header('Content-Length: ' . strlen($xlsx));
+    echo $xlsx;
     exit();
 }
 
@@ -558,6 +705,21 @@ $periodCardSubtitles = [
     'quarterly' => 'Last 4 quarters',
 ];
 $conn->close();
+
+$exportPeriod = $selectedViewKey === 'current' ? $period : $selectedViewKey;
+$exportParams = [
+    'period' => $exportPeriod,
+    'view_mode' => $selectedViewKey,
+    'range_preset' => $displayRangePreset,
+    'anchor_date' => $anchorDate,
+    'from_date' => $displayFrom,
+    'to_date' => $displayTo,
+];
+$exportPdfPrintHref = 'admin_lab_sales_report.php?' . http_build_query($exportParams + ['format' => 'pdf', 'delivery' => 'inline']);
+$exportPdfDownloadHref = 'admin_lab_sales_report.php?' . http_build_query($exportParams + ['format' => 'pdf', 'delivery' => 'attachment']);
+$exportExcelHref = 'admin_lab_sales_report.php?' . http_build_query($exportParams + ['format' => 'xlsx']);
+$exportPdfFilename = sales_report_export_filename('pdf', $displayFrom, $displayTo);
+$exportExcelFilename = sales_report_export_filename('xlsx', $displayFrom, $displayTo);
 
 $chartWidth = 1080; $chartHeight = 350; $chartLeft = 78; $chartRight = 28; $chartTop = 28; $chartBottom = 58;
 $plotWidth = $chartWidth - $chartLeft - $chartRight; $plotHeight = $chartHeight - $chartTop - $chartBottom;
@@ -673,12 +835,26 @@ if (strtolower((string) ($_GET['format'] ?? '')) === 'pdf') {
         (int) $selectedReportView['tests'],
         $pdfChartValues,
         $pdfPeriod,
-        sales_report_range_preset_label($displayRangePreset)
+        sales_report_range_preset_label($displayRangePreset),
+        strtolower((string) ($_GET['delivery'] ?? '')) === 'inline'
+    );
+}
+if (strtolower((string) ($_GET['format'] ?? '')) === 'xlsx') {
+    $xlsxPeriod = $selectedViewKey === 'current' ? $period : $selectedViewKey;
+    sales_report_output_xlsx(
+        $selectedReportView['rows'],
+        $selectedReportView['from']->format('Y-m-d'),
+        $selectedReportView['to']->format('Y-m-d'),
+        (float) $selectedReportView['sales'],
+        (int) $selectedReportView['tests'],
+        $xlsxPeriod,
+        $displayRangeLabel
     );
 }
 
 $additionalStyles = '
 body{background:#f4f8fb;color:#1f343d}.sales-wrap{max-width:1240px;margin:0 auto;padding:24px 20px 44px}.sales-wrap>section{padding:0}.sales-print-heading{display:none}.sales-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:14px}.sales-card{min-height:118px;box-sizing:border-box;padding:20px 22px;border:1px solid #d8e6ed;border-radius:8px;background:#fff;box-shadow:0 10px 24px rgba(25,76,110,.06)}.sales-card-label{display:block;color:#607784;font-size:.78rem;font-weight:900;letter-spacing:.04em;text-transform:uppercase}.sales-card strong{display:block;margin-top:11px;color:#0066cc;font-size:1.75rem;line-height:1}.sales-card small{display:block;margin-top:10px;color:#708792}.sales-period-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:14px;scroll-margin-top:76px}.sales-period-card{width:100%;min-height:118px;box-sizing:border-box;padding:18px 20px;border:1px solid #dce8ef;border-radius:8px;background:#fff;color:#1f343d;box-shadow:0 10px 24px rgba(25,76,110,.06);cursor:pointer;font:inherit;text-align:left;transition:border-color .2s ease,background .2s ease,box-shadow .2s ease,transform .2s ease}.sales-period-card:hover,.sales-period-card:focus-visible{border-color:#8ed9ef;background:#f8fcff;box-shadow:0 12px 26px rgba(25,76,110,.10);outline:none;transform:translateY(-1px)}.sales-period-card.is-active{border-color:#0f7cc2;background:#eef8ff;box-shadow:0 12px 28px rgba(15,124,194,.13)}.sales-period-card-label{display:block;color:#607784;font-size:.78rem;font-weight:900;letter-spacing:.04em;text-transform:uppercase}.sales-period-card strong{display:block;margin-top:9px;color:#0066cc;font-size:1.8rem;line-height:1}.sales-period-card small{display:block;margin-top:8px;color:#708792;font-size:.82rem}.sales-control-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px}.sales-controls{display:flex;align-items:flex-end;justify-content:flex-start;gap:10px;flex-wrap:wrap;max-width:100%}.sales-date-form{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;max-width:100%}.sales-range-field{display:grid;gap:5px}.sales-range-field label{color:#073b4c;font-size:.76rem;font-weight:900}.sales-date-form input,.sales-date-form select{width:155px;min-height:40px;box-sizing:border-box;border:1px solid #cfe1ee;border-radius:8px;padding:8px 10px;color:#1f343d;background:#fff;font:inherit}.sales-date-form input:focus,.sales-date-form select:focus{outline:none;border-color:#0f7cc2;box-shadow:0 0 0 3px rgba(15,124,194,.10)}.sales-actions{display:flex;align-items:center;gap:8px;margin:0;flex:0 0 auto}.sales-action{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:7px 12px;border:1px solid #cfe1ee;border-radius:7px;color:#0b4f80;background:#fff;font:inherit;font-size:.8rem;font-weight:900;text-decoration:none;cursor:pointer}.sales-action.primary{color:#fff;border-color:#0f7cc2;background:#0f7cc2}.sales-panel{padding:22px;margin-bottom:14px;border:1px solid #d8e6ed;border-radius:8px;background:#fff;box-shadow:0 10px 24px rgba(25,76,110,.06)}.sales-panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:15px}.sales-panel h3{margin:0;color:#073b4c;font-size:1.2rem}.sales-panel-head span{color:#607784;font-size:.84rem}.sales-table-wrap{overflow-x:auto}.sales-table{width:100%;min-width:650px;border-collapse:collapse}.sales-table th,.sales-table td{padding:12px 14px;border-bottom:1px solid #edf3f6;text-align:left;vertical-align:top}.sales-table th{color:#607784;font-size:.74rem;font-weight:900;letter-spacing:.05em;text-transform:uppercase;background:#f8fbfd}.sales-table td{color:#405b67;font-size:.9rem}.sales-table td strong{color:#073b4c}.sales-table .number{text-align:right;white-space:nowrap}.sales-table tfoot th{border-top:1px solid #d8e6ed;border-bottom:0;color:#073b4c;font-size:.92rem;background:#fff}.sales-chart{display:block;width:100%;height:auto;overflow:visible}.sales-chart .grid-line{stroke:#e5eef3;stroke-width:1}.sales-chart .axis-line{stroke:#b7cbd6;stroke-width:1.2}.sales-chart .trend-area{fill:rgba(15,124,194,.10);opacity:0;animation:salesTrendFade .65s ease-out .1s forwards}.sales-chart .trend-line{fill:none;stroke:#0077b6;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1800;stroke-dashoffset:1800;animation:salesTrendDraw .8s ease-out forwards}.sales-chart .trend-dot{fill:#fff;stroke:#0077b6;stroke-width:2;opacity:0;animation:salesTrendFade .35s ease-out .25s forwards}.sales-chart text{fill:#607784;font-family:inherit;font-size:11px}.sales-chart .axis-title{fill:#073b4c;font-size:11px;font-weight:800}.sales-empty{padding:35px 10px;color:#607784;text-align:center;font-weight:700}@keyframes salesTrendDraw{to{stroke-dashoffset:0}}@keyframes salesTrendFade{to{opacity:1}}@media(max-width:1100px){.sales-period-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.sales-control-row{align-items:stretch;flex-direction:column;gap:12px}.sales-controls{justify-content:flex-start;width:100%}.sales-date-form{width:100%}.sales-range-field{flex:1 1 180px}}@media(max-width:760px){.sales-wrap{padding:22px 16px 42px}.sales-period-cards{grid-template-columns:1fr;gap:12px}.sales-control-row{gap:16px}.sales-controls,.sales-date-form{width:100%}.sales-date-form{align-items:stretch;flex-direction:column}.sales-range-field,.sales-date-form input,.sales-date-form select{width:100%}.sales-actions{flex-wrap:wrap}.sales-action{flex:1}.sales-cards{grid-template-columns:1fr}.sales-card{min-height:0}.sales-panel{padding:16px 12px;overflow:hidden}.sales-panel-head{align-items:flex-start;flex-direction:column;gap:5px}.sales-chart text{font-size:9px}}@media print{body{background:#fff!important}.no-print,.main-header,.sidebar,nav{display:none!important}.sales-wrap{max-width:none;padding:0}.sales-panel,.sales-card,.sales-period-card{box-shadow:none;break-inside:avoid}}';
+$additionalStyles .= '.sales-export-menu{position:relative;display:inline-flex}.sales-export-toggle{gap:10px}.sales-export-arrow{font-size:.78em;line-height:1;transition:transform .15s ease}.sales-export-menu.is-open .sales-export-arrow{transform:rotate(180deg)}.sales-export-dropdown{position:absolute;top:calc(100% + 6px);right:0;z-index:40;display:grid;min-width:190px;padding:5px;border:1px solid #cfe1ee;border-radius:8px;background:#fff;box-shadow:0 12px 28px rgba(25,76,110,.16)}.sales-export-dropdown[hidden]{display:none}.sales-export-option{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:6px;color:#0b4f80;font-size:.8rem;font-weight:800;text-decoration:none;white-space:nowrap}.sales-export-option:hover,.sales-export-option:focus-visible{outline:none;background:#eef8ff}.sales-file-icon{display:inline-flex;align-items:center;justify-content:center;width:28px;height:24px;border:1px solid #b7d9e8;border-radius:4px;color:#0f7cc2;background:#f5fbfe;font-size:.57rem;font-weight:900;letter-spacing:.02em}.sales-file-icon.excel{color:#16805c;border-color:#b9dfce;background:#f2fbf6}@media(max-width:760px){.sales-export-menu{flex:1;min-width:150px}.sales-export-toggle{width:100%}.sales-export-dropdown{left:0;right:auto;width:100%;min-width:0}.sales-export-option{white-space:normal}}';
 $additionalStyles .= '@media print{header#mainHeader{display:block!important;position:static!important;background:#fff!important;color:#073b4c!important;box-shadow:none!important}header#mainHeader .header-flex{justify-content:flex-start!important;max-width:none!important;padding:0 0 16px!important}header#mainHeader .logo-section{color:#073b4c!important}header#mainHeader .mobile-menu-toggle,header#mainHeader nav,.patient-app-topbar,.patient-notification-wrap,.patient-topbar-menu-wrap{display:none!important}}';
 $additionalStyles .= '@media print{.sales-print-heading{display:block!important;margin:12px 0 20px;padding-bottom:14px;border-bottom:1px solid #b7cbd6}.sales-print-heading h2{margin:0 0 8px;color:#073b4c;font-size:20pt;line-height:1.1;text-transform:uppercase}.sales-print-heading p{margin:4px 0;color:#405b67;font-size:9pt}.sales-period-cards,.sales-control-row,.sales-pagination{display:none!important}.sales-wrap{padding:0 0 20px}.sales-cards{gap:28px;margin:0 0 24px}.sales-card{min-height:0;padding:14px 16px;border:1px solid #cfe1ee;border-radius:0;box-shadow:none}.sales-card strong{margin-top:8px;font-size:18pt}.sales-card small{margin-top:7px;font-size:9pt}.sales-panel{padding:0;margin:0;border:0;border-radius:0;box-shadow:none}.sales-panel-head{display:none}.sales-trend-panel{display:block!important;padding:12px 0 20px!important}.sales-trend-panel .sales-chart-view[hidden]{display:none!important}.sales-trend-panel .sales-chart{display:block;width:100%;height:auto;max-width:100%}.sales-trend-panel .trend-line{stroke-dasharray:none!important;stroke-dashoffset:0!important;animation:none!important}.sales-trend-panel .trend-area,.sales-trend-panel .trend-dot{opacity:1!important;animation:none!important}.sales-table-wrap{overflow:visible}.sales-table{min-width:0;width:100%;table-layout:fixed}.sales-table th,.sales-table td{padding:8px 7px;border-bottom:1px solid #d8e6ed;font-size:8.5pt}.sales-table th{font-size:7.5pt;background:#f3f8fc}.sales-table th:nth-child(1),.sales-table td:nth-child(1){width:15%}.sales-table th:nth-child(2),.sales-table td:nth-child(2){width:38%}.sales-table th:nth-child(3),.sales-table td:nth-child(3){width:9%}.sales-table th:nth-child(4),.sales-table td:nth-child(4){width:20%}.sales-table th:nth-child(5),.sales-table td:nth-child(5){width:18%}.sales-table td strong{font-weight:700}.sales-table tfoot th{border-top:1px solid #b7cbd6;font-size:9pt;background:#fff}.sales-table tr{break-inside:avoid;page-break-inside:avoid}}';
 $additionalStyles .= '.sales-range-select-wrap{display:flex;align-items:center;gap:8px}.sales-range-edit{min-height:40px;padding:8px 11px;border:1px solid #cfe1ee;border-radius:8px;color:#0b4f80;background:#fff;font:inherit;font-size:.78rem;font-weight:900;cursor:pointer;white-space:nowrap}.sales-range-edit:hover,.sales-range-edit:focus-visible{border-color:#0f7cc2;background:#eef8ff;outline:none}.sales-range-edit[hidden]{display:none}@media(max-width:760px){.sales-range-select-wrap{align-items:stretch;flex-direction:column}.sales-range-select-wrap select{width:100%!important}.sales-range-edit{width:100%}}';
@@ -710,7 +886,22 @@ require_once __DIR__ . '/includes/header.php';
             </select><button type="button" class="sales-range-edit" id="editCustomRange" hidden>Edit dates</button></div></div>
             <input type="hidden" id="salesFromDate" name="from_date" value="<?php echo htmlspecialchars($displayFrom, ENT_QUOTES, 'UTF-8'); ?>"><input type="hidden" id="salesToDate" name="to_date" value="<?php echo htmlspecialchars($displayTo, ENT_QUOTES, 'UTF-8'); ?>">
         </form></div>
-        <div class="sales-actions"><button type="button" class="sales-action primary" id="printSalesReport">Print Report</button><a class="sales-action" id="exportSalesPdf" download="laboratory_sales_report.pdf" href="admin_lab_sales_report.php?format=pdf&amp;period=<?php echo urlencode($period); ?>&amp;range_preset=<?php echo urlencode($rangePreset); ?>&amp;anchor_date=<?php echo urlencode($anchorDate); ?>&amp;from_date=<?php echo urlencode($from); ?>&amp;to_date=<?php echo urlencode($to); ?>">Download PDF</a></div>
+        <div class="sales-actions">
+            <div class="sales-export-menu" data-sales-export-menu>
+                <button type="button" class="sales-action primary sales-export-toggle" data-sales-export-toggle aria-expanded="false" aria-haspopup="true">Print Report <span class="sales-export-arrow" aria-hidden="true">&#9662;</span></button>
+                <div class="sales-export-dropdown" data-sales-export-dropdown hidden>
+                    <a class="sales-export-option" data-sales-export-link href="<?php echo htmlspecialchars($exportPdfPrintHref, ENT_QUOTES, 'UTF-8'); ?>" target="_blank" rel="noopener"><span class="sales-file-icon" aria-hidden="true">PDF</span><span>PDF preview / print</span></a>
+                    <a class="sales-export-option" data-sales-export-link href="<?php echo htmlspecialchars($exportExcelHref, ENT_QUOTES, 'UTF-8'); ?>" download="<?php echo htmlspecialchars($exportExcelFilename, ENT_QUOTES, 'UTF-8'); ?>"><span class="sales-file-icon excel" aria-hidden="true">XLSX</span><span>Excel (.xlsx)</span></a>
+                </div>
+            </div>
+            <div class="sales-export-menu" data-sales-export-menu>
+                <button type="button" class="sales-action sales-export-toggle" data-sales-export-toggle aria-expanded="false" aria-haspopup="true">Download <span class="sales-export-arrow" aria-hidden="true">&#9662;</span></button>
+                <div class="sales-export-dropdown" data-sales-export-dropdown hidden>
+                    <a class="sales-export-option" data-sales-export-link id="exportSalesPdf" href="<?php echo htmlspecialchars($exportPdfDownloadHref, ENT_QUOTES, 'UTF-8'); ?>" download="<?php echo htmlspecialchars($exportPdfFilename, ENT_QUOTES, 'UTF-8'); ?>"><span class="sales-file-icon" aria-hidden="true">PDF</span><span>PDF</span></a>
+                    <a class="sales-export-option" data-sales-export-link id="exportSalesExcel" href="<?php echo htmlspecialchars($exportExcelHref, ENT_QUOTES, 'UTF-8'); ?>" download="<?php echo htmlspecialchars($exportExcelFilename, ENT_QUOTES, 'UTF-8'); ?>"><span class="sales-file-icon excel" aria-hidden="true">XLSX</span><span>Excel (.xlsx)</span></a>
+                </div>
+            </div>
+        </div>
     </section>
     <section class="sales-panel sales-trend-panel" id="salesTrendPanel" aria-label="Sales trend" style="padding-top:10px" aria-hidden="<?php echo $showGraph ? 'false' : 'true'; ?>"<?php echo $showGraph ? '' : ' hidden'; ?>>
         <div id="salesTrendViews">
@@ -736,14 +927,14 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 <script>
 document.addEventListener('DOMContentLoaded',function(){
-    var f=document.getElementById('salesFilterForm'),a=document.getElementById('salesFromDate'),b=document.getElementById('salesToDate'),p=document.getElementById('salesPeriod'),viewMode=document.getElementById('salesViewMode'),h=document.getElementById('salesAnchorDate'),r=document.getElementById('salesRangePreset'),editCustomRange=document.getElementById('editCustomRange'),trendPanel=document.getElementById('salesTrendPanel'),trendRange=document.getElementById('salesTrendRange'),showTrend=document.getElementById('salesShowTrend'),summarySales=document.getElementById('salesTotalSalesValue'),summaryTests=document.getElementById('salesTotalTestsValue'),summaryRange=document.getElementById('salesSummaryRange'),detailsRange=document.getElementById('salesDetailsRange'),pdfLink=document.getElementById('exportSalesPdf'),rangeModal=document.getElementById('salesRangeModal'),rangeCalendars=document.getElementById('salesRangeCalendars'),rangeFromValue=document.getElementById('salesRangeFromValue'),rangeToValue=document.getElementById('salesRangeToValue'),rangeSet=document.getElementById('salesRangeSet'),rangeMessage=document.getElementById('salesRangeMessage'),rangeClose=document.getElementById('salesRangeClose'),rangeCancel=document.getElementById('salesRangeCancel');
+    var f=document.getElementById('salesFilterForm'),a=document.getElementById('salesFromDate'),b=document.getElementById('salesToDate'),p=document.getElementById('salesPeriod'),viewMode=document.getElementById('salesViewMode'),h=document.getElementById('salesAnchorDate'),r=document.getElementById('salesRangePreset'),editCustomRange=document.getElementById('editCustomRange'),trendPanel=document.getElementById('salesTrendPanel'),trendRange=document.getElementById('salesTrendRange'),showTrend=document.getElementById('salesShowTrend'),summarySales=document.getElementById('salesTotalSalesValue'),summaryTests=document.getElementById('salesTotalTestsValue'),summaryRange=document.getElementById('salesSummaryRange'),detailsRange=document.getElementById('salesDetailsRange'),exportLinks=document.querySelectorAll('[data-sales-export-link]'),rangeModal=document.getElementById('salesRangeModal'),rangeCalendars=document.getElementById('salesRangeCalendars'),rangeFromValue=document.getElementById('salesRangeFromValue'),rangeToValue=document.getElementById('salesRangeToValue'),rangeSet=document.getElementById('salesRangeSet'),rangeMessage=document.getElementById('salesRangeMessage'),rangeClose=document.getElementById('salesRangeClose'),rangeCancel=document.getElementById('salesRangeCancel');
     if(!f||!a||!b||!p||!viewMode||!h||!r)return;
     var salesScrollStorageKey='adminLabSalesReportScrollY';
     function localDate(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
     function setActivePeriod(period,active){document.querySelectorAll('.sales-period-card').forEach(function(button){var selected=active&&button.getAttribute('data-sales-period')===period;button.classList.toggle('is-active',selected);button.setAttribute('aria-pressed',selected?'true':'false')})}
     function focusPeriodCard(period){var card=document.querySelector('.sales-period-card[data-sales-period="'+period+'"]'),cards=document.querySelector('.sales-period-cards');if(!card)return;var rect=cards?cards.getBoundingClientRect():null,viewportHeight=window.innerHeight||document.documentElement.clientHeight;if(rect&&(rect.top<76||rect.bottom>viewportHeight-16)){cards.scrollIntoView({behavior:'smooth',block:'start'})}try{card.focus({preventScroll:true})}catch(error){card.focus()}}
-    function updatePdfLink(viewKey,selectedView){if(!pdfLink||!selectedView)return;try{var url=new URL(pdfLink.href,window.location.href),selectedPeriod=viewKey==='current'?(p.value||'daily'):viewKey,selectedRange=viewKey==='monthly'?'last_12_months':(viewKey==='quarterly'?'last_4_quarters':(viewKey==='daily'?'last_7_days':(r.value||'custom')));url.searchParams.set('period',selectedPeriod);url.searchParams.set('range_preset',selectedRange);url.searchParams.set('from_date',selectedView.getAttribute('data-report-from-date')||a.value);url.searchParams.set('to_date',selectedView.getAttribute('data-report-to-date')||b.value);url.searchParams.set('anchor_date',h.value||a.value);pdfLink.href=url.toString()}catch(error){}}
-    function showChart(viewKey){var selectedView=null;document.querySelectorAll('[data-sales-chart-view]').forEach(function(view){var selected=view.getAttribute('data-sales-chart-view')===viewKey;view.hidden=!selected;if(selected)selectedView=view});document.querySelectorAll('[data-sales-details-view]').forEach(function(view){view.hidden=view.getAttribute('data-sales-details-view')!==viewKey});if(selectedView){var graphRangeLabel=selectedView.getAttribute('data-range-label')||'',reportRangeLabel=selectedView.getAttribute('data-report-range-label')||graphRangeLabel,summaryLabel=selectedView.getAttribute('data-summary-label')||reportRangeLabel;if(trendRange)trendRange.textContent=graphRangeLabel;if(summarySales)summarySales.textContent=selectedView.getAttribute('data-sales-total')||'₱0.00';if(summaryTests)summaryTests.textContent=selectedView.getAttribute('data-completed-tests')||'0';if(summaryRange)summaryRange.textContent=summaryLabel;if(detailsRange)detailsRange.textContent=reportRangeLabel;if(viewKey!=='current'){if(a)a.value=selectedView.getAttribute('data-report-from-date')||a.value;if(b)b.value=selectedView.getAttribute('data-report-to-date')||b.value;var cardRange=viewKey==='monthly'?'last_12_months':(viewKey==='quarterly'?'last_4_quarters':'last_7_days');if(r)r.value=cardRange;syncCustomRangeEditor();lastRangePreset=cardRange;viewMode.value=viewKey;p.value=viewKey;if(showTrend)showTrend.value='1'}updatePdfLink(viewKey,selectedView);selectedView.querySelectorAll('.trend-area,.trend-line,.trend-dot').forEach(function(node){node.style.animation='none';void node.offsetWidth;node.style.animation=''})}}
+    function updateExportLinks(viewKey,selectedView){if(!selectedView||!exportLinks.length)return;var selectedPeriod=viewKey==='current'?(p.value||'daily'):viewKey,selectedRange=viewKey==='monthly'?'last_12_months':(viewKey==='quarterly'?'last_4_quarters':(viewKey==='daily'?'last_7_days':(r.value||'custom')));exportLinks.forEach(function(link){try{var url=new URL(link.href,window.location.href);url.searchParams.set('period',selectedPeriod);url.searchParams.set('view_mode',viewKey);url.searchParams.set('range_preset',selectedRange);url.searchParams.set('from_date',selectedView.getAttribute('data-report-from-date')||a.value);url.searchParams.set('to_date',selectedView.getAttribute('data-report-to-date')||b.value);url.searchParams.set('anchor_date',h.value||a.value);link.href=url.toString()}catch(error){}})}
+    function showChart(viewKey){var selectedView=null;document.querySelectorAll('[data-sales-chart-view]').forEach(function(view){var selected=view.getAttribute('data-sales-chart-view')===viewKey;view.hidden=!selected;if(selected)selectedView=view});document.querySelectorAll('[data-sales-details-view]').forEach(function(view){view.hidden=view.getAttribute('data-sales-details-view')!==viewKey});if(selectedView){var graphRangeLabel=selectedView.getAttribute('data-range-label')||'',reportRangeLabel=selectedView.getAttribute('data-report-range-label')||graphRangeLabel,summaryLabel=selectedView.getAttribute('data-summary-label')||reportRangeLabel;if(trendRange)trendRange.textContent=graphRangeLabel;if(summarySales)summarySales.textContent=selectedView.getAttribute('data-sales-total')||'₱0.00';if(summaryTests)summaryTests.textContent=selectedView.getAttribute('data-completed-tests')||'0';if(summaryRange)summaryRange.textContent=summaryLabel;if(detailsRange)detailsRange.textContent=reportRangeLabel;if(viewKey!=='current'){if(a)a.value=selectedView.getAttribute('data-report-from-date')||a.value;if(b)b.value=selectedView.getAttribute('data-report-to-date')||b.value;var cardRange=viewKey==='monthly'?'last_12_months':(viewKey==='quarterly'?'last_4_quarters':'last_7_days');if(r)r.value=cardRange;syncCustomRangeEditor();lastRangePreset=cardRange;viewMode.value=viewKey;p.value=viewKey;if(showTrend)showTrend.value='1'}updateExportLinks(viewKey,selectedView);selectedView.querySelectorAll('.trend-area,.trend-line,.trend-dot').forEach(function(node){node.style.animation='none';void node.offsetWidth;node.style.animation=''})}}
     function setTrendVisible(visible,viewKey){if(!trendPanel)return;trendPanel.hidden=!visible;trendPanel.setAttribute('aria-hidden',visible?'false':'true');if(showTrend)showTrend.value=visible?'1':'0';if(visible&&viewKey)showChart(viewKey)}
     function submit(scrollTarget){if(a.value&&b.value&&a.value>b.value){var x=a.value;a.value=b.value;b.value=x}h.value=b.value||a.value||h.value;try{sessionStorage.setItem(salesScrollStorageKey,JSON.stringify({y:window.scrollY||window.pageYOffset||0,target:scrollTarget||'current'}))}catch(error){}f.submit()}
     function setRange(daysBack,endDate){var end=new Date((endDate||r.getAttribute('data-today'))+'T00:00:00');var start=new Date(end);start.setDate(end.getDate()-daysBack);a.value=localDate(start);b.value=localDate(end)}
@@ -782,6 +973,11 @@ document.addEventListener('DOMContentLoaded',function(){
     if(editCustomRange)editCustomRange.addEventListener('click',function(){openRangeModal()});
     syncCustomRangeEditor();
     r.addEventListener('change',function(){var v=r.value;if(v==='custom'){openRangeModal();return}if(v==='last_7_days'){setRange(6, h.value);viewMode.value='daily';p.value='daily';showTrend.value='1';setActivePeriod('daily',true);lastRangePreset=v;submit();return}if(v==='last_12_months'){setReportPeriodRange('monthly');viewMode.value='monthly';p.value='monthly';showTrend.value='1';setActivePeriod('monthly',true);lastRangePreset=v;submit();return}if(v==='last_4_quarters'){setReportPeriodRange('quarterly');viewMode.value='quarterly';p.value='quarterly';showTrend.value='1';setActivePeriod('quarterly',true);lastRangePreset=v;submit();return}if(v==='today'){setRange(0)}else if(v==='yesterday'){var y=new Date(r.getAttribute('data-today')+'T00:00:00');y.setDate(y.getDate()-1);setRange(0,localDate(y))}else if(v==='past_3_days'){setRange(2)}else if(v==='past_7_days'){setRange(6)}else if(v==='past_2_weeks'){setRange(13)}else if(v==='past_30_days'){setRange(29)}useManualRange(v!=='today');lastRangePreset=v;submit()});
+    function closeSalesExportMenus(){document.querySelectorAll('[data-sales-export-menu]').forEach(function(menu){menu.classList.remove('is-open');var toggle=menu.querySelector('[data-sales-export-toggle]'),dropdown=menu.querySelector('[data-sales-export-dropdown]');if(toggle)toggle.setAttribute('aria-expanded','false');if(dropdown)dropdown.hidden=true})}
+    document.querySelectorAll('[data-sales-export-toggle]').forEach(function(toggle){toggle.addEventListener('click',function(event){event.stopPropagation();var menu=toggle.closest('[data-sales-export-menu]'),dropdown=menu?menu.querySelector('[data-sales-export-dropdown]'):null;if(!menu||!dropdown)return;var shouldOpen=dropdown.hidden;closeSalesExportMenus();if(shouldOpen){menu.classList.add('is-open');dropdown.hidden=false;toggle.setAttribute('aria-expanded','true')}})});
+    document.querySelectorAll('[data-sales-export-link]').forEach(function(link){link.addEventListener('click',function(){closeSalesExportMenus()})});
+    document.addEventListener('click',function(event){if(!event.target.closest('[data-sales-export-menu]'))closeSalesExportMenus()});
+    document.addEventListener('keydown',function(event){if(event.key==='Escape')closeSalesExportMenus()});
     document.querySelectorAll('[data-sales-period]').forEach(function(btn){btn.addEventListener('click',function(){var v=btn.getAttribute('data-sales-period');setActivePeriod(v,true);setTrendVisible(true,v);focusPeriodCard(v)})});
     var print=document.getElementById('printSalesReport');if(print)print.addEventListener('click',function(){salesPaginationViews.forEach(function(view){if(view._salesPaginationShowAll)view._salesPaginationShowAll()});window.print();window.setTimeout(function(){salesPaginationViews.forEach(function(view){if(view._salesPaginationRender)view._salesPaginationRender()})},100)})
     try{var savedScrollState=sessionStorage.getItem(salesScrollStorageKey);if(savedScrollState){sessionStorage.removeItem(salesScrollStorageKey);var state;try{state=JSON.parse(savedScrollState)}catch(error){state={y:Number(savedScrollState)||0,target:'current'}}window.requestAnimationFrame(function(){window.requestAnimationFrame(function(){if(state&&state.target==='period-cards'){var cards=document.querySelector('.sales-period-cards');if(cards){window.scrollTo(0,Math.max(0,Math.round(cards.getBoundingClientRect().top+window.pageYOffset-76)));var activeCard=cards.querySelector('.sales-period-card.is-active');if(activeCard){try{activeCard.focus({preventScroll:true})}catch(error){activeCard.focus()}}return}}window.scrollTo(0,Number(state&&state.y)||0)})})}}catch(error){}
