@@ -13,6 +13,19 @@
         return copy;
     }
 
+    function manilaToday() {
+        var parts = new Intl.DateTimeFormat("en-US", {
+            timeZone: "Asia/Manila",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit"
+        }).formatToParts(new Date()).reduce(function (result, part) {
+            if (part.type !== "literal") result[part.type] = part.value;
+            return result;
+        }, {});
+        return new Date(Number(parts.year), Number(parts.month) - 1, Number(parts.day));
+    }
+
     function parseYmd(value) {
         var match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || "");
         if (!match) return null;
@@ -55,12 +68,12 @@
                 '<div class="pregnancy-picker-calendars">' +
                     '<section class="pregnancy-picker-calendar" data-pregnancy-calendar="lmp" aria-labelledby="pregnancyLmpTitle">' +
                         '<div class="pregnancy-picker-calendar-head"><h3 id="pregnancyLmpTitle">Last Menstrual Period <span>(LMP)</span></h3></div>' +
-                        '<div class="pregnancy-picker-month-bar"><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="prev" aria-label="Previous month">&#8249;</button><strong class="pregnancy-picker-month-title"></strong><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="next" aria-label="Next month">&#8250;</button></div>' +
+                        '<div class="pregnancy-picker-month-bar"><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="prev" aria-label="Previous month">&#8249;</button><strong class="pregnancy-picker-month-title"></strong><select class="pregnancy-picker-year-select" aria-label="LMP year"></select><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="next" aria-label="Next month">&#8250;</button></div>' +
                         '<div class="pregnancy-picker-weekdays" aria-hidden="true"></div><div class="pregnancy-picker-days" role="grid"></div>' +
                     '</section>' +
                     '<section class="pregnancy-picker-calendar" data-pregnancy-calendar="edd" aria-labelledby="pregnancyEddTitle">' +
                         '<div class="pregnancy-picker-calendar-head"><h3 id="pregnancyEddTitle">Estimated Date of Delivery <span>(EDD)</span></h3></div>' +
-                        '<div class="pregnancy-picker-month-bar"><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="prev" aria-label="Previous month">&#8249;</button><strong class="pregnancy-picker-month-title"></strong><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="next" aria-label="Next month">&#8250;</button></div>' +
+                        '<div class="pregnancy-picker-month-bar"><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="prev" aria-label="Previous month">&#8249;</button><strong class="pregnancy-picker-month-title"></strong><select class="pregnancy-picker-year-select" aria-label="EDD year"></select><button type="button" class="pregnancy-picker-nav" data-pregnancy-nav="next" aria-label="Next month">&#8250;</button></div>' +
                         '<div class="pregnancy-picker-weekdays" aria-hidden="true"></div><div class="pregnancy-picker-days" role="grid"></div>' +
                     '</section>' +
                 '</div>' +
@@ -91,10 +104,31 @@
         var closeButton = backdrop.querySelector(".pregnancy-picker-close");
         var cancelButton = backdrop.querySelector(".pregnancy-picker-cancel");
         var setButton = backdrop.querySelector(".pregnancy-picker-set");
-        var today = startOfDay(new Date());
+        var today = manilaToday();
+        var allowedYears = [];
         var draft = { lmp: "", edd: "" };
         var views = { lmp: { month: today.getMonth(), year: today.getFullYear() }, edd: { month: today.getMonth(), year: today.getFullYear() } };
         var previousOverflow = "";
+
+        function refreshYearRange() {
+            var currentYear = today.getFullYear();
+            allowedYears = [currentYear - 1, currentYear, currentYear + 1];
+        }
+
+        function isAllowedYear(year) {
+            return allowedYears.indexOf(Number(year)) !== -1;
+        }
+
+        function clampView(kind) {
+            var view = views[kind];
+            if (view.year < allowedYears[0]) {
+                view.year = allowedYears[0];
+                view.month = 0;
+            } else if (view.year > allowedYears[allowedYears.length - 1]) {
+                view.year = allowedYears[allowedYears.length - 1];
+                view.month = 11;
+            }
+        }
 
         function clearError() {
             if (error) {
@@ -144,9 +178,19 @@
             var view = views[kind];
             if (!calendar) return;
             var title = calendar.querySelector(".pregnancy-picker-month-title");
+            var yearSelect = calendar.querySelector(".pregnancy-picker-year-select");
             var weekdays = calendar.querySelector(".pregnancy-picker-weekdays");
             var days = calendar.querySelector(".pregnancy-picker-days");
-            title.textContent = MONTHS[view.month] + " " + view.year;
+            clampView(kind);
+            title.textContent = MONTHS[view.month];
+            yearSelect.innerHTML = allowedYears.map(function (year) {
+                return '<option value="' + year + '">' + year + '</option>';
+            }).join("");
+            yearSelect.value = String(view.year);
+            var previousButton = calendar.querySelector('[data-pregnancy-nav="prev"]');
+            var nextButton = calendar.querySelector('[data-pregnancy-nav="next"]');
+            previousButton.disabled = view.year === allowedYears[0] && view.month === 0;
+            nextButton.disabled = view.year === allowedYears[allowedYears.length - 1] && view.month === 11;
             weekdays.innerHTML = WEEKDAYS.map(function (day) { return "<span>" + day + "</span>"; }).join("");
             days.innerHTML = "";
 
@@ -185,11 +229,13 @@
         }
 
         function openModal() {
+            today = manilaToday();
+            refreshYearRange();
             draft.lmp = lmpInput.value;
             draft.edd = eddInput.value;
             ["lmp", "edd"].forEach(function (kind) {
                 var selected = parseYmd(draft[kind]);
-                views[kind] = selected
+                views[kind] = selected && isAllowedYear(selected.getFullYear())
                     ? { month: selected.getMonth(), year: selected.getFullYear() }
                     : { month: today.getMonth(), year: today.getFullYear() };
             });
@@ -232,7 +278,18 @@
                 var kind = calendar.dataset.pregnancyCalendar;
                 var direction = button.dataset.pregnancyNav === "next" ? 1 : -1;
                 var next = new Date(views[kind].year, views[kind].month + direction, 1);
+                if (!isAllowedYear(next.getFullYear())) return;
                 views[kind] = { month: next.getMonth(), year: next.getFullYear() };
+                renderCalendar(kind);
+            });
+        });
+        backdrop.querySelectorAll(".pregnancy-picker-year-select").forEach(function (select) {
+            select.addEventListener("change", function () {
+                var calendar = select.closest("[data-pregnancy-calendar]");
+                var kind = calendar.dataset.pregnancyCalendar;
+                var year = Number(select.value);
+                if (!isAllowedYear(year)) return;
+                views[kind].year = year;
                 renderCalendar(kind);
             });
         });

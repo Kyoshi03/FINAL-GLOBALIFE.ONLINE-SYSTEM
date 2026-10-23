@@ -1,9 +1,13 @@
-.pregnancy-row[hidden] {
+.pregnancy-inline[hidden] {
     display: none !important;
 }
 
-.pregnancy-row .form-group {
-    grid-column: 1 / -1;
+.pregnancy-inline {
+    margin-top: 18px;
+}
+
+.pregnancy-inline > .form-group {
+    margin-bottom: 0;
 }
 
 .pregnancy-field {
@@ -206,6 +210,26 @@
     text-align: center;
 }
 
+.pregnancy-picker-year-select {
+    min-width: 78px;
+    min-height: 30px;
+    padding: 4px 24px 4px 8px;
+    border: 1px solid #cfe1ee;
+    border-radius: 7px;
+    background: #fff;
+    color: #0b5d93;
+    font: inherit;
+    font-size: .78rem;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.pregnancy-picker-year-select:focus-visible {
+    outline: none;
+    border-color: #48cae4;
+    box-shadow: 0 0 0 3px rgba(72, 202, 228, .14);
+}
+
 .pregnancy-picker-nav {
     width: 30px;
     height: 30px;
@@ -221,6 +245,13 @@
 .pregnancy-picker-nav:hover {
     border-color: #48cae4;
     background: #eaf7fd;
+}
+
+.pregnancy-picker-nav:disabled {
+    border-color: #e3edf2;
+    background: #f5f9fb;
+    color: #b4c2c9;
+    cursor: not-allowed;
 }
 
 .pregnancy-picker-weekdays,

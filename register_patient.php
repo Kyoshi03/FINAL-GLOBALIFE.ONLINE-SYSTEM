@@ -1766,28 +1766,6 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                         </div>
                     </div>
 
-                    <div class="form-row pregnancy-row" id="pregnancyFormRow" hidden>
-                        <div class="form-group full-width">
-                            <label for="pregnancyPickerButton">Pregnant <span class="optional">(Optional)</span></label>
-                            <div class="input-wrapper pregnancy-field" id="pregnancyField">
-                                <svg class="input-icon pregnancy-field-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M8 7V3m8 4V3M5 9h14M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
-                                </svg>
-                                <input type="hidden" id="pregnancy_status" name="pregnancy_status" value="<?php echo !empty($success) ? '' : htmlspecialchars((string) ($_POST['pregnancy_status'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
-                                <input type="hidden" id="pregnancy_lmp_date" name="pregnancy_lmp_date" value="<?php echo !empty($success) ? '' : htmlspecialchars((string) ($_POST['pregnancy_lmp_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
-                                <input type="hidden" id="pregnancy_edd_date" name="pregnancy_edd_date" value="<?php echo !empty($success) ? '' : htmlspecialchars((string) ($_POST['pregnancy_edd_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
-                                <button type="button" class="pregnancy-picker-trigger is-empty" id="pregnancyPickerButton" aria-haspopup="dialog" aria-expanded="false">Select pregnancy details</button>
-                                <svg class="pregnancy-field-calendar-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M8 7V3m8 4V3M5 9h14M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
-                                </svg>
-                            </div>
-                            <div class="pregnancy-summary" id="pregnancySummary" hidden></div>
-                            <button type="button" class="pregnancy-clear" id="pregnancyClear" hidden>Clear</button>
-                            <span class="field-hint">Optional. Select LMP, EDD, or both if known.</span>
-                            <span class="field-error pregnancy-field-error" id="pregnancyError" role="alert"></span>
-                        </div>
-                    </div>
-                    
                     <div class="form-row">
                         <div class="form-group">
                             <label for="gender">Sex <span class="required-mark">*</span></label>
@@ -1802,6 +1780,25 @@ $selectedBarangay = !empty($success) ? '' : trim((string) ($_POST['barangay'] ??
                                 </select>
                             </div>
                             <span class="field-error" id="genderError" role="alert"></span>
+                            <div class="pregnancy-inline" id="pregnancyFormRow" hidden>
+                                <label for="pregnancyPickerButton">Pregnant <span class="optional">(Optional)</span></label>
+                                <div class="input-wrapper pregnancy-field" id="pregnancyField">
+                                    <svg class="input-icon pregnancy-field-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M8 7V3m8 4V3M5 9h14M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
+                                    </svg>
+                                    <input type="hidden" id="pregnancy_status" name="pregnancy_status" value="<?php echo !empty($success) ? '' : htmlspecialchars((string) ($_POST['pregnancy_status'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+                                    <input type="hidden" id="pregnancy_lmp_date" name="pregnancy_lmp_date" value="<?php echo !empty($success) ? '' : htmlspecialchars((string) ($_POST['pregnancy_lmp_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+                                    <input type="hidden" id="pregnancy_edd_date" name="pregnancy_edd_date" value="<?php echo !empty($success) ? '' : htmlspecialchars((string) ($_POST['pregnancy_edd_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+                                    <button type="button" class="pregnancy-picker-trigger is-empty" id="pregnancyPickerButton" aria-haspopup="dialog" aria-expanded="false">Select pregnancy details</button>
+                                    <svg class="pregnancy-field-calendar-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M8 7V3m8 4V3M5 9h14M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
+                                    </svg>
+                                </div>
+                                <div class="pregnancy-summary" id="pregnancySummary" hidden></div>
+                                <button type="button" class="pregnancy-clear" id="pregnancyClear" hidden>Clear</button>
+                                <span class="field-hint">Optional. Select LMP, EDD, or both if known.</span>
+                                <span class="field-error pregnancy-field-error" id="pregnancyError" role="alert"></span>
+                            </div>
                         </div>
                         
                         <div class="form-group">

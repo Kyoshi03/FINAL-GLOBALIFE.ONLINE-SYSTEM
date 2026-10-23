@@ -1332,6 +1332,25 @@ include 'includes/header.php';
                                     <option value="Male" <?php echo rpr_selected('gender', 'Male'); ?>>Male</option>
                                     <option value="Female" <?php echo rpr_selected('gender', 'Female'); ?>>Female</option>
                                 </select>
+                                <div class="pregnancy-inline" id="pregnancyFormRow" hidden>
+                                    <label for="pregnancyPickerButton">Pregnant <span class="optional">(Optional)</span></label>
+                                    <div class="pregnancy-field" id="pregnancyField">
+                                        <svg class="pregnancy-field-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M8 7V3m8 4V3M5 9h14M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
+                                        </svg>
+                                        <input type="hidden" id="pregnancy_status" name="pregnancy_status" value="<?php echo rpr_value('pregnancy_status'); ?>">
+                                        <input type="hidden" id="pregnancy_lmp_date" name="pregnancy_lmp_date" value="<?php echo rpr_value('pregnancy_lmp_date'); ?>">
+                                        <input type="hidden" id="pregnancy_edd_date" name="pregnancy_edd_date" value="<?php echo rpr_value('pregnancy_edd_date'); ?>">
+                                        <button type="button" class="pregnancy-picker-trigger is-empty" id="pregnancyPickerButton" aria-haspopup="dialog" aria-expanded="false">Select pregnancy details</button>
+                                        <svg class="pregnancy-field-calendar-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M8 7V3m8 4V3M5 9h14M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
+                                        </svg>
+                                    </div>
+                                    <div class="pregnancy-summary" id="pregnancySummary" hidden></div>
+                                    <button type="button" class="pregnancy-clear" id="pregnancyClear" hidden>Clear</button>
+                                    <span class="field-hint">Optional. Select LMP, EDD, or both if known.</span>
+                                    <span class="rpr-pwd-field-error pregnancy-field-error" id="pregnancyError" role="alert"></span>
+                                </div>
                             </div>
 
                             <div class="form-group">
@@ -1365,28 +1384,6 @@ include 'includes/header.php';
                                     <span class="rpr-senior-display" id="rprSeniorDisplay" hidden>SENIOR</span>
                                 </div>
                                 <span class="field-hint">Must be at least 18 years old.</span>
-                            </div>
-                        </div>
-
-                        <div class="form-row pregnancy-row" id="pregnancyFormRow" hidden>
-                            <div class="form-group full-width">
-                                <label for="pregnancyPickerButton">Pregnant <span class="optional">(Optional)</span></label>
-                                <div class="pregnancy-field" id="pregnancyField">
-                                    <svg class="pregnancy-field-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                                        <path d="M8 7V3m8 4V3M5 9h14M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
-                                    </svg>
-                                    <input type="hidden" id="pregnancy_status" name="pregnancy_status" value="<?php echo rpr_value('pregnancy_status'); ?>">
-                                    <input type="hidden" id="pregnancy_lmp_date" name="pregnancy_lmp_date" value="<?php echo rpr_value('pregnancy_lmp_date'); ?>">
-                                    <input type="hidden" id="pregnancy_edd_date" name="pregnancy_edd_date" value="<?php echo rpr_value('pregnancy_edd_date'); ?>">
-                                    <button type="button" class="pregnancy-picker-trigger is-empty" id="pregnancyPickerButton" aria-haspopup="dialog" aria-expanded="false">Select pregnancy details</button>
-                                    <svg class="pregnancy-field-calendar-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                                        <path d="M8 7V3m8 4V3M5 9h14M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
-                                    </svg>
-                                </div>
-                                <div class="pregnancy-summary" id="pregnancySummary" hidden></div>
-                                <button type="button" class="pregnancy-clear" id="pregnancyClear" hidden>Clear</button>
-                                <span class="field-hint">Optional. Select LMP, EDD, or both if known.</span>
-                                <span class="rpr-pwd-field-error pregnancy-field-error" id="pregnancyError" role="alert"></span>
                             </div>
                         </div>
 
