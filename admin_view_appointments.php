@@ -70,6 +70,7 @@ if ($userRole === 'patient') {
                             p.profile_updated_at,
                             p.age,
                             p.date_of_birth,
+                            p.pregnancy_status,
                             p.pwd_type,
                             p.pwd_id_path,
                             {$doctorNameSql} as doctor_name,
@@ -102,6 +103,7 @@ if ($userRole === 'patient') {
                             p.profile_updated_at,
                             p.age,
                             p.date_of_birth,
+                            p.pregnancy_status,
                             p.pwd_type,
                             p.pwd_id_path,
                             {$doctorNameSql} as doctor_name,
@@ -167,6 +169,9 @@ function admin_priority_badges_markup(array $patient): string {
     $types = [];
     if (admin_patient_is_senior($patient)) {
         $types[] = 'senior';
+    }
+    if (strcasecmp(trim((string) ($patient['pregnancy_status'] ?? '')), 'Pregnant') === 0) {
+        $types[] = 'pregnant';
     }
     if (trim((string) ($patient['pwd_type'] ?? '')) !== '') {
         $types[] = 'pwd';
@@ -1036,6 +1041,7 @@ $additionalStyles = patientAvatarStyles() . '
         color:#9a6700;
     }
     .status-badge.priority-senior,
+    .status-badge.priority-pregnant,
     .status-badge.priority-pwd {
         background:#eee7ff;
         color:#5b3a91;

@@ -173,7 +173,7 @@ $result = $conn->query(
     "SELECT id, username, {$userNameSql} AS full_name, first_name, middle_name, last_name, suffix,
             CASE WHEN role = 'receptionist' THEN 'admin' ELSE role END AS role,
             email, phone, profile_photo, profile_updated_at,
-            gender, date_of_birth, age, civil_status, pwd_type, address, barangay, city,
+            gender, date_of_birth, age, civil_status, pregnancy_status, pwd_type, address, barangay, city,
             emergency_contact_name, emergency_contact_relationship, emergency_contact_number,
             created_at, COALESCE(is_active, 1) AS is_active
      FROM users
@@ -324,6 +324,9 @@ foreach ($users as $user) {
     $priorityTypes = [];
     if (admin_accounts_patient_is_senior($user)) {
         $priorityTypes[] = 'senior';
+    }
+    if (strcasecmp(trim((string) ($user['pregnancy_status'] ?? '')), 'Pregnant') === 0) {
+        $priorityTypes[] = 'pregnant';
     }
     if (trim((string) ($user['pwd_type'] ?? '')) !== '') {
         $priorityTypes[] = 'pwd';
@@ -522,7 +525,7 @@ body{background:#f4f8fb;color:#1f343d}
 .patient-priority-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .patient-priority-list:empty{display:none}
 .patient-priority-badge{display:inline-flex;align-items:center;min-height:28px;border-radius:999px;padding:4px 12px;font-size:.70rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
-.patient-priority-badge.priority-senior,.patient-priority-badge.priority-pwd{background:#eee7ff;color:#5b3a91}
+.patient-priority-badge.priority-senior,.patient-priority-badge.priority-pregnant,.patient-priority-badge.priority-pwd{background:#eee7ff;color:#5b3a91}
 .patient-detail-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;padding:0;background:#fff}
 .patient-detail-panel{padding:22px 24px 24px;border-right:1px solid #e8eef2;min-height:100%}
 .patient-detail-panel:last-child{border-right:0}
@@ -999,7 +1002,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function renderPatientPriority(profile) {
         if (!patientModalPriority) return;
-        const labels = { senior: "SENIOR", pwd: "PWD" };
+        const labels = { senior: "SENIOR", pregnant: "PREGNANT", pwd: "PWD" };
         const types = Array.isArray(profile.priority_types) ? profile.priority_types : [];
         patientModalPriority.innerHTML = types.filter(function (type) {
             return Object.prototype.hasOwnProperty.call(labels, type);

@@ -140,7 +140,7 @@ function queue_sync_confirmed_appointments(mysqli $conn, string $date): void {
     try {
         $patientNameSql = dbUsersNameExpression('p');
         $stmt = $conn->prepare("SELECT a.id, a.patient_id, a.appointment_time, a.booking_type, a.notes, a.total_display_price,
-                                       p.date_of_birth, p.age
+                                       p.date_of_birth, p.age, p.pregnancy_status, p.pwd_type
             FROM appointments a
             JOIN users p ON p.id = a.patient_id
             LEFT JOIN clinic_queue q ON q.appointment_id = a.id AND q.queue_date = ?
@@ -165,7 +165,7 @@ function queue_sync_confirmed_appointments(mysqli $conn, string $date): void {
             $appointmentId = (int) ($appointment['id'] ?? 0);
             $service = queue_services_text($appointment);
             $serviceTotal = (float) ($appointment['total_display_price'] ?? 0);
-            $priorityType = queue_patient_is_senior($appointment) ? 'senior' : '';
+            $priorityType = queue_priority_storage(queue_patient_priority_types($appointment));
             if ($patientId <= 0 || $appointmentId <= 0 || $service === '') {
                 continue;
             }
@@ -245,16 +245,43 @@ function queue_patient_is_senior(array $patient): bool {
     return (int) ($patient['age'] ?? 0) >= 60;
 }
 
-function queue_sync_senior_priorities(mysqli $conn): void {
-    $conn->query("UPDATE clinic_queue q
+/** @return string[] */
+function queue_patient_priority_types(array $patient, array $selectedTypes = []): array {
+    $types = queue_priority_types_from_input($selectedTypes);
+    if (queue_patient_is_senior($patient) && !in_array('senior', $types, true)) {
+        $types[] = 'senior';
+    }
+    if (strcasecmp(trim((string) ($patient['pregnancy_status'] ?? '')), 'Pregnant') === 0 && !in_array('pregnant', $types, true)) {
+        $types[] = 'pregnant';
+    }
+    if (trim((string) ($patient['pwd_type'] ?? '')) !== '' && !in_array('pwd', $types, true)) {
+        $types[] = 'pwd';
+    }
+    return queue_priority_types(implode(',', $types));
+}
+
+function queue_sync_registered_priorities(mysqli $conn): void {
+    $result = $conn->query("SELECT q.id, q.priority_type, p.date_of_birth, p.age, p.pregnancy_status, p.pwd_type
+        FROM clinic_queue q
         INNER JOIN users p ON p.id = q.patient_id
-        SET q.priority_type = 'senior'
-        WHERE TRIM(COALESCE(q.priority_type, '')) = ''
-          AND (
-              (p.date_of_birth IS NOT NULL AND p.date_of_birth <> '0000-00-00'
-               AND TIMESTAMPDIFF(YEAR, p.date_of_birth, CURDATE()) >= 60)
-              OR COALESCE(p.age, 0) >= 60
-          )");
+        WHERE q.status IN ('waiting', 'serving')");
+    if (!$result) {
+        return;
+    }
+
+    while ($row = $result->fetch_assoc()) {
+        $priorityType = queue_priority_storage(queue_patient_priority_types($row, queue_priority_types($row['priority_type'] ?? '')));
+        if ($priorityType === (string) ($row['priority_type'] ?? '')) {
+            continue;
+        }
+        $updateStmt = $conn->prepare('UPDATE clinic_queue SET priority_type = ? WHERE id = ?');
+        if ($updateStmt) {
+            $queueId = (int) ($row['id'] ?? 0);
+            $updateStmt->bind_param('si', $priorityType, $queueId);
+            $updateStmt->execute();
+            $updateStmt->close();
+        }
+    }
 }
 
 function queue_priority_types(?string $priority): array {
@@ -526,7 +553,7 @@ $conn = getDBConnection();
 queue_init_schema($conn);
 init_doctor_schema_and_accounts($conn);
 queue_reconcile_linked_appointments($conn);
-queue_sync_senior_priorities($conn);
+queue_sync_registered_priorities($conn);
 queue_sync_confirmed_appointments($conn, $today);
 
 $message = $_SESSION['success'] ?? '';
@@ -605,15 +632,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['queue_action'])) {
             $queueType = 'online';
         }
 
-        $patientStmt = $conn->prepare("SELECT id, date_of_birth, age FROM users WHERE id = ? AND role = 'patient' LIMIT 1");
+        $patientStmt = $conn->prepare("SELECT id, date_of_birth, age, pregnancy_status, pwd_type FROM users WHERE id = ? AND role = 'patient' LIMIT 1");
         $patientStmt->bind_param('i', $patientId);
         $patientStmt->execute();
         $patientRecord = $patientStmt->get_result()->fetch_assoc();
         $patientExists = is_array($patientRecord);
         $patientStmt->close();
 
-        if ($patientExists && queue_patient_is_senior($patientRecord)) {
-            $priorityTypes = ['senior'];
+        if ($patientExists) {
+            $priorityTypes = queue_patient_priority_types($patientRecord, $priorityTypes);
             $priorityType = queue_priority_storage($priorityTypes);
         }
 
@@ -888,7 +915,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['queue_action'])) {
 
 $queuePatients = [];
 $patientNameSql = dbUsersNameExpression();
-$patientResult = $conn->query("SELECT id, {$patientNameSql} AS full_name, phone, email, date_of_birth, age FROM users WHERE role = 'patient' AND COALESCE(is_active, 1) = 1 ORDER BY {$patientNameSql} ASC LIMIT 300");
+$patientResult = $conn->query("SELECT id, {$patientNameSql} AS full_name, phone, email, date_of_birth, age, pregnancy_status, pwd_type FROM users WHERE role = 'patient' AND COALESCE(is_active, 1) = 1 ORDER BY {$patientNameSql} ASC LIMIT 300");
 if ($patientResult) {
     $queuePatients = $patientResult->fetch_all(MYSQLI_ASSOC);
 }
@@ -1404,6 +1431,8 @@ document.addEventListener("DOMContentLoaded", function () {
         if (patientCode) patientCode.value = option ? (option.getAttribute("data-patient-code") || "") : "";
         if (patientContact) patientContact.value = option ? (option.getAttribute("data-contact") || "") : "";
         var isSenior = option && option.getAttribute("data-is-senior") === "1";
+        var isPregnant = option && option.getAttribute("data-is-pregnant") === "1";
+        var isPwd = option && option.getAttribute("data-is-pwd") === "1";
         priorityOptions.forEach(function(priorityOption) {
             priorityOption.checked = false;
         });
@@ -1411,6 +1440,14 @@ document.addEventListener("DOMContentLoaded", function () {
             return priorityOption.value === "senior";
         });
         if (seniorOption) seniorOption.checked = Boolean(isSenior);
+        var pregnantOption = priorityOptions.find(function(priorityOption) {
+            return priorityOption.value === "pregnant";
+        });
+        if (pregnantOption) pregnantOption.checked = Boolean(isPregnant);
+        var pwdOption = priorityOptions.find(function(priorityOption) {
+            return priorityOption.value === "pwd";
+        });
+        if (pwdOption) pwdOption.checked = Boolean(isPwd);
     }
 
     function filterPatients() {
@@ -2034,6 +2071,8 @@ include 'includes/header.php';
                                     data-contact="<?php echo htmlspecialchars($patientContact, ENT_QUOTES, 'UTF-8'); ?>"
                                     data-patient-code="<?php echo htmlspecialchars($patientCode, ENT_QUOTES, 'UTF-8'); ?>"
                                     data-is-senior="<?php echo queue_patient_is_senior($patient) ? '1' : '0'; ?>"
+                                    data-is-pregnant="<?php echo strcasecmp(trim((string) ($patient['pregnancy_status'] ?? '')), 'Pregnant') === 0 ? '1' : '0'; ?>"
+                                    data-is-pwd="<?php echo trim((string) ($patient['pwd_type'] ?? '')) !== '' ? '1' : '0'; ?>"
                                 >
                                     <strong><?php echo htmlspecialchars($patientName); ?></strong>
                                     <span><?php echo htmlspecialchars($patientCode . ($patientContact !== '' ? ' | ' . $patientContact : '')); ?></span>

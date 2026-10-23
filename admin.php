@@ -63,6 +63,9 @@ function admin_priority_badges_markup(array $patient): string {
     if (admin_patient_is_senior($patient)) {
         $types[] = 'senior';
     }
+    if (strcasecmp(trim((string) ($patient['pregnancy_status'] ?? '')), 'Pregnant') === 0) {
+        $types[] = 'pregnant';
+    }
     if (trim((string) ($patient['pwd_type'] ?? '')) !== '') {
         $types[] = 'pwd';
     }
@@ -355,6 +358,7 @@ $requestStmt = $conn->prepare("SELECT a.id, a.appointment_date, a.appointment_ti
                                 p.email AS patient_email,
                                 p.age,
                                 p.date_of_birth,
+                                p.pregnancy_status,
                                 p.pwd_type,
                                 p.pwd_id_path,
                                 p.profile_photo,
@@ -2735,6 +2739,7 @@ body {
 }
 
 .badge.priority-senior,
+.badge.priority-pregnant,
 .badge.priority-pwd {
     background: #eee7ff;
     color: #5b3a91;

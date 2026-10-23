@@ -459,6 +459,34 @@ function appointment_patient_is_senior(mysqli $conn, int $patientId): bool {
     return (int) ($patient['age'] ?? 0) >= 60;
 }
 
+/** @return string[] */
+function appointment_patient_priority_types(mysqli $conn, int $patientId): array {
+    if ($patientId <= 0) {
+        return [];
+    }
+
+    $stmt = $conn->prepare('SELECT date_of_birth, age, pregnancy_status, pwd_type FROM users WHERE id = ? AND role = \'patient\' LIMIT 1');
+    if (!$stmt) {
+        return [];
+    }
+    $stmt->bind_param('i', $patientId);
+    $stmt->execute();
+    $patient = $stmt->get_result()->fetch_assoc() ?: [];
+    $stmt->close();
+
+    $types = [];
+    if (appointment_patient_is_senior($conn, $patientId)) {
+        $types[] = 'senior';
+    }
+    if (strcasecmp(trim((string) ($patient['pregnancy_status'] ?? '')), 'Pregnant') === 0) {
+        $types[] = 'pregnant';
+    }
+    if (trim((string) ($patient['pwd_type'] ?? '')) !== '') {
+        $types[] = 'pwd';
+    }
+    return $types;
+}
+
 function appointment_create_online_queue(mysqli $conn, int $appointmentId, int $patientId, string $date, string $service): string {
     $existingStmt = $conn->prepare("SELECT queue_number FROM clinic_queue WHERE appointment_id = ? AND status <> 'cancelled' LIMIT 1");
     $existingStmt->bind_param('i', $appointmentId);
@@ -471,7 +499,7 @@ function appointment_create_online_queue(mysqli $conn, int $appointmentId, int $
 
     $queueNumber = appointment_next_online_queue_number($conn, $date);
     $queueType = 'online';
-    $priorityType = appointment_patient_is_senior($conn, $patientId) ? 'senior' : '';
+    $priorityType = implode(',', appointment_patient_priority_types($conn, $patientId));
     $insertStmt = $conn->prepare("INSERT INTO clinic_queue (queue_date, queue_type, queue_number, patient_id, appointment_id, service, priority_type, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'waiting')");
     $insertStmt->bind_param('sssiiss', $date, $queueType, $queueNumber, $patientId, $appointmentId, $service, $priorityType);
     if (!$insertStmt->execute()) {
