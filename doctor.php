@@ -2309,7 +2309,7 @@ body.doctor-summary-range-open {
 ';
 
 $additionalScripts = '
-document.addEventListener("DOMContentLoaded", function () {
+function initializeDoctorDashboard() {
     var confirmModal = document.getElementById("doctorConfirmModal");
     var confirmText = document.getElementById("doctorConfirmText");
     var confirmProceed = document.getElementById("doctorConfirmProceed");
@@ -3100,12 +3100,30 @@ document.addEventListener("DOMContentLoaded", function () {
         if (summaryPeriod) {
             summaryRender(summaryPeriod, false);
         }
+
+        document.addEventListener("click", function (event) {
+            var editButton = event.target && event.target.closest
+                ? event.target.closest("#doctorSummaryEditRange")
+                : null;
+            if (!editButton || typeof window.doctorSummaryOpenRange !== "function") return;
+            event.preventDefault();
+            event.stopPropagation();
+            window.doctorSummaryOpenRange();
+        }, true);
     }
 
     document.addEventListener("keydown", function (event) {
         if (event.key === "Escape") closeConfirmModal();
     });
-});
+}
+
+// Footer scripts can be rendered after DOMContentLoaded on cached or partial page loads.
+// Initialize immediately in that case so the Consultation Summary controls always work.
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initializeDoctorDashboard);
+} else {
+    initializeDoctorDashboard();
+}
 ';
 
 include 'includes/header.php';
