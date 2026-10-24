@@ -2707,7 +2707,7 @@ function initializeDoctorDashboard() {
         }
 
         function summaryOpenRangeModal() {
-            if (!summaryRangeModal || !summaryRangeModal.hidden) return;
+            if (!summaryRangeModal || summaryRangeModal.getAttribute("aria-hidden") === "false") return;
             var currentRange = summaryRange();
             summaryRangeModalState = { from: currentRange ? currentRange.from : "", to: currentRange ? currentRange.to : "" };
             summaryDraftFrom = summaryRangeModalState.from;
@@ -2716,12 +2716,12 @@ function initializeDoctorDashboard() {
             var end = summaryParseDate(summaryDraftTo);
             summaryCalendarLeftMonth = new Date(start.getFullYear(), start.getMonth(), 1);
             summaryCalendarRightMonth = end ? new Date(end.getFullYear(), end.getMonth(), 1) : new Date(start.getFullYear(), start.getMonth() + 1, 1);
-            summaryRenderRangeCalendar();
             summaryRangeModal.hidden = false;
             summaryRangeModal.removeAttribute("hidden");
             summaryRangeModal.style.display = "grid";
             summaryRangeModal.setAttribute("aria-hidden", "false");
             document.body.classList.add("doctor-summary-range-open");
+            summaryRenderRangeCalendar();
             if (summaryRangeClose) summaryRangeClose.focus();
         }
 
