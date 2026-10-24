@@ -2849,6 +2849,48 @@ body.doctor-report-range-open {
 
 $additionalScripts = '
 function initializeDoctorDashboard() {
+    window.__doctorReportCalendarInteractive = false;
+    if (!window.__doctorReportCalendarFallbackInstalled) {
+        window.__doctorReportCalendarFallbackInstalled = true;
+        document.addEventListener("click", function (event) {
+            if (window.__doctorReportCalendarInteractive) return;
+            var target = event.target && event.target.closest ? event.target.closest("[data-doctor-report-range-date]") : null;
+            if (!target || target.disabled) return;
+            var fromInput = document.getElementById("doctorReportFrom");
+            var toInput = document.getElementById("doctorReportTo");
+            var fromValue = fromInput ? fromInput.value : "";
+            var toValue = toInput ? toInput.value : "";
+            var selected = target.getAttribute("data-doctor-report-range-date") || "";
+            if (!fromValue || toValue || selected < fromValue) {
+                fromValue = selected;
+                toValue = "";
+            } else {
+                toValue = selected;
+            }
+            if (fromInput) fromInput.value = fromValue;
+            if (toInput) toInput.value = toValue;
+            document.querySelectorAll("[data-doctor-report-range-date]").forEach(function (button) {
+                var key = button.getAttribute("data-doctor-report-range-date") || "";
+                button.classList.toggle("is-in-range", Boolean(fromValue && toValue && key > fromValue && key < toValue));
+                button.classList.toggle("is-start", key === fromValue);
+                button.classList.toggle("is-end", key === toValue);
+            });
+            var fromLabel = document.getElementById("doctorReportRangeFromValue");
+            var toLabel = document.getElementById("doctorReportRangeToValue");
+            var formatDate = function (value, fallback) {
+                if (!value) return fallback;
+                var date = new Date(value + "T00:00:00");
+                return Number.isNaN(date.getTime()) ? fallback : date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+            };
+            if (fromLabel) fromLabel.textContent = formatDate(fromValue, "Select start date");
+            if (toLabel) toLabel.textContent = formatDate(toValue, "Select end date");
+            var setButton = document.getElementById("doctorReportRangeSet");
+            if (setButton) setButton.disabled = !fromValue || !toValue || fromValue > toValue;
+            event.preventDefault();
+            event.stopPropagation();
+        }, true);
+    }
+
     function focusDoctorConsultationReport() {
         var reportPanel = document.getElementById("consultationSummary");
         if (!reportPanel) return;
@@ -3929,6 +3971,7 @@ function initializeDoctorDashboard() {
         if (doctorReportModal && doctorReportModal.getAttribute("aria-hidden") === "false") {
             doctorReportOpenRange();
         }
+        window.__doctorReportCalendarInteractive = true;
     }
 
     document.addEventListener("keydown", function (event) {
