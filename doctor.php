@@ -2308,6 +2308,8 @@ body.doctor-summary-range-open {
 }
 
 .doctor-report-panel {
+    position: relative;
+    z-index: 1;
     margin: 24px 0;
     padding: 24px;
     border: 1px solid #d8e6ed;
@@ -2335,6 +2337,8 @@ body.doctor-summary-range-open {
 }
 
 .doctor-report-controls {
+    position: relative;
+    z-index: 20;
     display: flex;
     align-items: center;
     justify-content: flex-end;
@@ -2370,7 +2374,10 @@ body.doctor-summary-range-open {
 }
 
 .doctor-report-button {
+    position: relative;
+    z-index: 21;
     font-weight: 900;
+    pointer-events: auto;
 }
 
 .doctor-report-button:hover {
@@ -2617,6 +2624,35 @@ body.doctor-summary-range-open {
     .doctor-report-chart-wrap {
         border: 0;
     }
+}
+
+/* Closed overlays must never remain in the hit-test layer. */
+.doctor-report-range-modal[aria-hidden="true"],
+.doctor-confirm-modal[aria-hidden="true"],
+.doctor-request-modal[aria-hidden="true"],
+.reschedule-modal[aria-hidden="true"],
+.reschedule-success-modal[aria-hidden="true"],
+.reschedule-error-modal[aria-hidden="true"] {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+.doctor-report-range-modal[aria-hidden="false"],
+.doctor-confirm-modal[aria-hidden="false"],
+.doctor-request-modal[aria-hidden="false"],
+.reschedule-modal[aria-hidden="false"] {
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.doctor-clean-actions,
+.doctor-clean-actions form,
+.doctor-clean-actions button,
+.doctor-clean-actions a {
+    position: relative;
+    z-index: 20;
+    pointer-events: auto;
 }
 ';
 
