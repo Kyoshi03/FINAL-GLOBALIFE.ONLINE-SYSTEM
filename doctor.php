@@ -2370,8 +2370,10 @@ body.doctor-summary-range-open {
 
 .doctor-report-controls label {
     color: #073b4c;
-    font-size: .78rem;
+    font-size: .72rem;
     font-weight: 900;
+    letter-spacing: .04em;
+    text-transform: uppercase;
 }
 
 .doctor-report-period-form {
@@ -2388,7 +2390,24 @@ body.doctor-summary-range-open {
     color: #0b4f80;
     background: #fff;
     font: inherit;
+    font-size: .92rem;
+    font-weight: 800;
     cursor: pointer;
+    transition: transform .18s ease, border-color .18s ease, background-color .18s ease, box-shadow .18s ease;
+}
+
+.doctor-report-controls select:hover,
+.doctor-report-button:hover {
+    border-color: #8ed9ef;
+    background: #f1f9fd;
+    box-shadow: 0 7px 16px rgba(15, 124, 194, .12);
+    transform: translateY(-2px);
+}
+
+.doctor-report-controls select:active,
+.doctor-report-button:active {
+    transform: translateY(0);
+    box-shadow: 0 3px 8px rgba(15, 124, 194, .09);
 }
 
 .doctor-report-controls select:focus,
@@ -2402,20 +2421,19 @@ body.doctor-summary-range-open {
 .doctor-report-button {
     position: relative;
     z-index: 21;
-    font-weight: 900;
     pointer-events: auto;
     text-decoration: none;
-}
-
-.doctor-report-button:hover {
-    border-color: #8ed9ef;
-    background: #f1f9fd;
 }
 
 .doctor-report-button.primary {
     border-color: #0f7cc2;
     color: #fff;
     background: #0f7cc2;
+}
+
+.doctor-report-button.primary:hover {
+    border-color: #086aa9;
+    background: #086aa9;
 }
 
 .doctor-report-range-row {
@@ -2437,8 +2455,17 @@ body.doctor-summary-range-open {
 }
 
 .doctor-report-total {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 5px;
     color: #073b4c;
-    font-size: 1.05rem;
+    font-size: .92rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.doctor-report-total strong {
+    font-size: 1.16rem;
     font-weight: 900;
 }
 
@@ -3826,7 +3853,7 @@ include 'includes/header.php';
 
             <div class="doctor-report-range-row">
                 <div class="doctor-report-range"><strong><?php echo $summaryPeriod === 'daily' ? 'Last 7 days' : htmlspecialchars(ucfirst($summaryPeriod)); ?></strong><?php echo $summaryFrom && $summaryTo ? ' · ' . htmlspecialchars(doctor_summary_period_range_label($summaryPeriod, $summaryFrom, $summaryTo)) : ''; ?></div>
-                <div class="doctor-report-total">Total: <strong><?php echo (int) count($summaryCompletedConsultations); ?> consultations</strong></div>
+                <div class="doctor-report-total">Total: <strong><?php echo (int) count($summaryCompletedConsultations); ?> <?php echo count($summaryCompletedConsultations) === 1 ? 'consultation' : 'consultations'; ?></strong></div>
             </div>
 
             <div class="doctor-report-chart-wrap">
