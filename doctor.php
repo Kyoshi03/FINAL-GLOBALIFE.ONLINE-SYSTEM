@@ -3426,7 +3426,8 @@ function initializeDoctorDashboard() {
 
     var doctorReportDataNode = document.getElementById("doctorConsultationReportData");
     var doctorReportPanel = document.getElementById("consultationSummary");
-    if (doctorReportDataNode && doctorReportPanel) {
+    if (doctorReportDataNode && doctorReportPanel && !window.__doctorReportControlsInitialized) {
+        window.__doctorReportControlsInitialized = true;
         var doctorReportData = {};
         try {
             doctorReportData = JSON.parse(doctorReportDataNode.textContent || "{}");
@@ -3524,6 +3525,114 @@ function initializeDoctorDashboard() {
     document.addEventListener("keydown", function (event) {
         if (event.key === "Escape") closeConfirmModal();
     });
+}
+
+// Keep the report controls independent from the other doctor dashboard widgets.
+// A failure in an unrelated widget must not disable Custom Date Range.
+if (!window.__doctorReportControlsInitialized) {
+    window.setTimeout(function () {
+        if (window.__doctorReportControlsInitialized) return;
+        (function () {
+        var dataNode = document.getElementById("doctorConsultationReportData");
+        var panel = document.getElementById("consultationSummary");
+        if (!dataNode || !panel) return;
+
+        var data = {};
+        try {
+            data = JSON.parse(dataNode.textContent || "{}");
+        } catch (error) {
+            data = {};
+        }
+
+        function defaultRange(period) {
+            return data.defaults && data.defaults[period] ? data.defaults[period] : null;
+        }
+
+        function navigate(period, from, to) {
+            var url = new URL(window.location.href);
+            url.searchParams.set("summary_period", period || "daily");
+            if (from && to) {
+                url.searchParams.set("summary_from", from);
+                url.searchParams.set("summary_to", to);
+            } else {
+                url.searchParams.delete("summary_from");
+                url.searchParams.delete("summary_to");
+            }
+            url.searchParams.delete("summary_page");
+            url.hash = "consultationSummary";
+            window.location.assign(url.toString());
+        }
+
+        function openRange() {
+            var modal = document.getElementById("doctorReportRangeModal");
+            if (!modal) return;
+            var from = document.getElementById("doctorReportFrom");
+            var to = document.getElementById("doctorReportTo");
+            var message = document.getElementById("doctorReportRangeMessage");
+            if (from) from.value = data.initial_from || "";
+            if (to) to.value = data.initial_to || "";
+            if (message) message.hidden = true;
+            modal.hidden = false;
+            modal.setAttribute("aria-hidden", "false");
+            document.body.classList.add("doctor-report-range-open");
+            if (from) from.focus();
+        }
+
+        function closeRange() {
+            var modal = document.getElementById("doctorReportRangeModal");
+            if (!modal) return;
+            modal.hidden = true;
+            modal.setAttribute("aria-hidden", "true");
+            document.body.classList.remove("doctor-report-range-open");
+        }
+
+        document.addEventListener("click", function (event) {
+            var target = event.target && event.target.closest ? event.target.closest("#doctorReportCustom") : null;
+            if (target) {
+                event.preventDefault();
+                openRange();
+                return;
+            }
+            var closeTarget = event.target && event.target.closest ? event.target.closest("#doctorReportRangeClose, #doctorReportRangeCancel") : null;
+            if (closeTarget) {
+                event.preventDefault();
+                closeRange();
+                return;
+            }
+            var modal = document.getElementById("doctorReportRangeModal");
+            if (modal && event.target === modal) closeRange();
+            var clearTarget = event.target && event.target.closest ? event.target.closest("#doctorReportClear") : null;
+            if (clearTarget) {
+                var periodSelect = document.getElementById("doctorReportPeriod");
+                var period = periodSelect ? periodSelect.value : (data.initial_period || "daily");
+                var range = defaultRange(period);
+                navigate(period, range ? range.from : "", range ? range.to : "");
+            }
+            var setTarget = event.target && event.target.closest ? event.target.closest("#doctorReportRangeSet") : null;
+            if (setTarget) {
+                var from = document.getElementById("doctorReportFrom");
+                var to = document.getElementById("doctorReportTo");
+                var message = document.getElementById("doctorReportRangeMessage");
+                if (!from || !to || !from.value || !to.value || from.value > to.value) {
+                    if (message) message.hidden = false;
+                    return;
+                }
+                navigate(data.initial_period || "daily", from.value, to.value);
+            }
+        }, true);
+
+        document.addEventListener("change", function (event) {
+            if (!event.target || event.target.id !== "doctorReportPeriod") return;
+            var period = event.target.value || "daily";
+            var range = defaultRange(period);
+            navigate(period, range ? range.from : "", range ? range.to : "");
+        }, true);
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") closeRange();
+        }, true);
+        })();
+    }, 0);
 }
 
 // Footer scripts can be rendered after DOMContentLoaded on cached or partial page loads.
