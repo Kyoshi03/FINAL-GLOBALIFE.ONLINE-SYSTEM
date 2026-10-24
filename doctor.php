@@ -2333,6 +2333,7 @@ body.doctor-summary-range-open {
     z-index: 1;
     margin: 24px 0;
     padding: 24px;
+    scroll-margin-top: 92px;
     border: 1px solid #d8e6ed;
     border-radius: 8px;
     background: #fff;
@@ -2721,6 +2722,16 @@ body.doctor-summary-range-open {
 
 $additionalScripts = '
 function initializeDoctorDashboard() {
+    function focusDoctorConsultationReport() {
+        var reportPanel = document.getElementById("consultationSummary");
+        if (!reportPanel || window.location.hash !== "#consultationSummary") return;
+        window.setTimeout(function () {
+            reportPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 0);
+    }
+
+    focusDoctorConsultationReport();
+
     var confirmModal = document.getElementById("doctorConfirmModal");
     var confirmText = document.getElementById("doctorConfirmText");
     var confirmProceed = document.getElementById("doctorConfirmProceed");
