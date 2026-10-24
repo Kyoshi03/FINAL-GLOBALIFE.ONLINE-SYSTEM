@@ -2391,7 +2391,7 @@ body.doctor-summary-range-open {
     background: #fff;
     font: inherit;
     font-size: .92rem;
-    font-weight: 800;
+    font-weight: 600;
     cursor: pointer;
     transition: transform .18s ease, border-color .18s ease, background-color .18s ease, box-shadow .18s ease;
 }
@@ -2423,6 +2423,7 @@ body.doctor-summary-range-open {
     z-index: 21;
     pointer-events: auto;
     text-decoration: none;
+    font-weight: 600;
 }
 
 .doctor-report-button.primary {
