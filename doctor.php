@@ -2470,6 +2470,8 @@ body.doctor-summary-range-open {
 
 .doctor-report-chart .report-area {
     fill: rgba(15, 124, 194, .12);
+    opacity: 0;
+    animation: doctorReportFade .65s ease-out .1s forwards;
 }
 
 .doctor-report-chart .report-line {
@@ -2478,12 +2480,25 @@ body.doctor-summary-range-open {
     stroke-width: 3;
     stroke-linecap: round;
     stroke-linejoin: round;
+    stroke-dasharray: 1800;
+    stroke-dashoffset: 1800;
+    animation: doctorReportDraw .8s ease-out forwards;
 }
 
 .doctor-report-chart .report-dot {
     fill: #fff;
     stroke: #0077b6;
     stroke-width: 2;
+    opacity: 0;
+    animation: doctorReportFade .35s ease-out .25s forwards;
+}
+
+@keyframes doctorReportDraw {
+    to { stroke-dashoffset: 0; }
+}
+
+@keyframes doctorReportFade {
+    to { opacity: 1; }
 }
 
 .doctor-report-chart text {
@@ -2653,6 +2668,24 @@ body.doctor-summary-range-open {
 
     .doctor-report-chart-wrap {
         border: 0;
+    }
+
+    .doctor-report-chart .report-area,
+    .doctor-report-chart .report-line,
+    .doctor-report-chart .report-dot {
+        opacity: 1 !important;
+        animation: none !important;
+        stroke-dashoffset: 0 !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .doctor-report-chart .report-area,
+    .doctor-report-chart .report-line,
+    .doctor-report-chart .report-dot {
+        opacity: 1;
+        animation: none;
+        stroke-dashoffset: 0;
     }
 }
 
