@@ -291,6 +291,7 @@ $summaryGraphPoints = [];
 $summaryGraphMax = 0;
 $summaryPage = max(1, (int) ($_GET['summary_page'] ?? 1));
 $summaryPerPage = 5;
+$summaryCustomOpen = (string) ($_GET['summary_custom'] ?? '') === '1';
 $summaryAllCompletedConsultations = doctor_completed_consultations($conn, $staffId);
 
 if ($summaryPeriod !== '') {
@@ -431,6 +432,19 @@ $conn->close();
 
 $totalAppointments = count($todayAppointments);
 $activeQueue = $statusTotals['pending'] + $statusTotals['confirmed'];
+$summaryReportBaseUrl = 'doctor.php?' . http_build_query([
+    'summary_period' => $summaryPeriod,
+    'summary_from' => $summaryFrom,
+    'summary_to' => $summaryTo,
+    'summary_page' => 1,
+]) . '#consultationSummary';
+$summaryReportCustomUrl = 'doctor.php?' . http_build_query([
+    'summary_period' => $summaryPeriod,
+    'summary_from' => $summaryFrom,
+    'summary_to' => $summaryTo,
+    'summary_page' => 1,
+    'summary_custom' => 1,
+]) . '#consultationSummary';
 
 $additionalStyles = patientAvatarStyles() . '
 body {
@@ -2378,6 +2392,7 @@ body.doctor-summary-range-open {
     z-index: 21;
     font-weight: 900;
     pointer-events: auto;
+    text-decoration: none;
 }
 
 .doctor-report-button:hover {
@@ -2517,6 +2532,8 @@ body.doctor-summary-range-open {
 }
 
 .doctor-report-range-close {
+    display: inline-grid;
+    place-items: center;
     width: 36px;
     height: 36px;
     border: 1px solid #cfe1ee;
@@ -2525,6 +2542,7 @@ body.doctor-summary-range-open {
     background: #f8fbfd;
     font-size: 1.35rem;
     cursor: pointer;
+    text-decoration: none;
 }
 
 .doctor-report-range-fields {
@@ -3530,7 +3548,10 @@ function initializeDoctorDashboard() {
             });
         }
 
-        if (doctorReportCustom) doctorReportCustom.addEventListener("click", doctorReportOpenRange);
+        if (doctorReportCustom) doctorReportCustom.addEventListener("click", function (event) {
+            event.preventDefault();
+            doctorReportOpenRange();
+        });
         if (doctorReportClear) doctorReportClear.addEventListener("click", function () {
             var defaults = doctorReportDefaultRange(doctorReportPeriod);
             doctorReportNavigate(doctorReportPeriod, defaults ? defaults.from : "", defaults ? defaults.to : "");
@@ -3542,7 +3563,8 @@ function initializeDoctorDashboard() {
                 if (event.target === doctorReportModal) doctorReportCloseRange();
             });
         }
-        if (doctorReportModalSet) doctorReportModalSet.addEventListener("click", function () {
+        if (doctorReportModalSet) doctorReportModalSet.addEventListener("click", function (event) {
+            event.preventDefault();
             var from = doctorReportFrom ? doctorReportFrom.value : "";
             var to = doctorReportTo ? doctorReportTo.value : "";
             if (!from || !to || from > to) {
@@ -3646,6 +3668,7 @@ if (!window.__doctorReportControlsInitialized) {
             }
             var setTarget = event.target && event.target.closest ? event.target.closest("#doctorReportRangeSet") : null;
             if (setTarget) {
+                event.preventDefault();
                 var from = document.getElementById("doctorReportFrom");
                 var to = document.getElementById("doctorReportTo");
                 var message = document.getElementById("doctorReportRangeMessage");
@@ -3757,7 +3780,7 @@ include 'includes/header.php';
                         <option value="monthly"<?php echo $summaryPeriod === 'monthly' ? ' selected' : ''; ?>>Monthly</option>
                         <option value="quarterly"<?php echo $summaryPeriod === 'quarterly' ? ' selected' : ''; ?>>Quarterly</option>
                     </select>
-                    <button type="button" class="doctor-report-button" id="doctorReportCustom" aria-haspopup="dialog">Custom Date Range</button>
+                    <a class="doctor-report-button" id="doctorReportCustom" href="<?php echo htmlspecialchars($summaryReportCustomUrl, ENT_QUOTES, 'UTF-8'); ?>" aria-haspopup="dialog">Custom Date Range</a>
                     <button type="button" class="doctor-report-button" id="doctorReportClear">Clear</button>
                 </div>
             </div>
@@ -3880,27 +3903,31 @@ include 'includes/header.php';
             <?php endif; ?>
         </section>
 
-        <div class="doctor-report-range-modal" id="doctorReportRangeModal" hidden aria-hidden="true">
+        <div class="doctor-report-range-modal" id="doctorReportRangeModal"<?php echo $summaryCustomOpen ? '' : ' hidden'; ?> aria-hidden="<?php echo $summaryCustomOpen ? 'false' : 'true'; ?>">
             <section class="doctor-report-range-dialog" role="dialog" aria-modal="true" aria-labelledby="doctorReportRangeTitle">
                 <div class="doctor-report-range-dialog-head">
                     <h2 id="doctorReportRangeTitle">Custom Date Range</h2>
-                    <button type="button" class="doctor-report-range-close" id="doctorReportRangeClose" aria-label="Close date range picker">&times;</button>
+                    <a class="doctor-report-range-close" id="doctorReportRangeClose" href="<?php echo htmlspecialchars($summaryReportBaseUrl, ENT_QUOTES, 'UTF-8'); ?>" aria-label="Close date range picker">&times;</a>
                 </div>
-                <div class="doctor-report-range-fields">
-                    <div class="doctor-report-range-field">
-                        <label for="doctorReportFrom">Start date</label>
-                        <input class="doctor-report-date" id="doctorReportFrom" type="date" value="<?php echo htmlspecialchars($summaryFrom); ?>">
+                <form method="get" action="doctor.php" id="doctorReportRangeForm">
+                    <input type="hidden" name="summary_period" value="<?php echo htmlspecialchars($summaryPeriod); ?>">
+                    <input type="hidden" name="summary_page" value="1">
+                    <div class="doctor-report-range-fields">
+                        <div class="doctor-report-range-field">
+                            <label for="doctorReportFrom">Start date</label>
+                            <input class="doctor-report-date" id="doctorReportFrom" name="summary_from" type="date" value="<?php echo htmlspecialchars($summaryFrom); ?>" required>
+                        </div>
+                        <div class="doctor-report-range-field">
+                            <label for="doctorReportTo">End date</label>
+                            <input class="doctor-report-date" id="doctorReportTo" name="summary_to" type="date" value="<?php echo htmlspecialchars($summaryTo); ?>" required>
+                        </div>
                     </div>
-                    <div class="doctor-report-range-field">
-                        <label for="doctorReportTo">End date</label>
-                        <input class="doctor-report-date" id="doctorReportTo" type="date" value="<?php echo htmlspecialchars($summaryTo); ?>">
+                    <p class="doctor-report-range-message" id="doctorReportRangeMessage" hidden>Choose a valid start and end date.</p>
+                    <div class="doctor-report-range-actions">
+                        <a class="doctor-report-button" id="doctorReportRangeCancel" href="<?php echo htmlspecialchars($summaryReportBaseUrl, ENT_QUOTES, 'UTF-8'); ?>">Cancel</a>
+                        <button type="submit" class="doctor-report-button primary" id="doctorReportRangeSet">Set Date</button>
                     </div>
-                </div>
-                <p class="doctor-report-range-message" id="doctorReportRangeMessage" hidden>Choose a valid start and end date.</p>
-                <div class="doctor-report-range-actions">
-                    <button type="button" class="doctor-report-button" id="doctorReportRangeCancel">Cancel</button>
-                    <button type="button" class="doctor-report-button primary" id="doctorReportRangeSet">Set Date</button>
-                </div>
+                </form>
             </section>
         </div>
 
