@@ -2306,6 +2306,318 @@ body.doctor-summary-range-open {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
+
+.doctor-report-panel {
+    margin: 24px 0;
+    padding: 24px;
+    border: 1px solid #d8e6ed;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 10px 24px rgba(25, 76, 110, .06);
+}
+
+.doctor-report-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.doctor-report-head h2 {
+    margin: 0;
+    color: #073b4c;
+    font-size: 1.45rem;
+}
+
+.doctor-report-head p {
+    margin: 8px 0 0;
+    color: #607784;
+}
+
+.doctor-report-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.doctor-report-controls label {
+    color: #073b4c;
+    font-size: .78rem;
+    font-weight: 900;
+}
+
+.doctor-report-controls select,
+.doctor-report-button {
+    min-height: 42px;
+    box-sizing: border-box;
+    border: 1px solid #cfe1ee;
+    border-radius: 8px;
+    padding: 9px 14px;
+    color: #0b4f80;
+    background: #fff;
+    font: inherit;
+    cursor: pointer;
+}
+
+.doctor-report-controls select:focus,
+.doctor-report-button:focus-visible,
+.doctor-report-date:focus-visible {
+    outline: none;
+    border-color: #0f7cc2;
+    box-shadow: 0 0 0 3px rgba(15, 124, 194, .12);
+}
+
+.doctor-report-button {
+    font-weight: 900;
+}
+
+.doctor-report-button:hover {
+    border-color: #8ed9ef;
+    background: #f1f9fd;
+}
+
+.doctor-report-button.primary {
+    border-color: #0f7cc2;
+    color: #fff;
+    background: #0f7cc2;
+}
+
+.doctor-report-range-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 26px 0 10px;
+}
+
+.doctor-report-range {
+    color: #607784;
+    font-size: .95rem;
+}
+
+.doctor-report-range strong,
+.doctor-report-total strong {
+    color: #073b4c;
+}
+
+.doctor-report-total {
+    color: #073b4c;
+    font-size: 1.05rem;
+    font-weight: 900;
+}
+
+.doctor-report-chart-wrap {
+    min-height: 300px;
+    margin-top: 10px;
+    padding: 16px 10px 8px;
+    border: 1px solid #d8e6ed;
+    border-radius: 8px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.doctor-report-chart {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+}
+
+.doctor-report-chart .grid-line {
+    stroke: #e5eef3;
+    stroke-width: 1;
+}
+
+.doctor-report-chart .axis-line {
+    stroke: #b7cbd6;
+    stroke-width: 1.2;
+}
+
+.doctor-report-chart .report-area {
+    fill: rgba(15, 124, 194, .12);
+}
+
+.doctor-report-chart .report-line {
+    fill: none;
+    stroke: #0077b6;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.doctor-report-chart .report-dot {
+    fill: #fff;
+    stroke: #0077b6;
+    stroke-width: 2;
+}
+
+.doctor-report-chart text {
+    fill: #607784;
+    font-family: inherit;
+    font-size: 11px;
+}
+
+.doctor-report-chart .axis-title {
+    fill: #073b4c;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.doctor-report-empty {
+    padding: 80px 12px;
+    color: #607784;
+    text-align: center;
+    font-weight: 700;
+}
+
+.doctor-report-range-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(7, 59, 76, .42);
+}
+
+.doctor-report-range-modal[hidden] {
+    display: none;
+}
+
+.doctor-report-range-dialog {
+    width: min(520px, 100%);
+    padding: 24px;
+    border: 1px solid #cfe1ee;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 22px 60px rgba(7, 59, 76, .24);
+}
+
+.doctor-report-range-dialog-head,
+.doctor-report-range-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.doctor-report-range-dialog-head h2 {
+    margin: 0;
+    color: #073b4c;
+    font-size: 1.15rem;
+}
+
+.doctor-report-range-close {
+    width: 36px;
+    height: 36px;
+    border: 1px solid #cfe1ee;
+    border-radius: 7px;
+    color: #0b4f80;
+    background: #f8fbfd;
+    font-size: 1.35rem;
+    cursor: pointer;
+}
+
+.doctor-report-range-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin: 24px 0;
+}
+
+.doctor-report-range-field {
+    display: grid;
+    gap: 6px;
+}
+
+.doctor-report-range-field label {
+    color: #607784;
+    font-size: .78rem;
+    font-weight: 900;
+}
+
+.doctor-report-date {
+    min-height: 42px;
+    box-sizing: border-box;
+    border: 1px solid #cfe1ee;
+    border-radius: 8px;
+    padding: 9px 10px;
+    color: #1f343d;
+    background: #fff;
+    font: inherit;
+}
+
+.doctor-report-range-message {
+    margin: 0 0 16px;
+    color: #b42318;
+    font-size: .82rem;
+    font-weight: 700;
+}
+
+.doctor-report-range-message[hidden] {
+    display: none;
+}
+
+@media (max-width: 900px) {
+    .doctor-report-head,
+    .doctor-report-range-row {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .doctor-report-controls {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 600px) {
+    .doctor-report-panel {
+        padding: 16px 12px;
+    }
+
+    .doctor-report-controls,
+    .doctor-report-controls select,
+    .doctor-report-button {
+        width: 100%;
+    }
+
+    .doctor-report-range-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .doctor-report-range-actions {
+        align-items: stretch;
+        flex-direction: column-reverse;
+    }
+
+    .doctor-report-range-actions .doctor-report-button {
+        width: 100%;
+    }
+
+    .doctor-report-chart text {
+        font-size: 9px;
+    }
+}
+
+@media print {
+    .doctor-report-panel {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        box-shadow: none;
+    }
+
+    .doctor-report-controls,
+    .doctor-report-range-modal {
+        display: none !important;
+    }
+
+    .doctor-report-chart-wrap {
+        border: 0;
+    }
+}
 ';
 
 $additionalScripts = '
@@ -3112,6 +3424,103 @@ function initializeDoctorDashboard() {
         }, true);
     }
 
+    var doctorReportDataNode = document.getElementById("doctorConsultationReportData");
+    var doctorReportPanel = document.getElementById("consultationSummary");
+    if (doctorReportDataNode && doctorReportPanel) {
+        var doctorReportData = {};
+        try {
+            doctorReportData = JSON.parse(doctorReportDataNode.textContent || "{}");
+        } catch (error) {
+            doctorReportData = {};
+        }
+
+        var doctorReportPeriod = doctorReportData.initial_period || "daily";
+        var doctorReportPeriodSelect = document.getElementById("doctorReportPeriod");
+        var doctorReportCustom = document.getElementById("doctorReportCustom");
+        var doctorReportClear = document.getElementById("doctorReportClear");
+        var doctorReportModal = document.getElementById("doctorReportRangeModal");
+        var doctorReportModalClose = document.getElementById("doctorReportRangeClose");
+        var doctorReportModalCancel = document.getElementById("doctorReportRangeCancel");
+        var doctorReportModalSet = document.getElementById("doctorReportRangeSet");
+        var doctorReportFrom = document.getElementById("doctorReportFrom");
+        var doctorReportTo = document.getElementById("doctorReportTo");
+        var doctorReportMessage = document.getElementById("doctorReportRangeMessage");
+
+        function doctorReportDefaultRange(period) {
+            return doctorReportData.defaults && doctorReportData.defaults[period]
+                ? doctorReportData.defaults[period]
+                : null;
+        }
+
+        function doctorReportNavigate(period, from, to) {
+            var url = new URL(window.location.href);
+            url.searchParams.set("summary_period", period);
+            if (from && to) {
+                url.searchParams.set("summary_from", from);
+                url.searchParams.set("summary_to", to);
+            } else {
+                url.searchParams.delete("summary_from");
+                url.searchParams.delete("summary_to");
+            }
+            url.searchParams.delete("summary_page");
+            url.hash = "consultationSummary";
+            window.location.assign(url.toString());
+        }
+
+        function doctorReportCloseRange() {
+            if (!doctorReportModal) return;
+            doctorReportModal.hidden = true;
+            doctorReportModal.setAttribute("aria-hidden", "true");
+            document.body.classList.remove("doctor-report-range-open");
+        }
+
+        function doctorReportOpenRange() {
+            if (!doctorReportModal) return;
+            if (doctorReportFrom) doctorReportFrom.value = doctorReportData.initial_from || "";
+            if (doctorReportTo) doctorReportTo.value = doctorReportData.initial_to || "";
+            if (doctorReportMessage) doctorReportMessage.hidden = true;
+            doctorReportModal.hidden = false;
+            doctorReportModal.setAttribute("aria-hidden", "false");
+            document.body.classList.add("doctor-report-range-open");
+            if (doctorReportFrom) doctorReportFrom.focus();
+        }
+
+        if (doctorReportPeriodSelect) {
+            doctorReportPeriodSelect.addEventListener("change", function () {
+                var period = doctorReportPeriodSelect.value || "daily";
+                var defaults = doctorReportDefaultRange(period);
+                doctorReportNavigate(period, defaults ? defaults.from : "", defaults ? defaults.to : "");
+            });
+        }
+
+        if (doctorReportCustom) doctorReportCustom.addEventListener("click", doctorReportOpenRange);
+        if (doctorReportClear) doctorReportClear.addEventListener("click", function () {
+            var defaults = doctorReportDefaultRange(doctorReportPeriod);
+            doctorReportNavigate(doctorReportPeriod, defaults ? defaults.from : "", defaults ? defaults.to : "");
+        });
+        if (doctorReportModalClose) doctorReportModalClose.addEventListener("click", doctorReportCloseRange);
+        if (doctorReportModalCancel) doctorReportModalCancel.addEventListener("click", doctorReportCloseRange);
+        if (doctorReportModal) {
+            doctorReportModal.addEventListener("click", function (event) {
+                if (event.target === doctorReportModal) doctorReportCloseRange();
+            });
+        }
+        if (doctorReportModalSet) doctorReportModalSet.addEventListener("click", function () {
+            var from = doctorReportFrom ? doctorReportFrom.value : "";
+            var to = doctorReportTo ? doctorReportTo.value : "";
+            if (!from || !to || from > to) {
+                if (doctorReportMessage) doctorReportMessage.hidden = false;
+                return;
+            }
+            doctorReportNavigate(doctorReportPeriod, from, to);
+        });
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape" && doctorReportModal && !doctorReportModal.hidden) {
+                doctorReportCloseRange();
+            }
+        });
+    }
+
     document.addEventListener("keydown", function (event) {
         if (event.key === "Escape") closeConfirmModal();
     });
@@ -3190,89 +3599,59 @@ include 'includes/header.php';
             </div>
         </section>
 
-        <section class="doctor-clean-panel consultation-summary" id="consultationSummary">
-            <div class="doctor-clean-panel-head">
+        <section class="doctor-report-panel" id="consultationSummary" aria-labelledby="doctorReportTitle">
+            <div class="doctor-report-head">
                 <div>
-                    <h2>Consultation Summary</h2>
-                    <p>Choose a period to view completed consultations.</p>
+                    <h2 id="doctorReportTitle">Consultation Report</h2>
+                    <p><?php echo $summaryPeriod === 'daily' ? 'Weekly completed consultations for the last 7 days.' : 'Completed consultations for the selected period.'; ?></p>
+                </div>
+                <div class="doctor-report-controls" aria-label="Consultation report filters">
+                    <label for="doctorReportPeriod">Report Period</label>
+                    <select id="doctorReportPeriod">
+                        <option value="daily"<?php echo $summaryPeriod === 'daily' ? ' selected' : ''; ?>>Weekly</option>
+                        <option value="monthly"<?php echo $summaryPeriod === 'monthly' ? ' selected' : ''; ?>>Monthly</option>
+                        <option value="quarterly"<?php echo $summaryPeriod === 'quarterly' ? ' selected' : ''; ?>>Quarterly</option>
+                    </select>
+                    <button type="button" class="doctor-report-button" id="doctorReportCustom" aria-haspopup="dialog">Custom Date Range</button>
+                    <button type="button" class="doctor-report-button" id="doctorReportClear">Clear</button>
                 </div>
             </div>
 
-            <div class="consultation-summary-options" role="group" aria-label="Consultation summary period">
-                <?php foreach ([
-                    'daily' => ['Daily', 'Completed in last 7 days'],
-                    'monthly' => ['Monthly', 'Completed in last 12 months'],
-                    'quarterly' => ['Quarterly', 'Completed in last 4 quarters'],
-                ] as $periodKey => $periodCopy): ?>
-                    <?php $periodRange = $summaryDefaultRanges[$periodKey]; ?>
-                    <a class="consultation-period-card<?php echo $summaryPeriod === $periodKey ? ' active' : ''; ?>" href="doctor.php?<?php echo htmlspecialchars(http_build_query(['summary_period' => $periodKey, 'summary_from' => $periodRange['from'], 'summary_to' => $periodRange['to'], 'summary_page' => 1]), ENT_QUOTES, 'UTF-8'); ?>#consultationSummary" data-summary-period="<?php echo $periodKey; ?>" aria-pressed="<?php echo $summaryPeriod === $periodKey ? 'true' : 'false'; ?>">
-                        <strong><?php echo htmlspecialchars($periodCopy[0]); ?></strong>
-                        <b data-summary-card-value="<?php echo $periodKey; ?>"><?php echo (int) $summaryCardValues[$periodKey]; ?></b>
-                        <span><?php echo htmlspecialchars($periodCopy[1]); ?></span>
-                    </a>
-                <?php endforeach; ?>
+            <div class="doctor-report-range-row">
+                <div class="doctor-report-range"><strong><?php echo $summaryPeriod === 'daily' ? 'Last 7 days' : htmlspecialchars(ucfirst($summaryPeriod)); ?></strong><?php echo $summaryFrom && $summaryTo ? ' · ' . htmlspecialchars(doctor_summary_period_range_label($summaryPeriod, $summaryFrom, $summaryTo)) : ''; ?></div>
+                <div class="doctor-report-total">Total: <strong><?php echo (int) count($summaryCompletedConsultations); ?> consultations</strong></div>
             </div>
 
-            <div class="consultation-summary-body" id="doctorConsultationSummaryBody"<?php echo $summaryPeriod === '' ? ' hidden' : ''; ?>>
-                    <div class="consultation-summary-filters">
-                        <input id="doctorSummaryFrom" type="hidden" name="summary_from" value="<?php echo htmlspecialchars($summaryFrom); ?>">
-                        <input id="doctorSummaryTo" type="hidden" name="summary_to" value="<?php echo htmlspecialchars($summaryTo); ?>">
-                        <input id="doctorSummaryPeriod" type="hidden" name="summary_period" value="<?php echo htmlspecialchars($summaryPeriod); ?>">
-                        <input id="doctorSummaryToday" type="hidden" value="<?php echo htmlspecialchars($today); ?>">
-                        <button type="button" class="consultation-summary-range-edit" id="doctorSummaryEditRange" aria-haspopup="dialog" onclick="if (window.doctorSummaryOpenRange) window.doctorSummaryOpenRange();">Edit dates</button>
-                        <button type="button" class="consultation-summary-range-edit consultation-summary-range-clear" id="doctorSummaryClearRange">Clear</button>
-                    </div>
-
-                    <div class="consultation-summary-meta">
-                        <span id="doctorSummaryMetaRange"><strong><?php echo $summaryPeriod !== '' ? htmlspecialchars(ucfirst($summaryPeriod)) : 'Select a period'; ?></strong><?php echo $summaryPeriod !== '' ? ' · ' . htmlspecialchars(doctor_summary_period_range_label($summaryPeriod, $summaryFrom, $summaryTo)) : ''; ?></span>
-                    </div>
-
-                    <div class="consultation-summary-chart">
-                        <svg id="doctorConsultationSummaryChart" viewBox="0 0 920 320" role="img" aria-label="Consultation chart">
-                            <?php if ($summaryGraphPoints): ?>
-                                <?php for ($tick = 0; $tick <= 4; $tick++): ?>
-                                    <?php $tickY = 250 - (($tick / 4) * 190); ?>
-                                    <line class="summary-grid-line" x1="70" y1="<?php echo number_format($tickY, 2, '.', ''); ?>" x2="890" y2="<?php echo number_format($tickY, 2, '.', ''); ?>"></line>
-                                    <text x="61" y="<?php echo number_format($tickY + 4, 2, '.', ''); ?>" text-anchor="end"><?php echo (int) round($summaryGraphMax * ($tick / 4)); ?></text>
-                                <?php endfor; ?>
-                                <line class="summary-axis-line" x1="70" y1="60" x2="70" y2="250"></line>
-                                <line class="summary-axis-line" x1="70" y1="250" x2="890" y2="250"></line>
-                                <polygon class="summary-area" points="<?php echo htmlspecialchars($summaryGraphAreaPoints, ENT_QUOTES, 'UTF-8'); ?>"></polygon>
-                                <polyline class="summary-line" points="<?php echo htmlspecialchars($summaryGraphLinePoints, ENT_QUOTES, 'UTF-8'); ?>"></polyline>
-                                <?php foreach ($summaryGraphPoints as $point): ?>
-                                    <?php if ((int) $point['value'] > 0): ?>
-                                        <circle class="summary-dot" cx="<?php echo number_format((float) $point['x'], 2, '.', ''); ?>" cy="<?php echo number_format((float) $point['y'], 2, '.', ''); ?>" r="4.5">
-                                            <title><?php echo htmlspecialchars((string) $point['full_label'] . ': ' . (int) $point['value'] . ' completed consultations', ENT_QUOTES, 'UTF-8'); ?></title>
-                                        </circle>
-                                    <?php endif; ?>
-                                <?php endforeach; ?>
-                                <?php $summaryGraphLabelStep = max(1, (int) ceil(count($summaryGraphPoints) / 8)); ?>
-                                <?php foreach ($summaryGraphPoints as $index => $point): ?>
-                                    <?php if ($index === 0 || $index === count($summaryGraphPoints) - 1 || $index % $summaryGraphLabelStep === 0): ?>
-                                        <text x="<?php echo number_format((float) $point['x'], 2, '.', ''); ?>" y="274" text-anchor="middle"><?php echo htmlspecialchars((string) $point['label'], ENT_QUOTES, 'UTF-8'); ?></text>
-                                    <?php endif; ?>
-                                <?php endforeach; ?>
-                                <text class="summary-axis-label" x="480" y="313" text-anchor="middle">Period</text>
+            <div class="doctor-report-chart-wrap">
+                <?php if ($summaryGraphPoints): ?>
+                    <svg class="doctor-report-chart" viewBox="0 0 920 320" role="img" aria-label="Completed consultation report chart">
+                        <?php for ($tick = 0; $tick <= 4; $tick++): ?>
+                            <?php $tickY = 250 - (($tick / 4) * 190); ?>
+                            <line class="grid-line" x1="70" y1="<?php echo number_format($tickY, 2, '.', ''); ?>" x2="890" y2="<?php echo number_format($tickY, 2, '.', ''); ?>"></line>
+                            <text x="61" y="<?php echo number_format($tickY + 4, 2, '.', ''); ?>" text-anchor="end"><?php echo (int) round($summaryGraphMax * ($tick / 4)); ?></text>
+                        <?php endfor; ?>
+                        <line class="axis-line" x1="70" y1="60" x2="70" y2="250"></line>
+                        <line class="axis-line" x1="70" y1="250" x2="890" y2="250"></line>
+                        <polygon class="report-area" points="<?php echo htmlspecialchars($summaryGraphAreaPoints, ENT_QUOTES, 'UTF-8'); ?>"></polygon>
+                        <polyline class="report-line" points="<?php echo htmlspecialchars($summaryGraphLinePoints, ENT_QUOTES, 'UTF-8'); ?>"></polyline>
+                        <?php foreach ($summaryGraphPoints as $point): ?>
+                            <circle class="report-dot" cx="<?php echo number_format((float) $point['x'], 2, '.', ''); ?>" cy="<?php echo number_format((float) $point['y'], 2, '.', ''); ?>" r="4.5">
+                                <title><?php echo htmlspecialchars((string) $point['full_label'] . ': ' . (int) $point['value'] . ' completed consultations', ENT_QUOTES, 'UTF-8'); ?></title>
+                            </circle>
+                        <?php endforeach; ?>
+                        <?php $summaryGraphLabelStep = max(1, (int) ceil(count($summaryGraphPoints) / 8)); ?>
+                        <?php foreach ($summaryGraphPoints as $index => $point): ?>
+                            <?php if ($index === 0 || $index === count($summaryGraphPoints) - 1 || $index % $summaryGraphLabelStep === 0): ?>
+                                <text x="<?php echo number_format((float) $point['x'], 2, '.', ''); ?>" y="274" text-anchor="middle"><?php echo htmlspecialchars((string) $point['label'], ENT_QUOTES, 'UTF-8'); ?></text>
                             <?php endif; ?>
-                        </svg>
-                        <div id="doctorConsultationSummaryEmpty" class="consultation-summary-empty"<?php echo $summaryGraphPoints ? ' hidden' : ''; ?>>No completed consultations in this date range.</div>
-                    </div>
-
-                    <div class="consultation-summary-table-wrap">
-                        <table class="consultation-summary-table">
-                            <thead>
-                                <tr>
-                                    <th>Consultation Date</th>
-                                    <th>Patient Name</th>
-                                    <th>View Details</th>
-                                </tr>
-                            </thead>
-                            <tbody id="doctorConsultationSummaryRows"></tbody>
-                        </table>
-                        <div id="doctorConsultationSummaryPagination"></div>
-                    </div>
+                        <?php endforeach; ?>
+                        <text class="axis-title" x="480" y="313" text-anchor="middle">Period</text>
+                    </svg>
+                <?php else: ?>
+                    <div class="doctor-report-empty">No completed consultations in this date range.</div>
+                <?php endif; ?>
             </div>
-            <script type="application/json" id="doctorConsultationSummaryData"><?php echo $summaryClientJson; ?></script>
+            <script type="application/json" id="doctorConsultationReportData"><?php echo $summaryClientJson; ?></script>
         </section>
 
         <section class="doctor-clean-panel" id="appointmentRequests">
@@ -3356,26 +3735,26 @@ include 'includes/header.php';
             <?php endif; ?>
         </section>
 
-        <div class="consultation-range-modal" id="doctorSummaryRangeModal" hidden aria-hidden="true">
-            <section class="consultation-range-dialog" role="dialog" aria-modal="true" aria-labelledby="doctorSummaryRangeTitle">
-                <div class="consultation-range-dialog-header">
-                    <h2 id="doctorSummaryRangeTitle">Custom Date Range</h2>
-                    <button type="button" class="consultation-range-close" id="doctorSummaryRangeClose" aria-label="Close date range picker">&times;</button>
+        <div class="doctor-report-range-modal" id="doctorReportRangeModal" hidden aria-hidden="true">
+            <section class="doctor-report-range-dialog" role="dialog" aria-modal="true" aria-labelledby="doctorReportRangeTitle">
+                <div class="doctor-report-range-dialog-head">
+                    <h2 id="doctorReportRangeTitle">Custom Date Range</h2>
+                    <button type="button" class="doctor-report-range-close" id="doctorReportRangeClose" aria-label="Close date range picker">&times;</button>
                 </div>
-                <div class="consultation-range-calendars" id="doctorSummaryRangeCalendars"></div>
-                <div class="consultation-range-footer">
-                    <div>
-                        <div class="consultation-range-values" aria-live="polite">
-                            <span class="consultation-range-value" id="doctorSummaryRangeFromValue">Select start date</span>
-                            <span class="consultation-range-separator" aria-hidden="true">&ndash;</span>
-                            <span class="consultation-range-value" id="doctorSummaryRangeToValue">Select end date</span>
-                        </div>
-                        <p class="consultation-range-message" id="doctorSummaryRangeMessage" hidden>Select a start date and an end date first.</p>
+                <div class="doctor-report-range-fields">
+                    <div class="doctor-report-range-field">
+                        <label for="doctorReportFrom">Start date</label>
+                        <input class="doctor-report-date" id="doctorReportFrom" type="date" value="<?php echo htmlspecialchars($summaryFrom); ?>">
                     </div>
-                    <div class="consultation-range-actions">
-                        <button type="button" class="consultation-range-action" id="doctorSummaryRangeCancel">Cancel</button>
-                        <button type="button" class="consultation-range-action primary" id="doctorSummaryRangeSet">Set Date</button>
+                    <div class="doctor-report-range-field">
+                        <label for="doctorReportTo">End date</label>
+                        <input class="doctor-report-date" id="doctorReportTo" type="date" value="<?php echo htmlspecialchars($summaryTo); ?>">
                     </div>
+                </div>
+                <p class="doctor-report-range-message" id="doctorReportRangeMessage" hidden>Choose a valid start and end date.</p>
+                <div class="doctor-report-range-actions">
+                    <button type="button" class="doctor-report-button" id="doctorReportRangeCancel">Cancel</button>
+                    <button type="button" class="doctor-report-button primary" id="doctorReportRangeSet">Set Date</button>
                 </div>
             </section>
         </div>
