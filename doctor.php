@@ -28,6 +28,60 @@ function doctor_date_label(?string $date): string {
     return $stamp ? date('M j, Y', $stamp) : '--';
 }
 
+function doctor_report_calendar_month_markup(string $monthValue, string $side, string $from, string $to, string $today): string {
+    $monthStart = DateTimeImmutable::createFromFormat('!Y-m-d', $monthValue . '-01');
+    $todayDate = DateTimeImmutable::createFromFormat('!Y-m-d', $today);
+    if (!$monthStart || !$todayDate) {
+        return '';
+    }
+
+    $currentMonth = $todayDate->modify('first day of this month');
+    if ($monthStart > $currentMonth) {
+        $monthStart = $currentMonth;
+    }
+
+    $firstDayOffset = (int) $monthStart->format('w');
+    $daysInMonth = (int) $monthStart->format('t');
+    $cellCount = (int) (ceil(($firstDayOffset + $daysInMonth) / 7) * 7);
+    $year = (int) $monthStart->format('Y');
+    $month = (int) $monthStart->format('n');
+    $atMinimumMonth = $year <= 2000 && $month === 1;
+    $atCurrentMonth = $monthStart >= $currentMonth;
+    $html = '<div class="consultation-range-month">';
+    $html .= '<div class="consultation-range-month-head">';
+    $html .= '<button type="button" class="consultation-range-nav" data-doctor-report-range-nav="-1" data-doctor-report-range-side="' . htmlspecialchars($side, ENT_QUOTES, 'UTF-8') . '" aria-label="Previous month"' . ($atMinimumMonth ? ' disabled' : '') . '>&lsaquo;</button>';
+    $html .= '<span class="consultation-range-month-title"><span>' . htmlspecialchars($monthStart->format('F'), ENT_QUOTES, 'UTF-8') . '</span><select class="consultation-range-year-select" data-doctor-report-range-year-side="' . htmlspecialchars($side, ENT_QUOTES, 'UTF-8') . '" aria-label="Select year">';
+    for ($optionYear = 2000; $optionYear <= (int) $todayDate->format('Y'); $optionYear++) {
+        $html .= '<option value="' . $optionYear . '"' . ($optionYear === $year ? ' selected' : '') . '>' . $optionYear . '</option>';
+    }
+    $html .= '</select></span>';
+    $html .= '<button type="button" class="consultation-range-nav" data-doctor-report-range-nav="1" data-doctor-report-range-side="' . htmlspecialchars($side, ENT_QUOTES, 'UTF-8') . '" aria-label="Next month"' . ($atCurrentMonth ? ' disabled' : '') . '>&rsaquo;</button>';
+    $html .= '</div><div class="consultation-range-weekdays"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div><div class="consultation-range-days">';
+
+    for ($index = 0; $index < $cellCount; $index++) {
+        $date = $monthStart->modify('+' . ($index - $firstDayOffset) . ' days');
+        $key = $date->format('Y-m-d');
+        $inMonth = $date->format('n') === $monthStart->format('n');
+        $classes = ['consultation-range-day'];
+        if (!$inMonth) {
+            $classes[] = 'is-outside';
+        }
+        if ($from && $to && $key > $from && $key < $to) {
+            $classes[] = 'is-in-range';
+        }
+        if ($from === $key) {
+            $classes[] = 'is-start';
+        }
+        if ($to === $key) {
+            $classes[] = 'is-end';
+        }
+        $disabled = !$inMonth || $key > $today;
+        $html .= '<button type="button" class="' . implode(' ', $classes) . '" data-doctor-report-range-date="' . $key . '"' . ($disabled ? ' disabled' : '') . '>' . (int) $date->format('j') . '</button>';
+    }
+
+    return $html . '</div></div>';
+}
+
 function doctor_status(array $appointment): string {
     $status = strtolower((string) ($appointment['status'] ?? 'pending'));
     return in_array($status, ['pending', 'confirmed', 'completed', 'cancelled'], true) ? $status : 'pending';
@@ -2604,6 +2658,10 @@ body.doctor-report-range-open {
     min-width: 108px;
 }
 
+.doctor-report-range-calendar-dialog .consultation-range-close {
+    text-decoration: none;
+}
+
 .doctor-report-range-dialog {
     width: min(520px, 100%);
     padding: 24px;
@@ -4185,6 +4243,10 @@ include 'includes/header.php';
             <?php endif; ?>
         </section>
 
+        <?php
+        $summaryCalendarFromMonth = substr($summaryFrom ?: $today, 0, 7);
+        $summaryCalendarToMonth = substr($summaryTo ?: ($summaryFrom ?: $today), 0, 7);
+        ?>
         <div class="doctor-report-range-modal consultation-range-modal" id="doctorReportRangeModal"<?php echo $summaryCustomOpen ? '' : ' hidden'; ?> aria-hidden="<?php echo $summaryCustomOpen ? 'false' : 'true'; ?>">
             <section class="consultation-range-dialog doctor-report-range-calendar-dialog" role="dialog" aria-modal="true" aria-labelledby="doctorReportRangeTitle">
                 <div class="consultation-range-dialog-header">
@@ -4194,7 +4256,10 @@ include 'includes/header.php';
                 <form method="get" action="doctor.php" id="doctorReportRangeForm">
                     <input type="hidden" name="summary_period" value="<?php echo htmlspecialchars($summaryPeriod); ?>">
                     <input type="hidden" name="summary_page" value="1">
-                    <div class="consultation-range-calendars" id="doctorReportRangeCalendars"></div>
+                    <div class="consultation-range-calendars" id="doctorReportRangeCalendars">
+                        <?php echo doctor_report_calendar_month_markup($summaryCalendarFromMonth, 'left', $summaryFrom, $summaryTo, $today); ?>
+                        <?php echo doctor_report_calendar_month_markup($summaryCalendarToMonth, 'right', $summaryFrom, $summaryTo, $today); ?>
+                    </div>
                     <div class="consultation-range-footer">
                         <div class="consultation-range-values" aria-live="polite">
                             <span class="consultation-range-value" id="doctorReportRangeFromValue"><?php echo htmlspecialchars($summaryFrom ? doctor_date_label($summaryFrom) : 'Select start date'); ?></span>
