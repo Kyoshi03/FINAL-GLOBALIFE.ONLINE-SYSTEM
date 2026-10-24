@@ -2724,7 +2724,13 @@ $additionalScripts = '
 function initializeDoctorDashboard() {
     function focusDoctorConsultationReport() {
         var reportPanel = document.getElementById("consultationSummary");
-        if (!reportPanel || window.location.hash !== "#consultationSummary") return;
+        if (!reportPanel) return;
+        var reportUrl = new URL(window.location.href);
+        var shouldFocusReport = reportUrl.hash === "#consultationSummary"
+            || reportUrl.searchParams.has("summary_period")
+            || reportUrl.searchParams.has("summary_from")
+            || reportUrl.searchParams.has("summary_to");
+        if (!shouldFocusReport) return;
         window.setTimeout(function () {
             reportPanel.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 0);
