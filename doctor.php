@@ -404,6 +404,7 @@ $summaryClientRecords = array_map(static function (array $appointment): array {
 $summaryClientData = [
     'records' => $summaryClientRecords,
     'defaults' => $summaryDefaultRanges,
+    'today' => $today,
     'initial_period' => $summaryPeriod,
     'initial_from' => $summaryFrom,
     'initial_to' => $summaryTo,
@@ -2563,6 +2564,46 @@ body.doctor-summary-range-open {
     display: none;
 }
 
+body.doctor-report-range-open {
+    overflow: hidden;
+}
+
+.doctor-report-range-calendar-dialog {
+    width: min(1180px, 100%);
+    max-height: calc(100vh - 40px);
+    overflow: auto;
+    padding: 0;
+}
+
+.doctor-report-range-calendar-dialog .consultation-range-dialog-header {
+    padding: 24px 32px;
+}
+
+.doctor-report-range-calendar-dialog .consultation-range-dialog-header h2 {
+    font-size: 1.25rem;
+}
+
+.doctor-report-range-calendar-dialog .consultation-range-month {
+    padding: 28px 32px;
+}
+
+.doctor-report-range-calendar-dialog .consultation-range-footer {
+    padding: 22px 32px;
+    flex-wrap: wrap;
+}
+
+.doctor-report-range-calendar-dialog .consultation-range-value {
+    min-width: 205px;
+}
+
+.doctor-report-range-calendar-dialog .consultation-range-actions {
+    margin-left: auto;
+}
+
+.doctor-report-range-calendar-dialog .consultation-range-action {
+    min-width: 108px;
+}
+
 .doctor-report-range-dialog {
     width: min(520px, 100%);
     padding: 24px;
@@ -3590,11 +3631,153 @@ function initializeDoctorDashboard() {
         var doctorReportFrom = document.getElementById("doctorReportFrom");
         var doctorReportTo = document.getElementById("doctorReportTo");
         var doctorReportMessage = document.getElementById("doctorReportRangeMessage");
+        var doctorReportRangeCalendars = document.getElementById("doctorReportRangeCalendars");
+        var doctorReportRangeFromValue = document.getElementById("doctorReportRangeFromValue");
+        var doctorReportRangeToValue = document.getElementById("doctorReportRangeToValue");
+        var doctorReportCalendarLeftMonth = null;
+        var doctorReportCalendarRightMonth = null;
+        var doctorReportDraftFrom = "";
+        var doctorReportDraftTo = "";
 
         function doctorReportDefaultRange(period) {
             return doctorReportData.defaults && doctorReportData.defaults[period]
                 ? doctorReportData.defaults[period]
                 : null;
+        }
+
+        function doctorReportParseDate(value) {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) return null;
+            var parts = String(value).split("-").map(Number);
+            var date = new Date(parts[0], parts[1] - 1, parts[2]);
+            return date.getFullYear() === parts[0] && date.getMonth() === parts[1] - 1 && date.getDate() === parts[2] ? date : null;
+        }
+
+        function doctorReportDateKey(date) {
+            return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
+        }
+
+        function doctorReportTodayKey() {
+            return doctorReportData.today || doctorReportDateKey(new Date());
+        }
+
+        function doctorReportClampMonth(month) {
+            var candidate = new Date(month.getFullYear(), month.getMonth(), 1);
+            var today = doctorReportParseDate(doctorReportTodayKey()) || new Date();
+            var currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            return candidate > currentMonth ? currentMonth : candidate;
+        }
+
+        function doctorReportCreateElement(tag, className, text) {
+            var element = document.createElement(tag);
+            if (className) element.className = className;
+            if (text !== undefined) element.textContent = text;
+            return element;
+        }
+
+        function doctorReportRenderMonth(month, side) {
+            month = doctorReportClampMonth(month);
+            var year = month.getFullYear();
+            var monthIndex = month.getMonth();
+            var first = new Date(year, monthIndex, 1);
+            var daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+            var cellCount = Math.ceil((first.getDay() + daysInMonth) / 7) * 7;
+            var todayKey = doctorReportTodayKey();
+            var currentMonth = doctorReportClampMonth(new Date());
+            var isCurrentMonth = year === currentMonth.getFullYear() && monthIndex === currentMonth.getMonth();
+            var monthWrap = doctorReportCreateElement("div", "consultation-range-month");
+            var head = doctorReportCreateElement("div", "consultation-range-month-head");
+            var previous = doctorReportCreateElement("button", "consultation-range-nav", "‹");
+            previous.type = "button";
+            previous.setAttribute("aria-label", "Previous month");
+            previous.dataset.doctorReportRangeNav = "-1";
+            previous.dataset.doctorReportRangeSide = side;
+            if (year <= 2000 && monthIndex === 0) previous.disabled = true;
+
+            var title = doctorReportCreateElement("span", "consultation-range-month-title");
+            title.appendChild(doctorReportCreateElement("span", "", first.toLocaleDateString("en-US", { month: "long" })));
+            var yearSelect = doctorReportCreateElement("select", "consultation-range-year-select");
+            yearSelect.setAttribute("aria-label", "Select year");
+            yearSelect.dataset.doctorReportRangeYearSide = side;
+            for (var optionYear = 2000; optionYear <= currentMonth.getFullYear(); optionYear++) {
+                var option = doctorReportCreateElement("option", "", String(optionYear));
+                option.value = String(optionYear);
+                option.selected = optionYear === year;
+                yearSelect.appendChild(option);
+            }
+            title.appendChild(yearSelect);
+
+            var next = doctorReportCreateElement("button", "consultation-range-nav", "›");
+            next.type = "button";
+            next.setAttribute("aria-label", "Next month");
+            next.dataset.doctorReportRangeNav = "1";
+            next.dataset.doctorReportRangeSide = side;
+            if (isCurrentMonth) next.disabled = true;
+            head.appendChild(previous);
+            head.appendChild(title);
+            head.appendChild(next);
+
+            var weekdays = doctorReportCreateElement("div", "consultation-range-weekdays");
+            ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach(function (weekday) {
+                weekdays.appendChild(doctorReportCreateElement("span", "", weekday));
+            });
+            var days = doctorReportCreateElement("div", "consultation-range-days");
+            for (var index = 0; index < cellCount; index++) {
+                var date = new Date(year, monthIndex, 1 - first.getDay() + index);
+                var key = doctorReportDateKey(date);
+                var inMonth = date.getMonth() === monthIndex;
+                var isFuture = key > todayKey;
+                var day = doctorReportCreateElement("button", "consultation-range-day", String(date.getDate()));
+                day.type = "button";
+                day.dataset.doctorReportRangeDate = key;
+                if (!inMonth) day.classList.add("is-outside");
+                if (doctorReportDraftFrom && doctorReportDraftTo && key > doctorReportDraftFrom && key < doctorReportDraftTo) day.classList.add("is-in-range");
+                if (doctorReportDraftFrom === key) day.classList.add("is-start");
+                if (doctorReportDraftTo === key) day.classList.add("is-end");
+                if (!inMonth || isFuture) day.disabled = true;
+                days.appendChild(day);
+            }
+            monthWrap.appendChild(head);
+            monthWrap.appendChild(weekdays);
+            monthWrap.appendChild(days);
+            return monthWrap;
+        }
+
+        function doctorReportRenderRangeCalendar() {
+            if (!doctorReportRangeCalendars || !doctorReportCalendarLeftMonth || !doctorReportCalendarRightMonth) return;
+            var invalidRange = !doctorReportDraftFrom || !doctorReportDraftTo || doctorReportDraftFrom > doctorReportDraftTo;
+            doctorReportRangeCalendars.innerHTML = "";
+            doctorReportRangeCalendars.appendChild(doctorReportRenderMonth(doctorReportCalendarLeftMonth, "left"));
+            doctorReportRangeCalendars.appendChild(doctorReportRenderMonth(doctorReportCalendarRightMonth, "right"));
+            if (doctorReportRangeFromValue) doctorReportRangeFromValue.textContent = doctorReportDraftFrom || "Select start date";
+            if (doctorReportRangeToValue) doctorReportRangeToValue.textContent = doctorReportDraftTo || "Select end date";
+            if (doctorReportFrom) doctorReportFrom.value = doctorReportDraftFrom;
+            if (doctorReportTo) doctorReportTo.value = doctorReportDraftTo;
+            if (doctorReportModalSet) doctorReportModalSet.disabled = invalidRange;
+            if (doctorReportMessage) doctorReportMessage.hidden = !invalidRange;
+        }
+
+        function doctorReportChooseRangeDate(key) {
+            if (!doctorReportDraftFrom || doctorReportDraftTo || key < doctorReportDraftFrom) {
+                doctorReportDraftFrom = key;
+                doctorReportDraftTo = "";
+            } else {
+                doctorReportDraftTo = key;
+            }
+            doctorReportRenderRangeCalendar();
+        }
+
+        function doctorReportMoveCalendar(side, offset) {
+            var current = side === "left" ? doctorReportCalendarLeftMonth : doctorReportCalendarRightMonth;
+            if (!current) return;
+            var next = doctorReportClampMonth(new Date(current.getFullYear(), current.getMonth() + offset, 1));
+            if (side === "left") {
+                doctorReportCalendarLeftMonth = next;
+                if (doctorReportCalendarRightMonth < next) doctorReportCalendarRightMonth = new Date(next.getFullYear(), next.getMonth(), 1);
+            } else {
+                doctorReportCalendarRightMonth = next;
+                if (doctorReportCalendarLeftMonth > next) doctorReportCalendarLeftMonth = new Date(next.getFullYear(), next.getMonth(), 1);
+            }
+            doctorReportRenderRangeCalendar();
         }
 
         function doctorReportNavigate(period, from, to) {
@@ -3621,13 +3804,18 @@ function initializeDoctorDashboard() {
 
         function doctorReportOpenRange() {
             if (!doctorReportModal) return;
-            if (doctorReportFrom) doctorReportFrom.value = doctorReportData.initial_from || "";
-            if (doctorReportTo) doctorReportTo.value = doctorReportData.initial_to || "";
+            doctorReportDraftFrom = doctorReportData.initial_from || "";
+            doctorReportDraftTo = doctorReportData.initial_to || "";
+            var start = doctorReportParseDate(doctorReportDraftFrom) || doctorReportParseDate(doctorReportTodayKey()) || new Date();
+            var end = doctorReportParseDate(doctorReportDraftTo) || start;
+            doctorReportCalendarLeftMonth = new Date(start.getFullYear(), start.getMonth(), 1);
+            doctorReportCalendarRightMonth = new Date(end.getFullYear(), end.getMonth(), 1);
             if (doctorReportMessage) doctorReportMessage.hidden = true;
             doctorReportModal.hidden = false;
             doctorReportModal.setAttribute("aria-hidden", "false");
             document.body.classList.add("doctor-report-range-open");
-            if (doctorReportFrom) doctorReportFrom.focus();
+            doctorReportRenderRangeCalendar();
+            if (doctorReportModalClose) doctorReportModalClose.focus();
         }
 
         if (doctorReportCustom) doctorReportCustom.addEventListener("click", function (event) {
@@ -3639,6 +3827,30 @@ function initializeDoctorDashboard() {
         if (doctorReportModal) {
             doctorReportModal.addEventListener("click", function (event) {
                 if (event.target === doctorReportModal) doctorReportCloseRange();
+            });
+        }
+        if (doctorReportRangeCalendars) {
+            doctorReportRangeCalendars.addEventListener("click", function (event) {
+                var dateButton = event.target.closest ? event.target.closest("[data-doctor-report-range-date]") : null;
+                if (dateButton && !dateButton.disabled) {
+                    doctorReportChooseRangeDate(dateButton.dataset.doctorReportRangeDate);
+                    return;
+                }
+                var navButton = event.target.closest ? event.target.closest("[data-doctor-report-range-nav]") : null;
+                if (navButton && !navButton.disabled) {
+                    doctorReportMoveCalendar(navButton.dataset.doctorReportRangeSide, parseInt(navButton.dataset.doctorReportRangeNav, 10));
+                }
+            });
+            doctorReportRangeCalendars.addEventListener("change", function (event) {
+                var yearSelect = event.target.closest ? event.target.closest("[data-doctor-report-range-year-side]") : null;
+                if (!yearSelect) return;
+                var side = yearSelect.dataset.doctorReportRangeYearSide;
+                var current = side === "left" ? doctorReportCalendarLeftMonth : doctorReportCalendarRightMonth;
+                var month = new Date(parseInt(yearSelect.value, 10), current.getMonth(), 1);
+                if (side === "left") doctorReportCalendarLeftMonth = doctorReportClampMonth(month);
+                else doctorReportCalendarRightMonth = doctorReportClampMonth(month);
+                if (doctorReportCalendarRightMonth < doctorReportCalendarLeftMonth) doctorReportCalendarRightMonth = new Date(doctorReportCalendarLeftMonth.getFullYear(), doctorReportCalendarLeftMonth.getMonth(), 1);
+                doctorReportRenderRangeCalendar();
             });
         }
         if (doctorReportModalSet) doctorReportModalSet.addEventListener("click", function (event) {
@@ -3656,6 +3868,9 @@ function initializeDoctorDashboard() {
                 doctorReportCloseRange();
             }
         });
+        if (doctorReportModal && doctorReportModal.getAttribute("aria-hidden") === "false") {
+            doctorReportOpenRange();
+        }
     }
 
     document.addEventListener("keydown", function (event) {
@@ -3970,30 +4185,30 @@ include 'includes/header.php';
             <?php endif; ?>
         </section>
 
-        <div class="doctor-report-range-modal" id="doctorReportRangeModal"<?php echo $summaryCustomOpen ? '' : ' hidden'; ?> aria-hidden="<?php echo $summaryCustomOpen ? 'false' : 'true'; ?>">
-            <section class="doctor-report-range-dialog" role="dialog" aria-modal="true" aria-labelledby="doctorReportRangeTitle">
-                <div class="doctor-report-range-dialog-head">
+        <div class="doctor-report-range-modal consultation-range-modal" id="doctorReportRangeModal"<?php echo $summaryCustomOpen ? '' : ' hidden'; ?> aria-hidden="<?php echo $summaryCustomOpen ? 'false' : 'true'; ?>">
+            <section class="consultation-range-dialog doctor-report-range-calendar-dialog" role="dialog" aria-modal="true" aria-labelledby="doctorReportRangeTitle">
+                <div class="consultation-range-dialog-header">
                     <h2 id="doctorReportRangeTitle">Custom Date Range</h2>
-                    <a class="doctor-report-range-close" id="doctorReportRangeClose" href="<?php echo htmlspecialchars($summaryReportBaseUrl, ENT_QUOTES, 'UTF-8'); ?>" aria-label="Close date range picker">&times;</a>
+                    <a class="consultation-range-close" id="doctorReportRangeClose" href="<?php echo htmlspecialchars($summaryReportBaseUrl, ENT_QUOTES, 'UTF-8'); ?>" aria-label="Close date range picker">&times;</a>
                 </div>
                 <form method="get" action="doctor.php" id="doctorReportRangeForm">
                     <input type="hidden" name="summary_period" value="<?php echo htmlspecialchars($summaryPeriod); ?>">
                     <input type="hidden" name="summary_page" value="1">
-                    <div class="doctor-report-range-fields">
-                        <div class="doctor-report-range-field">
-                            <label for="doctorReportFrom">Start date</label>
-                            <input class="doctor-report-date" id="doctorReportFrom" name="summary_from" type="date" value="<?php echo htmlspecialchars($summaryFrom); ?>" required>
+                    <div class="consultation-range-calendars" id="doctorReportRangeCalendars"></div>
+                    <div class="consultation-range-footer">
+                        <div class="consultation-range-values" aria-live="polite">
+                            <span class="consultation-range-value" id="doctorReportRangeFromValue"><?php echo htmlspecialchars($summaryFrom ? doctor_date_label($summaryFrom) : 'Select start date'); ?></span>
+                            <span class="consultation-range-separator" aria-hidden="true">&ndash;</span>
+                            <span class="consultation-range-value" id="doctorReportRangeToValue"><?php echo htmlspecialchars($summaryTo ? doctor_date_label($summaryTo) : 'Select end date'); ?></span>
                         </div>
-                        <div class="doctor-report-range-field">
-                            <label for="doctorReportTo">End date</label>
-                            <input class="doctor-report-date" id="doctorReportTo" name="summary_to" type="date" value="<?php echo htmlspecialchars($summaryTo); ?>" required>
+                        <div class="consultation-range-actions">
+                            <a class="consultation-range-action" id="doctorReportRangeCancel" href="<?php echo htmlspecialchars($summaryReportBaseUrl, ENT_QUOTES, 'UTF-8'); ?>">Cancel</a>
+                            <button type="submit" class="consultation-range-action primary" id="doctorReportRangeSet">Set Date</button>
                         </div>
                     </div>
+                    <input id="doctorReportFrom" name="summary_from" type="hidden" value="<?php echo htmlspecialchars($summaryFrom); ?>">
+                    <input id="doctorReportTo" name="summary_to" type="hidden" value="<?php echo htmlspecialchars($summaryTo); ?>">
                     <p class="doctor-report-range-message" id="doctorReportRangeMessage" hidden>Choose a valid start and end date.</p>
-                    <div class="doctor-report-range-actions">
-                        <a class="doctor-report-button" id="doctorReportRangeCancel" href="<?php echo htmlspecialchars($summaryReportBaseUrl, ENT_QUOTES, 'UTF-8'); ?>">Cancel</a>
-                        <button type="submit" class="doctor-report-button primary" id="doctorReportRangeSet">Set Date</button>
-                    </div>
                 </form>
             </section>
         </div>
