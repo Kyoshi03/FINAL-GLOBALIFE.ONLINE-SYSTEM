@@ -445,6 +445,13 @@ $summaryReportCustomUrl = 'doctor.php?' . http_build_query([
     'summary_page' => 1,
     'summary_custom' => 1,
 ]) . '#consultationSummary';
+$summaryClearRange = $summaryDefaultRanges[$summaryPeriod] ?? ['from' => '', 'to' => ''];
+$summaryReportClearUrl = 'doctor.php?' . http_build_query([
+    'summary_period' => $summaryPeriod,
+    'summary_from' => $summaryClearRange['from'],
+    'summary_to' => $summaryClearRange['to'],
+    'summary_page' => 1,
+]) . '#consultationSummary';
 
 $additionalStyles = patientAvatarStyles() . '
 body {
@@ -2366,6 +2373,10 @@ body.doctor-summary-range-open {
     font-weight: 900;
 }
 
+.doctor-report-period-form {
+    margin: 0;
+}
+
 .doctor-report-controls select,
 .doctor-report-button {
     min-height: 42px;
@@ -2603,6 +2614,7 @@ body.doctor-summary-range-open {
     }
 
     .doctor-report-controls,
+    .doctor-report-period-form,
     .doctor-report-controls select,
     .doctor-report-button {
         width: 100%;
@@ -3540,21 +3552,9 @@ function initializeDoctorDashboard() {
             if (doctorReportFrom) doctorReportFrom.focus();
         }
 
-        if (doctorReportPeriodSelect) {
-            doctorReportPeriodSelect.addEventListener("change", function () {
-                var period = doctorReportPeriodSelect.value || "daily";
-                var defaults = doctorReportDefaultRange(period);
-                doctorReportNavigate(period, defaults ? defaults.from : "", defaults ? defaults.to : "");
-            });
-        }
-
         if (doctorReportCustom) doctorReportCustom.addEventListener("click", function (event) {
             event.preventDefault();
             doctorReportOpenRange();
-        });
-        if (doctorReportClear) doctorReportClear.addEventListener("click", function () {
-            var defaults = doctorReportDefaultRange(doctorReportPeriod);
-            doctorReportNavigate(doctorReportPeriod, defaults ? defaults.from : "", defaults ? defaults.to : "");
         });
         if (doctorReportModalClose) doctorReportModalClose.addEventListener("click", doctorReportCloseRange);
         if (doctorReportModalCancel) doctorReportModalCancel.addEventListener("click", doctorReportCloseRange);
@@ -3659,13 +3659,6 @@ if (!window.__doctorReportControlsInitialized) {
             }
             var modal = document.getElementById("doctorReportRangeModal");
             if (modal && event.target === modal) closeRange();
-            var clearTarget = event.target && event.target.closest ? event.target.closest("#doctorReportClear") : null;
-            if (clearTarget) {
-                var periodSelect = document.getElementById("doctorReportPeriod");
-                var period = periodSelect ? periodSelect.value : (data.initial_period || "daily");
-                var range = defaultRange(period);
-                navigate(period, range ? range.from : "", range ? range.to : "");
-            }
             var setTarget = event.target && event.target.closest ? event.target.closest("#doctorReportRangeSet") : null;
             if (setTarget) {
                 event.preventDefault();
@@ -3678,13 +3671,6 @@ if (!window.__doctorReportControlsInitialized) {
                 }
                 navigate(data.initial_period || "daily", from.value, to.value);
             }
-        }, true);
-
-        document.addEventListener("change", function (event) {
-            if (!event.target || event.target.id !== "doctorReportPeriod") return;
-            var period = event.target.value || "daily";
-            var range = defaultRange(period);
-            navigate(period, range ? range.from : "", range ? range.to : "");
         }, true);
 
         document.addEventListener("keydown", function (event) {
@@ -3775,13 +3761,16 @@ include 'includes/header.php';
                 </div>
                 <div class="doctor-report-controls" aria-label="Consultation report filters">
                     <label for="doctorReportPeriod">Report Period</label>
-                    <select id="doctorReportPeriod">
-                        <option value="daily"<?php echo $summaryPeriod === 'daily' ? ' selected' : ''; ?>>Weekly</option>
-                        <option value="monthly"<?php echo $summaryPeriod === 'monthly' ? ' selected' : ''; ?>>Monthly</option>
-                        <option value="quarterly"<?php echo $summaryPeriod === 'quarterly' ? ' selected' : ''; ?>>Quarterly</option>
-                    </select>
+                    <form class="doctor-report-period-form" method="get" action="doctor.php#consultationSummary">
+                        <input type="hidden" name="summary_page" value="1">
+                        <select id="doctorReportPeriod" name="summary_period" onchange="this.form.submit()">
+                            <option value="daily"<?php echo $summaryPeriod === 'daily' ? ' selected' : ''; ?>>Weekly</option>
+                            <option value="monthly"<?php echo $summaryPeriod === 'monthly' ? ' selected' : ''; ?>>Monthly</option>
+                            <option value="quarterly"<?php echo $summaryPeriod === 'quarterly' ? ' selected' : ''; ?>>Quarterly</option>
+                        </select>
+                    </form>
                     <a class="doctor-report-button" id="doctorReportCustom" href="<?php echo htmlspecialchars($summaryReportCustomUrl, ENT_QUOTES, 'UTF-8'); ?>" aria-haspopup="dialog">Custom Date Range</a>
-                    <button type="button" class="doctor-report-button" id="doctorReportClear">Clear</button>
+                    <a class="doctor-report-button" id="doctorReportClear" href="<?php echo htmlspecialchars($summaryReportClearUrl, ENT_QUOTES, 'UTF-8'); ?>">Clear</a>
                 </div>
             </div>
 
