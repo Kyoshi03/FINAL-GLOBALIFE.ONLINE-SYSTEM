@@ -2928,12 +2928,12 @@ body.doctor-report-range-open {
 .doctor-dashboard-hero {
     position: relative;
     display: flex;
-    min-height: 112px;
+    min-height: 148px;
     box-sizing: border-box;
     align-items: center;
     justify-content: flex-start;
     overflow: hidden;
-    padding: 24px 36px 22px 42px;
+    padding: 28px 36px 24px 42px;
     border: 1px solid #d9e7ed;
     border-left: 14px solid #20bdb5;
     border-radius: 16px;
@@ -2943,13 +2943,25 @@ body.doctor-report-range-open {
 
 .doctor-dashboard-hero::after {
     position: absolute;
-    right: -6%;
-    bottom: -76px;
-    width: 44%;
-    height: 170px;
-    border: 1px solid rgba(32, 189, 181, .16);
+    right: -8%;
+    bottom: -118px;
+    width: 52%;
+    height: 250px;
+    border: 1px solid rgba(32, 189, 181, .18);
     border-radius: 50%;
-    background: rgba(32, 189, 181, .04);
+    background: rgba(217, 242, 244, .42);
+    content: "";
+    transform: rotate(-18deg);
+}
+
+.doctor-dashboard-hero::before {
+    position: absolute;
+    right: -4%;
+    bottom: -142px;
+    width: 48%;
+    height: 260px;
+    border-radius: 50%;
+    background: rgba(235, 249, 250, .8);
     content: "";
     transform: rotate(-18deg);
 }
@@ -2969,14 +2981,14 @@ body.doctor-report-range-open {
 }
 
 .doctor-dashboard-hero-copy span {
-    font-size: clamp(1.15rem, 2vw, 1.55rem);
+    font-size: clamp(1.35rem, 2.5vw, 2.1rem);
     font-weight: 500;
     line-height: 1.1;
 }
 
 .doctor-dashboard-hero-copy h1 {
-    margin-top: 5px;
-    font-size: clamp(1.35rem, 2.4vw, 1.85rem);
+    margin-top: 6px;
+    font-size: clamp(1.45rem, 2.7vw, 2.2rem);
     font-weight: 700;
     line-height: 1.12;
     color: #0d4657 !important;
@@ -3293,7 +3305,7 @@ body.doctor-report-range-open {
     }
 
     .doctor-dashboard-hero {
-        min-height: 126px;
+        min-height: 142px;
         padding: 24px 28px 22px 32px;
     }
 }
