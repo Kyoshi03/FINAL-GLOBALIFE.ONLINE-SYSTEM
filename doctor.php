@@ -2931,24 +2931,27 @@ body.doctor-report-range-open {
     min-height: 112px;
     box-sizing: border-box;
     align-items: center;
-    justify-content: space-between;
-    gap: 16px;
+    justify-content: flex-start;
     overflow: hidden;
-    padding: 18px 32px;
-    border: 0;
+    padding: 24px 36px 22px 42px;
+    border: 1px solid #d9e7ed;
+    border-left: 14px solid #20bdb5;
     border-radius: 16px;
-    background: linear-gradient(110deg, #1fc8bd 0%, #2daedb 52%, #42baf0 100%);
-    box-shadow: 0 14px 28px rgba(15, 124, 194, .16);
+    background: #fff;
+    box-shadow: 0 10px 24px rgba(25, 76, 110, .06);
 }
 
 .doctor-dashboard-hero::after {
     position: absolute;
-    inset: auto -12% -70% 38%;
+    right: -6%;
+    bottom: -76px;
+    width: 44%;
     height: 170px;
+    border: 1px solid rgba(32, 189, 181, .16);
     border-radius: 50%;
-    background: rgba(255, 255, 255, .08);
+    background: rgba(32, 189, 181, .04);
     content: "";
-    transform: rotate(-8deg);
+    transform: rotate(-18deg);
 }
 
 .doctor-dashboard-hero-copy {
@@ -2961,76 +2964,41 @@ body.doctor-report-range-open {
 .doctor-dashboard-hero-copy h1 {
     display: block;
     margin: 0;
-    color: #fff;
+    color: #0d4657;
     letter-spacing: 0;
 }
 
 .doctor-dashboard-hero-copy span {
-    font-size: clamp(1.35rem, 2.5vw, 2.1rem);
-    font-weight: 800;
+    font-size: clamp(1.15rem, 2vw, 1.55rem);
+    font-weight: 500;
     line-height: 1.1;
 }
 
 .doctor-dashboard-hero-copy h1 {
-    margin-top: 6px;
-    font-size: clamp(1.2rem, 2vw, 1.9rem);
-    font-weight: 800;
+    margin-top: 5px;
+    font-size: clamp(1.35rem, 2.4vw, 1.85rem);
+    font-weight: 700;
     line-height: 1.12;
-    color: #fff !important;
+    color: #0d4657 !important;
 }
 
-.doctor-dashboard-hero-art {
+.doctor-dashboard-hero-dots {
     position: relative;
     z-index: 1;
-    flex: 0 0 min(24%, 250px);
-    min-width: 150px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 110px;
+    margin-top: 14px;
+    padding-top: 9px;
+    border-top: 2px solid rgba(32, 189, 181, .18);
 }
 
-.doctor-dashboard-hero-art img {
-    display: block;
-    width: 100%;
-    height: auto;
-    filter: drop-shadow(0 12px 18px rgba(4, 75, 105, .16));
-    overflow: visible;
-}
-
-.doctor-dashboard-hero-art .hero-orbit {
-    fill: none;
-    stroke: rgba(255, 255, 255, .78);
-    stroke-width: 2;
-}
-
-.doctor-dashboard-hero-art .hero-spark {
-    fill: #dffbff;
-}
-
-.doctor-dashboard-hero-art .hero-bubble.back {
-    fill: rgba(208, 249, 255, .28);
-    stroke: rgba(255, 255, 255, .28);
-    stroke-width: 1.5;
-}
-
-.doctor-dashboard-hero-art .hero-bubble.front {
-    fill: rgba(255, 255, 255, .23);
-    stroke: rgba(255, 255, 255, .4);
-    stroke-width: 1.5;
-}
-
-.doctor-dashboard-hero-art .hero-bubble-tail {
-    fill: rgba(212, 249, 255, .32);
-}
-
-.doctor-dashboard-hero-art .hero-cross {
-    fill: #fff;
-    opacity: .96;
-}
-
-.doctor-dashboard-hero-art .hero-heartbeat {
-    fill: none;
-    stroke: #0d9ec9;
-    stroke-width: 4;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+.doctor-dashboard-hero-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #bdebe8;
 }
 
 .doctor-clean-cards {
@@ -3326,12 +3294,7 @@ body.doctor-report-range-open {
 
     .doctor-dashboard-hero {
         min-height: 126px;
-        padding: 24px 26px;
-    }
-
-    .doctor-dashboard-hero-art {
-        flex-basis: 34%;
-        min-width: 145px;
+        padding: 24px 28px 22px 32px;
     }
 }
 
@@ -3342,25 +3305,17 @@ body.doctor-report-range-open {
 
     .doctor-dashboard-hero {
         align-items: flex-start;
-        min-height: 162px;
-        padding: 22px 20px;
+        min-height: 148px;
+        padding: 22px 20px 20px 26px;
     }
 
     .doctor-dashboard-hero-copy span {
-        font-size: 1.55rem;
+        font-size: 1.3rem;
     }
 
     .doctor-dashboard-hero-copy h1 {
-        max-width: 65%;
-        font-size: 1.28rem;
-    }
-
-    .doctor-dashboard-hero-art {
-        position: absolute;
-        right: 8px;
-        bottom: 2px;
-        width: 48%;
-        min-width: 0;
+        max-width: 100%;
+        font-size: 1.2rem;
     }
 
     .doctor-clean-cards {
@@ -4631,9 +4586,11 @@ include 'includes/header.php';
             <div class="doctor-dashboard-hero-copy">
                 <span>Welcome back,</span>
                 <h1>Dr. <?php echo htmlspecialchars($doctorDisplayName); ?></h1>
-            </div>
-            <div class="doctor-dashboard-hero-art" aria-hidden="true">
-                <img src="assets/doctor-notebook-hero.png" alt="" role="presentation">
+                <div class="doctor-dashboard-hero-dots" aria-hidden="true">
+                    <span class="doctor-dashboard-hero-dot"></span>
+                    <span class="doctor-dashboard-hero-dot"></span>
+                    <span class="doctor-dashboard-hero-dot"></span>
+                </div>
             </div>
         </section>
 
