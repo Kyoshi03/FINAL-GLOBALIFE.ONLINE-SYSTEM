@@ -3849,7 +3849,8 @@ function initializeDoctorDashboard() {
 
     document.querySelectorAll("[data-doctor-request-menu] .doctor-request-menu-item").forEach(function (item) {
         item.addEventListener("click", function () {
-            closeDoctorRequestMenus();
+            // Let the existing action handler run before hiding the popover.
+            window.setTimeout(function () { closeDoctorRequestMenus(); }, 0);
         });
     });
 
