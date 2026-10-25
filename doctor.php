@@ -2892,7 +2892,7 @@ body.doctor-report-range-open {
 /* Doctor dashboard presentation: keep the role-specific layout isolated from other pages. */
 .doctor-clean-dashboard {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px 16px;
+    gap: 12px 16px;
 }
 
 .doctor-clean-dashboard > * {
@@ -2915,13 +2915,13 @@ body.doctor-report-range-open {
 .doctor-dashboard-hero {
     position: relative;
     display: flex;
-    min-height: 138px;
+    min-height: 112px;
     box-sizing: border-box;
     align-items: center;
     justify-content: space-between;
-    gap: 24px;
+    gap: 16px;
     overflow: hidden;
-    padding: 28px 42px;
+    padding: 18px 32px;
     border: 0;
     border-radius: 16px;
     background: linear-gradient(110deg, #1fc8bd 0%, #2daedb 52%, #42baf0 100%);
@@ -2953,14 +2953,14 @@ body.doctor-report-range-open {
 }
 
 .doctor-dashboard-hero-copy span {
-    font-size: clamp(1.65rem, 3vw, 2.5rem);
+    font-size: clamp(1.35rem, 2.5vw, 2.1rem);
     font-weight: 800;
     line-height: 1.1;
 }
 
 .doctor-dashboard-hero-copy h1 {
     margin-top: 6px;
-    font-size: clamp(1.45rem, 2.5vw, 2.3rem);
+    font-size: clamp(1.2rem, 2vw, 1.9rem);
     font-weight: 800;
     line-height: 1.12;
 }
@@ -2968,8 +2968,8 @@ body.doctor-report-range-open {
 .doctor-dashboard-hero-art {
     position: relative;
     z-index: 1;
-    flex: 0 0 min(31%, 300px);
-    min-width: 190px;
+    flex: 0 0 min(24%, 250px);
+    min-width: 150px;
 }
 
 .doctor-dashboard-hero-art svg {
