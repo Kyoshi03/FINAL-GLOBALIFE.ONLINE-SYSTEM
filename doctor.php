@@ -2879,6 +2879,13 @@ body.doctor-report-range-open {
 
 $additionalScripts = '
 function initializeDoctorDashboard() {
+    var doctorDashboard = document.querySelector(".doctor-clean-dashboard");
+    var doctorReportSection = document.getElementById("consultationSummary");
+    var doctorAppointmentCards = doctorDashboard ? doctorDashboard.querySelector(".doctor-clean-cards") : null;
+    if (doctorDashboard && doctorReportSection && doctorAppointmentCards) {
+        doctorDashboard.insertBefore(doctorReportSection, doctorAppointmentCards);
+    }
+
     window.__doctorReportCalendarInteractive = false;
     if (!window.__doctorReportCalendarFallbackInstalled) {
         window.__doctorReportCalendarFallbackInstalled = true;
