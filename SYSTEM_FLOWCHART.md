@@ -5,6 +5,7 @@ This flowchart documents the current patient, doctor, and admin workflow impleme
 ## 1. Admin Side
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "primaryColor": "#f0edff", "primaryTextColor": "#263238", "primaryBorderColor": "#a89bd8", "lineColor": "#5f6368", "secondaryColor": "#ffffff", "tertiaryColor": "#ffffff", "fontFamily": "Arial", "fontSize": "14px"}}}%%
 flowchart TD
     A1([Admin logs in]) --> A2[Open admin dashboard]
     A2 --> A3[Review pending appointments]
@@ -30,6 +31,7 @@ flowchart TD
 ## 2. Doctor Side
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "primaryColor": "#f0edff", "primaryTextColor": "#263238", "primaryBorderColor": "#a89bd8", "lineColor": "#5f6368", "secondaryColor": "#ffffff", "tertiaryColor": "#ffffff", "fontFamily": "Arial", "fontSize": "14px"}}}%%
 flowchart TD
     D1([Doctor logs in]) --> D2[Open doctor dashboard]
     D2 --> D3[Review assigned consultation appointments]
@@ -49,6 +51,7 @@ flowchart TD
 ## 3. Patient Side
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "primaryColor": "#f0edff", "primaryTextColor": "#263238", "primaryBorderColor": "#a89bd8", "lineColor": "#5f6368", "secondaryColor": "#ffffff", "tertiaryColor": "#ffffff", "fontFamily": "Arial", "fontSize": "14px"}}}%%
 flowchart TD
     P1([Patient registers or logs in]) --> P2{Contact verified?}
     P2 -- No --> P3[Verify email or phone]
@@ -79,6 +82,7 @@ flowchart TD
 ## Role Handoffs
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "primaryColor": "#f0edff", "primaryTextColor": "#263238", "primaryBorderColor": "#a89bd8", "lineColor": "#5f6368", "secondaryColor": "#ffffff", "tertiaryColor": "#ffffff", "fontFamily": "Arial", "fontSize": "14px"}}}%%
 flowchart LR
     PENDING([Patient booking: pending]) -. Consultation .-> DOCTOR[Doctor reviews]
     PENDING -. Laboratory or other .-> ADMIN[Admin reviews]
@@ -91,6 +95,7 @@ flowchart LR
 ## Appointment Status Flow
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "primaryColor": "#f0edff", "primaryTextColor": "#263238", "primaryBorderColor": "#a89bd8", "lineColor": "#5f6368", "secondaryColor": "#ffffff", "tertiaryColor": "#ffffff", "fontFamily": "Arial", "fontSize": "14px"}}}%%
 flowchart LR
     Pending([Pending]) -->|Doctor: consultation confirm| Confirmed([Confirmed])
     Pending -->|Admin: laboratory or other confirm| Confirmed
@@ -107,6 +112,7 @@ flowchart LR
 ## Report and Export Flow
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "primaryColor": "#f0edff", "primaryTextColor": "#263238", "primaryBorderColor": "#a89bd8", "lineColor": "#5f6368", "secondaryColor": "#ffffff", "tertiaryColor": "#ffffff", "fontFamily": "Arial", "fontSize": "14px"}}}%%
 flowchart TD
     R1[Doctor or admin opens report] --> R2[Choose period or custom date range]
     R2 --> R3[Apply active filters and date range]
