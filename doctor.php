@@ -4440,6 +4440,229 @@ function initializeDoctorDashboard() {
                 : null;
         }
 
+        function doctorReportRecordBucket(value, period) {
+            var date = doctorReportParseDate(value);
+            if (!date) return "";
+            if (period === "daily") return doctorReportDateKey(date);
+            if (period === "monthly") return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0");
+            var quarter = Math.floor(date.getMonth() / 3) + 1;
+            return date.getFullYear() + "-Q" + quarter;
+        }
+
+        function doctorReportBuildPoints(period, range) {
+            var from = doctorReportParseDate(range && range.from);
+            var to = doctorReportParseDate(range && range.to);
+            if (!from || !to || from > to) return [];
+            var counts = {};
+            (doctorReportData.records || []).forEach(function (record) {
+                var date = doctorReportParseDate(record.date);
+                if (!date || date < from || date > to) return;
+                var key = doctorReportRecordBucket(record.date, period);
+                if (key) counts[key] = (counts[key] || 0) + 1;
+            });
+
+            var cursor = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+            var end = new Date(to.getFullYear(), to.getMonth(), to.getDate());
+            if (period === "monthly") {
+                cursor = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+                end = new Date(end.getFullYear(), end.getMonth(), 1);
+            } else if (period === "quarterly") {
+                cursor = new Date(cursor.getFullYear(), Math.floor(cursor.getMonth() / 3) * 3, 1);
+                end = new Date(end.getFullYear(), Math.floor(end.getMonth() / 3) * 3, 1);
+            }
+
+            var points = [];
+            while (cursor <= end) {
+                var key;
+                var label;
+                var fullLabel;
+                if (period === "daily") {
+                    key = doctorReportDateKey(cursor);
+                    label = cursor.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                    fullLabel = cursor.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+                    cursor.setDate(cursor.getDate() + 1);
+                } else if (period === "monthly") {
+                    key = cursor.getFullYear() + "-" + String(cursor.getMonth() + 1).padStart(2, "0");
+                    label = cursor.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+                    fullLabel = cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+                    cursor.setMonth(cursor.getMonth() + 1);
+                } else {
+                    var quarter = Math.floor(cursor.getMonth() / 3) + 1;
+                    key = cursor.getFullYear() + "-Q" + quarter;
+                    label = "Q" + quarter + " " + cursor.getFullYear();
+                    fullLabel = "Quarter " + quarter + " of " + cursor.getFullYear();
+                    cursor.setMonth(cursor.getMonth() + 3);
+                }
+                points.push({ key: key, label: label, fullLabel: fullLabel, value: counts[key] || 0 });
+            }
+            return points;
+        }
+
+        function doctorReportRangeLabel(period, range) {
+            var from = doctorReportParseDate(range && range.from);
+            var to = doctorReportParseDate(range && range.to);
+            if (!from || !to) return "";
+            if (period === "monthly") {
+                return from.toLocaleDateString("en-US", { month: "short", year: "numeric" }) + " - " + to.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+            }
+            if (period === "quarterly") {
+                var fromQuarter = Math.floor(from.getMonth() / 3) + 1;
+                var toQuarter = Math.floor(to.getMonth() / 3) + 1;
+                return "Q" + fromQuarter + " " + from.getFullYear() + " - Q" + toQuarter + " " + to.getFullYear();
+            }
+            return doctorReportFormatDateLabel(range.from, "") + " - " + doctorReportFormatDateLabel(range.to, "");
+        }
+
+        function doctorReportSvgElement(tag, attributes) {
+            var element = document.createElementNS("http://www.w3.org/2000/svg", tag);
+            Object.keys(attributes || {}).forEach(function (name) {
+                element.setAttribute(name, attributes[name]);
+            });
+            return element;
+        }
+
+        function doctorReportRenderChart(points) {
+            if (!doctorReportPanel) return;
+            var wrap = doctorReportPanel.querySelector(".doctor-report-chart-wrap");
+            if (!wrap) return;
+            wrap.innerHTML = "";
+            if (!points.length) {
+                wrap.appendChild(doctorReportCreateElement("div", "doctor-report-empty", "No completed consultations in this date range."));
+                return;
+            }
+
+            var max = 0;
+            points.forEach(function (point) { max = Math.max(max, point.value); });
+            var svg = doctorReportSvgElement("svg", {
+                "class": "doctor-report-chart",
+                "viewBox": "0 0 920 320",
+                "role": "img",
+                "aria-label": "Completed consultation report chart"
+            });
+            var graphPoints = points.map(function (point, index) {
+                var x = points.length > 1 ? 70 + (index * (820 / (points.length - 1))) : 480;
+                var y = 250 - ((point.value / Math.max(1, max)) * 190);
+                return { point: point, x: x, y: y };
+            });
+            for (var tick = 0; tick <= 4; tick++) {
+                var tickY = 250 - ((tick / 4) * 190);
+                svg.appendChild(doctorReportSvgElement("line", { "class": "grid-line", x1: 70, y1: tickY.toFixed(2), x2: 890, y2: tickY.toFixed(2) }));
+                var tickText = doctorReportSvgElement("text", { x: 61, y: (tickY + 4).toFixed(2), "text-anchor": "end" });
+                tickText.textContent = String(Math.round(max * (tick / 4)));
+                svg.appendChild(tickText);
+            }
+            svg.appendChild(doctorReportSvgElement("line", { "class": "axis-line", x1: 70, y1: 60, x2: 70, y2: 250 }));
+            svg.appendChild(doctorReportSvgElement("line", { "class": "axis-line", x1: 70, y1: 250, x2: 890, y2: 250 }));
+            var linePoints = graphPoints.map(function (item) { return item.x.toFixed(2) + "," + item.y.toFixed(2); }).join(" ");
+            svg.appendChild(doctorReportSvgElement("polygon", { "class": "report-area", points: "70,250 " + linePoints + " 890,250" }));
+            svg.appendChild(doctorReportSvgElement("polyline", { "class": "report-line", points: linePoints }));
+            graphPoints.forEach(function (item) {
+                var dot = doctorReportSvgElement("circle", { "class": "report-dot", cx: item.x.toFixed(2), cy: item.y.toFixed(2), r: 4.5 });
+                var title = doctorReportSvgElement("title", {});
+                title.textContent = item.point.fullLabel + ": " + item.point.value + " completed consultations";
+                dot.appendChild(title);
+                svg.appendChild(dot);
+            });
+            var labelStep = Math.max(1, Math.ceil(points.length / 8));
+            graphPoints.forEach(function (item, index) {
+                if (index !== 0 && index !== graphPoints.length - 1 && index % labelStep !== 0) return;
+                var label = doctorReportSvgElement("text", { x: item.x.toFixed(2), y: 274, "text-anchor": "middle" });
+                label.textContent = item.point.label;
+                svg.appendChild(label);
+            });
+            var axisTitle = doctorReportSvgElement("text", { "class": "axis-title", x: 480, y: 313, "text-anchor": "middle" });
+            axisTitle.textContent = "Period";
+            svg.appendChild(axisTitle);
+            wrap.appendChild(svg);
+        }
+
+        function doctorReportUpdatePeriodDescription(period) {
+            var head = doctorReportPanel ? doctorReportPanel.querySelector(".doctor-report-head > div") : null;
+            if (!head) return;
+            var description = head.querySelector("p");
+            if (period === "daily") {
+                if (description) description.remove();
+                return;
+            }
+            if (!description) {
+                description = doctorReportCreateElement("p");
+                head.appendChild(description);
+            }
+            description.textContent = "Completed consultations for the selected period.";
+        }
+
+        function doctorReportUpdateRangeAndTotal(period, range, points) {
+            var rangeRow = doctorReportPanel ? doctorReportPanel.querySelector(".doctor-report-range-row") : null;
+            if (!rangeRow) return;
+            var rangeElement = rangeRow.querySelector(".doctor-report-range");
+            if (rangeElement) {
+                rangeElement.textContent = "";
+                var strong = doctorReportCreateElement("strong", "", period === "daily" ? "Last 7 days" : period.charAt(0).toUpperCase() + period.slice(1));
+                rangeElement.appendChild(strong);
+                var label = doctorReportRangeLabel(period, range);
+                if (label) rangeElement.appendChild(document.createTextNode(" · " + label));
+            }
+            var total = 0;
+            points.forEach(function (point) { total += point.value; });
+            var totalStrong = rangeRow.querySelector(".doctor-report-total strong");
+            if (totalStrong) totalStrong.textContent = total + " " + (total === 1 ? "consultation" : "consultations");
+        }
+
+        function doctorReportSetClearDisabled() {
+            var clear = document.getElementById("doctorReportClear");
+            if (!clear || clear.tagName !== "A") return;
+            var disabled = document.createElement("button");
+            disabled.className = "doctor-report-button is-disabled";
+            disabled.id = "doctorReportClear";
+            disabled.type = "button";
+            disabled.disabled = true;
+            disabled.setAttribute("aria-disabled", "true");
+            disabled.title = "Set a custom date range first";
+            disabled.textContent = "Clear";
+            clear.replaceWith(disabled);
+        }
+
+        function doctorReportUpdatePeriodLinks(period, range) {
+            var currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set("summary_period", period);
+            currentUrl.searchParams.set("summary_from", range.from);
+            currentUrl.searchParams.set("summary_to", range.to);
+            currentUrl.searchParams.set("summary_page", "1");
+            currentUrl.searchParams.set("summary_open", "1");
+            currentUrl.searchParams.delete("summary_focus");
+            currentUrl.searchParams.delete("summary_custom");
+            var custom = document.getElementById("doctorReportCustom");
+            if (custom) custom.href = currentUrl.toString();
+            doctorReportData.initial_from = range.from;
+            doctorReportData.initial_to = range.to;
+        }
+
+        function doctorReportRenderPeriod(period, updateUrl) {
+            if (!doctorReportDefaultRange(period)) return;
+            var range = doctorReportDefaultRange(period);
+            var points = doctorReportBuildPoints(period, range);
+            doctorReportPeriod = period;
+            doctorReportData.initial_period = period;
+            doctorReportUpdatePeriodDescription(period);
+            doctorReportUpdateRangeAndTotal(period, range, points);
+            doctorReportRenderChart(points);
+            doctorReportSetClearDisabled();
+            doctorReportUpdatePeriodLinks(period, range);
+            if (updateUrl) {
+                var url = new URL(window.location.href);
+                url.searchParams.set("summary_period", period);
+                url.searchParams.delete("summary_from");
+                url.searchParams.delete("summary_to");
+                url.searchParams.delete("summary_custom");
+                url.searchParams.delete("summary_open");
+                url.searchParams.delete("summary_focus");
+                url.searchParams.delete("summary_page");
+                window.history.replaceState({}, "", url.toString());
+            }
+        }
+
+        window.doctorReportRenderPeriod = doctorReportRenderPeriod;
+
         function doctorReportParseDate(value) {
             if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) return null;
             var parts = String(value).split("-").map(Number);
@@ -4688,8 +4911,7 @@ function initializeDoctorDashboard() {
             doctorReportPeriodSelect.addEventListener("pointerdown", doctorReportMarkControlInteraction);
             doctorReportPeriodSelect.addEventListener("mousedown", doctorReportMarkControlInteraction);
             doctorReportPeriodSelect.addEventListener("change", function () {
-                doctorReportRememberFocus();
-                if (this.form) this.form.submit();
+                doctorReportRenderPeriod(this.value, true);
             });
         }
         if (doctorReportShouldFocusSelection) {
@@ -4874,6 +5096,10 @@ if (!window.__doctorReportControlsInitialized) {
             fallbackPeriodSelect.addEventListener("pointerdown", markReportControlInteraction);
             fallbackPeriodSelect.addEventListener("mousedown", markReportControlInteraction);
             fallbackPeriodSelect.addEventListener("change", function () {
+                if (typeof window.doctorReportRenderPeriod === "function") {
+                    window.doctorReportRenderPeriod(this.value, true);
+                    return;
+                }
                 try {
                     window.sessionStorage.setItem("doctorReportFocus", "1");
                 } catch (error) {
