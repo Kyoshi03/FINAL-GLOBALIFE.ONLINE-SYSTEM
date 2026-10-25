@@ -1549,7 +1549,11 @@ select:focus {
     padding: 15px 22px;
     background: #eef7ff;
     color: #0b4f80;
-    font-weight: 800;
+    font-weight: 500;
+}
+
+.doctor-reminder-clean strong {
+    font-weight: 700;
 }
 
 .doctor-reminder-clean span {
@@ -3053,12 +3057,14 @@ body.doctor-report-range-open {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
+    align-items: start;
     min-width: 0;
 }
 
 .doctor-appointment-grid > .doctor-clean-panel {
     min-width: 0;
-    height: 100%;
+    height: auto;
+    align-self: start;
 }
 
 .doctor-clean-panel {
@@ -3073,7 +3079,7 @@ body.doctor-report-range-open {
 .doctor-clean-panel-head h2 {
     color: #102f65;
     font-size: 1.15rem;
-    font-weight: 800;
+    font-weight: 700;
 }
 
 .doctor-clean-panel-head p {
@@ -3082,7 +3088,7 @@ body.doctor-report-range-open {
 }
 
 .doctor-clean-panel-head a {
-    font-weight: 700;
+    font-weight: 600;
 }
 
 .doctor-clean-table {
@@ -3181,6 +3187,16 @@ body.doctor-report-range-open {
 .doctor-clean-row.requests .doctor-clean-actions,
 .doctor-clean-row.today .doctor-clean-actions {
     justify-content: flex-start;
+}
+
+.doctor-clean-row.requests .doctor-clean-patient strong,
+.doctor-clean-row.requests .doctor-clean-service strong,
+.doctor-clean-row.requests .doctor-clean-date strong,
+.doctor-clean-row.today .doctor-clean-patient strong,
+.doctor-clean-row.today .doctor-clean-service strong,
+.doctor-clean-row.today .doctor-clean-date strong,
+.doctor-clean-row.today .doctor-clean-time strong {
+    font-weight: 600;
 }
 
 .doctor-report-panel {
@@ -4854,7 +4870,7 @@ include 'includes/header.php';
                         <span>Status</span>
                         <span>Action</span>
                     </div>
-                    <?php foreach (array_slice($todaysConsultations, 0, 5) as $appointment): ?>
+                    <?php foreach (array_slice($todaysConsultations, 0, 3) as $appointment): ?>
                         <?php $status = doctor_status($appointment); ?>
                         <div class="doctor-clean-row today">
                             <div class="doctor-clean-time">
