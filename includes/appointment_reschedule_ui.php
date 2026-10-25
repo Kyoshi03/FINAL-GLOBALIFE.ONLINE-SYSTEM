@@ -735,43 +735,49 @@ unset($_SESSION['reschedule_error']);
         if (reasonDetailsInput) reasonDetailsInput.value = '';
         syncReasonDetails();
     }
-    document.querySelectorAll('[data-open-reschedule]').forEach(function (button) {
-        button.addEventListener('click', function (event) {
+    function openReschedule(button, event) {
+        if (event) {
             event.preventDefault();
             event.stopPropagation();
-            idInput.value = button.getAttribute('data-appointment-id') || '';
-            var currentDate = button.getAttribute('data-reschedule-date') || '';
-            var currentTime = (button.getAttribute('data-reschedule-time') || '').slice(0, 5);
-            dateInput.value = currentDate && currentDate >= today ? currentDate : today;
-            timeInput.value = currentTime;
-            if (calendarPanel) calendarPanel.classList.remove('is-visible');
-            if (dateField) dateField.style.display = '';
-            if (dateChoicesField) dateChoicesField.hidden = true;
-            if (dateChoices) dateChoices.required = false;
-            showManualTimeInput();
-            dateInput.removeAttribute('max');
-            dateInput.setCustomValidity('');
-            timeInput.setCustomValidity('');
-            var current = button.getAttribute('data-reschedule-label') || 'Current appointment schedule';
-            var editMode = button.getAttribute('data-reschedule-mode') || 'confirmed';
-            var reasonMode = editMode === 'admin' ? 'admin' : (editMode === 'pending' ? 'pending' : 'patient');
-            if (title) title.textContent = 'Reschedule appointment';
-            syncReasonFields(reasonMode);
-            if (notice) notice.textContent = editMode === 'pending'
-                ? 'This appointment is not yet confirmed. You can change your schedule before confirmation.'
-                : (editMode === 'admin'
-                    ? 'Choose a new schedule and explain why the clinic needs to move this appointment.'
-                    : 'This appointment is already confirmed. Your current schedule will remain active until the reschedule request is approved.');
-            if (submitButton) submitButton.textContent = editMode === 'pending' ? 'Save Schedule' : (editMode === 'admin' ? 'Save Reschedule' : 'Submit Request');
-            if (currentText) currentText.textContent = current;
-            modal.classList.add('is-open');
-            modal.setAttribute('aria-hidden', 'false');
-            loadAvailability(idInput.value, currentDate, currentTime);
-            window.setTimeout(function () {
-                if (dateChoicesField && !dateChoicesField.hidden) dateChoices.focus();
-                else dateInput.focus();
-            }, 50);
-        });
+        }
+        idInput.value = button.getAttribute('data-appointment-id') || '';
+        var currentDate = button.getAttribute('data-reschedule-date') || '';
+        var currentTime = (button.getAttribute('data-reschedule-time') || '').slice(0, 5);
+        dateInput.value = currentDate && currentDate >= today ? currentDate : today;
+        timeInput.value = currentTime;
+        if (calendarPanel) calendarPanel.classList.remove('is-visible');
+        if (dateField) dateField.style.display = '';
+        if (dateChoicesField) dateChoicesField.hidden = true;
+        if (dateChoices) dateChoices.required = false;
+        showManualTimeInput();
+        dateInput.removeAttribute('max');
+        dateInput.setCustomValidity('');
+        timeInput.setCustomValidity('');
+        var current = button.getAttribute('data-reschedule-label') || 'Current appointment schedule';
+        var editMode = button.getAttribute('data-reschedule-mode') || 'confirmed';
+        var reasonMode = editMode === 'admin' ? 'admin' : (editMode === 'pending' ? 'pending' : 'patient');
+        if (title) title.textContent = 'Reschedule appointment';
+        syncReasonFields(reasonMode);
+        if (notice) notice.textContent = editMode === 'pending'
+            ? 'This appointment is not yet confirmed. You can change your schedule before confirmation.'
+            : (editMode === 'admin'
+                ? 'Choose a new schedule and explain why the clinic needs to move this appointment.'
+                : 'This appointment is already confirmed. Your current schedule will remain active until the reschedule request is approved.');
+        if (submitButton) submitButton.textContent = editMode === 'pending' ? 'Save Schedule' : (editMode === 'admin' ? 'Save Reschedule' : 'Submit Request');
+        if (currentText) currentText.textContent = current;
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        loadAvailability(idInput.value, currentDate, currentTime);
+        window.setTimeout(function () {
+            if (dateChoicesField && !dateChoicesField.hidden) dateChoices.focus();
+            else dateInput.focus();
+        }, 50);
+    }
+
+    // Use delegation so request actions still work after a dashboard refresh or rerender.
+    document.addEventListener('click', function (event) {
+        var button = event.target.closest ? event.target.closest('[data-open-reschedule]') : null;
+        if (button) openReschedule(button, event);
     });
     [patientReasonSelect, adminReasonSelect].forEach(function (select) {
         if (!select) return;
