@@ -4430,11 +4430,11 @@ include 'includes/header.php';
         </div>
     </div>
 </main>
-<?php $appointmentPage = 'doctor.php'; include __DIR__ . '/includes/appointment_reschedule_ui.php'; ?>
 <?php if (isset($additionalScripts) && $additionalScripts !== ''): ?>
     <script><?php echo $additionalScripts; ?></script>
     <?php unset($additionalScripts); ?>
 <?php endif; ?>
+<?php $appointmentPage = 'doctor.php'; include __DIR__ . '/includes/appointment_reschedule_ui.php'; ?>
 <?php include 'includes/footer.php'; ?>
 
 
