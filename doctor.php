@@ -2928,15 +2928,15 @@ body.doctor-report-range-open {
 .doctor-dashboard-hero {
     position: relative;
     display: flex;
-    width: 92%;
-    min-height: 112px;
+    width: 100%;
+    min-height: 96px;
     box-sizing: border-box;
     align-items: center;
     justify-content: space-between;
     justify-self: center;
     gap: 16px;
     overflow: hidden;
-    padding: 18px 32px;
+    padding: 14px 28px;
     border: 0;
     border-radius: 16px;
     background: linear-gradient(110deg, #1fc8bd 0%, #2daedb 52%, #42baf0 100%);
@@ -3001,8 +3001,8 @@ body.doctor-report-range-open {
 .doctor-dashboard-hero-art {
     position: relative;
     z-index: 1;
-    flex: 0 0 min(24%, 250px);
-    min-width: 150px;
+    flex: 0 0 min(20%, 190px);
+    min-width: 125px;
 }
 
 .doctor-dashboard-hero-art img {
@@ -3344,14 +3344,13 @@ body.doctor-report-range-open {
     }
 
     .doctor-dashboard-hero {
-        width: 100%;
-        min-height: 126px;
-        padding: 24px 26px;
+        min-height: 112px;
+        padding: 16px 22px;
     }
 
     .doctor-dashboard-hero-art {
-        flex-basis: 34%;
-        min-width: 145px;
+        flex-basis: 28%;
+        min-width: 125px;
     }
 }
 
@@ -3362,8 +3361,8 @@ body.doctor-report-range-open {
 
     .doctor-dashboard-hero {
         align-items: flex-start;
-        min-height: 162px;
-        padding: 22px 20px;
+        min-height: 132px;
+        padding: 18px 18px;
     }
 
     .doctor-dashboard-hero-copy span {
