@@ -3082,6 +3082,21 @@ body.doctor-report-range-open {
     padding: 20px;
     border-radius: 12px;
     box-shadow: 0 8px 20px rgba(25, 76, 110, .06);
+    cursor: default;
+    transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.doctor-clean-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 14px 28px rgba(25, 76, 110, .12);
+}
+
+.doctor-clean-card .doctor-clean-icon {
+    transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.doctor-clean-card:hover .doctor-clean-icon {
+    transform: scale(1.08);
 }
 
 .doctor-clean-card-content span {
@@ -3100,6 +3115,7 @@ body.doctor-report-range-open {
 
 .doctor-clean-card-content a {
     margin-top: 11px;
+    cursor: pointer;
     font-weight: 700;
 }
 
@@ -3127,6 +3143,18 @@ body.doctor-report-range-open {
 
 .doctor-clean-panel-head {
     padding: 16px 20px 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .doctor-clean-card,
+    .doctor-clean-card .doctor-clean-icon {
+        transition: none;
+    }
+
+    .doctor-clean-card:hover,
+    .doctor-clean-card:hover .doctor-clean-icon {
+        transform: none;
+    }
 }
 
 .doctor-clean-panel-head h2 {
