@@ -3047,19 +3047,18 @@ body.doctor-report-range-open {
     font-weight: 700;
 }
 
-.doctor-clean-dashboard > #appointmentRequests,
-.doctor-clean-dashboard > .doctor-clean-panel:not(#appointmentRequests) {
+.doctor-appointment-grid {
     order: 3;
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    min-width: 0;
+}
+
+.doctor-appointment-grid > .doctor-clean-panel {
     min-width: 0;
     height: 100%;
-}
-
-.doctor-clean-dashboard > #appointmentRequests {
-    grid-column: 2;
-}
-
-.doctor-clean-dashboard > .doctor-clean-panel:not(#appointmentRequests) {
-    grid-column: 1;
 }
 
 .doctor-clean-panel {
@@ -3246,40 +3245,10 @@ body.doctor-report-range-open {
 }
 
 .doctor-report-chart-wrap {
-    min-height: 0;
-    margin-top: 8px;
-    padding: 10px 8px 4px;
+    min-height: 300px;
+    margin-top: 10px;
+    padding: 16px 10px 8px;
     border-radius: 8px;
-}
-
-.doctor-report-chart .report-bar {
-    fill: #258ee6;
-    opacity: 0;
-    transform-box: fill-box;
-    transform-origin: center bottom;
-    animation: doctorReportBarRise .6s cubic-bezier(.2,.7,.2,1) forwards;
-}
-
-.doctor-report-chart .report-value {
-    fill: #173e84;
-    font-size: 13px;
-    font-weight: 700;
-}
-
-.doctor-report-chart text {
-    fill: #6e83a1;
-    font-size: 12px;
-}
-
-.doctor-report-chart .axis-title {
-    fill: #173e84;
-    font-size: 13px;
-    font-weight: 700;
-}
-
-@keyframes doctorReportBarRise {
-    from { opacity: 0; transform: scaleY(0); }
-    to { opacity: 1; transform: scaleY(1); }
 }
 
 @media (max-width: 900px) {
@@ -3287,12 +3256,15 @@ body.doctor-report-range-open {
         grid-template-columns: 1fr;
     }
 
-    .doctor-clean-dashboard > #appointmentRequests,
-    .doctor-clean-dashboard > .doctor-clean-panel:not(#appointmentRequests),
+    .doctor-appointment-grid,
     .doctor-clean-dashboard > .doctor-report-panel,
     .doctor-clean-dashboard > .doctor-clean-cards,
     .doctor-clean-dashboard > .doctor-clean-title {
         grid-column: 1;
+    }
+
+    .doctor-appointment-grid {
+        grid-template-columns: 1fr;
     }
 
     .doctor-dashboard-hero {
@@ -3383,12 +3355,6 @@ body.doctor-report-range-open {
     }
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .doctor-report-chart .report-bar {
-        opacity: 1;
-        animation: none;
-    }
-}
 ';
 
 $additionalScripts = '
@@ -3396,8 +3362,17 @@ function initializeDoctorDashboard() {
     var doctorDashboard = document.querySelector(".doctor-clean-dashboard");
     var doctorReportSection = document.getElementById("consultationSummary");
     var doctorAppointmentCards = doctorDashboard ? doctorDashboard.querySelector(".doctor-clean-cards") : null;
+    var doctorRequestsPanel = doctorDashboard ? doctorDashboard.querySelector("#appointmentRequests") : null;
+    var doctorTodayPanel = doctorDashboard ? doctorDashboard.querySelector("[data-doctor-today-panel]") : null;
     if (doctorDashboard && doctorReportSection && doctorAppointmentCards) {
         doctorDashboard.insertBefore(doctorReportSection, doctorAppointmentCards);
+    }
+    if (doctorDashboard && doctorRequestsPanel && doctorTodayPanel && !doctorDashboard.querySelector(".doctor-appointment-grid")) {
+        var doctorAppointmentGrid = document.createElement("div");
+        doctorAppointmentGrid.className = "doctor-appointment-grid";
+        doctorDashboard.insertBefore(doctorAppointmentGrid, doctorRequestsPanel);
+        doctorAppointmentGrid.appendChild(doctorTodayPanel);
+        doctorAppointmentGrid.appendChild(doctorRequestsPanel);
     }
 
     var confirmModal = document.getElementById("doctorConfirmModal");
@@ -4702,45 +4677,28 @@ include 'includes/header.php';
 
             <div class="doctor-report-chart-wrap">
                 <?php if ($summaryGraphPoints): ?>
-                    <?php
-                    $summaryGraphAxisMax = max(1, (int) $summaryGraphMax);
-                    $summaryGraphTickStep = max(1, (int) ceil($summaryGraphAxisMax / 4));
-                    $summaryGraphTickValues = [0];
-                    for ($tickValue = $summaryGraphTickStep; $tickValue < $summaryGraphAxisMax; $tickValue += $summaryGraphTickStep) {
-                        $summaryGraphTickValues[] = $tickValue;
-                    }
-                    if (end($summaryGraphTickValues) !== $summaryGraphAxisMax) {
-                        $summaryGraphTickValues[] = $summaryGraphAxisMax;
-                    }
-                    $summaryGraphBarWidth = min(64, max(12, 720 / max(1, count($summaryGraphPoints))));
-                    ?>
-                    <svg class="doctor-report-chart" viewBox="0 0 920 290" role="img" aria-label="Completed consultation report chart">
-                        <?php foreach ($summaryGraphTickValues as $tickValue): ?>
-                            <?php $tickY = 220 - (($tickValue / $summaryGraphAxisMax) * 170); ?>
+                    <svg class="doctor-report-chart" viewBox="0 0 920 320" role="img" aria-label="Completed consultation report chart">
+                        <?php for ($tick = 0; $tick <= 4; $tick++): ?>
+                            <?php $tickY = 250 - (($tick / 4) * 190); ?>
                             <line class="grid-line" x1="70" y1="<?php echo number_format($tickY, 2, '.', ''); ?>" x2="890" y2="<?php echo number_format($tickY, 2, '.', ''); ?>"></line>
-                            <text x="61" y="<?php echo number_format($tickY + 4, 2, '.', ''); ?>" text-anchor="end"><?php echo (int) $tickValue; ?></text>
-                        <?php endforeach; ?>
-                        <line class="axis-line" x1="70" y1="50" x2="70" y2="220"></line>
-                        <line class="axis-line" x1="70" y1="220" x2="890" y2="220"></line>
+                            <text x="61" y="<?php echo number_format($tickY + 4, 2, '.', ''); ?>" text-anchor="end"><?php echo (int) round($summaryGraphMax * ($tick / 4)); ?></text>
+                        <?php endfor; ?>
+                        <line class="axis-line" x1="70" y1="60" x2="70" y2="250"></line>
+                        <line class="axis-line" x1="70" y1="250" x2="890" y2="250"></line>
+                        <polygon class="report-area" points="<?php echo htmlspecialchars($summaryGraphAreaPoints, ENT_QUOTES, 'UTF-8'); ?>"></polygon>
+                        <polyline class="report-line" points="<?php echo htmlspecialchars($summaryGraphLinePoints, ENT_QUOTES, 'UTF-8'); ?>"></polyline>
                         <?php foreach ($summaryGraphPoints as $point): ?>
-                            <?php
-                            $barValue = (int) $point['value'];
-                            $barHeight = ($barValue / $summaryGraphAxisMax) * 170;
-                            $barY = 220 - $barHeight;
-                            $barX = (float) $point['x'] - ($summaryGraphBarWidth / 2);
-                            ?>
-                            <rect class="report-bar" x="<?php echo number_format($barX, 2, '.', ''); ?>" y="<?php echo number_format($barY, 2, '.', ''); ?>" width="<?php echo number_format($summaryGraphBarWidth, 2, '.', ''); ?>" height="<?php echo number_format($barHeight, 2, '.', ''); ?>" rx="5">
-                                <title><?php echo htmlspecialchars((string) $point['full_label'] . ': ' . $barValue . ' completed consultations', ENT_QUOTES, 'UTF-8'); ?></title>
-                            </rect>
-                            <text class="report-value" x="<?php echo number_format((float) $point['x'], 2, '.', ''); ?>" y="<?php echo number_format(max(42, $barY - 8), 2, '.', ''); ?>" text-anchor="middle"><?php echo $barValue; ?></text>
+                            <circle class="report-dot" cx="<?php echo number_format((float) $point['x'], 2, '.', ''); ?>" cy="<?php echo number_format((float) $point['y'], 2, '.', ''); ?>" r="4.5">
+                                <title><?php echo htmlspecialchars((string) $point['full_label'] . ': ' . (int) $point['value'] . ' completed consultations', ENT_QUOTES, 'UTF-8'); ?></title>
+                            </circle>
                         <?php endforeach; ?>
                         <?php $summaryGraphLabelStep = max(1, (int) ceil(count($summaryGraphPoints) / 8)); ?>
                         <?php foreach ($summaryGraphPoints as $index => $point): ?>
                             <?php if ($index === 0 || $index === count($summaryGraphPoints) - 1 || $index % $summaryGraphLabelStep === 0): ?>
-                                <text x="<?php echo number_format((float) $point['x'], 2, '.', ''); ?>" y="248" text-anchor="middle"><?php echo htmlspecialchars((string) $point['label'], ENT_QUOTES, 'UTF-8'); ?></text>
+                                <text x="<?php echo number_format((float) $point['x'], 2, '.', ''); ?>" y="274" text-anchor="middle"><?php echo htmlspecialchars((string) $point['label'], ENT_QUOTES, 'UTF-8'); ?></text>
                             <?php endif; ?>
                         <?php endforeach; ?>
-                        <text class="axis-title" x="480" y="278" text-anchor="middle">Period</text>
+                        <text class="axis-title" x="480" y="313" text-anchor="middle">Period</text>
                     </svg>
                 <?php else: ?>
                     <div class="doctor-report-empty">No completed consultations in this date range.</div>
@@ -4869,7 +4827,7 @@ include 'includes/header.php';
             </section>
         </div>
 
-        <section class="doctor-clean-panel">
+        <section class="doctor-clean-panel doctor-today-panel" data-doctor-today-panel>
             <div class="doctor-clean-panel-head">
                 <div>
                     <h2>Today&apos;s Appointments</h2>
