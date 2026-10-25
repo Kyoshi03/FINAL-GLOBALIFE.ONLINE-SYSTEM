@@ -3257,8 +3257,7 @@ body.doctor-report-range-open {
     padding: 13px;
 }
 
-/* Keep the column headings readable while letting each appointment row wrap
-   its action buttons below the appointment details when space is limited. */
+/* Keep the two appointment tables aligned while preserving compact action columns. */
 .doctor-clean-row.doctor-clean-head.requests,
 .doctor-clean-row.doctor-clean-head.today {
     grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -3274,8 +3273,12 @@ body.doctor-report-range-open {
     text-align: left;
 }
 
+.doctor-clean-row.doctor-clean-head.requests {
+    grid-template-columns: minmax(0, 1.25fr) minmax(115px, .85fr) minmax(0, 1fr) 92px 56px;
+}
+
 .doctor-clean-row.requests:not(.doctor-clean-head) {
-    grid-template-columns: minmax(0, 1.25fr) minmax(115px, .85fr) minmax(0, 1fr) 96px;
+    grid-template-columns: minmax(0, 1.25fr) minmax(115px, .85fr) minmax(0, 1fr) 92px 56px;
 }
 
 .doctor-clean-row.today:not(.doctor-clean-head) {
@@ -3309,7 +3312,12 @@ body.doctor-report-range-open {
     grid-column: 4;
 }
 
-.doctor-clean-row.requests:not(.doctor-clean-head) > :nth-child(5),
+.doctor-clean-row.requests:not(.doctor-clean-head) > :nth-child(5) {
+    grid-column: 5;
+    grid-row: 1;
+    justify-self: center;
+}
+
 .doctor-clean-row.today:not(.doctor-clean-head) > :nth-child(5) {
     grid-column: 1 / -1;
     grid-row: 2;
@@ -3325,7 +3333,12 @@ body.doctor-report-range-open {
     justify-content: flex-start;
 }
 
-.doctor-clean-row.requests:not(.doctor-clean-head) .doctor-clean-actions,
+.doctor-clean-row.requests:not(.doctor-clean-head) .doctor-clean-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .doctor-clean-row.today:not(.doctor-clean-head) .doctor-clean-actions {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3340,6 +3353,201 @@ body.doctor-report-range-open {
 .doctor-clean-row.today .doctor-clean-date strong,
 .doctor-clean-row.today .doctor-clean-time strong {
     font-weight: 600;
+}
+
+/* Appointment request actions stay in the action column and open above the table. */
+#appointmentRequests {
+    overflow: visible;
+}
+
+#appointmentRequests .doctor-clean-table {
+    overflow: visible;
+}
+
+.doctor-request-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.doctor-request-title-icon {
+    display: inline-grid;
+    width: 25px;
+    height: 25px;
+    place-items: center;
+    border-radius: 7px;
+    background: #eaf5ff;
+    color: #0f7cc2;
+}
+
+.doctor-request-title-icon svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+}
+
+.doctor-request-count {
+    display: inline-flex;
+    min-width: 21px;
+    height: 21px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: #fff3cd;
+    color: #856404;
+    font-size: .72rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.doctor-request-view-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.doctor-request-view-all span {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.doctor-request-status-cell {
+    display: flex;
+    align-items: center;
+}
+
+.doctor-request-status-cell .status-badge.pending {
+    padding: 5px 9px;
+    border-radius: 999px;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+}
+
+.doctor-request-menu {
+    position: relative;
+    z-index: 30;
+}
+
+.doctor-request-menu-toggle {
+    display: inline-grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    padding: 0;
+    border: 1px solid #cfe1ee;
+    border-radius: 8px;
+    background: #f8fbfd;
+    color: #0b4f80;
+    cursor: pointer;
+    font-size: 1.22rem;
+    font-weight: 800;
+    line-height: 1;
+    transition: border-color .2s ease, background-color .2s ease, box-shadow .2s ease;
+}
+
+.doctor-request-menu-toggle:hover,
+.doctor-request-menu-toggle[aria-expanded="true"] {
+    border-color: #8fc8ee;
+    background: #eaf5ff;
+    box-shadow: 0 4px 10px rgba(25, 76, 110, .1);
+}
+
+.doctor-request-menu-popover {
+    position: absolute;
+    top: calc(100% + 7px);
+    right: 0;
+    z-index: 100;
+    display: grid;
+    width: 176px;
+    padding: 5px;
+    border: 1px solid #d7e7f2;
+    border-radius: 9px;
+    background: #fff;
+    box-shadow: 0 12px 28px rgba(25, 76, 110, .18);
+}
+
+.doctor-request-menu-popover[hidden] {
+    display: none;
+}
+
+.doctor-request-menu-popover form {
+    margin: 0;
+}
+
+.doctor-request-menu-item {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 9px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #315b7d;
+    cursor: pointer;
+    font-size: .78rem;
+    font-weight: 600;
+    text-align: left;
+    transition: background-color .18s ease, color .18s ease;
+}
+
+.doctor-request-menu-item:hover {
+    background: #f1f8fd;
+}
+
+.doctor-request-menu-item svg {
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+}
+
+.doctor-request-menu-item.confirm-soft {
+    color: #17643a;
+}
+
+.doctor-request-menu-item.confirm-soft:hover {
+    background: #edf9f1;
+}
+
+.doctor-request-menu-item.decline-soft {
+    color: #b42332;
+}
+
+.doctor-request-menu-item.decline-soft:hover {
+    background: #fff1f2;
+}
+
+.doctor-request-menu-item.btn-reschedule {
+    color: #9b5d00;
+}
+
+.doctor-request-menu-item.btn-reschedule:hover {
+    background: #fff8e8;
+}
+
+.doctor-request-summary {
+    margin: -7px 20px 18px;
+    color: #7a91ad;
+    font-size: .76rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .doctor-request-menu-toggle,
+    .doctor-request-menu-item {
+        transition: none;
+    }
 }
 
 .doctor-reminder-clean {
@@ -3473,9 +3681,18 @@ body.doctor-report-range-open {
         grid-row: auto !important;
     }
 
-    .doctor-clean-row.requests:not(.doctor-clean-head) .doctor-clean-actions,
+    .doctor-clean-row.requests:not(.doctor-clean-head) .doctor-clean-actions {
+        display: flex;
+        justify-content: flex-start;
+    }
+
     .doctor-clean-row.today:not(.doctor-clean-head) .doctor-clean-actions {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .doctor-request-menu-popover {
+        right: auto;
+        left: 0;
     }
 
     .doctor-dashboard-hero {
@@ -3602,6 +3819,47 @@ function initializeDoctorDashboard() {
     var requestDetailsModal = document.getElementById("doctorRequestDetailsModal");
     var requestDetailsSub = document.getElementById("doctorRequestDetailsSub");
     var requestDetailsGrid = document.getElementById("doctorRequestDetailsGrid");
+
+    function closeDoctorRequestMenus(exceptMenu) {
+        document.querySelectorAll("[data-doctor-request-menu]").forEach(function (menu) {
+            if (exceptMenu && menu === exceptMenu) return;
+            var toggle = menu.querySelector("[data-doctor-request-menu-toggle]");
+            var popover = menu.querySelector(".doctor-request-menu-popover");
+            if (toggle) toggle.setAttribute("aria-expanded", "false");
+            if (popover) popover.hidden = true;
+        });
+    }
+
+    document.querySelectorAll("[data-doctor-request-menu-toggle]").forEach(function (toggle) {
+        toggle.addEventListener("click", function (event) {
+            event.stopPropagation();
+            var menu = toggle.closest("[data-doctor-request-menu]");
+            var popover = menu ? menu.querySelector(".doctor-request-menu-popover") : null;
+            if (!menu || !popover) return;
+            var willOpen = popover.hidden;
+            closeDoctorRequestMenus(menu);
+            toggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
+            popover.hidden = !willOpen;
+            if (willOpen) {
+                var firstAction = popover.querySelector(".doctor-request-menu-item");
+                if (firstAction) window.setTimeout(function () { firstAction.focus(); }, 0);
+            }
+        });
+    });
+
+    document.querySelectorAll("[data-doctor-request-menu] .doctor-request-menu-item").forEach(function (item) {
+        item.addEventListener("click", function () {
+            closeDoctorRequestMenus();
+        });
+    });
+
+    document.addEventListener("click", function (event) {
+        if (!event.target.closest("[data-doctor-request-menu]")) closeDoctorRequestMenus();
+    });
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") closeDoctorRequestMenus();
+    });
 
     function closeRequestDetails() {
         if (!requestDetailsModal) return;
@@ -5382,13 +5640,23 @@ include 'includes/header.php';
         </section>
 
         <div class="doctor-appointment-grid">
+        <?php
+        $pendingRequestCount = count($pendingRequests);
+        $pendingRequestVisibleCount = min(3, $pendingRequestCount);
+        ?>
         <section class="doctor-clean-panel" id="appointmentRequests">
             <div class="doctor-clean-panel-head">
                 <div>
-                    <h2>Appointment Requests</h2>
+                    <h2 class="doctor-request-title">
+                        <span class="doctor-request-title-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M8 7h8M8 11h8M8 15h5"></path></svg>
+                        </span>
+                        <span>Appointment Requests</span>
+                        <span class="doctor-request-count" aria-label="<?php echo $pendingRequestCount; ?> pending requests"><?php echo $pendingRequestCount; ?></span>
+                    </h2>
                     <p>New doctor consultation requests that need your confirmation.</p>
                 </div>
-                <a href="doctor_view_appointments.php">View all</a>
+                <a class="doctor-request-view-all" href="doctor_view_appointments.php">View all <span aria-hidden="true">&rarr;</span></a>
             </div>
 
             <?php if (empty($pendingRequests)): ?>
@@ -5414,7 +5682,7 @@ include 'includes/header.php';
                                 <?php echo renderPatientAvatar($appointment, ['size' => 'sm', 'link' => true, 'link_target' => 'doctor', 'patient_id' => (int) $appointment['patient_id']]); ?>
                                 <div>
                                     <strong><?php echo htmlspecialchars($appointment['patient_name']); ?></strong>
-                                    <small><?php echo htmlspecialchars($appointment['patient_phone'] ?: $appointment['patient_email'] ?: 'No contact'); ?></small>
+                                    <small><?php echo htmlspecialchars($appointment['patient_email'] ?: 'No email'); ?></small>
                                 </div>
                             </div>
                             <div class="doctor-clean-date">
@@ -5425,46 +5693,69 @@ include 'includes/header.php';
                                 <strong>Consultation</strong>
                                 <small><?php echo htmlspecialchars(doctor_service_detail($appointment)); ?></small>
                             </div>
-                            <div>
+                            <div class="doctor-request-status-cell">
                                 <span class="status-badge pending">Pending</span>
                             </div>
-                            <div class="doctor-clean-actions">
-                                <form method="post" action="update_appointment_status.php">
-                                    <input type="hidden" name="appointment_id" value="<?php echo (int) $appointment['id']; ?>">
-                                    <input type="hidden" name="status" value="confirmed">
-                                    <input type="hidden" name="return_url" value="doctor.php">
-                                    <button class="btn confirm-soft" type="submit" data-confirm-message="Are you sure you want to confirm this consultation request?">Confirm</button>
-                                </form>
-                                <form method="post" action="update_appointment_status.php">
-                                    <input type="hidden" name="appointment_id" value="<?php echo (int) $appointment['id']; ?>">
-                                    <input type="hidden" name="status" value="cancelled">
-                                    <input type="hidden" name="return_url" value="doctor.php">
-                                    <button class="btn decline-soft" type="submit" data-confirm-message="Are you sure you want to cancel this consultation request?">Cancel</button>
-                                </form>
-                                <button
-                                    class="btn doctor-request-details-btn"
-                                    type="button"
-                                    data-open-doctor-request-details
-                                    data-patient="<?php echo htmlspecialchars((string) ($appointment['patient_name'] ?? 'Patient'), ENT_QUOTES, 'UTF-8'); ?>"
-                                    data-contact="<?php echo htmlspecialchars((string) (($appointment['patient_phone'] ?? '') ?: ($appointment['patient_email'] ?? 'No contact')), ENT_QUOTES, 'UTF-8'); ?>"
-                                    data-schedule="<?php echo htmlspecialchars(doctor_date_label($appointment['appointment_date']) . ' at ' . doctor_time_label($appointment['appointment_time']), ENT_QUOTES, 'UTF-8'); ?>"
-                                    data-service="<?php echo htmlspecialchars(doctor_service_detail($appointment), ENT_QUOTES, 'UTF-8'); ?>"
-                                    data-status="Pending"
-                                >Details</button>
-                                <button
-                                    class="btn btn-reschedule"
-                                    type="button"
-                                    data-open-reschedule
-                                    data-appointment-id="<?php echo (int) $appointment['id']; ?>"
-                                    data-reschedule-date="<?php echo htmlspecialchars((string) ($appointment['appointment_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                                    data-reschedule-time="<?php echo htmlspecialchars((string) ($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                                    data-reschedule-label="Current schedule: <?php echo htmlspecialchars(doctor_date_label($appointment['appointment_date']) . ' at ' . doctor_time_label($appointment['appointment_time']), ENT_QUOTES, 'UTF-8'); ?>"
-                                >Reschedule</button>
+                            <div class="doctor-clean-actions doctor-request-actions">
+                                <div class="doctor-request-menu" data-doctor-request-menu>
+                                    <button
+                                        class="doctor-request-menu-toggle"
+                                        type="button"
+                                        data-doctor-request-menu-toggle
+                                        aria-haspopup="true"
+                                        aria-expanded="false"
+                                        aria-label="Open actions for <?php echo htmlspecialchars((string) ($appointment['patient_name'] ?? 'patient'), ENT_QUOTES, 'UTF-8'); ?>"
+                                    ><span aria-hidden="true">&hellip;</span></button>
+                                    <div class="doctor-request-menu-popover" hidden>
+                                        <form method="post" action="update_appointment_status.php">
+                                            <input type="hidden" name="appointment_id" value="<?php echo (int) $appointment['id']; ?>">
+                                            <input type="hidden" name="status" value="confirmed">
+                                            <input type="hidden" name="return_url" value="doctor.php">
+                                            <button class="doctor-request-menu-item confirm-soft" type="submit" data-confirm-message="Are you sure you want to confirm this consultation request?">
+                                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"></path></svg><span>Confirm</span>
+                                            </button>
+                                        </form>
+                                        <form method="post" action="update_appointment_status.php">
+                                            <input type="hidden" name="appointment_id" value="<?php echo (int) $appointment['id']; ?>">
+                                            <input type="hidden" name="status" value="cancelled">
+                                            <input type="hidden" name="return_url" value="doctor.php">
+                                            <button class="doctor-request-menu-item decline-soft" type="submit" data-confirm-message="Are you sure you want to cancel this consultation request?">
+                                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg><span>Cancel</span>
+                                            </button>
+                                        </form>
+                                        <button
+                                            class="doctor-request-menu-item doctor-request-details-btn"
+                                            type="button"
+                                            data-open-doctor-request-details
+                                            data-patient="<?php echo htmlspecialchars((string) ($appointment['patient_name'] ?? 'Patient'), ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-contact="<?php echo htmlspecialchars((string) (($appointment['patient_phone'] ?? '') ?: ($appointment['patient_email'] ?? 'No contact')), ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-schedule="<?php echo htmlspecialchars(doctor_date_label($appointment['appointment_date']) . ' at ' . doctor_time_label($appointment['appointment_time']), ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-service="<?php echo htmlspecialchars(doctor_service_detail($appointment), ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-status="Pending"
+                                        ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"></path><path d="M14 3v4h4M9 11h6M9 15h6"></path></svg><span>Details</span></button>
+                                        <button
+                                            class="doctor-request-menu-item btn-reschedule"
+                                            type="button"
+                                            data-open-reschedule
+                                            data-appointment-id="<?php echo (int) $appointment['id']; ?>"
+                                            data-reschedule-date="<?php echo htmlspecialchars((string) ($appointment['appointment_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-reschedule-time="<?php echo htmlspecialchars((string) ($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                            data-reschedule-label="Current schedule: <?php echo htmlspecialchars(doctor_date_label($appointment['appointment_date']) . ' at ' . doctor_time_label($appointment['appointment_time']), ENT_QUOTES, 'UTF-8'); ?>"
+                                        ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h12M4 12h16M4 17h10"></path><path d="M17 4v6M14 7h6"></path></svg><span>Reschedule</span></button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
+            <div class="doctor-request-summary" aria-live="polite">
+                <?php if ($pendingRequestVisibleCount < $pendingRequestCount): ?>
+                    Showing <?php echo $pendingRequestVisibleCount; ?> of <?php echo $pendingRequestCount; ?> pending requests
+                <?php else: ?>
+                    Showing <?php echo $pendingRequestVisibleCount; ?> pending <?php echo $pendingRequestVisibleCount === 1 ? 'request' : 'requests'; ?>
+                <?php endif; ?>
+            </div>
         </section>
 
         <?php
