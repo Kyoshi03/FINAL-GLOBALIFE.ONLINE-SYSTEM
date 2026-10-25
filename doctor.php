@@ -16,8 +16,6 @@ try {
 }
 $pageTitle = 'Clinical Dashboard | ' . $doctorClinicInfo['clinic_name'];
 $currentUser = getCurrentUser();
-$doctorDisplayName = trim((string) ($currentUser['full_name'] ?? $currentUser['username'] ?? 'Doctor'));
-$doctorDisplayName = preg_replace('/^\s*(?:dr\.?|doctor)\s+/i', '', $doctorDisplayName) ?: 'Doctor';
 $today = date('Y-m-d');
 
 function doctor_time_label(?string $time): string {
@@ -146,6 +144,24 @@ if (
 ) {
     initLabBookingSchema($conn);
 }
+
+// Read the doctor name from the current database record so admin profile edits
+// appear immediately without requiring the doctor to log in again.
+$doctorDisplayName = trim((string) ($currentUser['full_name'] ?? $currentUser['username'] ?? 'Doctor'));
+$doctorNameStmt = $conn->prepare("SELECT first_name, middle_name, last_name, suffix, full_name FROM users WHERE id = ? AND role = 'doctor' LIMIT 1");
+if ($doctorNameStmt) {
+    $doctorId = (int) ($currentUser['id'] ?? 0);
+    $doctorNameStmt->bind_param('i', $doctorId);
+    $doctorNameStmt->execute();
+    $doctorRow = $doctorNameStmt->get_result()->fetch_assoc();
+    $doctorNameStmt->close();
+    if (is_array($doctorRow)) {
+        $doctorDisplayName = clinic_name_display_from_row($doctorRow, $doctorDisplayName);
+        $_SESSION['full_name'] = $doctorDisplayName;
+        $currentUser['full_name'] = $doctorDisplayName;
+    }
+}
+$doctorDisplayName = preg_replace('/^\s*(?:dr\.?|doctor)\s+/i', '', $doctorDisplayName) ?: 'Doctor';
 
 $stmt = $conn->prepare("SELECT a.*,
                                 " . dbUsersNameExpression('p') . " AS patient_name,
@@ -4649,7 +4665,7 @@ include 'includes/header.php';
         <section class="doctor-clean-title doctor-dashboard-hero" aria-label="Doctor welcome">
             <div class="doctor-dashboard-hero-copy">
                 <span>Welcome back,</span>
-                <h1>Dr. <?php echo htmlspecialchars($doctorDisplayName); ?></h1>
+                <h1><?php echo htmlspecialchars($doctorDisplayName); ?></h1>
                 <div class="doctor-dashboard-hero-dots" aria-hidden="true">
                     <span class="doctor-dashboard-hero-dot"></span>
                     <span class="doctor-dashboard-hero-dot"></span>
