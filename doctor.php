@@ -4152,9 +4152,11 @@ include 'includes/header.php';
             <div class="doctor-report-head">
                 <div>
                     <h2 id="doctorReportTitle">Consultation Report</h2>
-                    <p><?php echo $summaryIsCustomRange
-                        ? 'Completed consultations for the selected custom date range.'
-                        : ($summaryPeriod === 'daily' ? 'Weekly completed consultations for the last 7 days.' : 'Completed consultations for the selected period.'); ?></p>
+                    <?php if ($summaryIsCustomRange): ?>
+                        <p>Completed consultations for the selected custom date range.</p>
+                    <?php elseif ($summaryPeriod !== 'daily'): ?>
+                        <p>Completed consultations for the selected period.</p>
+                    <?php endif; ?>
                 </div>
                 <div class="doctor-report-controls" aria-label="Consultation report filters">
                     <label for="doctorReportPeriod">Report Period</label>
