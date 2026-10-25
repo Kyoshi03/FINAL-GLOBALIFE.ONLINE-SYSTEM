@@ -351,7 +351,12 @@ $summaryAllCompletedConsultations = doctor_completed_consultations($conn, $staff
 if ($summaryPeriod !== '') {
     $candidateFrom = trim((string) ($_GET['summary_from'] ?? ''));
     $candidateTo = trim((string) ($_GET['summary_to'] ?? ''));
-    if (doctor_summary_valid_date($candidateFrom) && doctor_summary_valid_date($candidateTo) && $candidateTo >= $candidateFrom) {
+    if (
+        doctor_summary_valid_date($candidateFrom) &&
+        doctor_summary_valid_date($candidateTo) &&
+        $candidateFrom <= $candidateTo &&
+        $candidateTo <= $today
+    ) {
         $summaryFrom = $candidateFrom;
         $summaryTo = $candidateTo;
     } else {
@@ -2886,48 +2891,6 @@ function initializeDoctorDashboard() {
         doctorDashboard.insertBefore(doctorReportSection, doctorAppointmentCards);
     }
 
-    window.__doctorReportCalendarInteractive = false;
-    if (!window.__doctorReportCalendarFallbackInstalled) {
-        window.__doctorReportCalendarFallbackInstalled = true;
-        document.addEventListener("click", function (event) {
-            if (window.__doctorReportCalendarInteractive) return;
-            var target = event.target && event.target.closest ? event.target.closest("[data-doctor-report-range-date]") : null;
-            if (!target || target.disabled) return;
-            var fromInput = document.getElementById("doctorReportFrom");
-            var toInput = document.getElementById("doctorReportTo");
-            var fromValue = fromInput ? fromInput.value : "";
-            var toValue = toInput ? toInput.value : "";
-            var selected = target.getAttribute("data-doctor-report-range-date") || "";
-            if (!fromValue || toValue || selected < fromValue) {
-                fromValue = selected;
-                toValue = "";
-            } else {
-                toValue = selected;
-            }
-            if (fromInput) fromInput.value = fromValue;
-            if (toInput) toInput.value = toValue;
-            document.querySelectorAll("[data-doctor-report-range-date]").forEach(function (button) {
-                var key = button.getAttribute("data-doctor-report-range-date") || "";
-                button.classList.toggle("is-in-range", Boolean(fromValue && toValue && key > fromValue && key < toValue));
-                button.classList.toggle("is-start", key === fromValue);
-                button.classList.toggle("is-end", key === toValue);
-            });
-            var fromLabel = document.getElementById("doctorReportRangeFromValue");
-            var toLabel = document.getElementById("doctorReportRangeToValue");
-            var formatDate = function (value, fallback) {
-                if (!value) return fallback;
-                var date = new Date(value + "T00:00:00");
-                return Number.isNaN(date.getTime()) ? fallback : date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-            };
-            if (fromLabel) fromLabel.textContent = formatDate(fromValue, "Select start date");
-            if (toLabel) toLabel.textContent = formatDate(toValue, "Select end date");
-            var setButton = document.getElementById("doctorReportRangeSet");
-            if (setButton) setButton.disabled = !fromValue || !toValue || fromValue > toValue;
-            event.preventDefault();
-            event.stopPropagation();
-        }, true);
-    }
-
     var confirmModal = document.getElementById("doctorConfirmModal");
     var confirmText = document.getElementById("doctorConfirmText");
     var confirmProceed = document.getElementById("doctorConfirmProceed");
@@ -3774,6 +3737,13 @@ function initializeDoctorDashboard() {
             return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
         }
 
+        function doctorReportFormatDateLabel(value, fallback) {
+            var date = doctorReportParseDate(value);
+            return date
+                ? date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                : fallback;
+        }
+
         function doctorReportTodayKey() {
             return doctorReportData.today || doctorReportDateKey(new Date());
         }
@@ -3781,7 +3751,9 @@ function initializeDoctorDashboard() {
         function doctorReportClampMonth(month) {
             var candidate = new Date(month.getFullYear(), month.getMonth(), 1);
             var today = doctorReportParseDate(doctorReportTodayKey()) || new Date();
+            var minimumMonth = new Date(2000, 0, 1);
             var currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            if (candidate < minimumMonth) return minimumMonth;
             return candidate > currentMonth ? currentMonth : candidate;
         }
 
@@ -3866,8 +3838,8 @@ function initializeDoctorDashboard() {
             doctorReportRangeCalendars.innerHTML = "";
             doctorReportRangeCalendars.appendChild(doctorReportRenderMonth(doctorReportCalendarLeftMonth, "left"));
             doctorReportRangeCalendars.appendChild(doctorReportRenderMonth(doctorReportCalendarRightMonth, "right"));
-            if (doctorReportRangeFromValue) doctorReportRangeFromValue.textContent = doctorReportDraftFrom || "Select start date";
-            if (doctorReportRangeToValue) doctorReportRangeToValue.textContent = doctorReportDraftTo || "Select end date";
+            if (doctorReportRangeFromValue) doctorReportRangeFromValue.textContent = doctorReportFormatDateLabel(doctorReportDraftFrom, "Select start date");
+            if (doctorReportRangeToValue) doctorReportRangeToValue.textContent = doctorReportFormatDateLabel(doctorReportDraftTo, "Select end date");
             if (doctorReportFrom) doctorReportFrom.value = doctorReportDraftFrom;
             if (doctorReportTo) doctorReportTo.value = doctorReportDraftTo;
             if (doctorReportModalSet) doctorReportModalSet.disabled = invalidRange;
@@ -3875,6 +3847,7 @@ function initializeDoctorDashboard() {
         }
 
         function doctorReportChooseRangeDate(key) {
+            if (!doctorReportParseDate(key) || key > doctorReportTodayKey()) return;
             if (!doctorReportDraftFrom || doctorReportDraftTo || key < doctorReportDraftFrom) {
                 doctorReportDraftFrom = key;
                 doctorReportDraftTo = "";
@@ -3950,11 +3923,13 @@ function initializeDoctorDashboard() {
             doctorReportRangeCalendars.addEventListener("click", function (event) {
                 var dateButton = event.target.closest ? event.target.closest("[data-doctor-report-range-date]") : null;
                 if (dateButton && !dateButton.disabled) {
+                    event.preventDefault();
                     doctorReportChooseRangeDate(dateButton.dataset.doctorReportRangeDate);
                     return;
                 }
                 var navButton = event.target.closest ? event.target.closest("[data-doctor-report-range-nav]") : null;
                 if (navButton && !navButton.disabled) {
+                    event.preventDefault();
                     doctorReportMoveCalendar(navButton.dataset.doctorReportRangeSide, parseInt(navButton.dataset.doctorReportRangeNav, 10));
                 }
             });
@@ -3974,7 +3949,9 @@ function initializeDoctorDashboard() {
             event.preventDefault();
             var from = doctorReportFrom ? doctorReportFrom.value : "";
             var to = doctorReportTo ? doctorReportTo.value : "";
-            if (!from || !to || from > to) {
+            var fromDate = doctorReportParseDate(from);
+            var toDate = doctorReportParseDate(to);
+            if (!fromDate || !toDate || from > to || to > doctorReportTodayKey()) {
                 if (doctorReportMessage) doctorReportMessage.hidden = false;
                 return;
             }
@@ -3988,7 +3965,6 @@ function initializeDoctorDashboard() {
         if (doctorReportModal && doctorReportModal.getAttribute("aria-hidden") === "false") {
             doctorReportOpenRange();
         }
-        window.__doctorReportCalendarInteractive = true;
     }
 
     document.addEventListener("keydown", function (event) {
