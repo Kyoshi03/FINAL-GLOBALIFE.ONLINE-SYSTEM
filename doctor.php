@@ -345,8 +345,8 @@ $summaryGraphPoints = [];
 $summaryGraphMax = 0;
 $summaryPage = max(1, (int) ($_GET['summary_page'] ?? 1));
 $summaryPerPage = 5;
-$summaryCustomOpen = (string) ($_GET['summary_custom'] ?? '') === '1';
-$summaryIsCustomRange = $summaryCustomOpen;
+$summaryCustomOpen = (string) ($_GET['summary_open'] ?? '') === '1';
+$summaryIsCustomRange = (string) ($_GET['summary_custom'] ?? '') === '1';
 $summaryAllCompletedConsultations = doctor_completed_consultations($conn, $staffId);
 
 if ($summaryPeriod !== '') {
@@ -504,7 +504,8 @@ $summaryReportCustomUrl = 'doctor.php?' . http_build_query([
     'summary_from' => $summaryFrom,
     'summary_to' => $summaryTo,
     'summary_page' => 1,
-    'summary_custom' => 1,
+    'summary_open' => 1,
+    'summary_custom' => $summaryIsCustomRange ? 1 : 0,
 ]);
 $summaryClearRange = $summaryDefaultRanges[$summaryPeriod] ?? ['from' => '', 'to' => ''];
 $summaryReportClearUrl = 'doctor.php?' . http_build_query([
@@ -3904,10 +3905,12 @@ function initializeDoctorDashboard() {
                 url.searchParams.set("summary_from", from);
                 url.searchParams.set("summary_to", to);
                 url.searchParams.set("summary_custom", "1");
+                url.searchParams.delete("summary_open");
             } else {
                 url.searchParams.delete("summary_from");
                 url.searchParams.delete("summary_to");
                 url.searchParams.delete("summary_custom");
+                url.searchParams.delete("summary_open");
             }
             url.searchParams.delete("summary_page");
             window.location.assign(url.toString());
@@ -4002,10 +4005,12 @@ if (!window.__doctorReportControlsInitialized) {
                 url.searchParams.set("summary_from", from);
                 url.searchParams.set("summary_to", to);
                 url.searchParams.set("summary_custom", "1");
+                url.searchParams.delete("summary_open");
             } else {
                 url.searchParams.delete("summary_from");
                 url.searchParams.delete("summary_to");
                 url.searchParams.delete("summary_custom");
+                url.searchParams.delete("summary_open");
             }
             url.searchParams.delete("summary_page");
             window.location.assign(url.toString());
