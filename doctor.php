@@ -1155,7 +1155,7 @@ select:focus {
 
 .doctor-clean-dashboard {
     display: grid;
-    gap: 14px;
+    gap: 0;
 }
 
 /* Keep the report as the primary dashboard section, followed by appointment summaries. */
