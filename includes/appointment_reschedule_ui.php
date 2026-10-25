@@ -738,7 +738,6 @@ unset($_SESSION['reschedule_error']);
     function openReschedule(button, event) {
         if (event) {
             event.preventDefault();
-            event.stopPropagation();
         }
         idInput.value = button.getAttribute('data-appointment-id') || '';
         var currentDate = button.getAttribute('data-reschedule-date') || '';
@@ -774,11 +773,11 @@ unset($_SESSION['reschedule_error']);
         }, 50);
     }
 
-    // Use delegation so request actions still work after a dashboard refresh or rerender.
+    // Capture the action before dropdown close handlers can interfere with the click.
     document.addEventListener('click', function (event) {
         var button = event.target.closest ? event.target.closest('[data-open-reschedule]') : null;
         if (button) openReschedule(button, event);
-    });
+    }, true);
     [patientReasonSelect, adminReasonSelect].forEach(function (select) {
         if (!select) return;
         select.addEventListener('change', function () {
