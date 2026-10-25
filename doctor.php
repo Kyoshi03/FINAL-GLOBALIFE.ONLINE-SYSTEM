@@ -3144,6 +3144,8 @@ body.doctor-report-range-open {
 }
 
 .doctor-appointment-grid {
+    position: relative;
+    z-index: 1;
     order: 3;
     grid-column: 1 / -1;
     display: grid;
@@ -3357,6 +3359,8 @@ body.doctor-report-range-open {
 
 /* Appointment request actions stay in the action column and open above the table. */
 #appointmentRequests {
+    position: relative;
+    z-index: 1;
     overflow: visible;
 }
 
