@@ -3223,6 +3223,13 @@ body.doctor-report-range-open {
     font-weight: 700;
 }
 
+.doctor-dashboard-reminder {
+    grid-column: 1 / -1;
+    order: 3;
+    margin: 0;
+    padding: 12px 16px;
+}
+
 .doctor-report-panel {
     order: 4;
     grid-column: 1 / -1;
@@ -4925,11 +4932,11 @@ include 'includes/header.php';
                 </div>
             <?php endif; ?>
 
-            <div class="doctor-reminder-clean">
-                <span>i</span>
-                <div><strong>Reminder:</strong> Please add medical notes after each consultation and update the appointment status from the appointments page.</div>
-            </div>
         </section>
+        </div>
+        <div class="doctor-dashboard-reminder doctor-reminder-clean">
+            <span>i</span>
+            <div><strong>Reminder:</strong> Add medical notes after each consultation and update the appointment status after the visit.</div>
         </div>
     </div>
 
