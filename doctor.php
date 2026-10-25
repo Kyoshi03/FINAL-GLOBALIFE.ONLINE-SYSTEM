@@ -2965,6 +2965,7 @@ body.doctor-report-range-open {
     font-size: clamp(1.2rem, 2vw, 1.9rem);
     font-weight: 800;
     line-height: 1.12;
+    color: #fff !important;
 }
 
 .doctor-dashboard-hero-art {
