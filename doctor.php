@@ -346,6 +346,7 @@ $summaryGraphMax = 0;
 $summaryPage = max(1, (int) ($_GET['summary_page'] ?? 1));
 $summaryPerPage = 5;
 $summaryCustomOpen = (string) ($_GET['summary_custom'] ?? '') === '1';
+$summaryIsCustomRange = $summaryCustomOpen;
 $summaryAllCompletedConsultations = doctor_completed_consultations($conn, $staffId);
 
 if ($summaryPeriod !== '') {
@@ -3902,9 +3903,11 @@ function initializeDoctorDashboard() {
             if (from && to) {
                 url.searchParams.set("summary_from", from);
                 url.searchParams.set("summary_to", to);
+                url.searchParams.set("summary_custom", "1");
             } else {
                 url.searchParams.delete("summary_from");
                 url.searchParams.delete("summary_to");
+                url.searchParams.delete("summary_custom");
             }
             url.searchParams.delete("summary_page");
             window.location.assign(url.toString());
@@ -3998,9 +4001,11 @@ if (!window.__doctorReportControlsInitialized) {
             if (from && to) {
                 url.searchParams.set("summary_from", from);
                 url.searchParams.set("summary_to", to);
+                url.searchParams.set("summary_custom", "1");
             } else {
                 url.searchParams.delete("summary_from");
                 url.searchParams.delete("summary_to");
+                url.searchParams.delete("summary_custom");
             }
             url.searchParams.delete("summary_page");
             window.location.assign(url.toString());
@@ -4142,7 +4147,9 @@ include 'includes/header.php';
             <div class="doctor-report-head">
                 <div>
                     <h2 id="doctorReportTitle">Consultation Report</h2>
-                    <p><?php echo $summaryPeriod === 'daily' ? 'Weekly completed consultations for the last 7 days.' : 'Completed consultations for the selected period.'; ?></p>
+                    <p><?php echo $summaryIsCustomRange
+                        ? 'Completed consultations for the selected custom date range.'
+                        : ($summaryPeriod === 'daily' ? 'Weekly completed consultations for the last 7 days.' : 'Completed consultations for the selected period.'); ?></p>
                 </div>
                 <div class="doctor-report-controls" aria-label="Consultation report filters">
                     <label for="doctorReportPeriod">Report Period</label>
@@ -4160,7 +4167,7 @@ include 'includes/header.php';
             </div>
 
             <div class="doctor-report-range-row">
-                <div class="doctor-report-range"><strong><?php echo $summaryPeriod === 'daily' ? 'Last 7 days' : htmlspecialchars(ucfirst($summaryPeriod)); ?></strong><?php echo $summaryFrom && $summaryTo ? ' · ' . htmlspecialchars(doctor_summary_period_range_label($summaryPeriod, $summaryFrom, $summaryTo)) : ''; ?></div>
+                <div class="doctor-report-range"><strong><?php echo $summaryIsCustomRange ? 'Custom date range' : ($summaryPeriod === 'daily' ? 'Last 7 days' : htmlspecialchars(ucfirst($summaryPeriod))); ?></strong><?php echo $summaryFrom && $summaryTo ? ' · ' . htmlspecialchars(doctor_summary_period_range_label($summaryPeriod, $summaryFrom, $summaryTo)) : ''; ?></div>
                 <div class="doctor-report-total">Total: <strong><?php echo (int) count($summaryCompletedConsultations); ?> <?php echo count($summaryCompletedConsultations) === 1 ? 'consultation' : 'consultations'; ?></strong></div>
             </div>
 
