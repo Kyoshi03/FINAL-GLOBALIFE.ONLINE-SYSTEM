@@ -4356,6 +4356,12 @@ function initializeDoctorDashboard() {
         var doctorReportDraftTo = "";
         var doctorReportUrl = new URL(window.location.href);
         var doctorReportSessionFocus = false;
+        var doctorReportControlInteraction = false;
+
+        function doctorReportMarkControlInteraction(event) {
+            if (event && event.isPrimary === false) return;
+            doctorReportControlInteraction = true;
+        }
 
         try {
             doctorReportSessionFocus = window.sessionStorage.getItem("doctorReportFocus") === "1";
@@ -4374,6 +4380,9 @@ function initializeDoctorDashboard() {
 
         function doctorReportFocusSelection() {
             if (!doctorReportPanel || (doctorReportModal && !doctorReportModal.hidden)) return;
+            if (doctorReportControlInteraction) return;
+            var activeElement = document.activeElement;
+            if (activeElement && doctorReportPanel.contains(activeElement) && /^(SELECT|BUTTON|INPUT|A)$/.test(activeElement.tagName)) return;
             var chart = doctorReportPanel.querySelector(".doctor-report-chart");
             var focusTarget = chart || doctorReportPanel;
             doctorReportPanel.setAttribute("tabindex", "-1");
@@ -4676,6 +4685,8 @@ function initializeDoctorDashboard() {
         }
         if (doctorReportPeriodSelect) {
             doctorReportPeriodSelect.removeAttribute("onchange");
+            doctorReportPeriodSelect.addEventListener("pointerdown", doctorReportMarkControlInteraction);
+            doctorReportPeriodSelect.addEventListener("mousedown", doctorReportMarkControlInteraction);
             doctorReportPeriodSelect.addEventListener("change", function () {
                 doctorReportRememberFocus();
                 if (this.form) this.form.submit();
@@ -4710,6 +4721,12 @@ if (!window.__doctorReportControlsInitialized) {
             data = {};
         }
 
+        var reportControlInteraction = false;
+        function markReportControlInteraction(event) {
+            if (event && event.isPrimary === false) return;
+            reportControlInteraction = true;
+        }
+
         function defaultRange(period) {
             return data.defaults && data.defaults[period] ? data.defaults[period] : null;
         }
@@ -4732,6 +4749,9 @@ if (!window.__doctorReportControlsInitialized) {
                 reportUrl.searchParams.get("summary_custom") === "1"
             ) && reportUrl.searchParams.get("summary_open") !== "1";
             if (!shouldFocus || !panel) return;
+            if (reportControlInteraction) return;
+            var activeElement = document.activeElement;
+            if (activeElement && panel.contains(activeElement) && /^(SELECT|BUTTON|INPUT|A)$/.test(activeElement.tagName)) return;
             var chart = panel.querySelector(".doctor-report-chart");
             var target = chart || panel;
             panel.setAttribute("tabindex", "-1");
@@ -4851,6 +4871,8 @@ if (!window.__doctorReportControlsInitialized) {
         var fallbackPeriodSelect = document.getElementById("doctorReportPeriod");
         if (fallbackPeriodSelect) {
             fallbackPeriodSelect.removeAttribute("onchange");
+            fallbackPeriodSelect.addEventListener("pointerdown", markReportControlInteraction);
+            fallbackPeriodSelect.addEventListener("mousedown", markReportControlInteraction);
             fallbackPeriodSelect.addEventListener("change", function () {
                 try {
                     window.sessionStorage.setItem("doctorReportFocus", "1");
