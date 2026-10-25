@@ -3274,11 +3274,11 @@ body.doctor-report-range-open {
 }
 
 .doctor-clean-row.doctor-clean-head.requests {
-    grid-template-columns: minmax(0, 1.25fr) minmax(115px, .85fr) minmax(0, 1fr) 92px 56px;
+    grid-template-columns: minmax(0, 1.45fr) minmax(140px, .95fr) 92px 56px;
 }
 
 .doctor-clean-row.requests:not(.doctor-clean-head) {
-    grid-template-columns: minmax(0, 1.25fr) minmax(115px, .85fr) minmax(0, 1fr) 92px 56px;
+    grid-template-columns: minmax(0, 1.45fr) minmax(140px, .95fr) 92px 56px;
 }
 
 .doctor-clean-row.today:not(.doctor-clean-head) {
@@ -5672,7 +5672,6 @@ include 'includes/header.php';
                     <div class="doctor-clean-row doctor-clean-head requests">
                         <span>Patient</span>
                         <span>Date &amp; Time</span>
-                        <span>Service</span>
                         <span>Status</span>
                         <span>Action</span>
                     </div>
@@ -5682,16 +5681,11 @@ include 'includes/header.php';
                                 <?php echo renderPatientAvatar($appointment, ['size' => 'sm', 'link' => true, 'link_target' => 'doctor', 'patient_id' => (int) $appointment['patient_id']]); ?>
                                 <div>
                                     <strong><?php echo htmlspecialchars($appointment['patient_name']); ?></strong>
-                                    <small><?php echo htmlspecialchars($appointment['patient_email'] ?: 'No email'); ?></small>
                                 </div>
                             </div>
                             <div class="doctor-clean-date">
                                 <strong><?php echo htmlspecialchars(doctor_date_label($appointment['appointment_date'])); ?></strong>
                                 <small><?php echo doctor_time_label($appointment['appointment_time']); ?></small>
-                            </div>
-                            <div class="doctor-clean-service">
-                                <strong>Consultation</strong>
-                                <small><?php echo htmlspecialchars(doctor_service_detail($appointment)); ?></small>
                             </div>
                             <div class="doctor-request-status-cell">
                                 <span class="status-badge pending">Pending</span>
