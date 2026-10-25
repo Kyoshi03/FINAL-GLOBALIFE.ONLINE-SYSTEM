@@ -2979,10 +2979,11 @@ body.doctor-report-range-open {
     min-width: 150px;
 }
 
-.doctor-dashboard-hero-art svg {
+.doctor-dashboard-hero-art img {
     display: block;
     width: 100%;
     height: auto;
+    filter: drop-shadow(0 12px 18px rgba(4, 75, 105, .16));
     overflow: visible;
 }
 
@@ -4625,17 +4626,7 @@ include 'includes/header.php';
                 <h1>Dr. <?php echo htmlspecialchars($doctorDisplayName); ?></h1>
             </div>
             <div class="doctor-dashboard-hero-art" aria-hidden="true">
-                <svg viewBox="0 0 320 170" role="presentation">
-                    <path class="hero-orbit" d="M42 83c18-49 83-72 149-53 60 17 100 59 87 91-13 33-76 52-139 39-54-11-96-43-97-77z"/>
-                    <circle class="hero-spark" cx="38" cy="67" r="7"/>
-                    <circle class="hero-spark" cx="276" cy="118" r="6"/>
-                    <rect class="hero-bubble back" x="80" y="39" width="168" height="101" rx="28"/>
-                    <path class="hero-bubble-tail back" d="M105 133 91 154l35-16z"/>
-                    <rect class="hero-bubble front" x="111" y="25" width="132" height="100" rx="28"/>
-                    <path class="hero-bubble-tail front" d="m213 117 13 19-30-12z"/>
-                    <path class="hero-cross" d="M169 48h18v23h23v18h-23v23h-18V89h-23V71h23z"/>
-                    <path class="hero-heartbeat" d="M126 80h22l9-18 11 37 11-25 8 6h25"/>
-                </svg>
+                <img src="assets/doctor-notebook-hero.png" alt="" role="presentation">
             </div>
         </section>
 
