@@ -4331,6 +4331,22 @@ function initializeDoctorDashboard() {
         var doctorReportDraftFrom = "";
         var doctorReportDraftTo = "";
         var doctorReportUrl = new URL(window.location.href);
+        var doctorReportSessionFocus = false;
+
+        try {
+            doctorReportSessionFocus = window.sessionStorage.getItem("doctorReportFocus") === "1";
+            window.sessionStorage.removeItem("doctorReportFocus");
+        } catch (error) {
+            doctorReportSessionFocus = false;
+        }
+
+        function doctorReportRememberFocus() {
+            try {
+                window.sessionStorage.setItem("doctorReportFocus", "1");
+            } catch (error) {
+                // Scrolling still falls back to the URL hash when storage is unavailable.
+            }
+        }
 
         function doctorReportFocusSelection() {
             if (!doctorReportPanel || (doctorReportModal && !doctorReportModal.hidden)) return;
@@ -4338,10 +4354,10 @@ function initializeDoctorDashboard() {
             var focusTarget = chart || doctorReportPanel;
             doctorReportPanel.setAttribute("tabindex", "-1");
             focusTarget.setAttribute("tabindex", "-1");
-            var reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-            doctorReportPanel.scrollIntoView({
-                behavior: reducedMotion ? "auto" : "smooth",
-                block: "start"
+            var reportTop = doctorReportPanel.getBoundingClientRect().top + window.pageYOffset - 16;
+            window.scrollTo({
+                top: Math.max(0, reportTop),
+                behavior: "auto"
             });
             focusTarget.focus({ preventScroll: true });
         }
@@ -4355,6 +4371,7 @@ function initializeDoctorDashboard() {
         }
 
         var doctorReportShouldFocusSelection = (
+            doctorReportSessionFocus ||
             doctorReportUrl.searchParams.get("summary_focus") === "1" ||
             doctorReportPeriod === "monthly" ||
             doctorReportPeriod === "quarterly" ||
@@ -4538,6 +4555,7 @@ function initializeDoctorDashboard() {
         }
 
         function doctorReportNavigate(period, from, to) {
+            doctorReportRememberFocus();
             var url = new URL(window.location.href);
             url.searchParams.set("summary_period", period);
             if (from && to) {
@@ -4610,9 +4628,17 @@ function initializeDoctorDashboard() {
         if (doctorReportModal && doctorReportModal.getAttribute("aria-hidden") === "false") {
             doctorReportOpenRange();
         }
+        if (doctorReportPeriodSelect) {
+            doctorReportPeriodSelect.removeAttribute("onchange");
+            doctorReportPeriodSelect.addEventListener("change", function () {
+                doctorReportRememberFocus();
+                if (this.form) this.form.submit();
+            });
+        }
         if (doctorReportShouldFocusSelection) {
             window.setTimeout(doctorReportFocusSelectionAfterLayout, 80);
             window.setTimeout(doctorReportFocusSelection, 260);
+            window.setTimeout(doctorReportFocusSelection, 700);
         }
     }
 
@@ -4645,6 +4671,15 @@ if (!window.__doctorReportControlsInitialized) {
         function focusReportSelection() {
             var reportUrl = new URL(window.location.href);
             var shouldFocus = (
+                (function () {
+                    try {
+                        var requested = window.sessionStorage.getItem("doctorReportFocus") === "1";
+                        window.sessionStorage.removeItem("doctorReportFocus");
+                        return requested;
+                    } catch (error) {
+                        return false;
+                    }
+                })() ||
                 reportUrl.searchParams.get("summary_focus") === "1" ||
                 reportUrl.searchParams.get("summary_period") === "monthly" ||
                 reportUrl.searchParams.get("summary_period") === "quarterly" ||
@@ -4655,11 +4690,17 @@ if (!window.__doctorReportControlsInitialized) {
             var target = chart || panel;
             panel.setAttribute("tabindex", "-1");
             target.setAttribute("tabindex", "-1");
-            panel.scrollIntoView({ behavior: "auto", block: "start" });
+            var reportTop = panel.getBoundingClientRect().top + window.pageYOffset - 16;
+            window.scrollTo({ top: Math.max(0, reportTop), behavior: "auto" });
             target.focus({ preventScroll: true });
         }
 
         function navigate(period, from, to) {
+            try {
+                window.sessionStorage.setItem("doctorReportFocus", "1");
+            } catch (error) {
+                // The URL hash remains as a fallback.
+            }
             var url = new URL(window.location.href);
             url.searchParams.set("summary_period", period || "daily");
             if (from && to) {
@@ -4734,11 +4775,25 @@ if (!window.__doctorReportControlsInitialized) {
             if (event.key === "Escape") closeRange();
         }, true);
 
+        var fallbackPeriodSelect = document.getElementById("doctorReportPeriod");
+        if (fallbackPeriodSelect) {
+            fallbackPeriodSelect.removeAttribute("onchange");
+            fallbackPeriodSelect.addEventListener("change", function () {
+                try {
+                    window.sessionStorage.setItem("doctorReportFocus", "1");
+                } catch (error) {
+                    // The URL hash remains as a fallback.
+                }
+                if (this.form) this.form.submit();
+            });
+        }
+
         window.setTimeout(function () {
             window.requestAnimationFrame(function () {
                 window.requestAnimationFrame(focusReportSelection);
             });
         }, 120);
+        window.setTimeout(focusReportSelection, 700);
         })();
     }, 0);
 }
@@ -4841,7 +4896,7 @@ include 'includes/header.php';
                     <form class="doctor-report-period-form" method="get" action="doctor.php#consultationSummary">
                         <input type="hidden" name="summary_page" value="1">
                         <input type="hidden" name="summary_focus" value="1">
-                        <select id="doctorReportPeriod" name="summary_period" onchange="this.form.submit()">
+                        <select id="doctorReportPeriod" name="summary_period">
                             <option value="daily"<?php echo $summaryPeriod === 'daily' ? ' selected' : ''; ?>>Weekly</option>
                             <option value="monthly"<?php echo $summaryPeriod === 'monthly' ? ' selected' : ''; ?>>Monthly</option>
                             <option value="quarterly"<?php echo $summaryPeriod === 'quarterly' ? ' selected' : ''; ?>>Quarterly</option>
