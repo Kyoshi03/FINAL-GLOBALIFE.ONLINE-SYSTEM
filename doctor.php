@@ -2892,7 +2892,9 @@ body.doctor-report-range-open {
 /* Doctor dashboard presentation: keep the role-specific layout isolated from other pages. */
 .doctor-clean-dashboard {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px 16px;
+    row-gap: 20px;
+    column-gap: 16px;
+    align-content: start;
 }
 
 .doctor-clean-dashboard > * {
@@ -3313,7 +3315,7 @@ body.doctor-report-range-open {
 
 @media (max-width: 600px) {
     .doctor-clean-dashboard {
-        gap: 14px;
+        row-gap: 20px;
     }
 
     .doctor-dashboard-hero {
