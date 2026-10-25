@@ -14,8 +14,10 @@ try {
 } catch (Throwable $e) {
     $doctorClinicInfo = clinic_info_defaults();
 }
-$pageTitle = 'Doctor Dashboard | ' . $doctorClinicInfo['clinic_name'];
+$pageTitle = 'Clinical Dashboard | ' . $doctorClinicInfo['clinic_name'];
 $currentUser = getCurrentUser();
+$doctorDisplayName = trim((string) ($currentUser['full_name'] ?? $currentUser['username'] ?? 'Doctor'));
+$doctorDisplayName = preg_replace('/^\s*(?:dr\.?|doctor)\s+/i', '', $doctorDisplayName) ?: 'Doctor';
 $today = date('Y-m-d');
 
 function doctor_time_label(?string $time): string {
@@ -1158,7 +1160,7 @@ select:focus {
     gap: 0;
 }
 
-/* Keep the report as the primary dashboard section, followed by appointment summaries. */
+/* Keep dashboard sections ordered by their visual layout without changing their data flow. */
 .doctor-clean-dashboard > * {
     order: 10;
 }
@@ -2882,6 +2884,511 @@ body.doctor-report-range-open {
     z-index: 20;
     pointer-events: auto;
 }
+
+/* Doctor dashboard presentation: keep the role-specific layout isolated from other pages. */
+.doctor-clean-dashboard {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 16px;
+}
+
+.doctor-clean-dashboard > * {
+    min-width: 0;
+}
+
+.doctor-clean-title,
+.doctor-clean-cards,
+.doctor-report-panel,
+.doctor-clean-dashboard > .doctor-report-range-modal,
+.doctor-clean-dashboard > .success-message,
+.doctor-clean-dashboard > .error-message {
+    grid-column: 1 / -1;
+}
+
+.doctor-clean-title {
+    padding: 0;
+}
+
+.doctor-dashboard-hero {
+    position: relative;
+    display: flex;
+    min-height: 138px;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    overflow: hidden;
+    padding: 28px 42px;
+    border: 0;
+    border-radius: 16px;
+    background: linear-gradient(110deg, #1fc8bd 0%, #2daedb 52%, #42baf0 100%);
+    box-shadow: 0 14px 28px rgba(15, 124, 194, .16);
+}
+
+.doctor-dashboard-hero::after {
+    position: absolute;
+    inset: auto -12% -70% 38%;
+    height: 170px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .08);
+    content: "";
+    transform: rotate(-8deg);
+}
+
+.doctor-dashboard-hero-copy {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+}
+
+.doctor-dashboard-hero-copy span,
+.doctor-dashboard-hero-copy h1 {
+    display: block;
+    margin: 0;
+    color: #fff;
+    letter-spacing: 0;
+}
+
+.doctor-dashboard-hero-copy span {
+    font-size: clamp(1.65rem, 3vw, 2.5rem);
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.doctor-dashboard-hero-copy h1 {
+    margin-top: 6px;
+    font-size: clamp(1.45rem, 2.5vw, 2.3rem);
+    font-weight: 800;
+    line-height: 1.12;
+}
+
+.doctor-dashboard-hero-art {
+    position: relative;
+    z-index: 1;
+    flex: 0 0 min(31%, 300px);
+    min-width: 190px;
+}
+
+.doctor-dashboard-hero-art svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+}
+
+.doctor-dashboard-hero-art .hero-orbit {
+    fill: none;
+    stroke: rgba(255, 255, 255, .78);
+    stroke-width: 2;
+}
+
+.doctor-dashboard-hero-art .hero-spark {
+    fill: #dffbff;
+}
+
+.doctor-dashboard-hero-art .hero-bubble.back {
+    fill: rgba(208, 249, 255, .28);
+    stroke: rgba(255, 255, 255, .28);
+    stroke-width: 1.5;
+}
+
+.doctor-dashboard-hero-art .hero-bubble.front {
+    fill: rgba(255, 255, 255, .23);
+    stroke: rgba(255, 255, 255, .4);
+    stroke-width: 1.5;
+}
+
+.doctor-dashboard-hero-art .hero-bubble-tail {
+    fill: rgba(212, 249, 255, .32);
+}
+
+.doctor-dashboard-hero-art .hero-cross {
+    fill: #fff;
+    opacity: .96;
+}
+
+.doctor-dashboard-hero-art .hero-heartbeat {
+    fill: none;
+    stroke: #0d9ec9;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.doctor-clean-cards {
+    order: 2;
+    gap: 16px;
+}
+
+.doctor-clean-card {
+    min-height: 126px;
+    justify-content: flex-start;
+    gap: 18px;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(25, 76, 110, .06);
+}
+
+.doctor-clean-card-content span {
+    font-weight: 700;
+}
+
+.doctor-clean-card-content strong {
+    margin-top: 7px;
+    font-size: 1.85rem;
+    font-weight: 800;
+}
+
+.doctor-clean-card-content small {
+    margin-top: 6px;
+}
+
+.doctor-clean-card-content a {
+    margin-top: 11px;
+    font-weight: 700;
+}
+
+.doctor-clean-dashboard > #appointmentRequests,
+.doctor-clean-dashboard > .doctor-clean-panel:not(#appointmentRequests) {
+    order: 3;
+    min-width: 0;
+    height: 100%;
+}
+
+.doctor-clean-dashboard > #appointmentRequests {
+    grid-column: 2;
+}
+
+.doctor-clean-dashboard > .doctor-clean-panel:not(#appointmentRequests) {
+    grid-column: 1;
+}
+
+.doctor-clean-panel {
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(25, 76, 110, .05);
+}
+
+.doctor-clean-panel-head {
+    padding: 20px 20px 12px;
+}
+
+.doctor-clean-panel-head h2 {
+    color: #102f65;
+    font-size: 1.15rem;
+    font-weight: 800;
+}
+
+.doctor-clean-panel-head p {
+    color: #62779d;
+    font-size: .86rem;
+}
+
+.doctor-clean-panel-head a {
+    font-weight: 700;
+}
+
+.doctor-clean-table {
+    margin: 0 20px 20px;
+    border-color: #d8e7f4;
+}
+
+.doctor-empty-state {
+    display: grid;
+    min-height: 134px;
+    box-sizing: border-box;
+    place-items: center;
+    align-content: center;
+    gap: 7px;
+    padding: 18px;
+    border: 1px dashed #c7def0;
+    background: linear-gradient(135deg, #fbfdff, #f2f9ff);
+    color: #526aa5;
+    text-align: center;
+}
+
+.doctor-empty-state strong {
+    color: #526aa5;
+    font-size: .92rem;
+    font-weight: 600;
+}
+
+.doctor-empty-state small {
+    color: #86a0c3;
+    font-size: .8rem;
+}
+
+.doctor-empty-icon {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    border-radius: 50%;
+    background: #e9f5ff;
+    color: #0f7cc2;
+}
+
+.doctor-empty-icon.pending {
+    background: #fff3df;
+    color: #f08a00;
+}
+
+.doctor-empty-icon svg {
+    width: 25px;
+    height: 25px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+}
+
+.doctor-clean-row.requests,
+.doctor-clean-row.today {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 9px 12px;
+    padding: 13px;
+}
+
+.doctor-clean-row.requests > *,
+.doctor-clean-row.today > * {
+    min-width: 0;
+    text-align: left;
+}
+
+.doctor-clean-row.requests > :nth-child(1),
+.doctor-clean-row.requests > :nth-child(2),
+.doctor-clean-row.requests > :nth-child(3),
+.doctor-clean-row.today > :nth-child(1),
+.doctor-clean-row.today > :nth-child(2),
+.doctor-clean-row.today > :nth-child(3) {
+    grid-column: 1;
+}
+
+.doctor-clean-row.requests > :nth-child(4),
+.doctor-clean-row.today > :nth-child(4) {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.doctor-clean-row.requests > :nth-child(5),
+.doctor-clean-row.today > :nth-child(5) {
+    grid-column: 1 / -1;
+}
+
+.doctor-clean-row.requests .doctor-clean-patient,
+.doctor-clean-row.today .doctor-clean-patient {
+    justify-content: flex-start;
+}
+
+.doctor-clean-row.requests .doctor-clean-actions,
+.doctor-clean-row.today .doctor-clean-actions {
+    justify-content: flex-start;
+}
+
+.doctor-report-panel {
+    order: 4;
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(25, 76, 110, .05);
+}
+
+.doctor-report-head {
+    align-items: center;
+    gap: 18px;
+}
+
+.doctor-report-head h2 {
+    color: #102f65;
+    font-size: 1.28rem;
+    font-weight: 800;
+}
+
+.doctor-report-head p {
+    margin-top: 5px;
+    color: #7387a8;
+    font-size: .86rem;
+}
+
+.doctor-report-controls label {
+    color: #355c8d;
+    font-weight: 700;
+}
+
+.doctor-report-controls select,
+.doctor-report-button {
+    min-height: 38px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: .86rem;
+}
+
+.doctor-report-range-row {
+    margin: 16px 0 8px;
+}
+
+.doctor-report-range {
+    color: #7083a3;
+    font-size: .86rem;
+}
+
+.doctor-report-total {
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: #e9f6ff;
+    color: #0f6eb7;
+    font-size: .84rem;
+}
+
+.doctor-report-total strong,
+.doctor-report-range strong {
+    color: #174786;
+}
+
+.doctor-report-chart-wrap {
+    min-height: 0;
+    margin-top: 8px;
+    padding: 10px 8px 4px;
+    border-radius: 8px;
+}
+
+.doctor-report-chart .report-bar {
+    fill: #258ee6;
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center bottom;
+    animation: doctorReportBarRise .6s cubic-bezier(.2,.7,.2,1) forwards;
+}
+
+.doctor-report-chart .report-value {
+    fill: #173e84;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.doctor-report-chart text {
+    fill: #6e83a1;
+    font-size: 12px;
+}
+
+.doctor-report-chart .axis-title {
+    fill: #173e84;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+@keyframes doctorReportBarRise {
+    from { opacity: 0; transform: scaleY(0); }
+    to { opacity: 1; transform: scaleY(1); }
+}
+
+@media (max-width: 900px) {
+    .doctor-clean-dashboard {
+        grid-template-columns: 1fr;
+    }
+
+    .doctor-clean-dashboard > #appointmentRequests,
+    .doctor-clean-dashboard > .doctor-clean-panel:not(#appointmentRequests),
+    .doctor-clean-dashboard > .doctor-report-panel,
+    .doctor-clean-dashboard > .doctor-clean-cards,
+    .doctor-clean-dashboard > .doctor-clean-title {
+        grid-column: 1;
+    }
+
+    .doctor-dashboard-hero {
+        min-height: 126px;
+        padding: 24px 26px;
+    }
+
+    .doctor-dashboard-hero-art {
+        flex-basis: 34%;
+        min-width: 145px;
+    }
+}
+
+@media (max-width: 600px) {
+    .doctor-clean-dashboard {
+        gap: 14px;
+    }
+
+    .doctor-dashboard-hero {
+        align-items: flex-start;
+        min-height: 162px;
+        padding: 22px 20px;
+    }
+
+    .doctor-dashboard-hero-copy span {
+        font-size: 1.55rem;
+    }
+
+    .doctor-dashboard-hero-copy h1 {
+        max-width: 65%;
+        font-size: 1.28rem;
+    }
+
+    .doctor-dashboard-hero-art {
+        position: absolute;
+        right: 8px;
+        bottom: 2px;
+        width: 48%;
+        min-width: 0;
+    }
+
+    .doctor-clean-cards {
+        gap: 12px;
+    }
+
+    .doctor-clean-card {
+        min-height: 108px;
+        padding: 16px;
+    }
+
+    .doctor-clean-icon {
+        width: 52px;
+        height: 52px;
+        flex-basis: 52px;
+    }
+
+    .doctor-clean-card-content strong {
+        font-size: 1.65rem;
+    }
+
+    .doctor-report-panel {
+        padding: 16px 12px;
+    }
+
+    .doctor-report-head {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .doctor-report-controls {
+        justify-content: flex-start;
+    }
+
+    .doctor-report-controls label,
+    .doctor-report-period-form,
+    .doctor-report-controls select,
+    .doctor-report-button {
+        width: 100%;
+    }
+
+    .doctor-report-range-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .doctor-report-total {
+        align-self: flex-start;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .doctor-report-chart .report-bar {
+        opacity: 1;
+        animation: none;
+    }
+}
 ';
 
 $additionalScripts = '
@@ -4088,9 +4595,24 @@ include 'includes/header.php';
 ?>
 <main class="doctor-dashboard">
     <div class="doctor-clean-dashboard">
-        <section class="doctor-clean-title">
-            <h1>Welcome, <?php echo htmlspecialchars($currentUser['full_name']); ?></h1>
-            <p>Here is what is happening with your consultation appointments.</p>
+        <section class="doctor-clean-title doctor-dashboard-hero" aria-label="Doctor welcome">
+            <div class="doctor-dashboard-hero-copy">
+                <span>Welcome back,</span>
+                <h1>Dr. <?php echo htmlspecialchars($doctorDisplayName); ?></h1>
+            </div>
+            <div class="doctor-dashboard-hero-art" aria-hidden="true">
+                <svg viewBox="0 0 320 170" role="presentation">
+                    <path class="hero-orbit" d="M42 83c18-49 83-72 149-53 60 17 100 59 87 91-13 33-76 52-139 39-54-11-96-43-97-77z"/>
+                    <circle class="hero-spark" cx="38" cy="67" r="7"/>
+                    <circle class="hero-spark" cx="276" cy="118" r="6"/>
+                    <rect class="hero-bubble back" x="80" y="39" width="168" height="101" rx="28"/>
+                    <path class="hero-bubble-tail back" d="M105 133 91 154l35-16z"/>
+                    <rect class="hero-bubble front" x="111" y="25" width="132" height="100" rx="28"/>
+                    <path class="hero-bubble-tail front" d="m213 117 13 19-30-12z"/>
+                    <path class="hero-cross" d="M169 48h18v23h23v18h-23v23h-18V89h-23V71h23z"/>
+                    <path class="hero-heartbeat" d="M126 80h22l9-18 11 37 11-25 8 6h25"/>
+                </svg>
+            </div>
         </section>
 
         <?php if (isset($_SESSION['success'])): ?>
@@ -4180,28 +4702,45 @@ include 'includes/header.php';
 
             <div class="doctor-report-chart-wrap">
                 <?php if ($summaryGraphPoints): ?>
-                    <svg class="doctor-report-chart" viewBox="0 0 920 320" role="img" aria-label="Completed consultation report chart">
-                        <?php for ($tick = 0; $tick <= 4; $tick++): ?>
-                            <?php $tickY = 250 - (($tick / 4) * 190); ?>
+                    <?php
+                    $summaryGraphAxisMax = max(1, (int) $summaryGraphMax);
+                    $summaryGraphTickStep = max(1, (int) ceil($summaryGraphAxisMax / 4));
+                    $summaryGraphTickValues = [0];
+                    for ($tickValue = $summaryGraphTickStep; $tickValue < $summaryGraphAxisMax; $tickValue += $summaryGraphTickStep) {
+                        $summaryGraphTickValues[] = $tickValue;
+                    }
+                    if (end($summaryGraphTickValues) !== $summaryGraphAxisMax) {
+                        $summaryGraphTickValues[] = $summaryGraphAxisMax;
+                    }
+                    $summaryGraphBarWidth = min(64, max(12, 720 / max(1, count($summaryGraphPoints))));
+                    ?>
+                    <svg class="doctor-report-chart" viewBox="0 0 920 290" role="img" aria-label="Completed consultation report chart">
+                        <?php foreach ($summaryGraphTickValues as $tickValue): ?>
+                            <?php $tickY = 220 - (($tickValue / $summaryGraphAxisMax) * 170); ?>
                             <line class="grid-line" x1="70" y1="<?php echo number_format($tickY, 2, '.', ''); ?>" x2="890" y2="<?php echo number_format($tickY, 2, '.', ''); ?>"></line>
-                            <text x="61" y="<?php echo number_format($tickY + 4, 2, '.', ''); ?>" text-anchor="end"><?php echo (int) round($summaryGraphMax * ($tick / 4)); ?></text>
-                        <?php endfor; ?>
-                        <line class="axis-line" x1="70" y1="60" x2="70" y2="250"></line>
-                        <line class="axis-line" x1="70" y1="250" x2="890" y2="250"></line>
-                        <polygon class="report-area" points="<?php echo htmlspecialchars($summaryGraphAreaPoints, ENT_QUOTES, 'UTF-8'); ?>"></polygon>
-                        <polyline class="report-line" points="<?php echo htmlspecialchars($summaryGraphLinePoints, ENT_QUOTES, 'UTF-8'); ?>"></polyline>
+                            <text x="61" y="<?php echo number_format($tickY + 4, 2, '.', ''); ?>" text-anchor="end"><?php echo (int) $tickValue; ?></text>
+                        <?php endforeach; ?>
+                        <line class="axis-line" x1="70" y1="50" x2="70" y2="220"></line>
+                        <line class="axis-line" x1="70" y1="220" x2="890" y2="220"></line>
                         <?php foreach ($summaryGraphPoints as $point): ?>
-                            <circle class="report-dot" cx="<?php echo number_format((float) $point['x'], 2, '.', ''); ?>" cy="<?php echo number_format((float) $point['y'], 2, '.', ''); ?>" r="4.5">
-                                <title><?php echo htmlspecialchars((string) $point['full_label'] . ': ' . (int) $point['value'] . ' completed consultations', ENT_QUOTES, 'UTF-8'); ?></title>
-                            </circle>
+                            <?php
+                            $barValue = (int) $point['value'];
+                            $barHeight = ($barValue / $summaryGraphAxisMax) * 170;
+                            $barY = 220 - $barHeight;
+                            $barX = (float) $point['x'] - ($summaryGraphBarWidth / 2);
+                            ?>
+                            <rect class="report-bar" x="<?php echo number_format($barX, 2, '.', ''); ?>" y="<?php echo number_format($barY, 2, '.', ''); ?>" width="<?php echo number_format($summaryGraphBarWidth, 2, '.', ''); ?>" height="<?php echo number_format($barHeight, 2, '.', ''); ?>" rx="5">
+                                <title><?php echo htmlspecialchars((string) $point['full_label'] . ': ' . $barValue . ' completed consultations', ENT_QUOTES, 'UTF-8'); ?></title>
+                            </rect>
+                            <text class="report-value" x="<?php echo number_format((float) $point['x'], 2, '.', ''); ?>" y="<?php echo number_format(max(42, $barY - 8), 2, '.', ''); ?>" text-anchor="middle"><?php echo $barValue; ?></text>
                         <?php endforeach; ?>
                         <?php $summaryGraphLabelStep = max(1, (int) ceil(count($summaryGraphPoints) / 8)); ?>
                         <?php foreach ($summaryGraphPoints as $index => $point): ?>
                             <?php if ($index === 0 || $index === count($summaryGraphPoints) - 1 || $index % $summaryGraphLabelStep === 0): ?>
-                                <text x="<?php echo number_format((float) $point['x'], 2, '.', ''); ?>" y="274" text-anchor="middle"><?php echo htmlspecialchars((string) $point['label'], ENT_QUOTES, 'UTF-8'); ?></text>
+                                <text x="<?php echo number_format((float) $point['x'], 2, '.', ''); ?>" y="248" text-anchor="middle"><?php echo htmlspecialchars((string) $point['label'], ENT_QUOTES, 'UTF-8'); ?></text>
                             <?php endif; ?>
                         <?php endforeach; ?>
-                        <text class="axis-title" x="480" y="313" text-anchor="middle">Period</text>
+                        <text class="axis-title" x="480" y="278" text-anchor="middle">Period</text>
                     </svg>
                 <?php else: ?>
                     <div class="doctor-report-empty">No completed consultations in this date range.</div>
@@ -4221,7 +4760,11 @@ include 'includes/header.php';
 
             <?php if (empty($pendingRequests)): ?>
                 <div class="doctor-clean-table">
-                    <div class="empty-state">No pending consultation requests.</div>
+                    <div class="empty-state doctor-empty-state">
+                        <span class="doctor-empty-icon pending" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 2h12"/><path d="M6 22h12"/><path d="M8 2c0 4 8 4 8 10s-8 6-8 10"/><path d="M16 2c0 4-8 4-8 10s8 6 8 10"/></svg></span>
+                        <strong>No pending consultation requests.</strong>
+                        <small>You&apos;re all caught up!</small>
+                    </div>
                 </div>
             <?php else: ?>
                 <div class="doctor-clean-table">
@@ -4337,7 +4880,11 @@ include 'includes/header.php';
 
             <?php if (empty($todaysConsultations)): ?>
                 <div class="doctor-clean-table">
-                    <div class="empty-state">No confirmed consultation appointments today.</div>
+                    <div class="empty-state doctor-empty-state">
+                        <span class="doctor-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><path d="M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg></span>
+                        <strong>No confirmed appointments today.</strong>
+                        <small>Enjoy your day!</small>
+                    </div>
                 </div>
             <?php else: ?>
                 <div class="doctor-clean-table">
