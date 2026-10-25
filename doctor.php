@@ -4344,7 +4344,7 @@ function initializeDoctorDashboard() {
             try {
                 window.sessionStorage.setItem("doctorReportFocus", "1");
             } catch (error) {
-                // Scrolling still falls back to the URL hash when storage is unavailable.
+                // The summary_focus query parameter remains as a fallback.
             }
         }
 
@@ -4570,7 +4570,6 @@ function initializeDoctorDashboard() {
                 url.searchParams.delete("summary_open");
             }
             url.searchParams.delete("summary_page");
-            url.hash = "consultationSummary";
             window.location.assign(url.toString());
         }
 
@@ -4699,7 +4698,7 @@ if (!window.__doctorReportControlsInitialized) {
             try {
                 window.sessionStorage.setItem("doctorReportFocus", "1");
             } catch (error) {
-                // The URL hash remains as a fallback.
+                // The summary_focus query parameter remains as a fallback.
             }
             var url = new URL(window.location.href);
             url.searchParams.set("summary_period", period || "daily");
@@ -4715,7 +4714,6 @@ if (!window.__doctorReportControlsInitialized) {
                 url.searchParams.delete("summary_open");
             }
             url.searchParams.delete("summary_page");
-            url.hash = "consultationSummary";
             window.location.assign(url.toString());
         }
 
@@ -4782,7 +4780,7 @@ if (!window.__doctorReportControlsInitialized) {
                 try {
                     window.sessionStorage.setItem("doctorReportFocus", "1");
                 } catch (error) {
-                    // The URL hash remains as a fallback.
+                    // The summary_focus query parameter remains as a fallback.
                 }
                 if (this.form) this.form.submit();
             });
@@ -4893,7 +4891,7 @@ include 'includes/header.php';
                 </div>
                 <div class="doctor-report-controls" aria-label="Consultation report filters">
                     <label for="doctorReportPeriod">Report Period</label>
-                    <form class="doctor-report-period-form" method="get" action="doctor.php#consultationSummary">
+                    <form class="doctor-report-period-form" method="get" action="doctor.php">
                         <input type="hidden" name="summary_page" value="1">
                         <input type="hidden" name="summary_focus" value="1">
                         <select id="doctorReportPeriod" name="summary_period">
