@@ -1236,6 +1236,13 @@ select:focus {
     background: #edf6ff;
     color: #0f7cc2;
     flex: 0 0 64px;
+    box-shadow: inset 0 0 0 1px rgba(15, 124, 194, .05);
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.doctor-clean-card:hover .doctor-clean-icon {
+    transform: translateY(-2px);
+    box-shadow: inset 0 0 0 1px rgba(15, 124, 194, .1), 0 8px 14px rgba(15, 124, 194, .12);
 }
 
 .doctor-clean-card-content {
@@ -4652,7 +4659,7 @@ include 'includes/header.php';
             </div>
             <div class="doctor-clean-card">
                 <span class="doctor-clean-icon pending" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="M6 2h12"/><path d="M6 22h12"/><path d="M8 2c0 4 8 4 8 10s-8 6-8 10"/><path d="M16 2c0 4-8 4-8 10s8 6 8 10"/></svg>
+                    <svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M14 3v4h4"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>
                 </span>
                 <div class="doctor-clean-card-content">
                     <span>Pending Requests</span>
@@ -4663,7 +4670,7 @@ include 'includes/header.php';
             </div>
             <div class="doctor-clean-card">
                 <span class="doctor-clean-icon confirmed" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="m20 6-11 11-5-5"/></svg>
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16.5 9"/></svg>
                 </span>
                 <div class="doctor-clean-card-content">
                     <span>Confirmed</span>
@@ -4674,7 +4681,7 @@ include 'includes/header.php';
             </div>
             <div class="doctor-clean-card">
                 <span class="doctor-clean-icon done" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="m20 6-11 11-5-5"/></svg>
+                    <svg viewBox="0 0 24 24"><path d="M5 21V4"/><path d="M5 5h11l-2 3 2 3H5"/></svg>
                 </span>
                 <div class="doctor-clean-card-content">
                     <span>Completed</span>
