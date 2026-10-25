@@ -3313,6 +3313,12 @@ body.doctor-report-range-open {
     box-shadow: 0 8px 20px rgba(25, 76, 110, .05);
 }
 
+#consultationSummary:focus-visible,
+#consultationSummary .doctor-report-chart:focus-visible {
+    outline: 2px solid rgba(15, 124, 194, .5);
+    outline-offset: 4px;
+}
+
 .doctor-report-head {
     align-items: center;
     gap: 18px;
@@ -4324,6 +4330,27 @@ function initializeDoctorDashboard() {
         var doctorReportCalendarRightMonth = null;
         var doctorReportDraftFrom = "";
         var doctorReportDraftTo = "";
+        var doctorReportUrl = new URL(window.location.href);
+
+        function doctorReportFocusSelection() {
+            if (!doctorReportPanel || (doctorReportModal && !doctorReportModal.hidden)) return;
+            var chart = doctorReportPanel.querySelector(".doctor-report-chart");
+            var focusTarget = chart || doctorReportPanel;
+            doctorReportPanel.setAttribute("tabindex", "-1");
+            focusTarget.setAttribute("tabindex", "-1");
+            var reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            doctorReportPanel.scrollIntoView({
+                behavior: reducedMotion ? "auto" : "smooth",
+                block: "start"
+            });
+            focusTarget.focus({ preventScroll: true });
+        }
+
+        var doctorReportShouldFocusSelection = (
+            doctorReportPeriod === "monthly" ||
+            doctorReportPeriod === "quarterly" ||
+            doctorReportUrl.searchParams.get("summary_custom") === "1"
+        ) && doctorReportUrl.searchParams.get("summary_open") !== "1";
 
         function doctorReportDefaultRange(period) {
             return doctorReportData.defaults && doctorReportData.defaults[period]
@@ -4572,6 +4599,9 @@ function initializeDoctorDashboard() {
         });
         if (doctorReportModal && doctorReportModal.getAttribute("aria-hidden") === "false") {
             doctorReportOpenRange();
+        }
+        if (doctorReportShouldFocusSelection) {
+            window.setTimeout(doctorReportFocusSelection, 80);
         }
     }
 
