@@ -148,7 +148,8 @@ if (
 // Read the doctor name from the current database record so admin profile edits
 // appear immediately without requiring the doctor to log in again.
 $doctorDisplayName = trim((string) ($currentUser['full_name'] ?? $currentUser['username'] ?? 'Doctor'));
-$doctorNameStmt = $conn->prepare("SELECT first_name, middle_name, last_name, suffix, full_name FROM users WHERE id = ? AND role = 'doctor' LIMIT 1");
+$doctorNameExpression = dbUsersNameExpression();
+$doctorNameStmt = $conn->prepare("SELECT first_name, middle_name, last_name, suffix, {$doctorNameExpression} AS full_name FROM users WHERE id = ? AND role = 'doctor' LIMIT 1");
 if ($doctorNameStmt) {
     $doctorId = (int) ($currentUser['id'] ?? 0);
     $doctorNameStmt->bind_param('i', $doctorId);
