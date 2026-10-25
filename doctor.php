@@ -2550,6 +2550,29 @@ body.doctor-summary-range-open {
     font-weight: 500 !important;
 }
 
+.doctor-report-button.is-disabled,
+.doctor-report-button:disabled {
+    color: #9aabba;
+    border-color: #dce7ee;
+    background: #f5f8fa;
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: .72;
+    pointer-events: none;
+    transform: none;
+}
+
+.doctor-report-button.is-disabled:hover,
+.doctor-report-button:disabled:hover,
+.doctor-report-button.is-disabled:active,
+.doctor-report-button:disabled:active {
+    color: #9aabba;
+    border-color: #dce7ee;
+    background: #f5f8fa;
+    box-shadow: none;
+    transform: none;
+}
+
 .doctor-report-button.primary {
     border-color: #0f7cc2;
     color: #fff;
@@ -4947,7 +4970,11 @@ include 'includes/header.php';
                         </select>
                     </form>
                     <a class="doctor-report-button" id="doctorReportCustom" href="<?php echo htmlspecialchars($summaryReportCustomUrl, ENT_QUOTES, 'UTF-8'); ?>" aria-haspopup="dialog">Custom Date Range</a>
-                    <a class="doctor-report-button" id="doctorReportClear" href="<?php echo htmlspecialchars($summaryReportClearUrl, ENT_QUOTES, 'UTF-8'); ?>">Clear</a>
+                    <?php if ($summaryIsCustomRange): ?>
+                        <a class="doctor-report-button" id="doctorReportClear" href="<?php echo htmlspecialchars($summaryReportClearUrl, ENT_QUOTES, 'UTF-8'); ?>">Clear</a>
+                    <?php else: ?>
+                        <button class="doctor-report-button is-disabled" id="doctorReportClear" type="button" disabled aria-disabled="true" title="Set a custom date range first">Clear</button>
+                    <?php endif; ?>
                 </div>
             </div>
 
