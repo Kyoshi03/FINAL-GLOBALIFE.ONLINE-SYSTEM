@@ -4707,6 +4707,7 @@ include 'includes/header.php';
             <script type="application/json" id="doctorConsultationReportData"><?php echo $summaryClientJson; ?></script>
         </section>
 
+        <div class="doctor-appointment-grid">
         <section class="doctor-clean-panel" id="appointmentRequests">
             <div class="doctor-clean-panel-head">
                 <div>
@@ -4889,6 +4890,7 @@ include 'includes/header.php';
                 <div><strong>Reminder:</strong> Please add medical notes after each consultation and update the appointment status from the appointments page.</div>
             </div>
         </section>
+        </div>
     </div>
 
     <div class="doctor-confirm-modal" id="doctorConfirmModal" aria-hidden="true">
