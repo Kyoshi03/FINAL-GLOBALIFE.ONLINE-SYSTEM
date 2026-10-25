@@ -2967,16 +2967,33 @@ body.doctor-report-range-open {
 
 .doctor-dashboard-hero-copy span {
     font-size: clamp(1.35rem, 2.5vw, 2.1rem);
-    font-weight: 800;
+    font-weight: 500;
     line-height: 1.1;
 }
 
 .doctor-dashboard-hero-copy h1 {
     margin-top: 6px;
     font-size: clamp(1.2rem, 2vw, 1.9rem);
-    font-weight: 800;
+    font-weight: 700;
     line-height: 1.12;
     color: #fff !important;
+}
+
+.doctor-dashboard-hero-dots {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 110px;
+    margin-top: 14px;
+    padding-top: 9px;
+    border-top: 2px solid rgba(255, 255, 255, .5);
+}
+
+.doctor-dashboard-hero-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .7);
 }
 
 .doctor-dashboard-hero-art {
@@ -4631,6 +4648,11 @@ include 'includes/header.php';
             <div class="doctor-dashboard-hero-copy">
                 <span>Welcome back,</span>
                 <h1>Dr. <?php echo htmlspecialchars($doctorDisplayName); ?></h1>
+                <div class="doctor-dashboard-hero-dots" aria-hidden="true">
+                    <span class="doctor-dashboard-hero-dot"></span>
+                    <span class="doctor-dashboard-hero-dot"></span>
+                    <span class="doctor-dashboard-hero-dot"></span>
+                </div>
             </div>
             <div class="doctor-dashboard-hero-art" aria-hidden="true">
                 <img src="assets/doctor-notebook-hero.png" alt="" role="presentation">
