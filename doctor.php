@@ -4355,19 +4355,42 @@ function initializeDoctorDashboard() {
             doctorReportPanel.setAttribute("tabindex", "-1");
             focusTarget.setAttribute("tabindex", "-1");
             var reportTop = doctorReportPanel.getBoundingClientRect().top + window.pageYOffset - 16;
+            var targetTop = Math.max(0, Math.round(reportTop));
             window.scrollTo({
-                top: Math.max(0, reportTop),
+                top: targetTop,
                 behavior: "auto"
             });
-            focusTarget.focus({ preventScroll: true });
+            if (document.documentElement) document.documentElement.scrollTop = targetTop;
+            if (document.body) document.body.scrollTop = targetTop;
+            try {
+                focusTarget.focus({ preventScroll: true });
+            } catch (error) {
+                focusTarget.focus();
+            }
+            // Some browsers restore focus after scrolling. Re-apply the exact report position.
+            window.scrollTo(0, targetTop);
         }
 
         function doctorReportFocusSelectionAfterLayout() {
             if (!doctorReportShouldFocusSelection) return;
-            // Run after the dashboard has finished moving the report section into place.
+            // Wait for the reorder, fonts, and hero image to settle before stopping on the report.
+            var attempts = 0;
+            function settleReportPosition() {
+                if (attempts++ >= 18) return;
+                doctorReportFocusSelection();
+                if (attempts < 6) {
+                    window.requestAnimationFrame(settleReportPosition);
+                } else {
+                    window.setTimeout(settleReportPosition, 120);
+                }
+            }
             window.requestAnimationFrame(function () {
-                window.requestAnimationFrame(doctorReportFocusSelection);
+                window.requestAnimationFrame(settleReportPosition);
             });
+            if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(doctorReportFocusSelection);
+            }
+            window.addEventListener("load", doctorReportFocusSelection, { once: true });
         }
 
         var doctorReportShouldFocusSelection = (
@@ -4690,8 +4713,36 @@ if (!window.__doctorReportControlsInitialized) {
             panel.setAttribute("tabindex", "-1");
             target.setAttribute("tabindex", "-1");
             var reportTop = panel.getBoundingClientRect().top + window.pageYOffset - 16;
-            window.scrollTo({ top: Math.max(0, reportTop), behavior: "auto" });
-            target.focus({ preventScroll: true });
+            var targetTop = Math.max(0, Math.round(reportTop));
+            window.scrollTo({ top: targetTop, behavior: "auto" });
+            if (document.documentElement) document.documentElement.scrollTop = targetTop;
+            if (document.body) document.body.scrollTop = targetTop;
+            try {
+                target.focus({ preventScroll: true });
+            } catch (error) {
+                target.focus();
+            }
+            window.scrollTo(0, targetTop);
+        }
+
+        function settleFallbackReportPosition() {
+            var attempts = 0;
+            function settle() {
+                if (attempts++ >= 18) return;
+                focusReportSelection();
+                if (attempts < 6) {
+                    window.requestAnimationFrame(settle);
+                } else {
+                    window.setTimeout(settle, 120);
+                }
+            }
+            window.requestAnimationFrame(function () {
+                window.requestAnimationFrame(settle);
+            });
+            if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(focusReportSelection);
+            }
+            window.addEventListener("load", focusReportSelection, { once: true });
         }
 
         function navigate(period, from, to) {
@@ -4786,12 +4837,7 @@ if (!window.__doctorReportControlsInitialized) {
             });
         }
 
-        window.setTimeout(function () {
-            window.requestAnimationFrame(function () {
-                window.requestAnimationFrame(focusReportSelection);
-            });
-        }, 120);
-        window.setTimeout(focusReportSelection, 700);
+        window.setTimeout(settleFallbackReportPosition, 120);
         })();
     }, 0);
 }
