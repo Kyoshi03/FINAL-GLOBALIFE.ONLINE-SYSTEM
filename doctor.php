@@ -293,7 +293,7 @@ function doctor_summary_pagination_url(string $period, string $from, string $to,
         'summary_from' => $from,
         'summary_to' => $to,
         'summary_page' => $page,
-    ]) . '#consultationSummary';
+    ]);
 }
 
 function doctor_completed_consultations(mysqli $conn, int $doctorId): array {
@@ -492,21 +492,21 @@ $summaryReportBaseUrl = 'doctor.php?' . http_build_query([
     'summary_from' => $summaryFrom,
     'summary_to' => $summaryTo,
     'summary_page' => 1,
-]) . '#consultationSummary';
+]);
 $summaryReportCustomUrl = 'doctor.php?' . http_build_query([
     'summary_period' => $summaryPeriod,
     'summary_from' => $summaryFrom,
     'summary_to' => $summaryTo,
     'summary_page' => 1,
     'summary_custom' => 1,
-]) . '#consultationSummary';
+]);
 $summaryClearRange = $summaryDefaultRanges[$summaryPeriod] ?? ['from' => '', 'to' => ''];
 $summaryReportClearUrl = 'doctor.php?' . http_build_query([
     'summary_period' => $summaryPeriod,
     'summary_from' => $summaryClearRange['from'],
     'summary_to' => $summaryClearRange['to'],
     'summary_page' => 1,
-]) . '#consultationSummary';
+]);
 
 $additionalStyles = patientAvatarStyles() . '
 body {
@@ -2928,22 +2928,6 @@ function initializeDoctorDashboard() {
         }, true);
     }
 
-    function focusDoctorConsultationReport() {
-        var reportPanel = document.getElementById("consultationSummary");
-        if (!reportPanel) return;
-        var reportUrl = new URL(window.location.href);
-        var shouldFocusReport = reportUrl.hash === "#consultationSummary"
-            || reportUrl.searchParams.has("summary_period")
-            || reportUrl.searchParams.has("summary_from")
-            || reportUrl.searchParams.has("summary_to");
-        if (!shouldFocusReport) return;
-        window.setTimeout(function () {
-            reportPanel.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 0);
-    }
-
-    focusDoctorConsultationReport();
-
     var confirmModal = document.getElementById("doctorConfirmModal");
     var confirmText = document.getElementById("doctorConfirmText");
     var confirmProceed = document.getElementById("doctorConfirmProceed");
@@ -3514,7 +3498,7 @@ function initializeDoctorDashboard() {
         function summaryCreatePageLink(label, page, disabled, active, filtered) {
             var link = document.createElement("a");
             link.className = "consultation-summary-page" + (disabled ? " disabled" : "") + (active ? " active" : "");
-            link.href = "#consultationSummary";
+            link.href = window.location.href.split("#")[0];
             link.textContent = label;
             if (active) link.setAttribute("aria-current", "page");
             if (!disabled) {
@@ -3594,7 +3578,6 @@ function initializeDoctorDashboard() {
             url.searchParams.set("summary_from", summaryFromInput.value);
             url.searchParams.set("summary_to", summaryToInput.value);
             url.searchParams.set("summary_page", String(summaryPage));
-            url.hash = "consultationSummary";
             window.history.replaceState({}, "", url.toString());
         }
 
@@ -3604,7 +3587,6 @@ function initializeDoctorDashboard() {
             url.searchParams.delete("summary_from");
             url.searchParams.delete("summary_to");
             url.searchParams.delete("summary_page");
-            url.hash = "consultationSummary";
             window.history.replaceState({}, "", url.toString());
         }
 
@@ -3656,7 +3638,6 @@ function initializeDoctorDashboard() {
                 event.preventDefault();
                 var nextPeriod = button.getAttribute("data-summary-period");
                 summaryRender(nextPeriod, true);
-                summaryBody.scrollIntoView({ behavior: "smooth", block: "start" });
             });
         });
 
@@ -3928,7 +3909,6 @@ function initializeDoctorDashboard() {
                 url.searchParams.delete("summary_to");
             }
             url.searchParams.delete("summary_page");
-            url.hash = "consultationSummary";
             window.location.assign(url.toString());
         }
 
@@ -4048,7 +4028,6 @@ if (!window.__doctorReportControlsInitialized) {
                 url.searchParams.delete("summary_to");
             }
             url.searchParams.delete("summary_page");
-            url.hash = "consultationSummary";
             window.location.assign(url.toString());
         }
 
@@ -4192,7 +4171,7 @@ include 'includes/header.php';
                 </div>
                 <div class="doctor-report-controls" aria-label="Consultation report filters">
                     <label for="doctorReportPeriod">Report Period</label>
-                    <form class="doctor-report-period-form" method="get" action="doctor.php#consultationSummary">
+                    <form class="doctor-report-period-form" method="get" action="doctor.php">
                         <input type="hidden" name="summary_page" value="1">
                         <select id="doctorReportPeriod" name="summary_period" onchange="this.form.submit()">
                             <option value="daily"<?php echo $summaryPeriod === 'daily' ? ' selected' : ''; ?>>Weekly</option>
