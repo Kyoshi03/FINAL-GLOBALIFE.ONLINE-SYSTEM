@@ -3253,35 +3253,66 @@ body.doctor-report-range-open {
 
 .doctor-clean-row.requests,
 .doctor-clean-row.today {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 9px 12px;
+    gap: 12px;
     padding: 13px;
 }
 
-.doctor-clean-row.requests > *,
-.doctor-clean-row.today > * {
+/* Keep the column headings readable while letting each appointment row wrap
+   its action buttons below the appointment details when space is limited. */
+.doctor-clean-row.doctor-clean-head.requests,
+.doctor-clean-row.doctor-clean-head.today {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    padding: 10px 13px;
+}
+
+.doctor-clean-row.doctor-clean-head.requests > *,
+.doctor-clean-row.doctor-clean-head.today > * {
     min-width: 0;
+    grid-column: auto;
+    grid-row: auto;
     text-align: left;
 }
 
-.doctor-clean-row.requests > :nth-child(1),
-.doctor-clean-row.requests > :nth-child(2),
-.doctor-clean-row.requests > :nth-child(3),
-.doctor-clean-row.today > :nth-child(1),
-.doctor-clean-row.today > :nth-child(2),
-.doctor-clean-row.today > :nth-child(3) {
+.doctor-clean-row.requests:not(.doctor-clean-head) {
+    grid-template-columns: minmax(0, 1.25fr) minmax(115px, .85fr) minmax(0, 1fr) 96px;
+}
+
+.doctor-clean-row.today:not(.doctor-clean-head) {
+    grid-template-columns: 92px minmax(0, 1.25fr) minmax(0, 1fr) 96px;
+}
+
+.doctor-clean-row.requests:not(.doctor-clean-head) > *,
+.doctor-clean-row.today:not(.doctor-clean-head) > * {
+    min-width: 0;
+    grid-row: 1;
+    text-align: left;
+}
+
+.doctor-clean-row.requests:not(.doctor-clean-head) > :nth-child(1),
+.doctor-clean-row.today:not(.doctor-clean-head) > :nth-child(1) {
     grid-column: 1;
 }
 
-.doctor-clean-row.requests > :nth-child(4),
-.doctor-clean-row.today > :nth-child(4) {
+.doctor-clean-row.requests:not(.doctor-clean-head) > :nth-child(2),
+.doctor-clean-row.today:not(.doctor-clean-head) > :nth-child(2) {
     grid-column: 2;
-    grid-row: 1;
 }
 
-.doctor-clean-row.requests > :nth-child(5),
-.doctor-clean-row.today > :nth-child(5) {
+.doctor-clean-row.requests:not(.doctor-clean-head) > :nth-child(3),
+.doctor-clean-row.today:not(.doctor-clean-head) > :nth-child(3) {
+    grid-column: 3;
+}
+
+.doctor-clean-row.requests:not(.doctor-clean-head) > :nth-child(4),
+.doctor-clean-row.today:not(.doctor-clean-head) > :nth-child(4) {
+    grid-column: 4;
+}
+
+.doctor-clean-row.requests:not(.doctor-clean-head) > :nth-child(5),
+.doctor-clean-row.today:not(.doctor-clean-head) > :nth-child(5) {
     grid-column: 1 / -1;
+    grid-row: 2;
 }
 
 .doctor-clean-row.requests .doctor-clean-patient,
@@ -3292,6 +3323,13 @@ body.doctor-report-range-open {
 .doctor-clean-row.requests .doctor-clean-actions,
 .doctor-clean-row.today .doctor-clean-actions {
     justify-content: flex-start;
+}
+
+.doctor-clean-row.requests:not(.doctor-clean-head) .doctor-clean-actions,
+.doctor-clean-row.today:not(.doctor-clean-head) .doctor-clean-actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
 }
 
 .doctor-clean-row.requests .doctor-clean-patient strong,
@@ -3416,6 +3454,28 @@ body.doctor-report-range-open {
 
     .doctor-appointment-grid {
         grid-template-columns: 1fr;
+    }
+
+    .doctor-clean-row.doctor-clean-head.requests,
+    .doctor-clean-row.doctor-clean-head.today {
+        display: none;
+    }
+
+    .doctor-clean-row.requests:not(.doctor-clean-head),
+    .doctor-clean-row.today:not(.doctor-clean-head) {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+    }
+
+    .doctor-clean-row.requests:not(.doctor-clean-head) > *,
+    .doctor-clean-row.today:not(.doctor-clean-head) > * {
+        grid-column: 1 !important;
+        grid-row: auto !important;
+    }
+
+    .doctor-clean-row.requests:not(.doctor-clean-head) .doctor-clean-actions,
+    .doctor-clean-row.today:not(.doctor-clean-head) .doctor-clean-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .doctor-dashboard-hero {
