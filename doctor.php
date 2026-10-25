@@ -3026,6 +3026,7 @@ body.doctor-report-range-open {
 .doctor-clean-cards {
     order: 2;
     gap: 16px;
+    padding: 0;
 }
 
 .doctor-clean-card {
@@ -3073,6 +3074,7 @@ body.doctor-report-range-open {
 }
 
 .doctor-clean-panel {
+    padding: 0;
     border-radius: 12px;
     box-shadow: 0 8px 20px rgba(25, 76, 110, .05);
 }
