@@ -2516,13 +2516,13 @@ body.doctor-summary-range-open {
     gap: 5px;
     color: #073b4c;
     font-size: .92rem;
-    font-weight: 700;
+    font-weight: 600;
     white-space: nowrap;
 }
 
 .doctor-report-total strong {
-    font-size: 1.16rem;
-    font-weight: 900;
+    font-size: inherit;
+    font-weight: 600;
 }
 
 .doctor-report-chart-wrap {
