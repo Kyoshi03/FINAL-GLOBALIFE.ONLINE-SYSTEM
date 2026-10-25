@@ -532,6 +532,7 @@ $summaryReportClearUrl = 'doctor.php?' . http_build_query([
     'summary_from' => $summaryClearRange['from'],
     'summary_to' => $summaryClearRange['to'],
     'summary_page' => 1,
+    'summary_focus' => 1,
 ]);
 
 $additionalStyles = patientAvatarStyles() . '
