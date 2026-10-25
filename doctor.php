@@ -3782,6 +3782,10 @@ function initializeDoctorDashboard() {
             previous.dataset.doctorReportRangeNav = "-1";
             previous.dataset.doctorReportRangeSide = side;
             if (year <= 2000 && monthIndex === 0) previous.disabled = true;
+            previous.addEventListener("click", function (event) {
+                event.preventDefault();
+                if (!previous.disabled) doctorReportMoveCalendar(side, -1);
+            });
 
             var title = doctorReportCreateElement("span", "consultation-range-month-title");
             title.appendChild(doctorReportCreateElement("span", "", first.toLocaleDateString("en-US", { month: "long" })));
@@ -3794,6 +3798,16 @@ function initializeDoctorDashboard() {
                 option.selected = optionYear === year;
                 yearSelect.appendChild(option);
             }
+            yearSelect.addEventListener("change", function () {
+                var current = side === "left" ? doctorReportCalendarLeftMonth : doctorReportCalendarRightMonth;
+                var selectedMonth = new Date(parseInt(yearSelect.value, 10), current.getMonth(), 1);
+                if (side === "left") doctorReportCalendarLeftMonth = doctorReportClampMonth(selectedMonth);
+                else doctorReportCalendarRightMonth = doctorReportClampMonth(selectedMonth);
+                if (doctorReportCalendarRightMonth < doctorReportCalendarLeftMonth) {
+                    doctorReportCalendarRightMonth = new Date(doctorReportCalendarLeftMonth.getFullYear(), doctorReportCalendarLeftMonth.getMonth(), 1);
+                }
+                doctorReportRenderRangeCalendar();
+            });
             title.appendChild(yearSelect);
 
             var next = doctorReportCreateElement("button", "consultation-range-nav", "›");
@@ -3802,6 +3816,10 @@ function initializeDoctorDashboard() {
             next.dataset.doctorReportRangeNav = "1";
             next.dataset.doctorReportRangeSide = side;
             if (isCurrentMonth) next.disabled = true;
+            next.addEventListener("click", function (event) {
+                event.preventDefault();
+                if (!next.disabled) doctorReportMoveCalendar(side, 1);
+            });
             head.appendChild(previous);
             head.appendChild(title);
             head.appendChild(next);
@@ -3824,6 +3842,13 @@ function initializeDoctorDashboard() {
                 if (doctorReportDraftFrom === key) day.classList.add("is-start");
                 if (doctorReportDraftTo === key) day.classList.add("is-end");
                 if (!inMonth || isFuture) day.disabled = true;
+                day.setAttribute("aria-label", first.toLocaleDateString("en-US", { month: "long" }) + " " + date.getDate() + ", " + year);
+                (function (button, dateKey) {
+                    button.addEventListener("click", function (event) {
+                        event.preventDefault();
+                        if (!button.disabled) doctorReportChooseRangeDate(dateKey);
+                    });
+                })(day, key);
                 days.appendChild(day);
             }
             monthWrap.appendChild(head);
@@ -3917,32 +3942,6 @@ function initializeDoctorDashboard() {
         if (doctorReportModal) {
             doctorReportModal.addEventListener("click", function (event) {
                 if (event.target === doctorReportModal) doctorReportCloseRange();
-            });
-        }
-        if (doctorReportRangeCalendars) {
-            doctorReportRangeCalendars.addEventListener("click", function (event) {
-                var dateButton = event.target.closest ? event.target.closest("[data-doctor-report-range-date]") : null;
-                if (dateButton && !dateButton.disabled) {
-                    event.preventDefault();
-                    doctorReportChooseRangeDate(dateButton.dataset.doctorReportRangeDate);
-                    return;
-                }
-                var navButton = event.target.closest ? event.target.closest("[data-doctor-report-range-nav]") : null;
-                if (navButton && !navButton.disabled) {
-                    event.preventDefault();
-                    doctorReportMoveCalendar(navButton.dataset.doctorReportRangeSide, parseInt(navButton.dataset.doctorReportRangeNav, 10));
-                }
-            });
-            doctorReportRangeCalendars.addEventListener("change", function (event) {
-                var yearSelect = event.target.closest ? event.target.closest("[data-doctor-report-range-year-side]") : null;
-                if (!yearSelect) return;
-                var side = yearSelect.dataset.doctorReportRangeYearSide;
-                var current = side === "left" ? doctorReportCalendarLeftMonth : doctorReportCalendarRightMonth;
-                var month = new Date(parseInt(yearSelect.value, 10), current.getMonth(), 1);
-                if (side === "left") doctorReportCalendarLeftMonth = doctorReportClampMonth(month);
-                else doctorReportCalendarRightMonth = doctorReportClampMonth(month);
-                if (doctorReportCalendarRightMonth < doctorReportCalendarLeftMonth) doctorReportCalendarRightMonth = new Date(doctorReportCalendarLeftMonth.getFullYear(), doctorReportCalendarLeftMonth.getMonth(), 1);
-                doctorReportRenderRangeCalendar();
             });
         }
         if (doctorReportModalSet) doctorReportModalSet.addEventListener("click", function (event) {
