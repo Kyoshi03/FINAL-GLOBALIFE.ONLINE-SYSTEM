@@ -4576,11 +4576,11 @@ function initializeDoctorDashboard() {
             wrap.appendChild(svg);
         }
 
-        function doctorReportUpdatePeriodDescription(period) {
+        function doctorReportUpdatePeriodDescription(period, isCustom) {
             var head = doctorReportPanel ? doctorReportPanel.querySelector(".doctor-report-head > div") : null;
             if (!head) return;
             var description = head.querySelector("p");
-            if (period === "daily") {
+            if (period === "daily" && !isCustom) {
                 if (description) description.remove();
                 return;
             }
@@ -4588,16 +4588,19 @@ function initializeDoctorDashboard() {
                 description = doctorReportCreateElement("p");
                 head.appendChild(description);
             }
-            description.textContent = "Completed consultations for the selected period.";
+            description.textContent = isCustom
+                ? "Completed consultations for the selected custom date range."
+                : "Completed consultations for the selected period.";
         }
 
-        function doctorReportUpdateRangeAndTotal(period, range, points) {
+        function doctorReportUpdateRangeAndTotal(period, range, points, isCustom) {
             var rangeRow = doctorReportPanel ? doctorReportPanel.querySelector(".doctor-report-range-row") : null;
             if (!rangeRow) return;
             var rangeElement = rangeRow.querySelector(".doctor-report-range");
             if (rangeElement) {
                 rangeElement.textContent = "";
-                var strong = doctorReportCreateElement("strong", "", period === "daily" ? "Last 7 days" : period.charAt(0).toUpperCase() + period.slice(1));
+                var rangeTitle = isCustom ? "Custom date range" : (period === "daily" ? "Last 7 days" : period.charAt(0).toUpperCase() + period.slice(1));
+                var strong = doctorReportCreateElement("strong", "", rangeTitle);
                 rangeElement.appendChild(strong);
                 var label = doctorReportRangeLabel(period, range);
                 if (label) rangeElement.appendChild(document.createTextNode(" · " + label));
@@ -4622,7 +4625,33 @@ function initializeDoctorDashboard() {
             clear.replaceWith(disabled);
         }
 
-        function doctorReportUpdatePeriodLinks(period, range) {
+        function doctorReportBuildClearUrl(period) {
+            var defaults = doctorReportDefaultRange(period);
+            var url = new URL(window.location.href);
+            url.searchParams.set("summary_period", period);
+            if (defaults) {
+                url.searchParams.set("summary_from", defaults.from);
+                url.searchParams.set("summary_to", defaults.to);
+            }
+            url.searchParams.set("summary_page", "1");
+            url.searchParams.set("summary_focus", "1");
+            url.searchParams.delete("summary_custom");
+            url.searchParams.delete("summary_open");
+            return url.toString();
+        }
+
+        function doctorReportSetClearEnabled(period) {
+            var clear = document.getElementById("doctorReportClear");
+            if (!clear || clear.tagName === "A") return;
+            var enabled = document.createElement("a");
+            enabled.className = "doctor-report-button";
+            enabled.id = "doctorReportClear";
+            enabled.href = doctorReportBuildClearUrl(period);
+            enabled.textContent = "Clear";
+            clear.replaceWith(enabled);
+        }
+
+        function doctorReportUpdatePeriodLinks(period, range, isCustom) {
             var currentUrl = new URL(window.location.href);
             currentUrl.searchParams.set("summary_period", period);
             currentUrl.searchParams.set("summary_from", range.from);
@@ -4630,7 +4659,8 @@ function initializeDoctorDashboard() {
             currentUrl.searchParams.set("summary_page", "1");
             currentUrl.searchParams.set("summary_open", "1");
             currentUrl.searchParams.delete("summary_focus");
-            currentUrl.searchParams.delete("summary_custom");
+            if (isCustom) currentUrl.searchParams.set("summary_custom", "1");
+            else currentUrl.searchParams.delete("summary_custom");
             var custom = document.getElementById("doctorReportCustom");
             if (custom) custom.href = currentUrl.toString();
             doctorReportData.initial_from = range.from;
@@ -4643,17 +4673,39 @@ function initializeDoctorDashboard() {
             var points = doctorReportBuildPoints(period, range);
             doctorReportPeriod = period;
             doctorReportData.initial_period = period;
-            doctorReportUpdatePeriodDescription(period);
-            doctorReportUpdateRangeAndTotal(period, range, points);
+            doctorReportUpdatePeriodDescription(period, false);
+            doctorReportUpdateRangeAndTotal(period, range, points, false);
             doctorReportRenderChart(points);
             doctorReportSetClearDisabled();
-            doctorReportUpdatePeriodLinks(period, range);
+            doctorReportUpdatePeriodLinks(period, range, false);
             if (updateUrl) {
                 var url = new URL(window.location.href);
                 url.searchParams.set("summary_period", period);
                 url.searchParams.delete("summary_from");
                 url.searchParams.delete("summary_to");
                 url.searchParams.delete("summary_custom");
+                url.searchParams.delete("summary_open");
+                url.searchParams.delete("summary_focus");
+                url.searchParams.delete("summary_page");
+                window.history.replaceState({}, "", url.toString());
+            }
+        }
+
+        function doctorReportRenderCustomRange(period, range, updateUrl) {
+            var points = doctorReportBuildPoints(period, range);
+            doctorReportPeriod = period;
+            doctorReportData.initial_period = period;
+            doctorReportUpdatePeriodDescription(period, true);
+            doctorReportUpdateRangeAndTotal(period, range, points, true);
+            doctorReportRenderChart(points);
+            doctorReportSetClearEnabled(period);
+            doctorReportUpdatePeriodLinks(period, range, true);
+            if (updateUrl) {
+                var url = new URL(window.location.href);
+                url.searchParams.set("summary_period", period);
+                url.searchParams.set("summary_from", range.from);
+                url.searchParams.set("summary_to", range.to);
+                url.searchParams.set("summary_custom", "1");
                 url.searchParams.delete("summary_open");
                 url.searchParams.delete("summary_focus");
                 url.searchParams.delete("summary_page");
@@ -4835,6 +4887,11 @@ function initializeDoctorDashboard() {
 
         function doctorReportNavigate(period, from, to) {
             doctorReportRememberFocus();
+            if (from && to) {
+                doctorReportCloseRange();
+                doctorReportRenderCustomRange(period, { from: from, to: to }, true);
+                return;
+            }
             var url = new URL(window.location.href);
             url.searchParams.set("summary_period", period);
             if (from && to) {
