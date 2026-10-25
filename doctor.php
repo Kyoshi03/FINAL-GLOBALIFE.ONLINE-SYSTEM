@@ -1151,6 +1151,36 @@ select:focus {
     gap: 18px;
 }
 
+/* Keep the report as the primary dashboard section, followed by appointment summaries. */
+.doctor-clean-dashboard > * {
+    order: 10;
+}
+
+.doctor-clean-title {
+    order: 1;
+}
+
+.doctor-clean-dashboard > .success-message,
+.doctor-clean-dashboard > .error-message {
+    order: 2;
+}
+
+.doctor-report-panel {
+    order: 3;
+}
+
+.doctor-clean-cards {
+    order: 4;
+}
+
+.doctor-clean-dashboard > #appointmentRequests {
+    order: 5;
+}
+
+.doctor-clean-dashboard > .doctor-report-range-modal {
+    order: 99;
+}
+
 .doctor-clean-title {
     padding: 10px 4px 4px;
 }
