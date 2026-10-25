@@ -3073,7 +3073,7 @@ body.doctor-report-range-open {
 }
 
 .doctor-clean-panel-head {
-    padding: 20px 20px 12px;
+    padding: 16px 20px 10px;
 }
 
 .doctor-clean-panel-head h2 {
@@ -3098,12 +3098,12 @@ body.doctor-report-range-open {
 
 .doctor-empty-state {
     display: grid;
-    min-height: 134px;
+    min-height: 118px;
     box-sizing: border-box;
     place-items: center;
     align-content: center;
-    gap: 7px;
-    padding: 18px;
+    gap: 5px;
+    padding: 14px;
     border: 1px dashed #c7def0;
     background: linear-gradient(135deg, #fbfdff, #f2f9ff);
     color: #526aa5;
@@ -3123,8 +3123,8 @@ body.doctor-report-range-open {
 
 .doctor-empty-icon {
     display: grid;
-    width: 48px;
-    height: 48px;
+    width: 42px;
+    height: 42px;
     place-items: center;
     border-radius: 50%;
     background: #e9f5ff;
@@ -3137,8 +3137,8 @@ body.doctor-report-range-open {
 }
 
 .doctor-empty-icon svg {
-    width: 25px;
-    height: 25px;
+    width: 22px;
+    height: 22px;
     fill: none;
     stroke: currentColor;
     stroke-linecap: round;
@@ -3197,6 +3197,23 @@ body.doctor-report-range-open {
 .doctor-clean-row.today .doctor-clean-date strong,
 .doctor-clean-row.today .doctor-clean-time strong {
     font-weight: 600;
+}
+
+.doctor-reminder-clean {
+    margin: 0 20px 18px;
+    padding: 10px 14px;
+    border: 1px solid #d6eafb;
+    border-radius: 8px;
+    font-size: .78rem;
+    line-height: 1.35;
+}
+
+.doctor-reminder-clean span {
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+    font-size: .75rem;
+    font-weight: 700;
 }
 
 .doctor-report-panel {
