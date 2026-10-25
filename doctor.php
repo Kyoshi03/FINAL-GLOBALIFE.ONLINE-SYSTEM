@@ -524,9 +524,11 @@ body {
 }
 
 .doctor-dashboard {
-    max-width: 1180px;
+    width: 100%;
+    max-width: none;
     margin: 0 auto;
     padding: 28px 20px 46px;
+    box-sizing: border-box;
 }
 
 .doctor-hero {
