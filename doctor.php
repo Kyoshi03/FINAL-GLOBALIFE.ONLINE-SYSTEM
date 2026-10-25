@@ -2928,10 +2928,12 @@ body.doctor-report-range-open {
 .doctor-dashboard-hero {
     position: relative;
     display: flex;
+    width: 92%;
     min-height: 112px;
     box-sizing: border-box;
     align-items: center;
     justify-content: space-between;
+    justify-self: center;
     gap: 16px;
     overflow: hidden;
     padding: 18px 32px;
@@ -3342,6 +3344,7 @@ body.doctor-report-range-open {
     }
 
     .doctor-dashboard-hero {
+        width: 100%;
         min-height: 126px;
         padding: 24px 26px;
     }
