@@ -4346,6 +4346,14 @@ function initializeDoctorDashboard() {
             focusTarget.focus({ preventScroll: true });
         }
 
+        function doctorReportFocusSelectionAfterLayout() {
+            if (!doctorReportShouldFocusSelection) return;
+            // Run after the dashboard has finished moving the report section into place.
+            window.requestAnimationFrame(function () {
+                window.requestAnimationFrame(doctorReportFocusSelection);
+            });
+        }
+
         var doctorReportShouldFocusSelection = (
             doctorReportUrl.searchParams.get("summary_focus") === "1" ||
             doctorReportPeriod === "monthly" ||
@@ -4544,6 +4552,7 @@ function initializeDoctorDashboard() {
                 url.searchParams.delete("summary_open");
             }
             url.searchParams.delete("summary_page");
+            url.hash = "consultationSummary";
             window.location.assign(url.toString());
         }
 
@@ -4602,7 +4611,8 @@ function initializeDoctorDashboard() {
             doctorReportOpenRange();
         }
         if (doctorReportShouldFocusSelection) {
-            window.setTimeout(doctorReportFocusSelection, 80);
+            window.setTimeout(doctorReportFocusSelectionAfterLayout, 80);
+            window.setTimeout(doctorReportFocusSelection, 260);
         }
     }
 
@@ -4632,6 +4642,23 @@ if (!window.__doctorReportControlsInitialized) {
             return data.defaults && data.defaults[period] ? data.defaults[period] : null;
         }
 
+        function focusReportSelection() {
+            var reportUrl = new URL(window.location.href);
+            var shouldFocus = (
+                reportUrl.searchParams.get("summary_focus") === "1" ||
+                reportUrl.searchParams.get("summary_period") === "monthly" ||
+                reportUrl.searchParams.get("summary_period") === "quarterly" ||
+                reportUrl.searchParams.get("summary_custom") === "1"
+            ) && reportUrl.searchParams.get("summary_open") !== "1";
+            if (!shouldFocus || !panel) return;
+            var chart = panel.querySelector(".doctor-report-chart");
+            var target = chart || panel;
+            panel.setAttribute("tabindex", "-1");
+            target.setAttribute("tabindex", "-1");
+            panel.scrollIntoView({ behavior: "auto", block: "start" });
+            target.focus({ preventScroll: true });
+        }
+
         function navigate(period, from, to) {
             var url = new URL(window.location.href);
             url.searchParams.set("summary_period", period || "daily");
@@ -4647,6 +4674,7 @@ if (!window.__doctorReportControlsInitialized) {
                 url.searchParams.delete("summary_open");
             }
             url.searchParams.delete("summary_page");
+            url.hash = "consultationSummary";
             window.location.assign(url.toString());
         }
 
@@ -4705,6 +4733,12 @@ if (!window.__doctorReportControlsInitialized) {
         document.addEventListener("keydown", function (event) {
             if (event.key === "Escape") closeRange();
         }, true);
+
+        window.setTimeout(function () {
+            window.requestAnimationFrame(function () {
+                window.requestAnimationFrame(focusReportSelection);
+            });
+        }, 120);
         })();
     }, 0);
 }
@@ -4804,7 +4838,7 @@ include 'includes/header.php';
                 </div>
                 <div class="doctor-report-controls" aria-label="Consultation report filters">
                     <label for="doctorReportPeriod">Report Period</label>
-                    <form class="doctor-report-period-form" method="get" action="doctor.php">
+                    <form class="doctor-report-period-form" method="get" action="doctor.php#consultationSummary">
                         <input type="hidden" name="summary_page" value="1">
                         <input type="hidden" name="summary_focus" value="1">
                         <select id="doctorReportPeriod" name="summary_period" onchange="this.form.submit()">
