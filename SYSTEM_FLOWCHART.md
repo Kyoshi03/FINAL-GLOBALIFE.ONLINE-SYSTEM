@@ -2,6 +2,14 @@
 
 This flowchart documents the current patient, doctor, and admin workflow implemented in the system.
 
+## Image Versions
+
+- [Admin side flowchart](flowcharts/admin-side.svg)
+- [Doctor side flowchart](flowcharts/doctor-side.svg)
+- [Patient side flowchart](flowcharts/patient-side.svg)
+
+The image versions use a white background, light lavender process boxes, gray connectors, and decision diamonds based on the supplied reference.
+
 ## 1. Admin Side
 
 ```mermaid

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="2060" viewBox="0 0 1000 2060" role="img" aria-labelledby="title desc">
+  <title id="title">Globalife Patient Side Flowchart</title>
+  <desc id="desc">Patient verification, appointment booking, reschedule, cancellation, and visit flow.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#60656b"/></marker>
+    <style>
+      .box{fill:#f0edff;stroke:#aa9bd8;stroke-width:2}.decision{fill:#f0edff;stroke:#aa9bd8;stroke-width:2}.line{fill:none;stroke:#60656b;stroke-width:2;marker-end:url(#arrow)}
+      .label{font-family:Arial,sans-serif;font-size:22px;fill:#30343b;text-anchor:middle}.small{font-family:Arial,sans-serif;font-size:18px;fill:#4e555d;text-anchor:middle}.title{font-family:Arial,sans-serif;font-size:31px;font-weight:700;fill:#243342;text-anchor:middle}.section{font-family:Arial,sans-serif;font-size:18px;font-weight:700;fill:#6d63a4;letter-spacing:2px;text-anchor:middle}
+    </style>
+  </defs>
+  <rect width="1000" height="1820" fill="#ffffff"/>
+  <text x="500" y="52" class="title">PATIENT SIDE</text><text x="500" y="82" class="section">BOOKING AND VISIT WORKFLOW</text>
+  <rect x="350" y="115" width="300" height="64" rx="3" class="box"/><text x="500" y="154" class="label">Register or Login</text>
+  <path d="M500 179 V223" class="line"/>
+  <polygon points="500,223 620,293 500,363 380,293" class="decision"/><text x="500" y="287" class="label"><tspan x="500">Contact</tspan><tspan x="500" dy="28">verified?</tspan></text>
+  <path d="M380 293 H180 V385" class="line"/><text x="275" y="278" class="small">No</text>
+  <rect x="55" y="385" width="250" height="64" rx="3" class="box"/><text x="180" y="424" class="label">Verify email or phone</text>
+  <path d="M180 449 V500 H500 V540" class="line"/>
+  <path d="M620 293 H820 V385" class="line"/><text x="725" y="278" class="small">Yes</text>
+  <rect x="695" y="385" width="250" height="64" rx="3" class="box"/><text x="820" y="424" class="label">Book Appointment</text>
+  <path d="M820 449 V500 H500 V540" class="line"/>
+  <rect x="350" y="540" width="300" height="64" rx="3" class="box"/><text x="500" y="579" class="label">Choose appointment type</text>
+  <path d="M500 604 V658" class="line"/>
+  <polygon points="500,658 620,728 500,798 380,728" class="decision"/><text x="500" y="722" class="label"><tspan x="500">Consultation?</tspan></text>
+  <path d="M380 728 C245 728 180 810 180 860" class="line"/><text x="270" y="755" class="small">Yes</text>
+  <rect x="55" y="860" width="250" height="64" rx="3" class="box"/><text x="180" y="899" class="label">Choose doctor</text>
+  <path d="M620 728 C755 728 820 810 820 860" class="line"/><text x="730" y="755" class="small">No</text>
+  <rect x="695" y="860" width="250" height="64" rx="3" class="box"/><text x="820" y="899" class="label">Choose service</text>
+  <path d="M180 924 V970 H500 V1010" class="line"/><path d="M820 924 V970 H500 V1010" class="line"/>
+  <rect x="350" y="1010" width="300" height="64" rx="3" class="box"/><text x="500" y="1049" class="label">Choose date and time</text>
+  <path d="M500 1074 V1128" class="line"/>
+  <polygon points="500,1128 620,1198 500,1268 380,1198" class="decision"/><text x="500" y="1192" class="label"><tspan x="500">Available and</tspan><tspan x="500" dy="28">within cutoff?</tspan></text>
+  <path d="M380 1198 H180 V1300" class="line"/><text x="278" y="1183" class="small">No</text>
+  <rect x="55" y="1300" width="250" height="64" rx="3" class="box"/><text x="180" y="1339" class="label">Choose another time</text>
+  <path d="M180 1300 V970 H350" class="line"/>
+  <path d="M620 1198 H820 V1300" class="line"/><text x="725" y="1183" class="small">Yes</text>
+  <rect x="695" y="1300" width="250" height="64" rx="3" class="box"/><text x="820" y="1339" class="label">Confirm booking</text>
+  <path d="M820 1364 V1420 H500 V1460" class="line"/>
+  <rect x="350" y="1460" width="300" height="64" rx="3" class="box"/><text x="500" y="1499" class="label">Status: pending</text>
+  <path d="M500 1524 V1578" class="line"/>
+  <rect x="300" y="1578" width="400" height="64" rx="3" class="box"/><text x="500" y="1617" class="label">View appointments and notifications</text>
+  <path d="M500 1642 V1696" class="line"/>
+  <polygon points="500,1696 620,1766 500,1836 380,1766" class="decision"/><text x="500" y="1760" class="label"><tspan x="500">Reschedule or</tspan><tspan x="500" dy="28">cancel?</tspan></text>
+  <path d="M380 1766 H180 V1900" class="line"/><text x="278" y="1750" class="small">Pending reschedule</text>
+  <rect x="55" y="1900" width="250" height="64" rx="3" class="box"/><text x="180" y="1939" class="label">Change schedule directly</text>
+  <path d="M500 1836 V1900" class="line"/><text x="535" y="1872" class="small">Confirmed reschedule</text>
+  <rect x="350" y="1900" width="300" height="64" rx="3" class="box"/><text x="500" y="1939" class="label">Admin reviews request</text>
+  <path d="M620 1766 H820 V1900" class="line"/><text x="725" y="1750" class="small">Cancel</text>
+  <rect x="695" y="1900" width="250" height="64" rx="3" class="box"/><text x="820" y="1939" class="label">Set cancelled</text>
+</svg>

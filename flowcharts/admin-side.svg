@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1680" viewBox="0 0 1000 1680" role="img" aria-labelledby="title desc">
+  <title id="title">Globalife Admin Side Flowchart</title>
+  <desc id="desc">Admin login, appointment review, reschedule review, master data management, and report export flow.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#60656b"/></marker>
+    <style>
+      .box{fill:#f0edff;stroke:#aa9bd8;stroke-width:2}
+      .decision{fill:#f0edff;stroke:#aa9bd8;stroke-width:2}
+      .line{fill:none;stroke:#60656b;stroke-width:2;marker-end:url(#arrow)}
+      .label{font-family:Arial,sans-serif;font-size:22px;fill:#30343b;text-anchor:middle}
+      .small{font-family:Arial,sans-serif;font-size:18px;fill:#4e555d;text-anchor:middle}
+      .title{font-family:Arial,sans-serif;font-size:31px;font-weight:700;fill:#243342;text-anchor:middle}
+      .section{font-family:Arial,sans-serif;font-size:18px;font-weight:700;fill:#6d63a4;letter-spacing:2px;text-anchor:middle}
+    </style>
+  </defs>
+  <rect width="1000" height="1680" fill="#ffffff"/>
+  <text x="500" y="52" class="title">ADMIN SIDE</text>
+  <text x="500" y="82" class="section">GLOBALIFE WORKFLOW</text>
+
+  <rect x="350" y="115" width="300" height="64" rx="3" class="box"/><text x="500" y="154" class="label">Admin Login</text>
+  <path d="M500 179 V223" class="line"/>
+  <rect x="350" y="223" width="300" height="64" rx="3" class="box"/><text x="500" y="262" class="label">Admin Dashboard</text>
+  <path d="M500 287 V331" class="line"/>
+  <rect x="300" y="331" width="400" height="70" rx="3" class="box"/><text x="500" y="373" class="label">Review Pending Appointments</text>
+  <path d="M500 401 V455" class="line"/>
+  <polygon points="500,455 620,525 500,595 380,525" class="decision"/><text x="500" y="519" class="label"><tspan x="500">Appointment</tspan><tspan x="500" dy="28">type?</tspan></text>
+
+  <path d="M380 525 C230 525 180 610 180 660" class="line"/><text x="252" y="555" class="small">Laboratory / other</text>
+  <rect x="55" y="660" width="250" height="64" rx="3" class="box"/><text x="180" y="699" class="label">Review service details</text>
+  <path d="M180 724 V780" class="line"/>
+  <polygon points="180,780 290,845 180,910 70,845" class="decision"/><text x="180" y="839" class="label"><tspan x="180">Admin</tspan><tspan x="180" dy="28">decision?</tspan></text>
+  <path d="M70 845 H35 V990 H55" class="line"/><text x="44" y="875" class="small" transform="rotate(-90 44 875)">Cancel</text>
+  <rect x="55" y="990" width="250" height="64" rx="3" class="box"/><text x="180" y="1029" class="label">Set cancelled</text>
+  <path d="M290 845 H350" class="line"/><text x="320" y="830" class="small">Confirm</text>
+  <rect x="350" y="810" width="300" height="70" rx="3" class="box"/><text x="500" y="852" class="label">Set confirmed</text>
+  <path d="M500 880 V934" class="line"/>
+  <rect x="350" y="934" width="300" height="70" rx="3" class="box"/><text x="500" y="976" class="label"><tspan x="500">Create queue row</tspan><tspan x="500" dy="27">and notify patient</tspan></text>
+  <path d="M500 1004 V1058" class="line"/>
+  <rect x="350" y="1058" width="300" height="64" rx="3" class="box"/><text x="500" y="1097" class="label">Complete service</text>
+
+  <path d="M620 525 C770 525 820 610 820 660" class="line"/><text x="748" y="555" class="small">Reschedule request</text>
+  <rect x="695" y="660" width="250" height="64" rx="3" class="box"/><text x="820" y="699" class="label">Review request</text>
+  <path d="M820 724 V780" class="line"/>
+  <polygon points="820,780 930,845 820,910 710,845" class="decision"/><text x="820" y="839" class="label"><tspan x="820">Approve?</tspan></text>
+  <path d="M710 845 H650" class="line"/><text x="680" y="830" class="small">Yes</text>
+  <rect x="350" y="1140" width="300" height="64" rx="3" class="box"/><text x="500" y="1179" class="label">Apply new schedule</text>
+  <path d="M820 910 V1172 H650" class="line"/>
+  <path d="M930 845 H965 V990 H945" class="line"/><text x="957" y="875" class="small" transform="rotate(90 957 875)">No</text>
+  <rect x="695" y="990" width="250" height="64" rx="3" class="box"/><text x="820" y="1029" class="label">Reject request</text>
+
+  <text x="500" y="1270" class="section">MANAGEMENT AND REPORTS</text>
+  <rect x="120" y="1300" width="250" height="64" rx="3" class="box"/><text x="245" y="1339" class="label"><tspan x="245">Manage accounts, doctors,</tspan><tspan x="245" dy="27">services, schedules</tspan></text>
+  <rect x="630" y="1300" width="250" height="64" rx="3" class="box"/><text x="755" y="1339" class="label"><tspan x="755">Manage queue and</tspan><tspan x="755" dy="27">notifications</tspan></text>
+  <rect x="350" y="1430" width="300" height="64" rx="3" class="box"/><text x="500" y="1469" class="label">Open sales report</text>
+  <path d="M245 1364 V1400 H350 V1430" class="line"/>
+  <path d="M755 1364 V1400 H650 V1430" class="line"/>
+  <path d="M500 1494 V1548" class="line"/>
+  <rect x="300" y="1548" width="400" height="70" rx="3" class="box"/><text x="500" y="1590" class="label"><tspan x="500">Filters, graph, detailed sales,</tspan><tspan x="500" dy="27">PDF and Excel export</tspan></text>
+</svg>

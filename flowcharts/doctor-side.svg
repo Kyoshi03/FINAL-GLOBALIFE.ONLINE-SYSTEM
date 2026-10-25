@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1500" viewBox="0 0 1000 1500" role="img" aria-labelledby="title desc">
+  <title id="title">Globalife Doctor Side Flowchart</title>
+  <desc id="desc">Doctor login, consultation appointment decisions, medical notes, completion, and consultation reporting flow.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#60656b"/></marker>
+    <style>
+      .box{fill:#f0edff;stroke:#aa9bd8;stroke-width:2}.decision{fill:#f0edff;stroke:#aa9bd8;stroke-width:2}.line{fill:none;stroke:#60656b;stroke-width:2;marker-end:url(#arrow)}
+      .label{font-family:Arial,sans-serif;font-size:22px;fill:#30343b;text-anchor:middle}.small{font-family:Arial,sans-serif;font-size:18px;fill:#4e555d;text-anchor:middle}.title{font-family:Arial,sans-serif;font-size:31px;font-weight:700;fill:#243342;text-anchor:middle}.section{font-family:Arial,sans-serif;font-size:18px;font-weight:700;fill:#6d63a4;letter-spacing:2px;text-anchor:middle}
+    </style>
+  </defs>
+  <rect width="1000" height="1500" fill="#ffffff"/>
+  <text x="500" y="52" class="title">DOCTOR SIDE</text><text x="500" y="82" class="section">CONSULTATION WORKFLOW</text>
+  <rect x="350" y="115" width="300" height="64" rx="3" class="box"/><text x="500" y="154" class="label">Doctor Login</text>
+  <path d="M500 179 V223" class="line"/>
+  <rect x="350" y="223" width="300" height="64" rx="3" class="box"/><text x="500" y="262" class="label">Doctor Dashboard</text>
+  <path d="M500 287 V331" class="line"/>
+  <rect x="300" y="331" width="400" height="70" rx="3" class="box"/><text x="500" y="373" class="label">Review assigned consultations</text>
+  <path d="M500 401 V455" class="line"/>
+  <polygon points="500,455 620,525 500,595 380,525" class="decision"/><text x="500" y="519" class="label"><tspan x="500">Pending</tspan><tspan x="500" dy="28">decision?</tspan></text>
+  <path d="M380 525 C240 525 180 610 180 670" class="line"/><text x="250" y="557" class="small">Cancel</text>
+  <rect x="55" y="670" width="250" height="64" rx="3" class="box"/><text x="180" y="709" class="label">Set cancelled</text>
+  <path d="M620 525 C760 525 820 610 820 670" class="line"/><text x="750" y="557" class="small">Confirm</text>
+  <rect x="695" y="670" width="250" height="70" rx="3" class="box"/><text x="820" y="712" class="label">Set confirmed</text>
+  <path d="M820 740 V800" class="line"/>
+  <rect x="695" y="800" width="250" height="70" rx="3" class="box"/><text x="820" y="842" class="label"><tspan x="820">Queue row and</tspan><tspan x="820" dy="27">patient notification</tspan></text>
+  <path d="M820 870 V930" class="line"/>
+  <rect x="695" y="930" width="250" height="64" rx="3" class="box"/><text x="820" y="969" class="label">Conduct consultation</text>
+  <path d="M820 994 V1050" class="line"/>
+  <rect x="695" y="1050" width="250" height="64" rx="3" class="box"/><text x="820" y="1089" class="label">Add medical notes</text>
+  <path d="M820 1114 V1170" class="line"/>
+  <rect x="695" y="1170" width="250" height="64" rx="3" class="box"/><text x="820" y="1209" class="label">Set completed</text>
+  <path d="M820 1234 V1290 H650" class="line"/>
+  <rect x="350" y="1290" width="300" height="64" rx="3" class="box"/><text x="500" y="1329" class="label">Consultation report</text>
+  <path d="M500 1354 V1410" class="line"/>
+  <rect x="300" y="1410" width="400" height="64" rx="3" class="box"/><text x="500" y="1449" class="label">Period filter updates graph and total</text>
+</svg>
