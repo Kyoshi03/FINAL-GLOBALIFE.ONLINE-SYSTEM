@@ -1155,7 +1155,7 @@ select:focus {
 
 .doctor-clean-dashboard {
     display: grid;
-    gap: 18px;
+    gap: 14px;
 }
 
 /* Keep the report as the primary dashboard section, followed by appointment summaries. */
@@ -2423,7 +2423,7 @@ body.doctor-summary-range-open {
 .doctor-report-panel {
     position: relative;
     z-index: 1;
-    margin: 24px 0;
+    margin: 0;
     padding: 24px;
     scroll-margin-top: 92px;
     border: 1px solid #d8e6ed;
