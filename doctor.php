@@ -3,6 +3,7 @@ require_once 'includes/session.php';
 checkRole('doctor');
 
 require_once 'config/database.php';
+require_once __DIR__ . '/includes/appointment_reschedule.php';
 require_once __DIR__ . '/includes/patient_profile_photo.php';
 require_once __DIR__ . '/includes/clinic_info.php';
 
