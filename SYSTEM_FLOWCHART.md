@@ -5,6 +5,7 @@ This flowchart documents the current patient, doctor, and admin workflow impleme
 ## Image Versions
 
 - [Admin side flowchart](flowcharts/admin-side.svg)
+- [Admin side white-background PNG](flowcharts/admin-side-white.png)
 - [Doctor side flowchart](flowcharts/doctor-side.svg)
 - [Patient side flowchart](flowcharts/patient-side.svg)
 
