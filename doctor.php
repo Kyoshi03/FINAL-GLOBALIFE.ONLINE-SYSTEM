@@ -4347,6 +4347,7 @@ function initializeDoctorDashboard() {
         }
 
         var doctorReportShouldFocusSelection = (
+            doctorReportUrl.searchParams.get("summary_focus") === "1" ||
             doctorReportPeriod === "monthly" ||
             doctorReportPeriod === "quarterly" ||
             doctorReportUrl.searchParams.get("summary_custom") === "1"
@@ -4805,6 +4806,7 @@ include 'includes/header.php';
                     <label for="doctorReportPeriod">Report Period</label>
                     <form class="doctor-report-period-form" method="get" action="doctor.php">
                         <input type="hidden" name="summary_page" value="1">
+                        <input type="hidden" name="summary_focus" value="1">
                         <select id="doctorReportPeriod" name="summary_period" onchange="this.form.submit()">
                             <option value="daily"<?php echo $summaryPeriod === 'daily' ? ' selected' : ''; ?>>Weekly</option>
                             <option value="monthly"<?php echo $summaryPeriod === 'monthly' ? ' selected' : ''; ?>>Monthly</option>
