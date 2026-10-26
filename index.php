@@ -67,6 +67,25 @@ $additionalStyles = '
         background: #f5f8fa;
     }
 
+    body.page-index .header-flex {
+        max-width: 1400px;
+        padding: 8px 20px;
+    }
+
+    body.page-index .logo-img {
+        width: 44px;
+        height: 44px;
+    }
+
+    body.page-index header h1 {
+        font-size: 1.05rem;
+    }
+
+    body.page-index nav a {
+        padding: 7px 12px;
+        font-size: 0.82rem;
+    }
+
     body.page-index .logo-section:hover {
         transform: none;
     }
@@ -102,36 +121,38 @@ $additionalStyles = '
     }
 
     .hero-grid {
-        min-height: 468px;
+        height: 350px;
+        min-height: 0;
         position: relative;
         display: flex;
         align-items: center;
-        padding: clamp(34px, 6vw, 72px);
+        box-sizing: border-box;
+        padding: 32px 38px;
         isolation: isolate;
         border-radius: 8px;
         background-image:
             linear-gradient(90deg, rgba(3, 51, 70, 0.93) 0%, rgba(3, 51, 70, 0.77) 34%, rgba(3, 51, 70, 0.2) 66%, rgba(3, 51, 70, 0.03) 100%),
             url("assets/globalife-clinic-front.jpg");
         background-size: cover;
-        background-position: center;
+        background-position: 55% center;
         box-shadow: 0 20px 42px rgba(7, 59, 76, 0.12);
     }
 
     .hero h2 {
         color: #fff;
-        font-size: clamp(2.3rem, 4.2vw, 4.35rem);
+        font-size: clamp(2rem, 4vw, 3.4rem);
         line-height: 1.08;
         letter-spacing: 0;
         margin: 0 0 16px;
-        max-width: 580px;
+        max-width: 520px;
     }
 
     .hero p {
         color: rgba(255, 255, 255, 0.94);
-        font-size: 1.05rem;
+        font-size: 0.98rem;
         line-height: 1.58;
         margin: 0 0 24px;
-        max-width: 430px;
+        max-width: 360px;
     }
 
     .hero-actions {
@@ -146,8 +167,8 @@ $additionalStyles = '
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 48px;
-        padding: 12px 22px;
+        min-height: 42px;
+        padding: 10px 18px;
         border-radius: 8px;
         font-weight: 700;
         text-decoration: none;
@@ -181,9 +202,9 @@ $additionalStyles = '
     }
 
     .hero-book-icon {
-        width: 20px;
-        height: 20px;
-        flex: 0 0 20px;
+        width: 18px;
+        height: 18px;
+        flex: 0 0 18px;
     }
 
     .field-hint {
@@ -801,8 +822,21 @@ $additionalStyles = '
     }
 
     @media (max-width: 900px) {
+        body.page-index .header-flex {
+            padding: 5px 14px;
+        }
+
+        body.page-index .logo-img {
+            width: 40px;
+            height: 40px;
+        }
+
+        body.page-index header h1 {
+            font-size: 0.94rem;
+        }
+
         .hero {
-            padding: 14px 0 24px;
+            padding: 10px 0 16px;
         }
 
         .hero-grid,
@@ -811,8 +845,12 @@ $additionalStyles = '
         }
 
         .hero-grid {
-            min-height: 420px;
-            background-position: 61% center;
+            width: calc(100% - 58px);
+            max-width: none;
+            min-height: 0;
+            height: 350px;
+            padding: 30px 38px;
+            background-position: 55% center;
         }
 
         .mission-vision,
@@ -832,7 +870,9 @@ $additionalStyles = '
 
     @media (max-width: 560px) {
         .hero-grid {
-            min-height: 480px;
+            width: calc(100% - 32px);
+            height: 320px;
+            min-height: 0;
             padding: 32px 24px;
             align-items: flex-end;
             background-image:
@@ -842,7 +882,7 @@ $additionalStyles = '
         }
 
         .hero h2 {
-            font-size: 2.25rem;
+            font-size: 2rem;
         }
 
         .hero-actions,
