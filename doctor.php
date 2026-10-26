@@ -6074,9 +6074,9 @@ include 'includes/header.php';
                                 <span class="status-badge <?php echo htmlspecialchars($status); ?>"><?php echo htmlspecialchars($appointment['status_label']); ?></span>
                             </div>
                             <div class="doctor-today-actions" role="group" aria-label="Appointment actions">
-                                <a href="doctor_patient.php?id=<?php echo (int) $appointment['patient_id']; ?>"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20v-2a7 7 0 0 1 14 0v2"/></svg><span>View patient</span></a>
+                                <a href="doctor_patients.php?patient=<?php echo (int) $appointment['patient_id']; ?>"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20v-2a7 7 0 0 1 14 0v2"/></svg><span>View patient</span></a>
                                 <?php if ($status === 'confirmed'): ?>
-                                    <a href="doctor_patient.php?id=<?php echo (int) $appointment['patient_id']; ?>#add-medical-record"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6M13 3l5 5h-5zM8 12h6M8 16h4M18 14v7M14.5 17.5h7"/></svg><span>Add note</span></a>
+                                    <a href="doctor_patients.php?add_notes=<?php echo (int) $appointment['patient_id']; ?>"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6M13 3l5 5h-5zM8 12h6M8 16h4M18 14v7M14.5 17.5h7"/></svg><span>Add note</span></a>
                                     <form method="post" action="update_appointment_status.php">
                                         <input type="hidden" name="appointment_id" value="<?php echo (int) $appointment['id']; ?>">
                                         <input type="hidden" name="status" value="completed">

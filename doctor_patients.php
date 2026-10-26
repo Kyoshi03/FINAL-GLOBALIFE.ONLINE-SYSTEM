@@ -169,6 +169,34 @@ $countStmt->execute();
 $totalPatients = (int) (($countStmt->get_result()->fetch_assoc()['total'] ?? 0));
 $countStmt->close();
 
+// Deep links need the page containing the patient's existing modals.
+$targetPatientId = $openMedicalPatientId > 0 ? $openMedicalPatientId : $openPatientId;
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && !isset($_GET['page']) && $targetPatientId > 0) {
+    $positionSql = "
+        SELECT p.id
+        FROM users p
+        JOIN appointments a ON a.patient_id = p.id
+        WHERE {$where}
+        GROUP BY p.id, p.first_name, p.middle_name, p.last_name, p.suffix, p.username, p.email, p.profile_photo, p.profile_updated_at
+        ORDER BY
+            COALESCE(MIN(CASE WHEN a.status IN ('pending', 'confirmed') AND a.appointment_date >= CURDATE() THEN a.appointment_date END), '9999-12-31') ASC,
+            {$patientNameSql} ASC, p.id ASC";
+    $positionStmt = np_prepare_or_fail($conn, $positionSql);
+    np_bind_params($positionStmt, $types, $params);
+    $positionStmt->execute();
+    $positionResult = $positionStmt->get_result();
+    $position = 0;
+    while ($positionRow = $positionResult->fetch_assoc()) {
+        if ((int) $positionRow['id'] === $targetPatientId) {
+            $page = intdiv($position, $perPage) + 1;
+            $offset = ($page - 1) * $perPage;
+            break;
+        }
+        $position++;
+    }
+    $positionStmt->close();
+}
+
 $totalPages = max(1, (int) ceil($totalPatients / $perPage));
 if ($page > $totalPages) {
     $page = $totalPages;
@@ -193,7 +221,7 @@ $listSql = "
     GROUP BY p.id, p.first_name, p.middle_name, p.last_name, p.suffix, p.username, p.email, p.profile_photo, p.profile_updated_at
     ORDER BY
         COALESCE(MIN(CASE WHEN a.status IN ('pending', 'confirmed') AND a.appointment_date >= CURDATE() THEN a.appointment_date END), '9999-12-31') ASC,
-        {$patientNameSql} ASC
+        {$patientNameSql} ASC, p.id ASC
     LIMIT " . (int) $perPage . " OFFSET " . (int) $offset;
 $listParams = $params;
 $listTypes = $types;
