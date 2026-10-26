@@ -3295,7 +3295,8 @@ body.doctor-report-range-open {
     padding-left: 94px;
 }
 
-.doctor-clean-dashboard .doctor-today-actions a {
+.doctor-clean-dashboard .doctor-today-actions a,
+.doctor-clean-dashboard .doctor-today-actions button {
     display: inline-flex;
     align-items: center;
     min-height: 32px;
@@ -3311,8 +3312,31 @@ body.doctor-report-range-open {
     transition: background-color .2s ease, border-color .2s ease;
 }
 
+.doctor-clean-dashboard .doctor-today-actions form {
+    margin: 0;
+}
+
+.doctor-clean-dashboard .doctor-today-actions button {
+    cursor: pointer;
+}
+
+.doctor-clean-dashboard .doctor-today-actions .doctor-today-complete {
+    color: #14663e;
+    border-color: #b7ddc7;
+    background: #f1faf5;
+}
+
+.doctor-clean-dashboard .doctor-today-actions-label {
+    align-self: center;
+    color: #62798a;
+    font-size: .8rem;
+    font-weight: 600;
+}
+
 .doctor-clean-dashboard .doctor-today-actions a:hover,
-.doctor-clean-dashboard .doctor-today-actions a:focus-visible {
+.doctor-clean-dashboard .doctor-today-actions a:focus-visible,
+.doctor-clean-dashboard .doctor-today-actions button:hover,
+.doctor-clean-dashboard .doctor-today-actions button:focus-visible {
     background: #eaf5ff;
     border-color: #8fc9ef;
 }
@@ -3340,7 +3364,8 @@ body.doctor-report-range-open {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .doctor-clean-dashboard .doctor-today-actions a {
+    .doctor-clean-dashboard .doctor-today-actions a,
+    .doctor-clean-dashboard .doctor-today-actions button {
         transition: none;
     }
 }
@@ -4066,12 +4091,12 @@ function initializeDoctorDashboard() {
 
     function showSuccessModal(status, message) {
         if (successTitle) {
-            successTitle.textContent = status === "cancelled" ? "Appointment cancelled" : "Appointment confirmed";
+            successTitle.textContent = status === "cancelled" ? "Appointment cancelled" : (status === "completed" ? "Appointment completed" : "Appointment confirmed");
         }
         if (successText) {
             successText.textContent = message || (status === "cancelled"
                 ? "Appointment cancelled successfully."
-                : "Appointment confirmed successfully.");
+                : (status === "completed" ? "Appointment completed successfully." : "Appointment confirmed successfully."));
         }
         if (successModal) {
             successModal.classList.add("is-open");
@@ -5969,9 +5994,16 @@ include 'includes/header.php';
                                 <span class="status-badge <?php echo htmlspecialchars($status); ?>"><?php echo htmlspecialchars($appointment['status_label']); ?></span>
                             </div>
                             <div class="doctor-today-actions">
+                                <span class="doctor-today-actions-label">Action</span>
                                 <a href="doctor_patient.php?id=<?php echo (int) $appointment['patient_id']; ?>">View patient</a>
                                 <?php if ($status === 'confirmed'): ?>
                                     <a href="doctor_patient.php?id=<?php echo (int) $appointment['patient_id']; ?>#add-medical-record">Add note</a>
+                                    <form method="post" action="update_appointment_status.php">
+                                        <input type="hidden" name="appointment_id" value="<?php echo (int) $appointment['id']; ?>">
+                                        <input type="hidden" name="status" value="completed">
+                                        <input type="hidden" name="return_url" value="doctor.php">
+                                        <button type="submit" class="doctor-today-complete" data-confirm-message="Are you sure you want to mark this appointment as completed?">Complete</button>
+                                    </form>
                                 <?php endif; ?>
                             </div>
                         </div>
