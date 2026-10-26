@@ -5774,7 +5774,7 @@ include 'includes/header.php';
                                             data-reschedule-date="<?php echo htmlspecialchars((string) ($appointment['appointment_date'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                             data-reschedule-time="<?php echo htmlspecialchars((string) ($appointment['appointment_time'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
                                             data-reschedule-label="Current schedule: <?php echo htmlspecialchars(doctor_date_label($appointment['appointment_date']) . ' at ' . doctor_time_label($appointment['appointment_time']), ENT_QUOTES, 'UTF-8'); ?>"
-                                            data-reschedule-mode="admin"
+                                            data-reschedule-mode="doctor"
                                         ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h12M4 12h16M4 17h10"></path><path d="M17 4v6M14 7h6"></path></svg><span>Reschedule</span></button>
                                     </div>
                                 </div>

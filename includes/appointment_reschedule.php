@@ -72,6 +72,15 @@ function appointment_reschedule_reasons(string $role): array {
             'Other reason',
         ];
     }
+    if ($role === 'doctor') {
+        return [
+            'Schedule conflict',
+            'Doctor unavailable',
+            'Medical emergency',
+            'Clinic schedule adjustment',
+            'Other reason',
+        ];
+    }
     return [
         'Doctor unavailable',
         'Clinic schedule adjustment',
@@ -299,6 +308,9 @@ function appointment_reschedule_notify_patient(mysqli $conn, array $request, str
     if ($event === 'admin_rescheduled') {
         $title = 'Appointment rescheduled by the clinic';
         $message = "The clinic moved your appointment from {$original} to {$requested}. Reason: {$reasonText}.";
+    } elseif ($event === 'doctor_rescheduled') {
+        $title = 'Appointment rescheduled by your doctor';
+        $message = "Your doctor moved your pending appointment from {$original} to {$requested}. It remains pending confirmation. Reason: {$reasonText}.";
     } elseif ($event === 'requested') {
         $title = 'Reschedule request submitted';
         $message = "Your request to move the appointment from {$original} to {$requested} is pending approval. Your original confirmed schedule remains active. Reason: {$reasonText}.";
