@@ -3241,31 +3241,99 @@ body.doctor-report-range-open {
     container-type: inline-size;
 }
 
+.doctor-clean-dashboard .doctor-today-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 0;
+}
+
+.doctor-clean-dashboard .doctor-today-heading-icon,
+.doctor-clean-dashboard .doctor-today-clock {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    color: #0879c5;
+    background: #eaf5ff;
+}
+
+.doctor-clean-dashboard .doctor-today-heading-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+}
+
+.doctor-clean-dashboard .doctor-today-heading-icon svg,
+.doctor-clean-dashboard .doctor-today-clock svg,
+.doctor-clean-dashboard .doctor-today-actions svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.doctor-clean-dashboard .doctor-today-title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.doctor-clean-dashboard .doctor-today-count {
+    display: inline-flex;
+    min-width: 23px;
+    height: 23px;
+    padding: 0 6px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    color: #0879c5;
+    background: #eaf5ff;
+    font-size: .75rem;
+    font-weight: 700;
+}
+
 .doctor-clean-dashboard .doctor-today-list {
     margin-top: 0;
+    border: 0;
+    display: grid;
+    gap: 10px;
 }
 
 .doctor-clean-dashboard .doctor-today-item {
-    padding: 13px 16px;
-    border-bottom: 1px solid #e6eef3;
-}
-
-.doctor-clean-dashboard .doctor-today-item:last-child {
-    border-bottom: 0;
+    border: 1px solid #d8e7f4;
+    border-left: 4px solid #1fa9a3;
+    border-radius: 8px;
+    min-width: 0;
 }
 
 .doctor-clean-dashboard .doctor-today-main {
     display: grid;
-    grid-template-columns: 82px minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
     gap: 12px;
+    padding: 14px 16px;
 }
 
 .doctor-clean-dashboard .doctor-today-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding-right: 12px;
+    border-right: 1px solid #e2ebf0;
     color: #073b4c;
     font-size: .9rem;
     font-weight: 700;
     white-space: nowrap;
+}
+
+.doctor-clean-dashboard .doctor-today-clock {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
 }
 
 .doctor-clean-dashboard .doctor-today-patient {
@@ -3288,19 +3356,23 @@ body.doctor-report-range-open {
 }
 
 .doctor-clean-dashboard .doctor-today-actions {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
-    margin-top: 9px;
-    padding-left: 94px;
+    padding: 10px 16px;
+    border-top: 1px solid #e6eef3;
 }
 
 .doctor-clean-dashboard .doctor-today-actions a,
 .doctor-clean-dashboard .doctor-today-actions button {
     display: inline-flex;
     align-items: center;
-    min-height: 32px;
-    padding: 5px 10px;
+    justify-content: center;
+    gap: 7px;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 38px;
+    padding: 7px 8px;
     border: 1px solid #cfe1ee;
     border-radius: 6px;
     background: #fff;
@@ -3321,16 +3393,9 @@ body.doctor-report-range-open {
 }
 
 .doctor-clean-dashboard .doctor-today-actions .doctor-today-complete {
-    color: #14663e;
-    border-color: #b7ddc7;
-    background: #f1faf5;
-}
-
-.doctor-clean-dashboard .doctor-today-actions-label {
-    align-self: center;
-    color: #62798a;
-    font-size: .8rem;
-    font-weight: 600;
+    color: #fff;
+    border-color: #148b89;
+    background: #148b89;
 }
 
 .doctor-clean-dashboard .doctor-today-actions a:hover,
@@ -3341,9 +3406,16 @@ body.doctor-report-range-open {
     border-color: #8fc9ef;
 }
 
+.doctor-clean-dashboard .doctor-today-actions .doctor-today-complete:hover,
+.doctor-clean-dashboard .doctor-today-actions .doctor-today-complete:focus-visible {
+    color: #fff;
+    background: #0c7473;
+    border-color: #0c7473;
+}
+
 @container (max-width: 500px) {
     .doctor-clean-dashboard .doctor-today-main {
-        grid-template-columns: 72px minmax(0, 1fr);
+        grid-template-columns: auto minmax(0, 1fr);
         gap: 7px 10px;
     }
 
@@ -3352,14 +3424,19 @@ body.doctor-report-range-open {
         justify-self: start;
     }
 
-    .doctor-clean-dashboard .doctor-today-actions {
-        padding-left: 82px;
+    .doctor-clean-dashboard .doctor-today-time {
+        border-right: 0;
+        padding-right: 0;
     }
 }
 
-@container (max-width: 340px) {
+@container (max-width: 380px) {
     .doctor-clean-dashboard .doctor-today-actions {
-        padding-left: 0;
+        grid-template-columns: 1fr;
+    }
+
+    .doctor-clean-dashboard .doctor-clean-panel-head {
+        flex-wrap: wrap;
     }
 }
 
@@ -5962,11 +6039,14 @@ include 'includes/header.php';
 
         <section class="doctor-clean-panel doctor-today-panel" data-doctor-today-panel>
             <div class="doctor-clean-panel-head">
-                <div>
-                    <h2>Today&apos;s Appointments</h2>
-                    <p>Your confirmed consultation appointments for today.</p>
+                <div class="doctor-today-heading">
+                    <span class="doctor-today-heading-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg></span>
+                    <div>
+                        <h2 class="doctor-today-title"><span>Today&apos;s Appointments</span><span class="doctor-today-count" aria-label="<?php echo count($todaysConsultations); ?> confirmed appointments today"><?php echo count($todaysConsultations); ?></span></h2>
+                        <p>Your confirmed consultation appointments for today.</p>
+                    </div>
                 </div>
-                <a href="doctor_view_appointments.php">View full schedule</a>
+                <a href="doctor_view_appointments.php">View full schedule <span aria-hidden="true">&rarr;</span></a>
             </div>
 
             <?php if (empty($todaysConsultations)): ?>
@@ -5983,7 +6063,7 @@ include 'includes/header.php';
                         <?php $status = doctor_status($appointment); ?>
                         <div class="doctor-today-item">
                             <div class="doctor-today-main">
-                                <strong class="doctor-today-time"><?php echo doctor_time_label($appointment['appointment_time']); ?></strong>
+                                <strong class="doctor-today-time"><span class="doctor-today-clock" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span><?php echo doctor_time_label($appointment['appointment_time']); ?></span></strong>
                                 <div class="doctor-clean-patient doctor-today-patient">
                                     <?php echo renderPatientAvatar($appointment, ['size' => 'sm', 'link' => true, 'link_target' => 'doctor', 'patient_id' => (int) $appointment['patient_id']]); ?>
                                     <div>
@@ -5993,16 +6073,15 @@ include 'includes/header.php';
                                 </div>
                                 <span class="status-badge <?php echo htmlspecialchars($status); ?>"><?php echo htmlspecialchars($appointment['status_label']); ?></span>
                             </div>
-                            <div class="doctor-today-actions">
-                                <span class="doctor-today-actions-label">Action</span>
-                                <a href="doctor_patient.php?id=<?php echo (int) $appointment['patient_id']; ?>">View patient</a>
+                            <div class="doctor-today-actions" role="group" aria-label="Appointment actions">
+                                <a href="doctor_patient.php?id=<?php echo (int) $appointment['patient_id']; ?>"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M5 20v-2a7 7 0 0 1 14 0v2"/></svg><span>View patient</span></a>
                                 <?php if ($status === 'confirmed'): ?>
-                                    <a href="doctor_patient.php?id=<?php echo (int) $appointment['patient_id']; ?>#add-medical-record">Add note</a>
+                                    <a href="doctor_patient.php?id=<?php echo (int) $appointment['patient_id']; ?>#add-medical-record"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6M13 3l5 5h-5zM8 12h6M8 16h4M18 14v7M14.5 17.5h7"/></svg><span>Add note</span></a>
                                     <form method="post" action="update_appointment_status.php">
                                         <input type="hidden" name="appointment_id" value="<?php echo (int) $appointment['id']; ?>">
                                         <input type="hidden" name="status" value="completed">
                                         <input type="hidden" name="return_url" value="doctor.php">
-                                        <button type="submit" class="doctor-today-complete" data-confirm-message="Are you sure you want to mark this appointment as completed?">Complete</button>
+                                        <button type="submit" class="doctor-today-complete" data-confirm-message="Are you sure you want to mark this appointment as completed?"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg><span>Complete</span></button>
                                     </form>
                                 <?php endif; ?>
                             </div>
