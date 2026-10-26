@@ -3237,6 +3237,114 @@ body.doctor-report-range-open {
     border-color: #d8e7f4;
 }
 
+.doctor-clean-dashboard .doctor-today-panel {
+    container-type: inline-size;
+}
+
+.doctor-clean-dashboard .doctor-today-list {
+    margin-top: 0;
+}
+
+.doctor-clean-dashboard .doctor-today-item {
+    padding: 13px 16px;
+    border-bottom: 1px solid #e6eef3;
+}
+
+.doctor-clean-dashboard .doctor-today-item:last-child {
+    border-bottom: 0;
+}
+
+.doctor-clean-dashboard .doctor-today-main {
+    display: grid;
+    grid-template-columns: 82px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+}
+
+.doctor-clean-dashboard .doctor-today-time {
+    color: #073b4c;
+    font-size: .9rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.doctor-clean-dashboard .doctor-today-patient {
+    min-width: 0;
+    justify-content: flex-start;
+}
+
+.doctor-clean-dashboard .doctor-today-patient > div {
+    min-width: 0;
+}
+
+.doctor-clean-dashboard .doctor-today-patient strong {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.doctor-clean-dashboard .doctor-today-patient small {
+    font-size: .81rem;
+    overflow-wrap: anywhere;
+}
+
+.doctor-clean-dashboard .doctor-today-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 9px;
+    padding-left: 94px;
+}
+
+.doctor-clean-dashboard .doctor-today-actions a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 5px 10px;
+    border: 1px solid #cfe1ee;
+    border-radius: 6px;
+    background: #fff;
+    color: #0b4f80;
+    font-size: .82rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    transition: background-color .2s ease, border-color .2s ease;
+}
+
+.doctor-clean-dashboard .doctor-today-actions a:hover,
+.doctor-clean-dashboard .doctor-today-actions a:focus-visible {
+    background: #eaf5ff;
+    border-color: #8fc9ef;
+}
+
+@container (max-width: 500px) {
+    .doctor-clean-dashboard .doctor-today-main {
+        grid-template-columns: 72px minmax(0, 1fr);
+        gap: 7px 10px;
+    }
+
+    .doctor-clean-dashboard .doctor-today-main .status-badge {
+        grid-column: 2;
+        justify-self: start;
+    }
+
+    .doctor-clean-dashboard .doctor-today-actions {
+        padding-left: 82px;
+    }
+}
+
+@container (max-width: 340px) {
+    .doctor-clean-dashboard .doctor-today-actions {
+        padding-left: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .doctor-clean-dashboard .doctor-today-actions a {
+        transition: none;
+    }
+}
+
 .doctor-empty-state {
     display: grid;
     min-height: 118px;
@@ -5845,38 +5953,25 @@ include 'includes/header.php';
                     </div>
                 </div>
             <?php else: ?>
-                <div class="doctor-clean-table">
-                    <div class="doctor-clean-row doctor-clean-head today">
-                        <span>Time</span>
-                        <span>Patient</span>
-                        <span>Service</span>
-                        <span>Status</span>
-                        <span>Action</span>
-                    </div>
+                <div class="doctor-clean-table doctor-today-list">
                     <?php foreach (array_slice($todaysConsultations, 0, 3) as $appointment): ?>
                         <?php $status = doctor_status($appointment); ?>
-                        <div class="doctor-clean-row today">
-                            <div class="doctor-clean-time">
-                                <strong><?php echo doctor_time_label($appointment['appointment_time']); ?></strong>
-                            </div>
-                            <div class="doctor-clean-patient">
-                                <?php echo renderPatientAvatar($appointment, ['size' => 'sm', 'link' => true, 'link_target' => 'doctor', 'patient_id' => (int) $appointment['patient_id']]); ?>
-                                <div>
-                                    <strong><?php echo htmlspecialchars($appointment['patient_name']); ?></strong>
-                                    <small><?php echo htmlspecialchars($appointment['patient_phone'] ?: $appointment['patient_email'] ?: 'No contact'); ?></small>
+                        <div class="doctor-today-item">
+                            <div class="doctor-today-main">
+                                <strong class="doctor-today-time"><?php echo doctor_time_label($appointment['appointment_time']); ?></strong>
+                                <div class="doctor-clean-patient doctor-today-patient">
+                                    <?php echo renderPatientAvatar($appointment, ['size' => 'sm', 'link' => true, 'link_target' => 'doctor', 'patient_id' => (int) $appointment['patient_id']]); ?>
+                                    <div>
+                                        <strong><?php echo htmlspecialchars($appointment['patient_name']); ?></strong>
+                                        <small><?php echo htmlspecialchars(doctor_service_detail($appointment)); ?></small>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="doctor-clean-service">
-                                <strong>Consultation</strong>
-                                <small><?php echo htmlspecialchars(doctor_service_detail($appointment)); ?></small>
-                            </div>
-                            <div>
                                 <span class="status-badge <?php echo htmlspecialchars($status); ?>"><?php echo htmlspecialchars($appointment['status_label']); ?></span>
                             </div>
-                            <div class="doctor-clean-actions">
-                                <a class="btn secondary" href="doctor_patient.php?id=<?php echo (int) $appointment['patient_id']; ?>">View Patient</a>
+                            <div class="doctor-today-actions">
+                                <a href="doctor_patient.php?id=<?php echo (int) $appointment['patient_id']; ?>">View patient</a>
                                 <?php if ($status === 'confirmed'): ?>
-                                    <a class="btn secondary" href="doctor_patient.php?id=<?php echo (int) $appointment['patient_id']; ?>">Add Note</a>
+                                    <a href="doctor_patient.php?id=<?php echo (int) $appointment['patient_id']; ?>#add-medical-record">Add note</a>
                                 <?php endif; ?>
                             </div>
                         </div>
