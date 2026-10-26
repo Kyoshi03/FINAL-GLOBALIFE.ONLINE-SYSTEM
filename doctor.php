@@ -1484,78 +1484,111 @@ select:focus {
 }
 
 .doctor-request-modal-card {
-    width: min(560px, 100%);
+    width: min(480px, 100%);
     max-height: calc(100vh - 36px);
     overflow: auto;
-    border: 1px solid #cde8f3;
-    border-radius: 12px;
+    border: 1px solid #d8e6ed;
+    border-radius: 8px;
     background: #fff;
-    box-shadow: 0 24px 70px rgba(7, 59, 76, .24);
+    box-shadow: 0 20px 50px rgba(7, 59, 76, .18);
 }
 
 .doctor-request-modal-head {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 14px;
-    padding: 20px 22px;
-    border-bottom: 1px solid #d8eef7;
-    background: linear-gradient(135deg, #fff 0%, #eefaff 100%);
+    padding: 18px 20px;
+    border-bottom: 1px solid #e3edf2;
 }
 
 .doctor-request-modal-head h2 {
     margin: 0;
     color: #073b4c;
-    font-size: 1.2rem;
-}
-
-.doctor-request-modal-head p {
-    margin: 6px 0 0;
-    color: #607784;
-    font-size: .88rem;
+    font-size: 1.12rem;
+    font-weight: 700;
 }
 
 .doctor-request-modal-close {
-    width: 34px;
-    height: 34px;
-    border: 0;
-    border-radius: 8px;
-    background: #eaf8fc;
-    color: #0077b6;
-    font-size: 1.2rem;
-    font-weight: 900;
+    width: 32px;
+    height: 32px;
+    border: 1px solid #d8e6ed;
+    border-radius: 6px;
+    background: #fff;
+    color: #42657a;
+    font-size: 1.1rem;
+    font-weight: 600;
     cursor: pointer;
 }
 
+.doctor-request-modal-close:hover {
+    background: #f3f9fc;
+}
+
 .doctor-request-modal-body {
-    padding: 20px 22px;
+    padding: 8px 20px;
 }
 
 .doctor-request-detail-grid {
-    display: grid;
-    grid-template-columns: minmax(110px, .35fr) minmax(0, 1fr);
-    gap: 10px 16px;
     margin: 0;
+}
+
+.doctor-request-detail-row {
+    display: grid;
+    grid-template-columns: 90px minmax(0, 1fr);
+    gap: 14px;
+    align-items: baseline;
+    padding: 12px 0;
+    border-bottom: 1px solid #edf2f5;
+}
+
+.doctor-request-detail-row:last-child {
+    border-bottom: 0;
 }
 
 .doctor-request-detail-grid dt {
     color: #607784;
-    font-size: .82rem;
-    font-weight: 900;
+    font-size: .84rem;
+    font-weight: 600;
 }
 
 .doctor-request-detail-grid dd {
     margin: 0;
     color: #073b4c;
-    font-weight: 800;
+    font-size: .9rem;
+    font-weight: 500;
+    line-height: 1.4;
     overflow-wrap: anywhere;
+}
+
+.doctor-request-status-pill {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: #fff2c9;
+    color: #815b00;
+    font-size: .78rem;
+    font-weight: 600;
 }
 
 .doctor-request-modal-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
-    padding: 0 22px 20px;
+    padding: 12px 20px 18px;
+}
+
+.doctor-request-modal-actions .btn {
+    min-height: 36px;
+    padding: 7px 14px;
+    font-size: .86rem;
+    font-weight: 600;
+}
+
+@media (max-width: 420px) {
+    .doctor-request-detail-row {
+        grid-template-columns: 1fr;
+        gap: 3px;
+    }
 }
 
 .btn.confirm-soft {
@@ -3822,7 +3855,6 @@ function initializeDoctorDashboard() {
     var successOk = document.getElementById("doctorSuccessOk");
     var pendingForm = null;
     var requestDetailsModal = document.getElementById("doctorRequestDetailsModal");
-    var requestDetailsSub = document.getElementById("doctorRequestDetailsSub");
     var requestDetailsGrid = document.getElementById("doctorRequestDetailsGrid");
 
     function closeDoctorRequestMenus(exceptMenu) {
@@ -3884,11 +3916,12 @@ function initializeDoctorDashboard() {
                 ["Status", button.getAttribute("data-status") || "Pending"]
             ];
             requestDetailsGrid.innerHTML = values.map(function (item) {
-                return "<dt>" + item[0] + "</dt><dd>" + item[1].replace(/[&<>\"]/g, function (char) {
+                var value = item[1].replace(/[&<>\"]/g, function (char) {
                     return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[char] || "&#" + char.charCodeAt(0) + ";";
-                }) + "</dd>";
+                });
+                if (item[0] === "Status") value = "<span class=\"doctor-request-status-pill\">" + value + "</span>";
+                return "<div class=\"doctor-request-detail-row\"><dt>" + item[0] + "</dt><dd>" + value + "</dd></div>";
             }).join("");
-            if (requestDetailsSub) requestDetailsSub.textContent = (button.getAttribute("data-patient") || "Patient") + " - Appointment request";
             requestDetailsModal.classList.add("is-open");
             requestDetailsModal.setAttribute("aria-hidden", "false");
         });
@@ -5902,10 +5935,7 @@ include 'includes/header.php';
     <div class="doctor-request-modal" id="doctorRequestDetailsModal" aria-hidden="true">
         <div class="doctor-request-modal-card" role="dialog" aria-modal="true" aria-labelledby="doctorRequestDetailsTitle">
             <div class="doctor-request-modal-head">
-                <div>
-                    <h2 id="doctorRequestDetailsTitle">Appointment details</h2>
-                    <p id="doctorRequestDetailsSub">Review appointment request</p>
-                </div>
+                <h2 id="doctorRequestDetailsTitle">Appointment details</h2>
                 <button type="button" class="doctor-request-modal-close" data-close-doctor-request-details aria-label="Close">&times;</button>
             </div>
             <div class="doctor-request-modal-body">
