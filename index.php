@@ -116,8 +116,15 @@ $additionalStyles = '
         position: relative;
         overflow: clip;
         text-align: left;
-        padding: 18px 0 30px;
+        padding: 18px 0 20px;
         background: #fff;
+    }
+
+    .hero .container {
+        width: calc(100% - 58px);
+        max-width: none;
+        padding-left: 0;
+        padding-right: 0;
     }
 
     .hero-grid {
@@ -330,7 +337,7 @@ $additionalStyles = '
 
     .about-section {
         background: #fff;
-        padding: 72px 0;
+        padding: 34px 0 52px;
         border-top: 1px solid #e3eef2;
         border-bottom: 1px solid #e3eef2;
     }
