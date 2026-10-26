@@ -67,25 +67,6 @@ $additionalStyles = '
         background: #f5f8fa;
     }
 
-    body.page-index .header-flex {
-        max-width: 1400px;
-        padding: 8px 20px;
-    }
-
-    body.page-index .logo-img {
-        width: 44px;
-        height: 44px;
-    }
-
-    body.page-index header h1 {
-        font-size: 1.05rem;
-    }
-
-    body.page-index nav a {
-        padding: 7px 12px;
-        font-size: 0.82rem;
-    }
-
     body.page-index .logo-section:hover {
         transform: none;
     }
@@ -100,12 +81,14 @@ $additionalStyles = '
     }
 
     #home,
+    #visit-guide,
     #about,
     #contact {
         scroll-margin-top: 100px;
     }
 
     .hero .container,
+    .visit-guide-section .container,
     .about-section .container,
     .patient-login-section .container,
     .contact-band .container {
@@ -114,59 +97,53 @@ $additionalStyles = '
 
     .hero {
         position: relative;
-        overflow: clip;
+        overflow: hidden;
         text-align: left;
-        padding: 18px 0 20px;
-        background: #fff;
+        padding: 86px 0 74px;
+        background:
+            radial-gradient(circle at 12% 18%, rgba(72, 202, 228, 0.24), transparent 28%),
+            radial-gradient(circle at 88% 12%, rgba(46, 196, 182, 0.18), transparent 24%),
+            linear-gradient(135deg, #eaf9fd 0%, #f7fbf6 55%, #fff4ed 100%);
     }
 
-    .hero .container {
-        width: calc(100% - 58px);
-        max-width: none;
-        padding-left: 0;
-        padding-right: 0;
+    .hero::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(0, 119, 182, 0.22), transparent);
     }
 
     .hero-grid {
-        height: 350px;
-        min-height: 0;
-        position: relative;
-        display: flex;
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+        gap: 44px;
         align-items: center;
-        box-sizing: border-box;
-        padding: 32px 38px;
-        isolation: isolate;
-        border-radius: 8px;
-        background-image:
-            linear-gradient(90deg, rgba(3, 51, 70, 0.93) 0%, rgba(3, 51, 70, 0.77) 34%, rgba(3, 51, 70, 0.2) 66%, rgba(3, 51, 70, 0.03) 100%),
-            url("assets/globalife-clinic-front.jpg");
-        background-size: cover;
-        background-position: 55% center;
-        box-shadow: 0 20px 42px rgba(7, 59, 76, 0.12);
     }
 
     .hero h2 {
-        color: #fff;
-        font-size: clamp(2rem, 4vw, 3.4rem);
-        line-height: 1.08;
-        letter-spacing: 0;
-        margin: 0 0 16px;
-        max-width: 520px;
+        color: #073b4c;
+        font-size: clamp(2.15rem, 4vw, 4rem);
+        line-height: 1.05;
+        margin: 0 0 18px;
+        max-width: 760px;
     }
 
     .hero p {
-        color: rgba(255, 255, 255, 0.94);
-        font-size: 0.98rem;
-        line-height: 1.58;
-        margin: 0 0 24px;
-        max-width: 360px;
+        color: #40525b;
+        font-size: 1.08rem;
+        line-height: 1.75;
+        margin: 0 0 28px;
+        max-width: 660px;
     }
 
     .hero-actions {
         display: flex;
         flex-wrap: wrap;
         gap: 14px;
-        margin: 0;
+        margin-bottom: 26px;
     }
 
     .cta-btn,
@@ -174,8 +151,8 @@ $additionalStyles = '
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 42px;
-        padding: 10px 18px;
+        min-height: 46px;
+        padding: 12px 24px;
         border-radius: 8px;
         font-weight: 700;
         text-decoration: none;
@@ -183,17 +160,15 @@ $additionalStyles = '
     }
 
     .cta-btn {
-        gap: 10px;
-        background: #fff;
-        color: #0077b6;
-        box-shadow: 0 12px 24px rgba(0, 45, 62, 0.25);
+        background: #0077b6;
+        color: #fff;
+        box-shadow: 0 12px 24px rgba(0, 119, 182, 0.22);
     }
 
     .cta-btn:hover {
-        background: #eaf9fd;
-        color: #023e8a;
+        background: #023e8a;
         transform: translateY(-2px);
-        box-shadow: 0 16px 30px rgba(0, 45, 62, 0.3);
+        box-shadow: 0 16px 30px rgba(2, 62, 138, 0.24);
     }
 
     .secondary-btn {
@@ -208,10 +183,79 @@ $additionalStyles = '
         box-shadow: 0 12px 24px rgba(7, 59, 76, 0.1);
     }
 
-    .hero-book-icon {
-        width: 18px;
-        height: 18px;
-        flex: 0 0 18px;
+    .hero-highlights {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .hero-highlights span {
+        color: #16434f;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(0, 119, 182, 0.14);
+        border-radius: 8px;
+        padding: 9px 12px;
+        font-size: 0.92rem;
+        font-weight: 600;
+    }
+
+    .visit-guide-section {
+        background: #fff;
+        padding: 56px 0 64px;
+        border-bottom: 1px solid #e3eef2;
+    }
+
+    .visit-steps {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 28px;
+    }
+
+    .visit-step-card {
+        background: #f8fcfd;
+        border: 1px solid #dceef2;
+        border-radius: 12px;
+        padding: 22px 18px;
+        position: relative;
+        box-shadow: 0 10px 22px rgba(7, 59, 76, 0.05);
+    }
+
+    .visit-step-num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #48cae4, #0077b6);
+        color: #fff;
+        font-weight: 800;
+        font-size: 0.9rem;
+        margin-bottom: 12px;
+    }
+
+    .visit-step-card h4 {
+        color: #073b4c;
+        font-size: 1rem;
+        margin: 0 0 8px;
+    }
+
+    .visit-step-card p {
+        color: #566872;
+        font-size: 0.9rem;
+        line-height: 1.55;
+        margin: 0;
+    }
+
+    .visit-step-card a {
+        color: #0077b6;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .visit-step-card a:hover {
+        text-decoration: underline;
     }
 
     .field-hint {
@@ -337,7 +381,7 @@ $additionalStyles = '
 
     .about-section {
         background: #fff;
-        padding: 34px 0 52px;
+        padding: 72px 0;
         border-top: 1px solid #e3eef2;
         border-bottom: 1px solid #e3eef2;
     }
@@ -829,21 +873,8 @@ $additionalStyles = '
     }
 
     @media (max-width: 900px) {
-        body.page-index .header-flex {
-            padding: 5px 14px;
-        }
-
-        body.page-index .logo-img {
-            width: 40px;
-            height: 40px;
-        }
-
-        body.page-index header h1 {
-            font-size: 0.94rem;
-        }
-
         .hero {
-            padding: 10px 0 16px;
+            padding: 58px 0 52px;
         }
 
         .hero-grid,
@@ -851,13 +882,8 @@ $additionalStyles = '
             grid-template-columns: 1fr;
         }
 
-        .hero-grid {
-            width: calc(100% - 58px);
-            max-width: none;
-            min-height: 0;
-            height: 350px;
-            padding: 30px 38px;
-            background-position: 55% center;
+        .hero-panel {
+            max-width: 520px;
         }
 
         .mission-vision,
@@ -876,20 +902,8 @@ $additionalStyles = '
     }
 
     @media (max-width: 560px) {
-        .hero-grid {
-            width: calc(100% - 32px);
-            height: 320px;
-            min-height: 0;
-            padding: 32px 24px;
-            align-items: flex-end;
-            background-image:
-                linear-gradient(0deg, rgba(3, 51, 70, 0.94) 0%, rgba(3, 51, 70, 0.72) 56%, rgba(3, 51, 70, 0.15) 100%),
-                url("assets/globalife-clinic-front.jpg");
-            background-position: 57% center;
-        }
-
         .hero h2 {
-            font-size: 2rem;
+            font-size: 2.1rem;
         }
 
         .hero-actions,
@@ -1591,7 +1605,7 @@ $additionalScripts = '
             window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
         }
 
-        document.querySelectorAll("a[href=\"#home\"], a[href=\"#about\"], a[href=\"#contact\"]").forEach(function (link) {
+        document.querySelectorAll("a[href=\"#home\"], a[href=\"#visit-guide\"], a[href=\"#about\"], a[href=\"#contact\"]").forEach(function (link) {
             link.addEventListener("click", function (event) {
                 const hash = link.getAttribute("href");
                 const target = hash ? document.querySelector(hash) : null;
@@ -1617,7 +1631,7 @@ $additionalScripts = '
             });
         }
 
-        if (window.location.hash === "#home" || window.location.hash === "#about" || window.location.hash === "#contact") {
+        if (window.location.hash === "#home" || window.location.hash === "#visit-guide" || window.location.hash === "#about" || window.location.hash === "#contact") {
             window.setTimeout(function () {
                 scrollToPageSection(window.location.hash);
             }, 120);
@@ -1630,16 +1644,81 @@ include 'includes/header.php';
     <section id="home" class="hero">
         <div class="container hero-grid">
             <div class="hero-copy">
-                <h2>Your clinic visit,<br>made easier.</h2>
-                <p>Book consultations, laboratory tests, and ultrasounds online.</p>
+                <h2>Book clinic and laboratory visits with less waiting.</h2>
                 <div class="hero-actions">
-                    <a href="#patient-login" class="cta-btn">
-                        <svg class="hero-book-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <rect x="3" y="5" width="18" height="16" rx="2"></rect>
-                            <path d="M16 3v4M8 3v4M3 10h18"></path>
-                        </svg>
-                        <span>Book Appointment</span>
-                    </a>
+                    <a href="#patient-login" class="cta-btn">Book Appointment</a>
+                </div>
+                <div class="hero-highlights" aria-label="Clinic highlights">
+                    <span>Online booking</span>
+                    <span>Laboratory services</span>
+                    <span>Clinic check-ups</span>
+                </div>
+            </div>
+
+            <aside class="hero-panel" aria-label="Globalife care summary">
+                <div class="hero-logo-shell">
+                    <img src="<?php echo htmlspecialchars((string) ($publicClinicInfo['clinic_logo'] ?? 'globalife.png')); ?>" alt="Globalife clinic logo">
+                </div>
+                <h3>Reliable healthcare support for everyday clinic and laboratory needs.</h3>
+                <div class="quick-list">
+                    <div class="quick-item">
+                        <span class="clinic-mark" aria-hidden="true">
+                            <span class="clinic-mark-plus">+</span>
+                            <svg class="clinic-mark-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                            </svg>
+                        </span>
+                        <span>Friendly, compassionate care support</span>
+                    </div>
+                    <div class="quick-item">
+                        <span class="clinic-mark" aria-hidden="true">
+                            <span class="clinic-mark-plus">+</span>
+                            <svg class="clinic-mark-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </span>
+                        <span>Simple appointment coordination</span>
+                    </div>
+                    <div class="quick-item">
+                        <span class="clinic-mark" aria-hidden="true">
+                            <span class="clinic-mark-plus">+</span>
+                            <svg class="clinic-mark-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                            </svg>
+                        </span>
+                        <span>Laboratory and Doctor Consultation</span>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </section>
+
+    <section id="visit-guide" class="visit-guide-section">
+        <div class="container">
+            <div class="section-heading">
+                <h3>How to book your clinic visit</h3>
+                <p>Follow these steps to book online and prepare for your visit.</p>
+            </div>
+            <div class="visit-steps">
+                <div class="visit-step-card">
+                    <span class="visit-step-num">1</span>
+                    <h4>Create your account</h4>
+                    <p>First-time visitors should <a href="register_patient.php">Sign Up</a> with correct personal details, email, and mobile number.</p>
+                </div>
+                <div class="visit-step-card">
+                    <span class="visit-step-num">2</span>
+                    <h4>Log In</h4>
+                    <p>Use your <strong>username</strong> and <strong>password</strong>. If you forgot your password, reset it using your registered email.</p>
+                </div>
+                <div class="visit-step-card">
+                    <span class="visit-step-num">3</span>
+                    <h4>Book online</h4>
+                    <p>After logging in, choose a clinic consultation or laboratory service and select your schedule.</p>
+                </div>
+                <div class="visit-step-card">
+                    <span class="visit-step-num">4</span>
+                    <h4>Visit the clinic</h4>
+                    <p>Bring a <strong>valid ID</strong>, arrive on time, and pay at the clinic unless staff gives other instructions.</p>
                 </div>
             </div>
         </div>
