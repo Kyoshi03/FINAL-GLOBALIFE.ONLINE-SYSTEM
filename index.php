@@ -95,6 +95,13 @@ $additionalStyles = '
         max-width: 1120px;
     }
 
+    .hero .container {
+        width: 100%;
+        max-width: none;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
     .hero {
         position: relative;
         padding: 26px 0 32px;
