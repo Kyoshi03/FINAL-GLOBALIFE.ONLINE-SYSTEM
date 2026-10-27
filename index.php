@@ -97,53 +97,56 @@ $additionalStyles = '
 
     .hero {
         position: relative;
-        overflow: hidden;
-        text-align: left;
-        padding: 86px 0 74px;
-        background:
-            radial-gradient(circle at 12% 18%, rgba(72, 202, 228, 0.24), transparent 28%),
-            radial-gradient(circle at 88% 12%, rgba(46, 196, 182, 0.18), transparent 24%),
-            linear-gradient(135deg, #eaf9fd 0%, #f7fbf6 55%, #fff4ed 100%);
+        padding: 26px 0 32px;
+        background: #fff;
     }
 
-    .hero::after {
+    .hero-banner {
+        position: relative;
+        display: flex;
+        align-items: center;
+        min-height: 360px;
+        overflow: hidden;
+        border-radius: 12px;
+        background: #073b4c url("assets/globalife-clinic-front.jpg") center / cover no-repeat;
+        box-shadow: 0 14px 32px rgba(7, 59, 76, 0.13);
+    }
+
+    .hero-banner::before {
         content: "";
         position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(0, 119, 182, 0.22), transparent);
+        inset: 0;
+        background: linear-gradient(90deg, rgba(2, 62, 76, 0.92) 0%, rgba(2, 62, 76, 0.78) 34%, rgba(2, 62, 76, 0.28) 70%, rgba(2, 62, 76, 0.04) 100%);
     }
 
-    .hero-grid {
-        display: grid;
-        grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
-        gap: 44px;
-        align-items: center;
+    .hero-copy {
+        position: relative;
+        z-index: 1;
+        max-width: 560px;
+        padding: 48px 56px;
     }
 
     .hero h2 {
-        color: #073b4c;
-        font-size: clamp(2.15rem, 4vw, 4rem);
-        line-height: 1.05;
+        color: #fff;
+        font-size: clamp(2.2rem, 4vw, 3.65rem);
+        line-height: 1.08;
         margin: 0 0 18px;
-        max-width: 760px;
+        max-width: 540px;
     }
 
     .hero p {
-        color: #40525b;
-        font-size: 1.08rem;
-        line-height: 1.75;
-        margin: 0 0 28px;
-        max-width: 660px;
+        color: rgba(255, 255, 255, 0.94);
+        font-size: 1.05rem;
+        line-height: 1.55;
+        margin: 0 0 26px;
+        max-width: 470px;
     }
 
     .hero-actions {
         display: flex;
         flex-wrap: wrap;
         gap: 14px;
-        margin-bottom: 26px;
+        margin-bottom: 18px;
     }
 
     .cta-btn,
@@ -160,15 +163,43 @@ $additionalStyles = '
     }
 
     .cta-btn {
-        background: #0077b6;
-        color: #fff;
-        box-shadow: 0 12px 24px rgba(0, 119, 182, 0.22);
+        background: #fff;
+        color: #0077b6;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.16);
     }
 
     .cta-btn:hover {
-        background: #023e8a;
+        background: #eaf8fc;
         transform: translateY(-2px);
-        box-shadow: 0 16px 30px rgba(2, 62, 138, 0.24);
+        box-shadow: 0 15px 28px rgba(0, 0, 0, 0.2);
+    }
+
+    .cta-btn:focus-visible,
+    .hero-how-link:focus-visible {
+        outline: 3px solid #90e0ef;
+        outline-offset: 4px;
+    }
+
+    .cta-btn svg {
+        width: 20px;
+        height: 20px;
+        margin-right: 9px;
+    }
+
+    .hero-how-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        color: #fff;
+        font-weight: 600;
+        text-decoration: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.82);
+        padding-bottom: 3px;
+    }
+
+    .hero-how-link:hover {
+        color: #caf0f8;
+        border-bottom-color: #caf0f8;
     }
 
     .secondary-btn {
@@ -183,67 +214,73 @@ $additionalStyles = '
         box-shadow: 0 12px 24px rgba(7, 59, 76, 0.1);
     }
 
-    .hero-highlights {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-
-    .hero-highlights span {
-        color: #16434f;
-        background: rgba(255, 255, 255, 0.72);
-        border: 1px solid rgba(0, 119, 182, 0.14);
-        border-radius: 8px;
-        padding: 9px 12px;
-        font-size: 0.92rem;
-        font-weight: 600;
-    }
-
     .visit-guide-section {
         background: #fff;
-        padding: 56px 0 64px;
+        padding: 44px 0 54px;
         border-bottom: 1px solid #e3eef2;
     }
 
     .visit-steps {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 16px;
-        margin-top: 28px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin-top: 24px;
     }
 
     .visit-step-card {
-        background: #f8fcfd;
-        border: 1px solid #dceef2;
-        border-radius: 12px;
-        padding: 22px 18px;
+        background: #fff;
+        border: 0;
+        border-right: 1px solid #dceef2;
+        border-radius: 0;
+        padding: 8px 30px 8px 18px;
         position: relative;
-        box-shadow: 0 10px 22px rgba(7, 59, 76, 0.05);
+    }
+
+    .visit-step-card:last-child {
+        border-right: 0;
     }
 
     .visit-step-num {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 32px;
-        height: 32px;
+        min-width: 30px;
+        height: 30px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #48cae4, #0077b6);
-        color: #fff;
+        background: #eaf8fc;
+        color: #0077b6;
+        border: 1px solid #90e0ef;
         font-weight: 800;
-        font-size: 0.9rem;
-        margin-bottom: 12px;
+        font-size: 0.88rem;
+        margin-bottom: 14px;
+    }
+
+    .visit-step-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        margin-bottom: 10px;
+        color: #0077b6;
+        border: 1px solid #90e0ef;
+        border-radius: 12px;
+        background: #fff;
+    }
+
+    .visit-step-icon svg {
+        width: 23px;
+        height: 23px;
     }
 
     .visit-step-card h4 {
         color: #073b4c;
-        font-size: 1rem;
+        font-size: 1.05rem;
         margin: 0 0 8px;
     }
 
     .visit-step-card p {
-        color: #566872;
-        font-size: 0.9rem;
+        color: #51636d;
+        font-size: 0.94rem;
         line-height: 1.55;
         margin: 0;
     }
@@ -874,16 +911,16 @@ $additionalStyles = '
 
     @media (max-width: 900px) {
         .hero {
-            padding: 58px 0 52px;
+            padding: 20px 0 26px;
         }
 
-        .hero-grid,
         .contact-grid {
             grid-template-columns: 1fr;
         }
 
-        .hero-panel {
-            max-width: 520px;
+        .hero-banner {
+            min-height: 390px;
+            background-position: 66% center;
         }
 
         .mission-vision,
@@ -892,8 +929,14 @@ $additionalStyles = '
             grid-template-columns: 1fr;
         }
 
-        .visit-steps {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+        .visit-step-card {
+            border-right: 0;
+            border-bottom: 1px solid #dceef2;
+            padding: 18px 0;
+        }
+
+        .visit-step-card:last-child {
+            border-bottom: 0;
         }
 
         .contact-actions {
@@ -902,8 +945,28 @@ $additionalStyles = '
     }
 
     @media (max-width: 560px) {
+        .hero-banner {
+            min-height: 430px;
+            align-items: flex-end;
+            border-radius: 10px;
+            background-position: 65% center;
+        }
+
+        .hero-banner::before {
+            background: linear-gradient(180deg, rgba(2, 62, 76, 0.12) 0%, rgba(2, 62, 76, 0.84) 66%, rgba(2, 62, 76, 0.94) 100%);
+        }
+
+        .hero-copy {
+            max-width: none;
+            padding: 30px 24px 28px;
+        }
+
         .hero h2 {
-            font-size: 2.1rem;
+            font-size: 2.2rem;
+        }
+
+        .hero p {
+            font-size: 1rem;
         }
 
         .hero-actions,
@@ -1642,83 +1705,60 @@ $additionalScripts = '
 include 'includes/header.php';
 ?>
     <section id="home" class="hero">
-        <div class="container hero-grid">
+        <div class="container hero-banner">
             <div class="hero-copy">
-                <h2>Book clinic and laboratory visits with less waiting.</h2>
+                <h2>Your clinic visit, made easier.</h2>
+                <p>Book consultations, laboratory tests, and ultrasounds online.</p>
                 <div class="hero-actions">
-                    <a href="#patient-login" class="cta-btn">Book Appointment</a>
+                    <a href="#patient-login" class="cta-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z"/>
+                        </svg>
+                        Book Appointment
+                    </a>
                 </div>
-                <div class="hero-highlights" aria-label="Clinic highlights">
-                    <span>Online booking</span>
-                    <span>Laboratory services</span>
-                    <span>Clinic check-ups</span>
-                </div>
+                <a class="hero-how-link" href="#visit-guide">How it works <span aria-hidden="true">→</span></a>
             </div>
-
-            <aside class="hero-panel" aria-label="Globalife care summary">
-                <div class="hero-logo-shell">
-                    <img src="<?php echo htmlspecialchars((string) ($publicClinicInfo['clinic_logo'] ?? 'globalife.png')); ?>" alt="Globalife clinic logo">
-                </div>
-                <h3>Reliable healthcare support for everyday clinic and laboratory needs.</h3>
-                <div class="quick-list">
-                    <div class="quick-item">
-                        <span class="clinic-mark" aria-hidden="true">
-                            <span class="clinic-mark-plus">+</span>
-                            <svg class="clinic-mark-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-                            </svg>
-                        </span>
-                        <span>Friendly, compassionate care support</span>
-                    </div>
-                    <div class="quick-item">
-                        <span class="clinic-mark" aria-hidden="true">
-                            <span class="clinic-mark-plus">+</span>
-                            <svg class="clinic-mark-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                            </svg>
-                        </span>
-                        <span>Simple appointment coordination</span>
-                    </div>
-                    <div class="quick-item">
-                        <span class="clinic-mark" aria-hidden="true">
-                            <span class="clinic-mark-plus">+</span>
-                            <svg class="clinic-mark-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
-                            </svg>
-                        </span>
-                        <span>Laboratory and Doctor Consultation</span>
-                    </div>
-                </div>
-            </aside>
         </div>
     </section>
 
     <section id="visit-guide" class="visit-guide-section">
         <div class="container">
             <div class="section-heading">
-                <h3>How to book your clinic visit</h3>
-                <p>Follow these steps to book online and prepare for your visit.</p>
+                <h3>Book in 3 simple steps</h3>
+                <p>Choose a schedule, confirm your booking, and visit the clinic.</p>
             </div>
             <div class="visit-steps">
                 <div class="visit-step-card">
-                    <span class="visit-step-num">1</span>
-                    <h4>Create your account</h4>
-                    <p>First-time visitors should <a href="register_patient.php">Sign Up</a> with correct personal details, email, and mobile number.</p>
+                    <span class="visit-step-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 3v3m10-3v3M4 9h16M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z"/>
+                        </svg>
+                    </span>
+                    <span class="visit-step-num">01</span>
+                    <h4>Choose a schedule</h4>
+                    <p>Select the service, doctor, date, and time that work for you.</p>
                 </div>
                 <div class="visit-step-card">
-                    <span class="visit-step-num">2</span>
-                    <h4>Log In</h4>
-                    <p>Use your <strong>username</strong> and <strong>password</strong>. If you forgot your password, reset it using your registered email.</p>
+                    <span class="visit-step-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <circle cx="12" cy="12" r="8.5"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m8.5 12 2.3 2.3 4.7-4.7"/>
+                        </svg>
+                    </span>
+                    <span class="visit-step-num">02</span>
+                    <h4>Check confirmation</h4>
+                    <p>Review your appointment status and wait for the clinic confirmation.</p>
                 </div>
                 <div class="visit-step-card">
-                    <span class="visit-step-num">3</span>
-                    <h4>Book online</h4>
-                    <p>After logging in, choose a clinic consultation or laboratory service and select your schedule.</p>
-                </div>
-                <div class="visit-step-card">
-                    <span class="visit-step-num">4</span>
+                    <span class="visit-step-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 21h16M6 21V9l6-4 6 4v12M9 21v-6h6v6M8 10h.01M12 10h.01M16 10h.01"/>
+                        </svg>
+                    </span>
+                    <span class="visit-step-num">03</span>
                     <h4>Visit the clinic</h4>
-                    <p>Bring a <strong>valid ID</strong>, arrive on time, and pay at the clinic unless staff gives other instructions.</p>
+                    <p>Bring a valid ID and arrive on time for your scheduled visit.</p>
                 </div>
             </div>
         </div>
