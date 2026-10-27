@@ -239,6 +239,15 @@ $additionalStyles = '
         text-align: center;
     }
 
+    .visit-guide-section .section-heading h3 {
+        margin-top: 0;
+        font-size: 1.8rem;
+    }
+
+    .visit-guide-section .section-heading p {
+        line-height: 1.5;
+    }
+
     .visit-steps {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
