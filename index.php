@@ -104,7 +104,7 @@ $additionalStyles = '
 
     .hero {
         position: relative;
-        padding: 26px 0 32px;
+        padding: 26px 0 12px;
         background: #fff;
     }
 
@@ -223,7 +223,7 @@ $additionalStyles = '
 
     .visit-guide-section {
         background: #fff;
-        padding: 44px 0 54px;
+        padding: 24px 0 54px;
         border-bottom: 1px solid #e3eef2;
     }
 
@@ -918,7 +918,7 @@ $additionalStyles = '
 
     @media (max-width: 900px) {
         .hero {
-            padding: 20px 0 26px;
+            padding: 20px 0 12px;
         }
 
         .contact-grid {
