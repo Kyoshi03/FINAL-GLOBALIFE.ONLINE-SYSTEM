@@ -96,7 +96,7 @@ $additionalStyles = '
     }
 
     .hero .container {
-        width: 100%;
+        width: calc(100% - 48px);
         max-width: none;
         padding-left: 0;
         padding-right: 0;
@@ -104,7 +104,7 @@ $additionalStyles = '
 
     .hero {
         position: relative;
-        padding: 26px 0 12px;
+        padding: 14px 0 0;
         background: #fff;
     }
 
@@ -112,7 +112,8 @@ $additionalStyles = '
         position: relative;
         display: flex;
         align-items: center;
-        min-height: 360px;
+        aspect-ratio: 2.14 / 1;
+        min-height: 0;
         overflow: hidden;
         border-radius: 12px;
         background: #073b4c url("assets/globalife-clinic-front.jpg") center / cover no-repeat;
@@ -129,16 +130,16 @@ $additionalStyles = '
     .hero-copy {
         position: relative;
         z-index: 1;
-        max-width: 560px;
-        padding: 48px 56px;
+        max-width: 540px;
+        padding: 48px 60px;
     }
 
     .hero h2 {
         color: #fff;
-        font-size: clamp(2.2rem, 4vw, 3.65rem);
+        font-size: clamp(2.2rem, 4vw, 3.25rem);
         line-height: 1.08;
         margin: 0 0 18px;
-        max-width: 540px;
+        max-width: 500px;
     }
 
     .hero p {
@@ -223,22 +224,37 @@ $additionalStyles = '
 
     .visit-guide-section {
         background: #fff;
-        padding: 24px 0 54px;
+        padding: 30px 0 48px;
         border-bottom: 1px solid #e3eef2;
+    }
+
+    .visit-guide-section .section-heading {
+        max-width: none;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .visit-guide-section .section-heading h3,
+    .visit-guide-section .section-heading p {
+        text-align: center;
     }
 
     .visit-steps {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        margin-top: 24px;
+        margin-top: 20px;
     }
 
     .visit-step-card {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
         background: #fff;
         border: 0;
         border-right: 1px solid #dceef2;
         border-radius: 0;
-        padding: 8px 30px 8px 18px;
+        padding: 8px 24px;
         position: relative;
     }
 
@@ -250,15 +266,15 @@ $additionalStyles = '
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        background: #eaf8fc;
+        min-width: auto;
+        height: auto;
+        border-radius: 0;
+        background: transparent;
         color: #0077b6;
-        border: 1px solid #90e0ef;
+        border: 0;
         font-weight: 800;
         font-size: 0.88rem;
-        margin-bottom: 14px;
+        margin: 0;
     }
 
     .visit-step-icon {
@@ -267,7 +283,7 @@ $additionalStyles = '
         justify-content: center;
         width: 42px;
         height: 42px;
-        margin-bottom: 10px;
+        margin: 0;
         color: #0077b6;
         border: 1px solid #90e0ef;
         border-radius: 12px;
@@ -282,10 +298,12 @@ $additionalStyles = '
     .visit-step-card h4 {
         color: #073b4c;
         font-size: 1.05rem;
-        margin: 0 0 8px;
+        margin: 0;
+        white-space: nowrap;
     }
 
     .visit-step-card p {
+        display: none;
         color: #51636d;
         font-size: 0.94rem;
         line-height: 1.55;
@@ -918,7 +936,7 @@ $additionalStyles = '
 
     @media (max-width: 900px) {
         .hero {
-            padding: 20px 0 12px;
+            padding: 12px 0 0;
         }
 
         .contact-grid {
@@ -926,7 +944,8 @@ $additionalStyles = '
         }
 
         .hero-banner {
-            min-height: 390px;
+            aspect-ratio: 1.7 / 1;
+            min-height: 0;
             background-position: 66% center;
         }
 
@@ -939,7 +958,7 @@ $additionalStyles = '
         .visit-step-card {
             border-right: 0;
             border-bottom: 1px solid #dceef2;
-            padding: 18px 0;
+            padding: 14px 0;
         }
 
         .visit-step-card:last-child {
@@ -953,6 +972,7 @@ $additionalStyles = '
 
     @media (max-width: 560px) {
         .hero-banner {
+            aspect-ratio: auto;
             min-height: 430px;
             align-items: flex-end;
             border-radius: 10px;
